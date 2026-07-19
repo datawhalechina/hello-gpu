@@ -9,6 +9,12 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PART_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+if [[ ! -f "${PART_DIR}/activate-rocm.sh" ]]; then
+    echo "missing ${PART_DIR}/activate-rocm.sh" >&2
+    exit 1
+fi
+# shellcheck source=/dev/null
+source "${PART_DIR}/activate-rocm.sh"
 SOURCE_SHA256="$(python "${SCRIPT_DIR}/summarize_results.py" --chapter-dir "${SCRIPT_DIR}" --print-source-sha256)"
 LOG_DIR="${SCRIPT_DIR}/logs"
 PROFILE_DIR="${SCRIPT_DIR}/profiles"
@@ -49,14 +55,6 @@ rm -f "${LOG_DIR}/runs"/run*.log "${LOG_DIR}/runs"/hip_run*.log "${LOG_DIR}/runs
     echo "run_triton_viz=${RUN_TRITON_VIZ}"
     echo "grid=${GRID:-auto}"
 } > "${LOG_DIR}/benchmark_manifest.env"
-
-if [[ ! -f "${PART_DIR}/activate-rocm.sh" ]]; then
-    echo "missing ${PART_DIR}/activate-rocm.sh" >&2
-    exit 1
-fi
-
-# shellcheck source=/dev/null
-source "${PART_DIR}/activate-rocm.sh"
 
 if command -v rocm-smi >/dev/null 2>&1; then
     rocm-smi --showuse --showmemuse \

@@ -272,6 +272,16 @@ class Chapter7SummaryTest(unittest.TestCase):
                 for name in generated:
                     self.assertFalse((chapter / name).exists(), name)
 
+    def test_scripts_activate_python_before_source_hash(self) -> None:
+        chapter = Path(__file__).parents[1] / "chapter7"
+        for filename in ("run_all.sh", "profile_all.sh"):
+            with self.subTest(filename=filename):
+                source = (chapter / filename).read_text(encoding="utf-8")
+                self.assertLess(
+                    source.index('source "${PART_DIR}/activate-rocm.sh"'),
+                    source.index('SOURCE_SHA256="$(python'),
+                )
+
 
 if __name__ == "__main__":
     unittest.main()

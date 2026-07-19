@@ -9,6 +9,12 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PART_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+if [[ ! -f "${PART_DIR}/activate-rocm.sh" ]]; then
+    echo "missing ${PART_DIR}/activate-rocm.sh" >&2
+    exit 1
+fi
+# shellcheck source=/dev/null
+source "${PART_DIR}/activate-rocm.sh"
 SOURCE_SHA256="$(python "${SCRIPT_DIR}/summarize_results.py" --chapter-dir "${SCRIPT_DIR}" --print-source-sha256)"
 LOG_DIR="${SCRIPT_DIR}/logs"
 PROFILE_DIR="${SCRIPT_DIR}/profiles"
@@ -28,14 +34,6 @@ cleanup() {
 trap cleanup EXIT
 
 mkdir -p "${LOG_DIR}" "${PROFILE_DIR}"
-
-if [[ ! -f "${PART_DIR}/activate-rocm.sh" ]]; then
-    echo "missing ${PART_DIR}/activate-rocm.sh" >&2
-    exit 1
-fi
-
-# shellcheck source=/dev/null
-source "${PART_DIR}/activate-rocm.sh"
 
 bash "${SCRIPT_DIR}/collect_environment.sh" \
     2>&1 | tee "${LOG_DIR}/profile_environment.log"
