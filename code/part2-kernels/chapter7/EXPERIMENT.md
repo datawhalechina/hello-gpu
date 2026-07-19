@@ -6,9 +6,9 @@
 
 ## Source identity
 
-- Git commit: `7a518acb9ee6e0285b238b1532a7619767c66511`
-- Chapter source SHA-256: `1dea46e7a255fe057dd30225f2a3aa93faa5a77d0262cabd8db637eae9a19e82`
-- Evidence generated at: `2026-07-19T05:33:12.614236+00:00`
+- Git commit: `9832d1e91d9f6bce7888005b5ef9bca60e3c6fdf`
+- Chapter source SHA-256: `e3e32487b36b1168fd291f87dc8c49adf22f5beb73eb673f2efd867a4d8d33da`
+- Evidence generated at: `2026-07-19T05:54:40.408571+00:00`
 - Manifest identity: `evidence/manifest.json`
 
 ## Hardware and software
@@ -17,6 +17,9 @@
 | --- | --- |
 | GPU | AMD Radeon RX 9070 XT |
 | GPU architecture | `gfx1201` |
+| OS | Ubuntu 24.04.4 LTS |
+| Virtualization | `none` |
+| Execution | `native` |
 | ROCm / HIP runtime | `7.13.99004` |
 | PyTorch | `2.11.0+rocm7.13.0` |
 | Triton | `3.6.0` |
@@ -54,13 +57,13 @@
 
 | Implementation | Median (ms) | Run range (ms) | Logical effective bandwidth (GB/s) | Run range (GB/s) |
 | --- | ---: | ---: | ---: | ---: |
-| `hip-v0` | 0.335586 | 0.335325–0.335805 | 599.925459 | 599.534232–600.392426 |
-| `hip-v1-contiguous` | 0.366706 | 0.366426–0.369005 | 549.013631 | 545.592408–549.433165 |
-| `hip-v1-strided` | 2.535119 | 2.52336–2.55268 | 79.415048 | 78.868715–79.785128 |
-| `hip-v2` | 0.342345 | 0.341845–0.342386 | 588.080162 | 588.011442–588.940306 |
-| `hip-v3` | 0.342065 | 0.342046–0.342185 | 588.562373 | 588.355128–588.595091 |
-| `triton-t0` | 0.336685 | 0.335885–0.338385 | 597.966339 | 594.963109–599.391455 |
-| `triton-t1` | 0.338705 | 0.338445–0.339326 | 594.400998 | 593.313201–594.856756 |
+| `hip-v0` | 0.336263 | 0.336163–0.336263 | 598.716769 | 598.716769–598.894875 |
+| `hip-v1-contiguous` | 0.369564 | 0.368244–0.369643 | 544.767872 | 544.650711–546.721372 |
+| `hip-v1-strided` | 2.559888 | 2.549787–2.563447 | 78.646641 | 78.537436–78.958202 |
+| `hip-v2` | 0.338584 | 0.338523–0.340203 | 594.613415 | 591.782847–594.720571 |
+| `hip-v3` | 0.342123 | 0.341663–0.342303 | 588.462602 | 588.152304–589.254032 |
+| `triton-t0` | 0.337544 | 0.337444–0.337843 | 596.446356 | 595.916738–596.622218 |
+| `triton-t1` | 0.339224 | 0.339163–0.339764 | 593.491574 | 592.548335–593.597465 |
 
 ## Profiling evidence
 
@@ -78,8 +81,8 @@
 
 ## Negative results and limits
 
-- 受控的 HIP 跨步实现是本次明显负例：median 为 2.535119 ms，logical effective bandwidth 为 79.415048 GB/s；它验证了地址布局会主导这个带宽敏感算子。
-- 本次短实验中 `hip-v0` 与 `triton-t0` 的 logical effective bandwidth 分别为 599.925459 GB/s 与 597.966339 GB/s。这个有限 shape、软件栈与短协议的比较不建立永久的 HIP-versus-Triton winner。
+- 受控的 HIP 跨步实现是本次明显负例：median 为 2.559888 ms，logical effective bandwidth 为 78.646641 GB/s；它验证了地址布局会主导这个带宽敏感算子。
+- 本次短实验中 `hip-v0` 与 `triton-t0` 的 logical effective bandwidth 分别为 598.716769 GB/s 与 596.446356 GB/s。这个有限 shape、软件栈与短协议的比较不建立永久的 HIP-versus-Triton winner。
 - logical effective bandwidth 是按算子语义所需的逻辑读写字节计算的比较指标，logical effective bandwidth ≠ physical GDDR6 traffic。当前 kernel trace 也不是物理显存流量计数器证据。
 - 这些结果只适用于 manifest 记录的硬件、软件、shape、block、warmup、repeat 与独立进程协议；不能外推到其他算子、shape 或系统状态。
 
