@@ -436,7 +436,8 @@ bool run_version(const Version& version,
             host_output[precheck.first_bad_index],
             reference[precheck.first_bad_index]);
         std::printf(
-            "RESULT implementation=%s runtime=hip size=%zu dtype=float32 "
+            "RESULT operator=vector-add implementation=%s runtime=hip "
+            "shape=%zu dtype=float32 "
             "block=%d grid=%u warmup=%d repeat=%d seed=%zu timed=0 "
             "correct=FAIL precheck=FAIL postcheck=NA min_ms=NA "
             "median_ms=NA mean_ms=NA effective_bandwidth_gbs=NA "
@@ -457,7 +458,8 @@ bool run_version(const Version& version,
         logical_bytes / (timing.median_ms * 1.0e-3) / 1.0e9;
 
     std::printf(
-        "RESULT implementation=%s runtime=hip size=%zu dtype=float32 "
+        "RESULT operator=vector-add implementation=%s runtime=hip "
+        "shape=%zu dtype=float32 "
         "block=%d grid=%u warmup=%d repeat=%d seed=%zu timed=1 "
         "correct=%s precheck=OK postcheck=%s min_ms=%.6f "
         "median_ms=%.6f mean_ms=%.6f effective_bandwidth_gbs=%.6f "

@@ -170,9 +170,10 @@ def print_failed_result(
     grid = triton.cdiv(args.size, implementation.block_size)
     print(
         "RESULT"
+        " operator=vector-add"
         f" implementation={implementation.name}"
         " runtime=triton"
-        f" size={args.size}"
+        f" shape={args.size}"
         " dtype=float32"
         f" block={implementation.block_size}"
         f" grid={grid}"
@@ -201,9 +202,10 @@ def print_result(
     status = "OK" if validation.correct else "FAIL"
     print(
         "RESULT"
+        " operator=vector-add"
         f" implementation={implementation.name}"
         " runtime=triton"
-        f" size={args.size}"
+        f" shape={args.size}"
         " dtype=float32"
         f" block={implementation.block_size}"
         f" grid={grid}"

@@ -1,19 +1,25 @@
-"""Aggregate Chapter 7 RESULT records without inventing missing values."""
+"""Aggregate Chapter 7 RESULT records into curated publication evidence."""
 
 from __future__ import annotations
 
+import argparse
 import csv
+import hashlib
 import json
-import shlex
 import statistics
+import sys
 from collections import defaultdict
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-LOG_DIR = SCRIPT_DIR / "logs"
-PROFILE_DIR = SCRIPT_DIR / "profiles"
-RESULT_DIR = SCRIPT_DIR / "results"
+PART_DIR = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PART_DIR))
+
+from common.evidence import parse_result_line, validate_manifest, validate_records
+
+
 NUMERIC_FIELDS = (
     "min_ms",
     "median_ms",
@@ -34,35 +40,94 @@ TRACE_FIELDS = {
     "Accum_VGPR_Count": "trace_accum_vgpr_count",
     "SGPR_Count": "trace_sgpr_count",
 }
+SOURCE_SUFFIXES = {".hip", ".py", ".sh"}
+UNAVAILABLE = "unavailable"
 
 
-def parse_result_line(line: str, source: Path) -> dict[str, str] | None:
-    if not line.startswith("RESULT "):
-        return None
-    record: dict[str, str] = {"source": str(source.relative_to(SCRIPT_DIR))}
-    for token in shlex.split(line)[1:]:
-        key, separator, value = token.partition("=")
-        if separator:
-            record[key] = value
-    return record
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--chapter-dir", type=Path, default=Path(__file__).resolve().parent
+    )
+    parser.add_argument("--git-commit", required=True)
+    return parser.parse_args()
 
 
-def read_records(paths: list[Path]) -> list[dict[str, str]]:
+@dataclass(frozen=True)
+class ChapterPaths:
+    root: Path
+
+    @property
+    def logs(self) -> Path:
+        return self.root / "logs"
+
+    @property
+    def profiles(self) -> Path:
+        return self.root / "profiles"
+
+    @property
+    def evidence(self) -> Path:
+        return self.root / "evidence"
+
+
+def read_records(paths: list[Path], root: Path) -> list[dict[str, str]]:
     records: list[dict[str, str]] = []
     for path in paths:
         if not path.exists():
             continue
+        source = str(path.relative_to(root))
         for line in path.read_text(encoding="utf-8").splitlines():
-            record = parse_result_line(line, path)
+            record = parse_result_line(line, source=source)
             if record is not None:
                 records.append(record)
     return records
 
 
-def read_trace_fields(implementation: str) -> dict[str, object]:
-    path = PROFILE_DIR / f"{implementation}_kernel_trace.csv"
+def read_environment_value(path: Path, key: str) -> str:
     if not path.exists():
-        return {"trace_dispatches": "NA", **{field: "NA" for field in TRACE_FIELDS.values()}}
+        return UNAVAILABLE
+    for line in path.read_text(encoding="utf-8").splitlines():
+        candidate, separator, value = line.partition("=")
+        if separator and candidate == key:
+            return value or UNAVAILABLE
+    return UNAVAILABLE
+
+
+def read_env_file(path: Path) -> dict[str, str]:
+    if not path.exists():
+        return {}
+    values: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        key, separator, value = line.partition("=")
+        if separator and key:
+            values[key] = value
+    return values
+
+
+def source_sha256(root: Path) -> str:
+    digest = hashlib.sha256()
+    sources = sorted(
+        path
+        for path in root.iterdir()
+        if path.is_file() and path.suffix in SOURCE_SUFFIXES
+    )
+    for path in sources:
+        digest.update(path.name.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def read_trace_fields(paths: ChapterPaths, implementation: str) -> dict[str, object]:
+    unavailable = {
+        "implementation": implementation,
+        "trace_dispatches": UNAVAILABLE,
+        **{field: UNAVAILABLE for field in TRACE_FIELDS.values()},
+    }
+    path = paths.profiles / f"{implementation}_kernel_trace.csv"
+    if not path.exists():
+        return unavailable
 
     with path.open(encoding="utf-8", newline="") as file:
         target_rows = [
@@ -71,40 +136,48 @@ def read_trace_fields(implementation: str) -> dict[str, object]:
             if "vector_add" in row.get("Kernel_Name", "")
         ]
 
-    fields: dict[str, object] = {"trace_dispatches": len(target_rows)}
+    fields: dict[str, object] = {
+        "implementation": implementation,
+        "trace_dispatches": len(target_rows),
+    }
     for source, destination in TRACE_FIELDS.items():
         values = {row[source] for row in target_rows if row.get(source)}
-        fields[destination] = int(next(iter(values))) if len(values) == 1 else "NA"
+        fields[destination] = next(iter(values)) if len(values) == 1 else UNAVAILABLE
     return fields
 
 
 def aggregate(records: list[dict[str, str]]) -> list[dict[str, object]]:
     grouped: dict[str, list[dict[str, str]]] = defaultdict(list)
     for record in records:
-        grouped[record["implementation"]].append(record)
+        grouped[record.get("implementation", "")].append(record)
 
     summary: list[dict[str, object]] = []
     for implementation in sorted(grouped):
         group = grouped[implementation]
         first = group[0]
         row: dict[str, object] = {
-            "implementation": implementation,
-            "runtime": first.get("runtime", "NA"),
-            "size": first.get("size", "NA"),
-            "dtype": first.get("dtype", "NA"),
-            "block": first.get("block", "NA"),
-            "grid": first.get("grid", "NA"),
-            "correct": "OK"
-            if all(item.get("correct") == "OK" for item in group)
-            else "FAIL",
-            "run_count": len(group),
+            key: first[key]
+            for key in ("operator", "implementation", "runtime", "shape", "dtype")
+            if key in first
         }
-        row.update(read_trace_fields(implementation))
+        row.update(
+            {
+                "block": first.get("block", UNAVAILABLE),
+                "grid": first.get("grid", UNAVAILABLE),
+                "run_count": len(group),
+            }
+        )
+        if all("correct" in item for item in group):
+            row["correct"] = (
+                "OK" if all(item["correct"] == "OK" for item in group) else "FAIL"
+            )
         for field in NUMERIC_FIELDS:
+            if not any(field in item for item in group):
+                continue
             values = [
                 float(item[field])
                 for item in group
-                if item.get(field) not in (None, "NA")
+                if item.get(field) not in (None, "NA", UNAVAILABLE)
             ]
             row[field] = statistics.median(values) if values else "NA"
             if field in RANGE_FIELDS:
@@ -115,31 +188,72 @@ def aggregate(records: list[dict[str, str]]) -> list[dict[str, object]]:
     return summary
 
 
+def write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, object]]) -> None:
+    with path.open("w", encoding="utf-8", newline="") as file:
+        writer = csv.DictWriter(
+            file, fieldnames=fieldnames, lineterminator="\n", extrasaction="ignore"
+        )
+        writer.writeheader()
+        writer.writerows(rows)
+
+
 def main() -> None:
-    independent_paths = sorted((LOG_DIR / "runs").glob("*.log"))
-    records = read_records(independent_paths)
+    args = parse_args()
+    paths = ChapterPaths(args.chapter_dir.resolve())
+    independent_paths = sorted((paths.logs / "runs").glob("*.log"))
+    records = read_records(independent_paths, paths.root)
     source_kind = "independent-runs"
     if not records:
         records = read_records(
-            [LOG_DIR / "hip_benchmark.log", LOG_DIR / "triton_benchmark.log"]
+            [
+                paths.logs / "hip_benchmark.log",
+                paths.logs / "triton_benchmark.log",
+            ],
+            paths.root,
         )
         source_kind = "main-benchmark"
     if not records:
         raise SystemExit("no RESULT records found; run run_all.sh first")
 
     summary = aggregate(records)
-    RESULT_DIR.mkdir(parents=True, exist_ok=True)
-    fieldnames = [
+    manifest = {
+        "operator": "vector-add",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "git_commit": args.git_commit,
+        "source_sha256": source_sha256(paths.root),
+        "hardware": read_environment_value(
+            paths.logs / "environment.log", "torch.cuda.device_name"
+        ),
+        "software": {
+            "rocm": read_environment_value(
+                paths.logs / "environment.log", "torch.version.hip"
+            ),
+            "torch": read_environment_value(paths.logs / "environment.log", "torch"),
+            "triton": read_environment_value(
+                paths.logs / "environment.log", "triton"
+            ),
+        },
+        "benchmark": read_env_file(paths.logs / "benchmark_manifest.env"),
+    }
+    errors = (
+        validate_records(records)
+        + validate_records(summary)
+        + validate_manifest(manifest)
+    )
+    if errors:
+        raise SystemExit("\n".join(errors))
+
+    paths.evidence.mkdir(parents=True, exist_ok=True)
+    summary_fields = [
+        "operator",
         "implementation",
         "runtime",
-        "size",
+        "shape",
         "dtype",
         "block",
         "grid",
         "correct",
         "run_count",
-        "trace_dispatches",
-        *TRACE_FIELDS.values(),
         *NUMERIC_FIELDS,
         "median_ms_run_min",
         "median_ms_run_max",
@@ -147,21 +261,29 @@ def main() -> None:
         "effective_bandwidth_gbs_run_max",
         "sources",
     ]
-    with (RESULT_DIR / "summary.csv").open("w", encoding="utf-8", newline="") as file:
-        writer = csv.DictWriter(file, fieldnames=fieldnames, lineterminator="\n")
-        writer.writeheader()
-        writer.writerows(summary)
-
+    write_csv(paths.evidence / "summary.csv", summary_fields, summary)
     payload = {
         "status": "measured",
         "source_kind": source_kind,
         "records": summary,
     }
-    (RESULT_DIR / "summary.json").write_text(
+    (paths.evidence / "summary.json").write_text(
         json.dumps(payload, ensure_ascii=True, indent=2) + "\n",
         encoding="utf-8",
     )
-    print(f"wrote {len(summary)} implementations to {RESULT_DIR}")
+    profile_rows = [
+        read_trace_fields(paths, str(row["implementation"])) for row in summary
+    ]
+    write_csv(
+        paths.evidence / "profile_summary.csv",
+        ["implementation", "trace_dispatches", *TRACE_FIELDS.values()],
+        profile_rows,
+    )
+    (paths.evidence / "manifest.json").write_text(
+        json.dumps(manifest, ensure_ascii=True, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    print(f"wrote {len(summary)} implementations to {paths.evidence}")
 
 
 if __name__ == "__main__":
