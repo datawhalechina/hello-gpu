@@ -63,6 +63,10 @@ PATH="${fake_bin}:${PATH}" \
         '*' > "${actual_output}"
 
 cmp -s "${expected_output}" "${actual_output}"
+if ! grep -Fq "&& exec -- 'printf'" "${fake_ssh_command}"; then
+    echo "run command is missing the exec -- boundary" >&2
+    exit 1
+fi
 grep -Fq "'semi; printf injected'" "${fake_ssh_command}"
 grep -Fq "'dollar\$(printf injected)'" "${fake_ssh_command}"
 

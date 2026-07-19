@@ -53,7 +53,7 @@ case "${command}" in
         fi
 
         remote_chapter_dir="${REMOTE_ROOT}/code/part2-kernels/${chapter}"
-        remote_run_command="cd -- $(quote_for_remote_shell "${remote_chapter_dir}") && exec"
+        remote_run_command="cd -- $(quote_for_remote_shell "${remote_chapter_dir}") && exec --"
         for argument in "$@"; do
             remote_run_command+=" $(quote_for_remote_shell "${argument}")"
         done
