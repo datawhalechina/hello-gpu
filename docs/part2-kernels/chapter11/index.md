@@ -1,6 +1,6 @@
 ---
 title: "第11章 Fusion：融合算子"
-description: "Hello GPU 第11章 · 用 FlashAttention-style 在线 Attention 学习减少中间写回与 IO-aware"
+description: "Hello GPU 第11章 · 以 FlashAttention 为例，学习在线计算、减少中间写回与 IO-aware"
 ---
 
 # 第11章 Fusion：融合算子
