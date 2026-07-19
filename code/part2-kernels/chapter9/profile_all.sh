@@ -9,6 +9,8 @@ PROFILE_WARMUP="${PROFILE_WARMUP:-0}"; PROFILE_REPEAT="${PROFILE_REPEAT:-5}"; PR
 trap 'rm -rf "${BUILD_DIR}"' EXIT; mkdir -p "${PROFILE_DIR}"; source "${PART_DIR}/activate-rocm.sh"
 hipcc --offload-arch="${GPU_ARCH}" -O3 -std=c++17 "${SCRIPT_DIR}/softmax_hip.hip" -o "${BUILD_DIR}/softmax_hip"
 profile() { local label="$1"; shift; rocprofv3 --kernel-trace --output-directory "${PROFILE_DIR}" --output-file "${label}" --output-format csv -- "$@"; }
-for version in baseline fused; do profile "hip-${version}" "${BUILD_DIR}/softmax_hip" --version "${version}" --rows "${ROWS}" --cols "${COLS}" --block "${HIP_BLOCK}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"; done
-for version in t0 t1; do profile "triton-${version}" python "${SCRIPT_DIR}/softmax_triton.py" --version "${version}" --rows "${ROWS}" --cols "${COLS}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"; done
+profile "hip-baseline-3kernel" "${BUILD_DIR}/softmax_hip" --version baseline --rows "${ROWS}" --cols "${COLS}" --block "${HIP_BLOCK}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"
+profile "hip-fused-block-lds" "${BUILD_DIR}/softmax_hip" --version fused --rows "${ROWS}" --cols "${COLS}" --block "${HIP_BLOCK}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"
+profile "triton-t0-compact" python "${SCRIPT_DIR}/softmax_triton.py" --version t0 --rows "${ROWS}" --cols "${COLS}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"
+profile "triton-t1-wide" python "${SCRIPT_DIR}/softmax_triton.py" --version t1 --rows "${ROWS}" --cols "${COLS}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"
 printf 'source_commit=%s\nrows=%s\ncols=%s\nhip_block=%s\nseed=%s\n' "${SOURCE_COMMIT}" "${ROWS}" "${COLS}" "${HIP_BLOCK}" "${SEED}" > "${PROFILE_DIR}/profile_config.env"

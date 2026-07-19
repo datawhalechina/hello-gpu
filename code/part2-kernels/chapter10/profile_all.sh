@@ -9,6 +9,8 @@ PROFILE_WARMUP="${PROFILE_WARMUP:-0}"; PROFILE_REPEAT="${PROFILE_REPEAT:-5}"; PR
 trap 'rm -rf "${BUILD_DIR}"' EXIT; mkdir -p "${PROFILE_DIR}"; source "${PART_DIR}/activate-rocm.sh"
 hipcc --offload-arch="${GPU_ARCH}" -O3 -std=c++17 "${SCRIPT_DIR}/matmul_hip.hip" -o "${BUILD_DIR}/matmul_hip"
 profile() { local label="$1"; shift; rocprofv3 --kernel-trace --output-directory "${PROFILE_DIR}" --output-file "${label}" --output-format csv -- "$@"; }
-for version in naive tiled; do profile "hip-${version}" "${BUILD_DIR}/matmul_hip" --version "${version}" --m "${M}" --n "${N}" --k "${K}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"; done
-for version in torch baseline grouped; do profile "triton-${version}" python "${SCRIPT_DIR}/matmul_triton.py" --version "${version}" --m "${M}" --n "${N}" --k "${K}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"; done
+profile "hip-naive" "${BUILD_DIR}/matmul_hip" --version naive --m "${M}" --n "${N}" --k "${K}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"
+profile "hip-tiled" "${BUILD_DIR}/matmul_hip" --version tiled --m "${M}" --n "${N}" --k "${K}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"
+profile "triton-baseline" python "${SCRIPT_DIR}/matmul_triton.py" --version baseline --m "${M}" --n "${N}" --k "${K}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"
+profile "triton-grouped" python "${SCRIPT_DIR}/matmul_triton.py" --version grouped --m "${M}" --n "${N}" --k "${K}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"
 printf 'source_commit=%s\nm=%s\nn=%s\nk=%s\nseed=%s\n' "${SOURCE_COMMIT}" "${M}" "${N}" "${K}" "${SEED}" > "${PROFILE_DIR}/profile_config.env"

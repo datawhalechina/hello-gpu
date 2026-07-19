@@ -17,6 +17,9 @@ mkdir -p "${PROFILE_DIR}"
 source "${PART_DIR}/activate-rocm.sh"
 hipcc --offload-arch="${GPU_ARCH}" -O3 -std=c++17 "${SCRIPT_DIR}/reduction_hip.hip" -o "${BUILD_DIR}/reduction_hip"
 profile() { local label="$1"; shift; rocprofv3 --kernel-trace --output-directory "${PROFILE_DIR}" --output-file "${label}" --output-format csv -- "$@"; }
-for version in atomic lds two-stage; do profile "hip-${version}" "${BUILD_DIR}/reduction_hip" --version "${version}" --size "${SIZE}" --block "${BLOCK}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"; done
-for version in t0 t1; do profile "triton-${version}" python "${SCRIPT_DIR}/reduction_triton.py" --version "${version}" --size "${SIZE}" --block "${TRITON_BLOCK}" --programs "${TRITON_PROGRAMS}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"; done
+profile "hip-atomic" "${BUILD_DIR}/reduction_hip" --version atomic --size "${SIZE}" --block "${BLOCK}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"
+profile "hip-lds" "${BUILD_DIR}/reduction_hip" --version lds --size "${SIZE}" --block "${BLOCK}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"
+profile "hip-two-stage" "${BUILD_DIR}/reduction_hip" --version two-stage --size "${SIZE}" --block "${BLOCK}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"
+profile "triton-t0" python "${SCRIPT_DIR}/reduction_triton.py" --version t0 --size "${SIZE}" --block "${TRITON_BLOCK}" --programs "${TRITON_PROGRAMS}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"
+profile "triton-t1-local" python "${SCRIPT_DIR}/reduction_triton.py" --version t1 --size "${SIZE}" --block "${TRITON_BLOCK}" --programs "${TRITON_PROGRAMS}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"
 printf 'source_commit=%s\nsize=%s\nblock=%s\ntriton_block=%s\nseed=%s\n' "${SOURCE_COMMIT}" "${SIZE}" "${BLOCK}" "${TRITON_BLOCK}" "${SEED}" > "${PROFILE_DIR}/profile_config.env"

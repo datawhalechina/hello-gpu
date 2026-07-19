@@ -80,6 +80,23 @@ class FormalEntrypointsTest(unittest.TestCase):
                 self.assertIn("postcheck", source)
                 self.assertIn("seed={args.seed}", source)
 
+    def test_profile_labels_match_published_implementations(self) -> None:
+        expected_labels = {
+            "chapter8": ("hip-atomic", "hip-lds", "hip-two-stage", "triton-t0", "triton-t1-local"),
+            "chapter9": ("hip-baseline-3kernel", "hip-fused-block-lds", "triton-t0-compact", "triton-t1-wide"),
+            "chapter10": ("hip-naive", "hip-tiled", "triton-baseline", "triton-grouped"),
+        }
+        for chapter, labels in expected_labels.items():
+            source = (ROOT / chapter / "profile_all.sh").read_text(encoding="utf-8")
+            for label in labels:
+                with self.subTest(chapter=chapter, label=label):
+                    self.assertIn(f'profile "{label}"', source)
+
+    def test_chapter10_profile_skips_torch_baseline(self) -> None:
+        source = (ROOT / "chapter10" / "profile_all.sh").read_text(encoding="utf-8")
+        self.assertNotIn('profile "torch-mm"', source)
+        self.assertNotIn("for version in torch", source)
+
 
 if __name__ == "__main__":
     unittest.main()
