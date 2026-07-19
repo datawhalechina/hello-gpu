@@ -199,12 +199,12 @@ export const parts = [
         title: 'Fusion：融合算子',
         summary: '以 FlashAttention 为例，学习在线计算、减少中间写回与 IO-aware',
         status: '🚧',
-        lead: '本章把前四章的模式组合起来：矩阵乘产生 Scores，Softmax 做归一化，再与 V 相乘。公共部分先比较物化与在线数据流；HIP/Triton 两篇分别实现教学版前向 FlashAttention，并用完整路径验证减少中间写回的价值。',
+        lead: '本章把前四章的模式组合起来：矩阵乘产生 Scores，Softmax 做归一化，再与 V 相乘。公共部分先比较物化与在线数据流；HIP/Triton 两条路线分别实现教学版前向 Attention，并为后续远端实验保留统一入口。',
         sections: [
           ['从普通 Attention 数据流开始', '只补本章需要的 Q/K/V、Scores、Softmax 与输出。'],
           ['物化中间矩阵的代价', '画出三段 kernel 与 Scores/P 的全局读写路径。'],
           ['在线 Softmax 怎样保持精确', '手算 running max、normalizer、历史重缩放与输出累加。'],
-          ['固定语义、边界与测量口径', '明确 FP16 输入、FP32 累加、causal、尾块和完整时间。'],
+          ['固定语义、边界与测量口径', '先用单 batch、单 head、FP32 前向固定数学语义、尾块和完整时间，再把 causal 与低精度留作练习。'],
           ['HIP h0/h1：从物化基线到在线融合', '先消除完整中间矩阵，再验证正确性。'],
           ['HIP h2–h4：Wave、query/key 分块与 K/V 复用', '每轮只改变一个机制并跟踪资源代价。'],
           ['Triton t0：物化基线', '保持与 HIP 相同的数学语义与计时边界。'],
@@ -217,7 +217,7 @@ export const parts = [
         title: '综合实战：Fused RMSNorm',
         summary: '综合逐元素、归约与融合，独立完成一次可复现的 Kernel 优化闭环',
         status: '🚧',
-        lead: '本章是 Part 2 的综合终章：不再引入新的优化名词，而是用 Fused RMSNorm 把逐元素、归约、融合、正确性、benchmark 与 profiling 串成一次独立完成的优化记录。当前只保留后续实现 phase 的范围大纲，不包含尚未验证的代码或性能数字。',
+        lead: '本章是 Part 2 的综合终章：不再引入新的优化名词，而是用 Fused RMSNorm 把逐元素、归约、融合、正确性、benchmark 与 profiling 串成一次独立完成的优化记录。第一版已经提供 HIP/Triton 教学代码和复跑入口，性能数字仍等待统一远端复测。',
         sections: [
           ['从 LayerNorm 到 RMSNorm', '从公式和数据流解释 RMSNorm 保留了什么、移除了什么，以及它为什么适合作为综合题。'],
           ['固定数学语义、误差和目标 Shape', '先锁定 dtype、归约轴、epsilon、参考实现、误差标准和目标输入，再讨论优化。'],
