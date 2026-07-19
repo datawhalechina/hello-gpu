@@ -37,7 +37,8 @@ fake_ssh_called="${test_tmp}/ssh-called"
 fake_rsync_called="${test_tmp}/rsync-called"
 fake_rsync_args="${test_tmp}/rsync-args"
 fake_remote_rsync_called="${test_tmp}/remote-rsync-called"
-remote_root="${test_tmp}/remote root' ;\$(touch pwned);#"
+pwned_marker="${test_tmp}/pwned"
+remote_root="${test_tmp}/remote root' ;\$(touch \"${pwned_marker}\");#"
 outside_root="${test_tmp}/outside"
 mkdir -p "${fake_bin}" "${remote_root}/code/part2-kernels/chapter7"
 
@@ -118,7 +119,7 @@ PATH="${fake_bin}:${PATH}" \
 [[ -e "${fake_remote_rsync_called}" ]]
 grep -Fxq '<fake-host:.>' "${fake_rsync_args}"
 grep -Fq '<--rsync-path=' "${fake_rsync_args}"
-[[ ! -e "${test_tmp}/pwned" ]]
+[[ ! -e "${pwned_marker}" ]]
 rm -f "${fake_rsync_called}"
 rm -f "${fake_remote_rsync_called}"
 
@@ -135,7 +136,7 @@ PATH="${fake_bin}:${PATH}" \
 [[ ! -e "${fake_ssh_called}" ]]
 [[ -e "${fake_remote_rsync_called}" ]]
 grep -Fxq '<fake-host:.>' "${fake_rsync_args}"
-[[ ! -e "${test_tmp}/pwned" ]]
+[[ ! -e "${pwned_marker}" ]]
 rm -f "${fake_rsync_called}"
 rm -f "${fake_remote_rsync_called}"
 

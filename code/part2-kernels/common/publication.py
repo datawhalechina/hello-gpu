@@ -51,6 +51,21 @@ SUMMARY_IDENTITY_FIELDS = (
     "dim",
     "dtype",
 )
+REQUIRED_RECORD_FIELDS = (
+    "operator",
+    "implementation",
+    "runtime",
+    "shape",
+    "dtype",
+    "warmup",
+    "repeat",
+    "seed",
+    "timed",
+    "correct",
+    "precheck",
+    "postcheck",
+    "median_ms",
+)
 METRIC_FIELDS = (
     "min_ms",
     "median_ms",
@@ -102,6 +117,7 @@ def validate_run_logs(
 
     records_by_source = [_read_records(path) for path in run_logs]
     expected_implementations: set[str] | None = None
+    expected_runtimes: dict[str, str] = {}
     reference_identity: dict[str, str] | None = None
     flattened: list[dict[str, str]] = []
 
@@ -118,6 +134,12 @@ def validate_run_logs(
             raise PublicationError("each process must contain the same implementations")
 
         for record in records:
+            missing = [field for field in REQUIRED_RECORD_FIELDS if field not in record]
+            if missing:
+                raise PublicationError(
+                    f"{record['source']} {record.get('implementation', '?')} "
+                    f"missing required fields: {','.join(missing)}"
+                )
             if record.get("operator") != operator:
                 raise PublicationError(
                     f"operator mismatch in {record['source']}: {record.get('operator')}"
@@ -127,6 +149,18 @@ def validate_run_logs(
                     raise PublicationError(
                         f"{record['source']} {record['implementation']} {status} is not OK"
                     )
+            if record["timed"] != "1":
+                raise PublicationError(
+                    f"{record['source']} {record['implementation']} timed is not 1"
+                )
+            expected_runtime = expected_runtimes.setdefault(
+                record["implementation"], record["runtime"]
+            )
+            if record["runtime"] != expected_runtime:
+                raise PublicationError(
+                    f"runtime mismatch for {record['implementation']}: "
+                    f"{record['runtime']} != {expected_runtime}"
+                )
             _finite_positive(record, "median_ms")
 
             identity = {field: record[field] for field in IDENTITY_FIELDS if field in record}
@@ -188,14 +222,20 @@ def summarize_profiles(profile_dir: Path | None) -> list[dict[str, object]]:
     if not profile_dir.is_dir():
         raise PublicationError(f"profile directory does not exist: {profile_dir}")
 
+    trace_paths = sorted(profile_dir.rglob("*kernel_trace.csv"))
+    if not trace_paths:
+        raise PublicationError(f"profile directory has no kernel trace CSV: {profile_dir}")
+
     rows: list[dict[str, object]] = []
-    for path in sorted(profile_dir.rglob("*.csv")):
+    for path in trace_paths:
         with path.open(encoding="utf-8", newline="") as stream:
             reader = csv.DictReader(stream)
             records = list(reader)
             fields = set(reader.fieldnames or ())
-        if not records or "Kernel_Name" not in fields:
-            continue
+        if "Kernel_Name" not in fields:
+            raise PublicationError(f"profile CSV lacks Kernel_Name: {path}")
+        if not records:
+            raise PublicationError(f"profile CSV has no dispatch rows: {path}")
         kernel_names = sorted({row.get("Kernel_Name", "") for row in records if row.get("Kernel_Name")})
         row: dict[str, object] = {
             "implementation": path.stem.replace("_kernel_trace", "").replace("-kernel_trace", ""),
@@ -208,6 +248,9 @@ def summarize_profiles(profile_dir: Path | None) -> list[dict[str, object]]:
                 values = sorted({record[field] for record in records if record.get(field)})
                 row[field.lower()] = values[0] if len(values) == 1 else UNAVAILABLE
         rows.append(row)
+    implementations = [str(row["implementation"]) for row in rows]
+    if len(implementations) != len(set(implementations)):
+        raise PublicationError("duplicate implementation profile CSV")
     return rows
 
 
@@ -265,6 +308,18 @@ def publish(
     summary = aggregate(records)
     profiles = summarize_profiles(profile_dir)
     environment = read_environment(environment_file)
+    if profile_dir is not None:
+        expected_profiled = {
+            record["implementation"]
+            for record in records
+            if record["runtime"] in {"hip", "triton"}
+        }
+        actual_profiled = {str(row["implementation"]) for row in profiles}
+        if actual_profiled != expected_profiled:
+            raise PublicationError(
+                "profile implementation set mismatch: "
+                f"expected={sorted(expected_profiled)} actual={sorted(actual_profiled)}"
+            )
 
     manifest = {
         "operator": operator,
