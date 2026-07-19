@@ -121,6 +121,8 @@ export const parts = [
     navText: '算子优化',
     title: '经典算子与 Kernel 实战',
     readmeTitle: '第 2 篇：经典算子与 Kernel 实战',
+    landing: '/part2-kernels/',
+    landingSource: 'docs/part2-kernels/index.md',
     chapters: [
       {
         title: 'Element-Wise：逐元素算子',
@@ -212,21 +214,19 @@ export const parts = [
         ]
       },
       {
-        title: 'Kernel 实战：LeetGPU',
-        summary: '读题、分类、本地评测、提交、调试与性能迭代',
+        title: '综合实战：Fused RMSNorm',
+        summary: '综合逐元素、归约与融合，独立完成一次可复现的 Kernel 优化闭环',
         status: '🚧',
-        lead: '本章把前面五类算子积累的经验变成一套真正可执行的刷题流程：读懂接口与约束、判断题型、先写正确版本、用本地评测器覆盖边界、再到平台运行和提交。平台托管成绩与本书 9070XT 本地实验分开记录，但读题、验证和迭代的方法可以相互迁移。',
+        lead: '本章是 Part 2 的综合终章：不再引入新的优化名词，而是用 Fused RMSNorm 把逐元素、归约、融合、正确性、benchmark 与 profiling 串成一次独立完成的优化记录。当前只保留后续实现 phase 的范围大纲，不包含尚未验证的代码或性能数字。',
         sections: [
-          ['LeetGPU 题目与当前平台边界', '写作时重新核对官方支持语言、评分和提交环境，并把平台托管结果与 9070XT 本地实验分开。'],
-          ['一道 Kernel 题由什么组成', '读清函数签名、输入约束、正确性、性能 shape 和评分口径。'],
-          ['先把题目归类', '映射到 Element-Wise、Reduction、Normalization、GEMM-Like 或 Fusion，再选择熟悉的模式。'],
-          ['建立参考实现与本地评测器', '先喂输入、对答案、覆盖边界，再在 9070XT 上做独立计时。'],
-          ['把第 7 章 Triton 模板改成提交模板', '复用 kernel、grid、mask 与测试骨架，不在本章第一次教授 Triton。'],
-          ['完整走一题：从正确到可优化', '展示读题、t0、失败样例、性能假设、t1 和复测全过程。'],
-          ['怎么读 benchmark 与排行榜', '区分平台噪声、隐藏 shape、单点特化和可泛化实现。'],
-          ['常见错误与调试顺序', '按越界、mask、布局、dtype、数值误差、编译失败和超时的顺序排查。'],
-          ['一条循序渐进的刷题路线', '按第 7–11 章的依赖顺序安排题型，不承诺具体排名或 AC。'],
-          ['从 LeetGPU 带回 9070XT', '说明哪些方法可以迁移，哪些平台成绩不能当作 AMD 实测数据。']
+          ['从 LayerNorm 到 RMSNorm', '从公式和数据流解释 RMSNorm 保留了什么、移除了什么，以及它为什么适合作为综合题。'],
+          ['固定数学语义、误差和目标 Shape', '先锁定 dtype、归约轴、epsilon、参考实现、误差标准和目标输入，再讨论优化。'],
+          ['HIP：从分步 Baseline 到融合实现', '先建立分步正确版本，再逐次验证归约、数据驻留与融合边界。'],
+          ['Triton：一行一个 Program', '用一个 program 覆盖一行，受控实验 block size、num warps 与长行边界。'],
+          ['正确性、Benchmark 与 Profiling', '用统一矩阵、kernel-only 口径和可追溯证据比较各版本。'],
+          ['独立优化记录与失败回退', '保留每轮假设、单变量改动、负结果和回退点，形成可复跑报告。'],
+          ['从 RMSNorm 迁移到新题目', '把逐元素、归约和融合模式迁移到新的算子规格，而不是背最终代码。'],
+          ['拓展练习：LeetGPU 与其他平台', '平台题目、运行环境与评分口径单独核对，平台成绩不替代本地实验。']
         ]
       }
     ]
@@ -393,6 +393,7 @@ export const navItems = [
 export const sidebar = [
   ...parts.map((part) => ({
     text: part.readmeTitle,
+    ...(part.landing ? { link: part.landing } : {}),
     collapsed: false,
     items: chapters
       .filter((chapter) => chapter.part.prefix === part.prefix)

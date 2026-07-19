@@ -42,13 +42,13 @@ https://datawhalechina.github.io/hello-gpu/
 | [第 4 章 benchmark 与可信计时](https://github.com/datawhalechina/hello-gpu/blob/main/docs/part1-profiling/chapter4/index.md) | 热身、重复、GPU event、避免测量陷阱 | 🚧 |
 | [第 5 章 用 rocprof 找到慢在哪里](https://github.com/datawhalechina/hello-gpu/blob/main/docs/part1-profiling/chapter5/index.md) | 对照两个 vector add，只看 kernel 时间、工作划分和 stride 趋势 | 🚧 |
 | [第 6 章 读懂 Roofline 图](https://github.com/datawhalechina/hello-gpu/blob/main/docs/part1-profiling/chapter6/index.md) | 看懂参考线、生成工作点并选择排查方向 | 🚧 |
-| **第 2 篇：经典算子与 Kernel 实战** | | |
+| **[第 2 篇：经典算子与 Kernel 实战](https://github.com/datawhalechina/hello-gpu/blob/main/docs/part2-kernels/index.md)** | | |
 | [第 7 章 Element-Wise：逐元素算子](https://github.com/datawhalechina/hello-gpu/blob/main/docs/part2-kernels/chapter7/index.md) | 以 Vector Add 为例，分别用 HIP 深入理解访存，用 Triton 快速掌握 tile 编程 | 🚧 |
 | [第 8 章 Reduction：归约算子](https://github.com/datawhalechina/hello-gpu/blob/main/docs/part2-kernels/chapter8/index.md) | 以 Sum Reduction 为例，学习跨线程协作、LDS 与 Wave Shuffle | 🚧 |
 | [第 9 章 Normalization：归一化算子](https://github.com/datawhalechina/hello-gpu/blob/main/docs/part2-kernels/chapter9/index.md) | 以行级 Softmax 为例，学习数值稳定与逐元素/归约融合 | 🚧 |
 | [第 10 章 GEMM-Like：矩阵乘类算子](https://github.com/datawhalechina/hello-gpu/blob/main/docs/part2-kernels/chapter10/index.md) | 以 Matmul 为例，学习分块、数据复用与寄存器累加 | 🚧 |
 | [第 11 章 Fusion：融合算子](https://github.com/datawhalechina/hello-gpu/blob/main/docs/part2-kernels/chapter11/index.md) | 以 FlashAttention 为例，学习在线计算、减少中间写回与 IO-aware | 🚧 |
-| [第 12 章 Kernel 实战：LeetGPU](https://github.com/datawhalechina/hello-gpu/blob/main/docs/part2-kernels/chapter12/index.md) | 读题、分类、本地评测、提交、调试与性能迭代 | 🚧 |
+| [第 12 章 综合实战：Fused RMSNorm](https://github.com/datawhalechina/hello-gpu/blob/main/docs/part2-kernels/chapter12/index.md) | 综合逐元素、归约与融合，独立完成一次可复现的 Kernel 优化闭环 | 🚧 |
 | **第 3 篇：Agent（算子层）** | | |
 | [第 13 章 Agent 入门](https://github.com/datawhalechina/hello-gpu/blob/main/docs/part3-agent/chapter13/index.md) | 参考 hello-agents、LLM Agent 基本范式、工具调用 | 🚧 |
 | [第 14 章 工具封装](https://github.com/datawhalechina/hello-gpu/blob/main/docs/part3-agent/chapter14/index.md) | benchmark/profiling/编译包成 Agent 可调用工具 | 🚧 |

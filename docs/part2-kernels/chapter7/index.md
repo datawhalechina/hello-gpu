@@ -9,19 +9,21 @@ import ElementwiseJourney from './elementwise-journey.vue'
 
 # 第7章 Element-Wise：逐元素算子
 
-## 本章导读
+## 本章目标、前置知识与产物
 
 > 如果把 GPU 算子比作一组流水线任务，Element-Wise（逐元素）就是最容易看清的一类：输出位置 `i` 只需要输入位置 `i`，不必等待其他位置。我们从 Vector Add（向量加法）开始，用同一道题走两条路线。HIP 篇把线程、地址与显存访问拆开讲；Triton 篇用一个 program 处理一块数据，先建立能快速修改的最小模板。
 
-第 3 章已经带你第一次跑通 Vector Add，第 4–6 章已经介绍计时与性能分析。本章不重走安装流程，而是第一次回答四个“算子优化”问题：**同一个计算怎样用两种编程范式表达、数据怎样分给并行执行单元、地址怎样排列、改动是否真的有效。**
+第 3 章已经带你第一次跑通 Vector Add，第 4–6 章已经介绍可信计时、kernel trace 与 Roofline 读图。本章不重走安装和完整 Roofline 推导，而是第一次回答四个“算子优化”问题：**同一个计算怎样用两种编程范式表达、数据怎样分给并行执行单元、地址怎样排列、改动是否真的有效。**
+
+学完后，你需要能交付三样东西：一份覆盖尾部输入的正确性结果；一张能追溯到 curated evidence 的 benchmark/profile 对照；一份写清负结果、适用边界和下一步的实验记录。
 
 你不必把两条路线一次读完。先按自己的目标选择：
 
 | 阅读路线 | 更适合谁 | 建议顺序 | 能带走什么 |
 | ---- | ---- | ---- | ---- |
-| 完整路线 | 第一次系统学习 GPU Kernel，希望理解两种写法 | 7.1 → 7.2 → 7.3 → 7.4 → 7.5 → 7.6 → 7.7 | 同一个算子从数学语义到实验闭环的全貌 |
-| [HIP 篇](#74-hip-篇看清线程与显存) | 想看清 thread、wavefront、显存地址与向量加载，愿意写 C++ | 7.1 → 7.2 → 7.3 → 7.4 → 7.6 → 7.7 | 更强的底层控制与性能分析入口 |
-| [Triton 篇](#75-triton-篇用-tile-快速表达) | 熟悉 Python/PyTorch，想先快速写出可验证的自定义算子 | 7.1 → 7.2 → 7.3 → 7.5 → 7.6 → 7.7 | program/tile/mask 的最小心智模型 |
+| 完整路线 | 第一次系统学习 GPU Kernel，希望理解两种写法 | 7.1 → 7.2 → 7.3 → 7.4 → 7.5 → 7.6 → 7.7 → 7.8 → 7.9 | 同一个算子从数学语义到实验闭环的全貌 |
+| [HIP 路线](#_7-4-hip-从标量线程到受控访存实验) | 想看清 thread、wavefront、显存地址与向量加载，愿意写 C++ | 7.1 → 7.2 → 7.3 → 7.4 → 7.6 → 7.8 → 7.9 | 更强的底层控制与性能分析入口 |
+| [Triton 路线](#_7-5-triton-从最小-tile-到参数实验) | 熟悉 Python/PyTorch，想先快速写出可验证的自定义算子 | 7.1 → 7.2 → 7.3 → 7.5 → 7.6 → 7.8 → 7.9 | program/tile/mask 的最小心智模型 |
 
 ::: tip 先记住一句话
 HIP 常从“当前 thread 得到哪个标量下标”出发；Triton 常从“当前 program 生成哪一块下标”出发。两者最后都必须回答同一件事：**读了哪些地址，算了什么，写回哪里。**
@@ -116,7 +118,7 @@ HIP：    当前 thread → 标量 index   → 标量 load / add / store
 Triton： 当前 program → 一块 offsets → 分块 load / add / store
 ```
 
-两条路线改变的是源码直接控制的层次，不是 Vector Add 的数学语义。它们都要覆盖相同的有效下标，也都要经过正确性检查与实测，不能因为抽象层次更高或更低就预设谁更快。真实的 HIP API 留到 [7.4](#74-hip-篇看清线程与显存)，Triton 最小模板留到 [7.5](#75-triton-篇用-tile-快速表达) 再逐行展开。
+两条路线改变的是源码直接控制的层次，不是 Vector Add 的数学语义。它们都要覆盖相同的有效下标，也都要经过正确性检查与实测，不能因为抽象层次更高或更低就预设谁更快。真实的 HIP API 留到 [7.4](#_7-4-hip-从标量线程到受控访存实验)，Triton 最小模板留到 [7.5](#_7-5-triton-从最小-tile-到参数实验) 再逐行展开。
 
 ### 7.1.3 什么不属于这一类
 
@@ -124,7 +126,7 @@ Triton： 当前 program → 一块 offsets → 分块 load / add / store
 
 因此，“输入输出形状相同”不是逐元素的充分条件。真正重要的是**输出位置之间能不能独立完成**。
 
-## 7.2 用 Vector Add 固定问题
+## 7.2 固定数学语义与正确性标准
 
 ### 7.2.1 先用 4 个元素手算
 
@@ -176,7 +178,7 @@ reference = input_a + input_b
 
 边界长度专门检查最后一组不完整的位置。例如 `N=13`、候选下标为 `8–15` 时，只有 `8–12` 有效：HIP 由各 thread 的标量 `if` 关闭越界下标，Triton 由 mask 逐位置关闭越界 load/store。这是在落实 @fig-hip-triton-paradigms 的同一条规则，不再引入第三种分工方式。
 
-## 7.3 一次加法要搬多少数据
+## 7.3 建立成本模型和瓶颈假设
 
 ### 7.3.1 真正忙的可能不是加法器
 
@@ -203,7 +205,7 @@ $$
 
 > Vector Add 每搬 12 Byte 只做 1 次加法，当前大 shape 可能更容易受显存带宽限制，而不是受浮点计算吞吐限制。
 
-可以把 `0.083 FLOP/Byte` 放进坐标系：9070XT 的 FP32 峰值算力与显存带宽相除，得到的“平衡点”在几十 FLOP/Byte 量级。Vector Add 的算术强度比这个平衡点低两个数量级以上，意味着即使把加法器全部跑满，数据也供不上——瓶颈大概率在搬运，不在计算。注意用词仍是“大概率”。后文会用 Radeon RX 9070 XT 上的 GPU event 时间和受控地址实验检验它。即使有效带宽接近本机可达到的水平，也只能说明结果与带宽受限假设一致；没有物理流量计数器时，不能把逻辑字节直接当成显存事务。
+第 6 章已经解释怎样在 Roofline 上读工作点；这里不再重推硬件参考线，只保留与当前算子直接相关的假设：Vector Add 的逻辑算术强度很低，当前大 shape 更可能先受数据搬运限制。注意用词仍是“更可能”。后文会用 Radeon RX 9070 XT 上的 GPU event 时间和受控地址实验检验它。即使逻辑有效带宽较高，也只能说明结果与带宽受限假设一致；没有物理流量计数器时，不能把逻辑字节直接当成显存事务。
 
 ### 7.3.2 有效带宽怎样算
 
@@ -215,7 +217,7 @@ $$
 
 其中 `t` 是一次 kernel 的 GPU event 时间。这个指标适合在**相同语义、相同 shape、相同计时范围**下比较版本，但它不等于内存控制器实际传输了多少字节。物理流量必须由可用的硬件计数器或更进一步的分析支持。
 
-## 7.4 HIP 篇：看清线程与显存
+## 7.4 HIP：从标量线程到受控访存实验
 
 ### 7.4.1 这条路线适合谁
 
@@ -317,9 +319,9 @@ index = base + lane * 32 + round;
 
 > 在当前 9070XT、当前 shape 与当前编译结果下，只改变 wave 内地址顺序，kernel 时间和 trace 是否出现可重复差异？
 
-2026-07-17 的受控实验给出了可重复差异：连续版的三进程 median 是 `0.362 ms`，跨步版是 `2.60 ms`，跨步版用时约为连续版的 `7.17×`。两者的 kernel trace 都记录到相同的 `524,288` 个 work-item、workgroup size 256、VGPR 16、LDS 0 Byte 和 scratch 0 Byte；grid、循环次数、算术与逻辑字节也相同。
+2026-07-19 发布的 curated evidence 给出了可重复差异：连续版的三进程 median 是 `0.369564 ms`，跨步版是 `2.559888 ms`，跨步版用时约为连续版的 `6.93×`。两者的 kernel trace 都记录到相同的 `524,288` 个 work-item、workgroup size 256、VGPR 16、SGPR 128、LDS 0 Byte 和 scratch 0 Byte；grid、循环次数、算术与逻辑字节也相同。
 
-因此，当前证据支持“Wave32 同轮地址顺序显著影响这个 Vector Add”的判断。它仍没有直接数出物理显存事务，所以更严格的措辞是：**受控地址变化与 `7.17×` 时间差同时出现，并且现有 trace 资源字段没有提供其他差异。**
+因此，当前证据支持“Wave32 同轮地址顺序显著影响这个 Vector Add”的判断。它仍没有直接数出物理显存事务，所以更严格的措辞是：**受控地址变化与约 `6.93×` 时间差同时出现，并且现有 trace 资源字段没有提供其他差异。**
 
 ### 7.4.4 HIP v2：Grid-Stride Loop 让线程重复工作
 
@@ -389,21 +391,11 @@ for (std::size_t i = vector_count * 4 + thread;
 
 ### 7.4.6 HIP 路线当前能下什么结论
 
-以下结果均在 **Radeon RX 9070 XT（gfx1201）+ ROCm 7.13 + 原生 Ubuntu 24.04** 上测得。输入为 `N=16,777,216` 个 FP32 元素；每个进程 warmup 10 次、计时 50 次，再对 3 个独立进程的同名指标取中位数。
-
-| 版本 | 已固定的结构 | 9070XT 正确性 | median 时间 | 有效带宽 | 当前结论 |
-| ---- | ---- | ---- | ---- | ---- | ---- |
-| `hip-v0` | 一线程一元素，连续地址 | 通过 | `0.333 ms` | `605 GB/s` | 当前 baseline |
-| `hip-v1-contiguous` | 每 lane 32 元素，逐轮连续 | 通过 | `0.362 ms` | `556 GB/s` | 多轮循环没有超过 v0 |
-| `hip-v1-strided` | 只改变同轮地址顺序 | 通过 | `2.60 ms` | `77.5 GB/s` | 受控跨步访问显著变慢 |
-| `hip-v2` | 受限 grid + Grid-Stride Loop | 通过 | `0.333 ms` | `604 GB/s` | 与 v0 的运行范围重叠 |
-| `hip-v3` | `float4` 主路径 + 标量尾部 | 通过 | `0.342 ms` | `589 GB/s` | 当前配置下没有提速 |
-
-v2 把 block 数从 v0 的 `65,536` 限制为 256，但两者的三进程时间范围重叠，不能声称缩小 grid 带来了收益。v3 与 v2 使用相同的 256 blocks；`float4` 版本反而慢约 `2.52%`，三次复跑都没有超过 v2。这是否定“源码换成向量类型就必然更快”的有效负结果。
+HIP ladder 已经把三个问题拆开：v1 只控制同一轮的地址顺序，v2 改变 grid 与每线程工作方式，v3 再引入源码向量类型和尾部路径。单看代码不能给它们排快慢；统一的正确性、benchmark 和 trace 数据放在 [7.6](#_7-6-正确性、benchmark-与-profiling)，负结果与边界在 [7.8](#_7-8-负结果、适用边界与下一步) 汇总。
 
 完整实现位于 `code/part2-kernels/chapter7/vector_add_hip.hip`。
 
-## 7.5 Triton 篇：用 Tile 快速表达
+## 7.5 Triton：从最小 Tile 到参数实验
 
 ### 7.5.1 这条路线适合谁
 
@@ -412,7 +404,7 @@ Triton 篇更适合下面的读者：
 - 已经会写 Python 或 PyTorch，希望先缩短“想法到可运行 kernel”的距离；
 - 想用一组 offsets 表达一块数据，不急着手工管理每个 thread；
 - 希望快速修改算子表达式、block size 和 program 网格；
-- 后续要在 LeetGPU 等题目中使用 Triton 提交模板。
+- 后续想把 Triton 最小模板迁移到新的逐元素练习。
 
 Triton 不是“无需理解硬件”。它把许多线程级细节交给编译器，但 program 怎样切 tile、地址是否连续、mask 是否正确、参数是否合适，仍由程序员负责。
 
@@ -504,30 +496,79 @@ python chapter7/visualize_triton.py --size 13 --block 8 --launch
 
 浏览器打开 `http://127.0.0.1:5001` 后，Triton-viz 会通过 CPU interpreter 展开 load/store 地址，基础可视化不要求 GPU。它适合回答“访问了哪里、mask 是否挡住越界”，**不用于测量 9070XT 性能**。性能仍由原生 Ubuntu 实验机上的 GPU event 与 `rocprofv3` 负责。
 
-本篇固定 PyPI 发布版 `triton-viz==3.0`，使用它实际提供的实时 `launch()` 接口。官方仓库开发分支已经记录了 `.tvz` 保存接口，但 3.0 wheel 尚未导出 `save/load`；因此本章不写一个在锁定环境里无法运行的 `.tvz` 命令。
+可视化脚本和依赖版本以本篇锁定环境为准；本章只给出仓库中已经维护的实时启动入口，不额外提供未进入当前复跑契约的 `.tvz` 保存命令。
 
 ::: figure fig-triton-viz-live
-![由本章 Vector Add trace 生成的 Triton-viz 实时界面，左侧显示 program 控件和源码位置，右侧显示有效与被 mask 的元素](./images/triton-viz-vector-add.png)
+![Triton-viz 实时界面，左侧显示 program 控件和源码位置，右侧显示有效与被 mask 的元素](./images/triton-viz-vector-add.png)
 
-本章脚本在 Triton 3.6.0 + Triton-viz 3.0 的 x86 Linux CPU interpreter 中生成的实时界面：拖动 program 滑块切换 program，右侧青色位置表示有效元素，灰色位置表示尾部 mask。
+本章配套的 Triton-viz 实时界面：拖动 program 滑块切换 program，右侧青色位置表示有效元素，灰色位置表示尾部 mask。
 :::
 
-@fig-triton-viz-live 左侧箭头定位到当前 `tl.load`，右侧青色位置表示有效元素，灰色位置表示尾部 mask。这段录屏只证明可视化脚本与地址记录可运行，不是 9070XT 性能证据。
+@fig-triton-viz-live 左侧箭头定位到当前 `tl.load`，右侧青色位置表示有效元素，灰色位置表示尾部 mask。这张界面图只用于辅助读取地址与 mask，不是 9070XT 性能证据。
 
 ### 7.5.6 Triton 路线当前结果
 
-| 版本 | program/tile | 9070XT 正确性 | median 时间 | 有效带宽 | 当前结论 |
-| ---- | ---- | ---- | ---- | ---- | ---- |
-| `triton-t0` | 每 program 256 元素 | 通过 | `0.334 ms` | `602 GB/s` | 当前 baseline |
-| `triton-t1` | 每 program 1024 元素 | 通过 | `0.336 ms` | `599 GB/s` | 与 t0 的运行范围重叠 |
-
-t1 把 program 数从 `65,536` 降到 `16,384`，但 median 没有改善；名义时间比 t0 高 `0.580%`，三进程范围又彼此重叠，因此不能把这点差距解释成稳定退化。kernel trace 还显示 t0 使用 8 个 VGPR，t1 使用 24 个 VGPR；这说明更大的 tile 同时改变了资源需求，不能只看到 program 数减少就提前宣布胜负。
+Triton ladder 只把 `BLOCK_SIZE` 从 256 改为 1024，并保持 `num_warps=4`。更大的 tile 同时减少 program 数并改变资源需求，所以仍要把时间范围和 trace 放在一起读。统一结果见 [7.6](#_7-6-正确性、benchmark-与-profiling)，不能只看到 program 数减少就提前宣布胜负。
 
 完整实现位于 `code/part2-kernels/chapter7/vector_add_triton.py`；可视化入口位于 `code/part2-kernels/chapter7/visualize_triton.py`。
 
-## 7.6 HIP 与 Triton 怎样对应
+## 7.6 正确性、Benchmark 与 Profiling
 
-### 7.6.1 把两种语言放回同一张数据流
+本节只发布 `code/part2-kernels/chapter7/evidence/` 中已经进入 curated evidence 的字段。实验基线是 **AMD Radeon RX 9070 XT（gfx1201）+ ROCm 7.13.99004 + 原生 Ubuntu 24.04.4 LTS**；输入为 `N=16,777,216` 个 FP32 元素。
+
+### 7.6.1 正确性矩阵
+
+发布行都经过独立进程汇总，`correct` 与 `max_abs_error` 直接来自 `summary.csv`。正式计时前，`run_all.sh` 还会检查小于 wave、block 边界、block 加一和不能被向量宽度整除的输入。
+
+| Implementation | Runtime | Shape | Block | Grid | Correct | Max abs error |
+| ---- | ---- | ----: | ----: | ----: | ---- | ----: |
+| `hip-v0` | hip | 16777216 | 256 | 65536 | OK | 0.0 |
+| `hip-v1-contiguous` | hip | 16777216 | 256 | 2048 | OK | 0.0 |
+| `hip-v1-strided` | hip | 16777216 | 256 | 2048 | OK | 0.0 |
+| `hip-v2` | hip | 16777216 | 256 | 256 | OK | 0.0 |
+| `hip-v3` | hip | 16777216 | 256 | 256 | OK | 0.0 |
+| `triton-t0` | triton | 16777216 | 256 | 65536 | OK | 0.0 |
+| `triton-t1` | triton | 16777216 | 1024 | 16384 | OK | 0.0 |
+
+### 7.6.2 Benchmark 口径与发布结果
+
+每个进程先 warmup 10 次、正式计时 50 次；每个发布值先取进程内 median，再对 3 个独立进程的 median 取中位数。计时范围是 kernel-only GPU event，不含分配、输入生成和 Host-to-Device 拷贝。
+
+| Implementation | Median (ms) | Run range (ms) | Logical effective bandwidth (GB/s) | Run range (GB/s) |
+| ---- | ----: | ----: | ----: | ----: |
+| `hip-v0` | 0.336263 | 0.336163–0.336263 | 598.716769 | 598.716769–598.894875 |
+| `hip-v1-contiguous` | 0.369564 | 0.368244–0.369643 | 544.767872 | 544.650711–546.721372 |
+| `hip-v1-strided` | 2.559888 | 2.549787–2.563447 | 78.646641 | 78.537436–78.958202 |
+| `hip-v2` | 0.338584 | 0.338523–0.340203 | 594.613415 | 591.782847–594.720571 |
+| `hip-v3` | 0.342123 | 0.341663–0.342303 | 588.462602 | 588.152304–589.254032 |
+| `triton-t0` | 0.337544 | 0.337444–0.337843 | 596.446356 | 595.916738–596.622218 |
+| `triton-t1` | 0.339224 | 0.339163–0.339764 | 593.491574 | 592.548335–593.597465 |
+
+::: figure fig-vector-add-bandwidth
+![七个 HIP 与 Triton Vector Add 实现的逻辑有效带宽；跨步 HIP 版本明显低于其余连续访问版本](./images/vector-add-ch7-bandwidth.png)
+
+Radeon RX 9070 XT 上的 Vector Add 逻辑有效带宽；柱长为三进程中位数，误差线为三进程范围。
+:::
+
+图和表中的带宽都按 `12 Byte × N / 时间` 计算，是方便同语义版本比较的**逻辑有效带宽**。它不等于内存控制器实际传输的物理 GDDR6 流量。
+
+### 7.6.3 Profiling 字段
+
+`profile_all.sh` 为每个实现启动独立的 `rocprofv3` kernel trace。下面逐格来自 `profile_summary.csv`；dispatch 数、grid、workgroup 与资源字段不从源码反推。
+
+| Implementation | Dispatches | Grid X | Workgroup X | LDS B | Scratch B | VGPR | Accum VGPR | SGPR |
+| ---- | ----: | ----: | ----: | ----: | ----: | ----: | ----: | ----: |
+| `hip-v0` | 11 | 16777216 | 256 | 0 | 0 | 8 | 0 | 128 |
+| `hip-v1-contiguous` | 11 | 524288 | 256 | 0 | 0 | 16 | 0 | 128 |
+| `hip-v1-strided` | 11 | 524288 | 256 | 0 | 0 | 16 | 0 | 128 |
+| `hip-v2` | 11 | 65536 | 256 | 0 | 0 | 16 | 0 | 128 |
+| `hip-v3` | 11 | 65536 | 256 | 0 | 0 | 16 | 0 | 128 |
+| `triton-t0` | 11 | 8388608 | 128 | 0 | 0 | 8 | 0 | 128 |
+| `triton-t1` | 11 | 2097152 | 128 | 0 | 0 | 24 | 0 | 128 |
+
+## 7.7 HIP 与 Triton 对照
+
+### 7.7.1 把两种语言放回同一张数据流
 
 | 要回答的问题 | HIP 写法 | Triton 写法 |
 | ---- | ---- | ---- |
@@ -551,7 +592,7 @@ HIP 的一个 thread 与 Triton 的一个 program **不是一一对应**。更�
 
 只要这三件事对应起来，语言差异就不会遮住算子本身。
 
-### 7.6.2 什么时候先选哪条路线
+### 7.7.2 什么时候先选哪条路线
 
 | 当前目标 | 更自然的起点 | 原因 |
 | ---- | ---- | ---- |
@@ -561,37 +602,30 @@ HIP 的一个 thread 与 Triton 的一个 program **不是一一对应**。更�
 | 快速尝试多个 tile 参数 | Triton | meta-parameter 与 Python 驱动更集中 |
 | 定位地址或 mask 错误 | Triton + Triton-viz，或 HIP + trace | 两边都要回到实际地址证据 |
 
-这不是永久的语言排名。同一个算子可能先用 Triton 验证算法，再用 HIP 追底层细节；也可能 HIP baseline 已经足够清楚，完全不需要重写。
+同一个算子可以先用 Triton 验证算法，再用 HIP 追底层细节；也可以从 HIP baseline 出发，完全不重写。路线选择服务于当前问题，不建立跨 shape、跨软件栈的语言排名。
 
-### 7.6.3 公平性能结果
+### 7.7.3 怎样读这次对照
 
-下面的 HIP 与 Triton 对照使用相同输入公式、`N=16,777,216`、FP32 语义、warmup 10、repeat 50 和 kernel-only GPU event 计时边界。表中的 median 是 3 个独立进程各自 median 的中位数，“3 次进程范围”也只比较这 3 个进程内 median。
+这次 HIP 与 Triton 对照使用相同输入公式、FP32 语义、shape、warmup、repeat 与 kernel-only 计时边界。当前快照中 `hip-v0` 的 median 最小，但 `hip-v0` 与 `triton-t0` 的差距只属于这个有限 shape、软件栈和短协议，不能外推为另一种环境中的胜负。
 
-| 实现 | 正确性 | median 时间 | 有效带宽 | 3 次进程范围 | 证据 |
-| ---- | ---- | ---- | ---- | ---- | ---- |
-| `hip-v0` | 通过 | `0.333 ms` | `605 GB/s` | `0.332–0.336 ms` | 3 次复跑 + 11 次目标 dispatch |
-| `hip-v1-contiguous` | 通过 | `0.362 ms` | `556 GB/s` | `0.362–0.366 ms` | 3 次复跑 + 11 次目标 dispatch |
-| `hip-v1-strided` | 通过 | `2.60 ms` | `77.5 GB/s` | `2.52–2.64 ms` | 3 次复跑 + 11 次目标 dispatch |
-| `hip-v2` | 通过 | `0.333 ms` | `604 GB/s` | `0.333–0.341 ms` | 3 次复跑 + 11 次目标 dispatch |
-| `hip-v3` | 通过 | `0.342 ms` | `589 GB/s` | `0.341–0.342 ms` | 3 次复跑 + 11 次目标 dispatch |
-| `triton-t0` | 通过 | `0.334 ms` | `602 GB/s` | `0.333–0.349 ms` | 3 次复跑 + 11 次目标 dispatch |
-| `triton-t1` | 通过 | `0.336 ms` | `599 GB/s` | `0.336–0.340 ms` | 3 次复跑 + 11 次目标 dispatch |
+更可靠的共同结论是：先保持地址连续和边界正确，再用目标 shape 实测 grid、tile 与向量类型；更少的 block/program 或更宽的源码类型都不自动等于更快。
 
-::: figure fig-vector-add-bandwidth
-![七个 HIP 与 Triton Vector Add 实现的逻辑有效带宽；跨步 HIP 版本明显低于其余连续访问版本](./images/vector-add-ch7-bandwidth.png)
+## 7.8 负结果、适用边界与下一步
 
-Radeon RX 9070 XT 上的 Vector Add 有效带宽；柱长为三进程中位数，误差线为三进程范围。
-:::
+负结果不是删掉的草稿，而是下一轮实验的输入：
 
-如 @fig-vector-add-bandwidth 所示，除受控跨步版本外，其余实现都落在约 `556–605 GB/s`。这与“当前大 shape 主要受数据搬运影响”的假设一致，但纵轴仍是按 12 Byte/元素计算的**逻辑有效带宽**，不是硬件计数器给出的物理 GDDR6 流量。
+- 受控跨步版本的 median 是 `2.559888 ms`，逻辑有效带宽是 `78.646641 GB/s`；它是本次最明确的负例，但仍没有直接测得物理显存事务。
+- `hip-v2` 把 block 数从 65536 限制为 256，median 为 `0.338584 ms`，没有超过 `hip-v0` 的 `0.336263 ms`。减少 grid 不自动带来收益。
+- `hip-v3` 与 `hip-v2` 使用相同的 256 blocks，但 `float4` 版本 median 为 `0.342123 ms`；源码向量类型没有在当前配置下提速。
+- `triton-t1` 把 program 数从 65536 减到 16384，median 为 `0.339224 ms`，没有超过 `triton-t0` 的 `0.337544 ms`；trace 同时显示 VGPR 从 8 变为 24。
 
-HIP v0、HIP v2、Triton t0 与 Triton t1 的时间范围彼此重叠，所以这组实验没有选出永久的语言赢家。更可靠的结论是：先保持地址连续和边界正确，再用目标 shape 实测 grid、tile 与向量类型；更少的 block/program 或更宽的源码类型都不自动等于更快。
+这些结论只适用于 manifest 记录的硬件、软件、shape、block、warmup、repeat 与独立进程协议。下一步若要检验可迁移性，应先扩展 shape、dtype 或系统状态中的一个变量，并生成新的 manifest 与 curated evidence；不能把当前逻辑有效带宽解释成物理 GDDR6 流量。
 
-## 7.7 复跑与练习
+## 7.9 复跑、练习与验收
 
-### 7.7.1 一键入口
+### 7.9.1 一键入口
 
-以下命令已于 2026-07-17 在 **Radeon RX 9070 XT + ROCm 7.13 + 原生 Ubuntu 24.04** 实验机完整执行，也是读者复跑本章的入口：
+以下命令对应 2026-07-19 发布的 **Radeon RX 9070 XT + ROCm 7.13 + 原生 Ubuntu 24.04** curated evidence，也是读者复跑本章的入口：
 
 ```bash
 cd code/part2-kernels
@@ -638,7 +672,7 @@ python chapter7/plot_vector_add_ch7.py \
   --out ../../docs/part2-kernels/chapter7/images/vector-add-ch7-bandwidth.png
 ```
 
-### 7.7.2 从 Add 迁移到更多逐元素算子
+### 7.9.2 从 Add 迁移到更多逐元素算子
 
 Vector Add 的价值不在于加法本身，而在于它提供了一个可替换的模板。
 
@@ -662,18 +696,27 @@ output[i] = max(input_a[i] + input_b[i], 0)
 
 如果分成两个 kernel，中间结果通常需要写回再读出；融合后可能减少这次中间读写。这里仍然只能提出假设，真正的收益要在第 11 章用完整计时验证。
 
-### 7.7.3 练习
+### 7.9.3 练习
 
 1. 把 `N` 改成 `1、31、32、33、1027`，先预测 HIP 的 `if` 与 Triton 的 mask 分别关闭哪些位置，再运行正确性检查。
 2. 把 Triton t1 的 `BLOCK_SIZE` 改为 `512`，保持 `num_warps=4`，记录 program 数量怎样变化；不要在计时前猜谁更快。
 3. 在 HIP 与 Triton 中都实现 `Scale & Bias`，继续使用同一输入生成、precheck、postcheck 与 event 计时框架。
 4. 给 `float4` 版本传入从 `input + 1` 开始的偏移指针，先解释为什么对齐假设被破坏，再设计安全的头部/主体/尾部拆分；不要直接运行未对齐强转。
 
+### 7.9.4 验收信号
+
+完成本章时，不要求某个版本必须最快，但需要同时满足下面四项：
+
+1. HIP 与 Triton 的边界正确性检查都通过，发布行的 `max_abs_error` 与 evidence 一致。
+2. 能解释 benchmark 的 shape、warmup、repeat、独立进程汇总和 kernel-only 计时范围。
+3. 能从 profile 表指出受控 HIP 对照固定了哪些资源字段，以及 Triton tile 变化伴随什么资源变化。
+4. 能明确写出至少一个负结果，并说明当前结论为什么不能外推到其他硬件、shape 或物理显存流量。
+
 ## 本章小结
 
 - Element-Wise 的核心不是“公式简单”，而是输出位置之间没有依赖，可以独立划分。
 - HIP 线程级范式让 kernel 正文从一个 thread 与标量下标出发；Triton 分块范式让正文从一个 program 与一块逻辑下标出发。`blockDim.x` 与 `BLOCK_SIZE` 不是对应参数，tile 位置也不固定对应硬件 lane。
-- Vector Add 每个 FP32 输出至少对应两次逻辑读取、一次逻辑写回和一次加法；受控跨步实验让用时增加到连续版的约 `7.17×`，结果与数据搬运主导假设一致。
+- Vector Add 每个 FP32 输出至少对应两次逻辑读取、一次逻辑写回和一次加法；受控跨步实验让用时增加到连续版的约 `6.93×`，结果与数据搬运主导假设一致。
 - HIP 从 thread 与标量地址出发，适合看清连续访问、Grid-Stride、向量类型和尾部。
 - Triton 从 program 与 tile offsets 出发，用 mask 统一处理边界；Triton-viz 可以把地址访问展开，但不代替 GPU 性能实验。
 - Grid-Stride 在当前配置下与 v0 接近；`float4` 没有提速；Triton 的 1024 元素 tile 也没有稳定超过 256 元素 tile。负结果同样决定下一轮该测什么。

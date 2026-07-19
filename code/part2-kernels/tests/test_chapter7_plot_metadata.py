@@ -216,8 +216,8 @@ class Chapter7PublicCommandContractTest(unittest.TestCase):
             / "chapter7"
             / "index.md"
         ).read_text(encoding="utf-8")
-        rerun_section = document.split("### 7.7.1 一键入口", 1)[1].split(
-            "### 7.7.2", 1
+        rerun_section = document.split("### 7.9.1 一键入口", 1)[1].split(
+            "### 7.9.2", 1
         )[0]
 
         self.assertIn('export SOURCE_COMMIT="$(git rev-parse HEAD)"', rerun_section)

@@ -10,6 +10,37 @@ const writeStubs = process.argv.includes('--write-stubs')
 const checkOnly = process.argv.includes('--check')
 const changedFiles = []
 
+function part2MetadataErrors() {
+  const part = parts.find((item) => item.prefix === '/part2-kernels/')
+  const errors = []
+
+  if (!part) {
+    return ['docs/.vitepress/outline.mjs: missing Part 2 outline metadata']
+  }
+
+  if (typeof part.landing !== 'string' || part.landing.trim() === '') {
+    errors.push('docs/.vitepress/outline.mjs: missing Part 2 landing metadata')
+  }
+  if (typeof part.landingSource !== 'string' || part.landingSource.trim() === '') {
+    errors.push('docs/.vitepress/outline.mjs: missing Part 2 landingSource metadata')
+  }
+
+  const landingPage = join(repoRoot, part.landingSource || 'docs/part2-kernels/index.md')
+  if (!existsSync(landingPage)) {
+    errors.push('docs/part2-kernels/index.md: missing Part 2 landing page')
+  }
+
+  for (const chapter of chapters.filter((item) => item.part.prefix === part.prefix)) {
+    for (const field of ['code', 'status', 'summary']) {
+      if (typeof chapter[field] !== 'string' || chapter[field].trim() === '') {
+        errors.push(`${chapter.source}: missing ${field} metadata`)
+      }
+    }
+  }
+
+  return errors
+}
+
 async function readText(path) {
   return readFile(path, 'utf8')
 }
@@ -86,7 +117,10 @@ function readmeDirectory() {
   ]
 
   for (const part of parts) {
-    lines.push(`| **${part.readmeTitle}** | | |`)
+    const partTitle = part.landingSource
+      ? `[${part.readmeTitle}](${repoBaseUrl}/${part.landingSource})`
+      : part.readmeTitle
+    lines.push(`| **${partTitle}** | | |`)
     for (const chapter of chapters.filter((item) => item.part.prefix === part.prefix)) {
       lines.push(`| [第 ${chapter.number} 章 ${chapter.title}](${repoBaseUrl}/${chapter.source}) | ${chapter.summary} | ${chapter.status} |`)
     }
@@ -103,6 +137,17 @@ async function syncReadme() {
 }
 
 async function main() {
+  if (checkOnly) {
+    const metadataErrors = part2MetadataErrors()
+    if (metadataErrors.length > 0) {
+      console.error('Part 2 outline metadata is incomplete:')
+      for (const error of metadataErrors) {
+        console.error(`- ${error}`)
+      }
+      process.exit(1)
+    }
+  }
+
   await syncChapters()
   await syncReadme()
 
