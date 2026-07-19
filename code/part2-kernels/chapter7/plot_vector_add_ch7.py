@@ -47,8 +47,8 @@ LABELS = {
     "hip-v1-strided": "HIP v1 跨步",
     "hip-v2": "HIP v2 grid-stride",
     "hip-v3": "HIP v3 float4",
-    "triton-t0": "Triton t0 (256)",
-    "triton-t1": "Triton t1 (1024)",
+    "triton-t0": "Triton t0",
+    "triton-t1": "Triton t1",
 }
 
 # figures4papers semantic palette
@@ -217,6 +217,17 @@ def order_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
     return [by_name[name] for name in ORDER]
 
 
+def labels_for_rows(rows: list[dict[str, str]]) -> list[str]:
+    labels: list[str] = []
+    for row in rows:
+        implementation = row["implementation"]
+        label = LABELS[implementation]
+        if implementation.startswith("triton-"):
+            label = f"{label} ({row['block']})"
+        labels.append(label)
+    return labels
+
+
 def pick_cjk_font(plt: object, font_manager: object) -> None:
     candidates = [
         "PingFang SC",
@@ -253,7 +264,7 @@ def main() -> None:
     layout = publication_layout()
 
     names = [row["implementation"] for row in rows]
-    labels = [LABELS[name] for name in names]
+    labels = labels_for_rows(rows)
     bandwidth = [float(row["effective_bandwidth_gbs"]) for row in rows]
     bw_min = [float(row["effective_bandwidth_gbs_run_min"]) for row in rows]
     bw_max = [float(row["effective_bandwidth_gbs_run_max"]) for row in rows]

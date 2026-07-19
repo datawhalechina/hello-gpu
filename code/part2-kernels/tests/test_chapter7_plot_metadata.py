@@ -11,6 +11,7 @@ from chapter7 import plot_vector_add_ch7 as plot
 from chapter7.plot_vector_add_ch7 import (
     format_experiment_note,
     format_experiment_subtitle,
+    labels_for_rows,
     validate_summary_metadata,
 )
 
@@ -175,6 +176,16 @@ class Chapter7PlotMetadataTest(unittest.TestCase):
         }
         self.assertIn("N=1,024", format_experiment_subtitle(manifest))
         self.assertIn("5 个独立进程", format_experiment_note(manifest))
+
+    def test_plot_triton_labels_use_measured_summary_blocks(self) -> None:
+        labels = labels_for_rows(
+            [
+                {"implementation": "triton-t0", "block": "512"},
+                {"implementation": "triton-t1", "block": "2048"},
+            ]
+        )
+
+        self.assertEqual(labels, ["Triton t0 (512)", "Triton t1 (2048)"])
 
     def test_publication_layout_reserves_bottom_text_clearance(self) -> None:
         layout = plot.publication_layout()

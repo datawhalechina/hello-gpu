@@ -6,9 +6,13 @@ import argparse
 import csv
 import hashlib
 import json
+import math
+import os
 import shlex
+import shutil
 import statistics
 import sys
+import tempfile
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -43,6 +47,21 @@ TRACE_FIELDS = {
 }
 SOURCE_SUFFIXES = {".hip", ".py", ".sh"}
 UNAVAILABLE = "unavailable"
+IMPLEMENTATIONS = (
+    "hip-v0",
+    "hip-v1-contiguous",
+    "hip-v1-strided",
+    "hip-v2",
+    "hip-v3",
+    "triton-t0",
+    "triton-t1",
+)
+REQUIRED_RECORD_FIELDS = (
+    "operator", "implementation", "runtime", "shape", "dtype", "block", "grid",
+    "warmup", "repeat", "seed", "timed", "correct", "precheck", "postcheck",
+    "median_ms", "effective_bandwidth_gbs",
+)
+CONSISTENT_RECORD_FIELDS = ("operator", "shape", "dtype", "warmup", "repeat", "seed", "timed")
 
 
 def normalize_environment_value(value: str) -> str:
@@ -61,7 +80,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--chapter-dir", type=Path, default=Path(__file__).resolve().parent
     )
-    parser.add_argument("--git-commit", required=True)
+    parser.add_argument("--git-commit")
+    parser.add_argument("--print-source-sha256", action="store_true")
     return parser.parse_args()
 
 
@@ -246,23 +266,121 @@ def write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, object]]) 
         writer.writerows(rows)
 
 
+def validate_evidence_inputs(
+    records: list[dict[str, str]], independent_paths: list[Path], manifest: dict[str, object], git_commit: str
+) -> list[str]:
+    errors: list[str] = []
+    benchmark = manifest["benchmark"]
+    if benchmark.get("source_commit") != git_commit:
+        errors.append("benchmark_manifest source_commit does not match --git-commit")
+    if benchmark.get("source_sha256") != manifest["source_sha256"]:
+        errors.append("benchmark_manifest source_sha256 does not match current source hash")
+    if len(independent_paths) != 3:
+        errors.append(f"expected exactly 3 independent sources, found {len(independent_paths)}")
+
+    by_source: dict[str, list[dict[str, str]]] = defaultdict(list)
+    for record in records:
+        by_source[record["source"]].append(record)
+    expected = set(IMPLEMENTATIONS)
+    for source, source_records in sorted(by_source.items()):
+        implementations = [record.get("implementation", "") for record in source_records]
+        duplicates = sorted({name for name in implementations if implementations.count(name) > 1})
+        missing = sorted(expected - set(implementations))
+        unexpected = sorted(set(implementations) - expected)
+        if duplicates or missing or unexpected:
+            errors.append(
+                f"{source} must contain each implementation exactly once"
+                f" (duplicates={duplicates}, missing={missing}, unexpected={unexpected})"
+            )
+
+    if set(by_source) != {str(path.relative_to(Path(manifest["_root"]))) for path in independent_paths}:
+        errors.append("every independent source must contain RESULT records")
+    if {record.get("implementation") for record in records} != expected:
+        errors.append("evidence must contain exactly the 7 required implementations")
+
+    for index, record in enumerate(records):
+        for field in REQUIRED_RECORD_FIELDS:
+            if not record.get(field):
+                errors.append(f"record {index} missing field: {field}")
+        for field in ("correct", "precheck", "postcheck"):
+            if record.get(field) != "OK":
+                errors.append(f"record {index} {field} is not OK")
+        for field in ("median_ms", "effective_bandwidth_gbs"):
+            try:
+                value = float(record[field])
+            except (KeyError, ValueError):
+                errors.append(f"record {index} {field} is not finite positive")
+            else:
+                if not math.isfinite(value) or value <= 0:
+                    errors.append(f"record {index} {field} is not finite positive")
+    for field in CONSISTENT_RECORD_FIELDS:
+        values = {record.get(field) for record in records}
+        if len(values) != 1:
+            errors.append(f"metadata {field} is inconsistent across independent sources")
+    benchmark_fields = {
+        "shape": "size",
+        "warmup": "warmup",
+        "repeat": "repeat",
+        "seed": "seed",
+    }
+    for record_field, benchmark_field in benchmark_fields.items():
+        if {record.get(record_field) for record in records} != {benchmark.get(benchmark_field)}:
+            errors.append(f"metadata {record_field} does not match benchmark_manifest")
+    for record in records:
+        expected_block = benchmark.get(
+            "hip_block" if record.get("runtime") == "hip" else "triton_block"
+        )
+        if record.get("block") != expected_block:
+            errors.append(f"record {record.get('implementation')} block does not match benchmark_manifest")
+    return errors
+
+
+def validate_profile_config(paths: ChapterPaths, benchmark: dict[str, str]) -> list[str]:
+    profile_path = paths.profiles / "profile_config.env"
+    if not profile_path.exists():
+        return []
+    profile = read_env_file(profile_path)
+    errors: list[str] = []
+    for field in ("source_commit", "source_sha256", "size", "hip_block", "triton_block", "seed"):
+        if profile.get(field) != benchmark.get(field):
+            errors.append(f"profile_config {field} does not match benchmark_manifest")
+    return errors
+
+
+def publish_evidence(paths: ChapterPaths, writer: object) -> None:
+    staging_root = Path(tempfile.mkdtemp(prefix=".chapter7-evidence-", dir=paths.root))
+    staging_evidence = staging_root / "evidence"
+    staging_evidence.mkdir()
+    try:
+        writer(staging_evidence)
+        backup = staging_root / "previous-evidence"
+        had_previous = paths.evidence.exists()
+        if had_previous:
+            os.replace(paths.evidence, backup)
+        try:
+            os.replace(staging_evidence, paths.evidence)
+        except Exception:
+            if had_previous and backup.exists():
+                os.replace(backup, paths.evidence)
+            raise
+        if backup.exists():
+            shutil.rmtree(backup)
+    finally:
+        shutil.rmtree(staging_root, ignore_errors=True)
+
+
 def main() -> None:
     args = parse_args()
     paths = ChapterPaths(args.chapter_dir.resolve())
-    independent_paths = sorted((paths.logs / "runs").glob("*.log"))
+    if args.print_source_sha256:
+        print(source_sha256(paths.root))
+        return
+    if not args.git_commit:
+        raise SystemExit("--git-commit is required unless --print-source-sha256 is used")
+    independent_paths = sorted((paths.logs / "runs").glob("run*.log"))
     records = read_records(independent_paths, paths.root)
-    source_kind = "independent-runs"
     if not records:
-        records = read_records(
-            [
-                paths.logs / "hip_benchmark.log",
-                paths.logs / "triton_benchmark.log",
-            ],
-            paths.root,
-        )
-        source_kind = "main-benchmark"
-    if not records:
-        raise SystemExit("no RESULT records found; run run_all.sh first")
+        raise SystemExit("no RESULT records found in independent runs; run run_all.sh first")
 
     summary = aggregate(records)
     environment_log = paths.logs / "environment.log"
@@ -283,16 +401,18 @@ def main() -> None:
         },
         "platform": read_platform(environment_log),
         "benchmark": read_env_file(paths.logs / "benchmark_manifest.env"),
+        "_root": str(paths.root),
     }
     errors = (
-        validate_records(records)
+        validate_evidence_inputs(records, independent_paths, manifest, args.git_commit)
+        + validate_profile_config(paths, manifest["benchmark"])
+        + validate_records(records)
         + validate_records(summary)
         + validate_manifest(manifest)
     )
     if errors:
         raise SystemExit("\n".join(errors))
 
-    paths.evidence.mkdir(parents=True, exist_ok=True)
     summary_fields = [
         "operator",
         "implementation",
@@ -310,28 +430,27 @@ def main() -> None:
         "effective_bandwidth_gbs_run_max",
         "sources",
     ]
-    write_csv(paths.evidence / "summary.csv", summary_fields, summary)
     payload = {
         "status": "measured",
-        "source_kind": source_kind,
+        "source_kind": "independent-runs",
         "records": summary,
     }
-    (paths.evidence / "summary.json").write_text(
-        json.dumps(payload, ensure_ascii=True, indent=2) + "\n",
-        encoding="utf-8",
-    )
     profile_rows = [
         read_trace_fields(paths, str(row["implementation"])) for row in summary
     ]
-    write_csv(
-        paths.evidence / "profile_summary.csv",
-        ["implementation", "trace_dispatches", *TRACE_FIELDS.values()],
-        profile_rows,
-    )
-    (paths.evidence / "manifest.json").write_text(
-        json.dumps(manifest, ensure_ascii=True, indent=2) + "\n",
-        encoding="utf-8",
-    )
+    manifest.pop("_root")
+
+    def write_staged(evidence: Path) -> None:
+        write_csv(evidence / "summary.csv", summary_fields, summary)
+        (evidence / "summary.json").write_text(
+            json.dumps(payload, ensure_ascii=True, indent=2) + "\n", encoding="utf-8"
+        )
+        write_csv(evidence / "profile_summary.csv", ["implementation", "trace_dispatches", *TRACE_FIELDS.values()], profile_rows)
+        (evidence / "manifest.json").write_text(
+            json.dumps(manifest, ensure_ascii=True, indent=2) + "\n", encoding="utf-8"
+        )
+
+    publish_evidence(paths, write_staged)
     print(f"wrote {len(summary)} implementations to {paths.evidence}")
 
 

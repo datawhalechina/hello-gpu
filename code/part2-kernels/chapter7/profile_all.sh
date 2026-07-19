@@ -9,6 +9,7 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PART_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+SOURCE_SHA256="$(python "${SCRIPT_DIR}/summarize_results.py" --chapter-dir "${SCRIPT_DIR}" --print-source-sha256)"
 LOG_DIR="${SCRIPT_DIR}/logs"
 PROFILE_DIR="${SCRIPT_DIR}/profiles"
 GPU_ARCH="${GPU_ARCH:-gfx1201}"
@@ -98,6 +99,8 @@ for version in t0 t1; do
 done
 
 {
+    echo "source_commit=${SOURCE_COMMIT}"
+    echo "source_sha256=${SOURCE_SHA256}"
     echo "size=${SIZE}"
     echo "hip_block=${HIP_BLOCK}"
     echo "triton_block=${TRITON_BLOCK}"
@@ -105,9 +108,7 @@ done
     echo "repeat=${PROFILE_REPEAT}"
     echo "seed=${SEED}"
     echo "gpu_arch=${GPU_ARCH}"
-    if [[ -n "${GRID:-}" ]]; then
-        echo "grid=${GRID}"
-    fi
+    echo "grid=${GRID:-auto}"
 } > "${PROFILE_DIR}/profile_config.env"
 
 python "${SCRIPT_DIR}/summarize_results.py" \
