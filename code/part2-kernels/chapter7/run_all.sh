@@ -29,7 +29,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p "${LOG_DIR}/runs" "${PROFILE_DIR}" "${SCRIPT_DIR}/results"
+mkdir -p "${LOG_DIR}/runs" "${PROFILE_DIR}"
 rm -f "${LOG_DIR}/runs"/hip_run*.log "${LOG_DIR}/runs"/triton_run*.log
 
 {
@@ -155,4 +155,4 @@ python "${SCRIPT_DIR}/summarize_results.py" \
     --chapter-dir "${SCRIPT_DIR}" \
     --git-commit "${SOURCE_COMMIT}"
 echo "logs written to ${LOG_DIR}"
-echo "summary written to ${SCRIPT_DIR}/results"
+echo "summary written to ${SCRIPT_DIR}/evidence"

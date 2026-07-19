@@ -597,9 +597,12 @@ HIP v0、HIP v2、Triton t0 与 Triton t1 的时间范围彼此重叠，所以�
 cd code/part2-kernels
 uv sync
 source ./activate-rocm.sh
+export SOURCE_COMMIT="$(git rev-parse HEAD)"
 bash chapter7/run_all.sh
 bash chapter7/profile_all.sh
 ```
+
+两个入口共用导出的 `SOURCE_COMMIT`，确保 benchmark 与 profile 刷新的发布清单指向同一份源码。
 
 `run_all.sh` 的顺序是：
 
@@ -617,17 +620,22 @@ bash chapter7/profile_all.sh
 
 ```text
 code/part2-kernels/chapter7/
+├── evidence/
+│   ├── manifest.json
+│   ├── profile_summary.csv
+│   ├── summary.csv
+│   └── summary.json
 ├── logs/
-├── profiles/
-└── results/
-    ├── summary.csv
-    └── summary.json
+└── profiles/
 ```
 
 详细环境、参数、关键结果与证据路径见 `code/part2-kernels/chapter7/EXPERIMENT.md`。带宽图可以直接从汇总结果重画：
 
 ```bash
-python chapter7/plot_vector_add_ch7.py
+python chapter7/plot_vector_add_ch7.py \
+  --summary chapter7/evidence/summary.csv \
+  --manifest chapter7/evidence/manifest.json \
+  --out ../../docs/part2-kernels/chapter7/images/vector-add-ch7-bandwidth.png
 ```
 
 ### 7.7.2 从 Add 迁移到更多逐元素算子

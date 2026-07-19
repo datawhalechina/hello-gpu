@@ -12,6 +12,47 @@ from pathlib import Path
 
 
 class Chapter7SummaryTest(unittest.TestCase):
+    def test_profile_all_refreshes_curated_evidence_after_profiles(self) -> None:
+        script = (
+            Path(__file__).parents[1] / "chapter7" / "profile_all.sh"
+        ).read_text(encoding="utf-8")
+        profile_config = '} > "${PROFILE_DIR}/profile_config.env"'
+        summary_call = 'python "${SCRIPT_DIR}/summarize_results.py"'
+
+        self.assertIn(profile_config, script)
+        self.assertIn(summary_call, script)
+        self.assertLess(script.index(profile_config), script.index(summary_call))
+        self.assertIn('--chapter-dir "${SCRIPT_DIR}"', script)
+        self.assertIn('--git-commit "${SOURCE_COMMIT}"', script)
+
+    def test_profile_all_rejects_missing_source_commit_before_writes(self) -> None:
+        source = Path(__file__).parents[1] / "chapter7" / "profile_all.sh"
+        with tempfile.TemporaryDirectory() as temporary:
+            chapter = Path(temporary) / "chapter7"
+            chapter.mkdir()
+            script = chapter / "profile_all.sh"
+            shutil.copy2(source, script)
+            environment = os.environ.copy()
+            environment.pop("SOURCE_COMMIT", None)
+            environment["TMPDIR"] = temporary
+
+            completed = subprocess.run(
+                ["bash", str(script)],
+                cwd=temporary,
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(completed.returncode, 2, completed.stderr)
+            self.assertIn(
+                "SOURCE_COMMIT must be a 7-40 character lowercase Git SHA",
+                completed.stderr,
+            )
+            for generated in ("logs", "profiles"):
+                self.assertFalse((chapter / generated).exists(), generated)
+
     def test_run_all_rejects_missing_source_commit_before_writes(self) -> None:
         source = Path(__file__).parents[1] / "chapter7" / "run_all.sh"
         with tempfile.TemporaryDirectory() as temporary:

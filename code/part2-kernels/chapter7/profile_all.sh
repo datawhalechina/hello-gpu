@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SOURCE_COMMIT="${SOURCE_COMMIT:-}"
+if [[ ! "${SOURCE_COMMIT}" =~ ^[0-9a-f]{7,40}$ ]]; then
+    echo "SOURCE_COMMIT must be a 7-40 character lowercase Git SHA" >&2
+    exit 2
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PART_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 LOG_DIR="${SCRIPT_DIR}/logs"
@@ -104,4 +110,7 @@ done
     fi
 } > "${PROFILE_DIR}/profile_config.env"
 
+python "${SCRIPT_DIR}/summarize_results.py" \
+    --chapter-dir "${SCRIPT_DIR}" \
+    --git-commit "${SOURCE_COMMIT}"
 echo "profiles written to ${PROFILE_DIR}"

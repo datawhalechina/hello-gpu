@@ -15,19 +15,13 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 from pathlib import Path
-
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
-from matplotlib import font_manager  # noqa: E402
-from matplotlib.patches import Patch  # noqa: E402
-
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parents[2]
-DEFAULT_SUMMARY = SCRIPT_DIR / "results" / "summary.csv"
+DEFAULT_SUMMARY = SCRIPT_DIR / "evidence" / "summary.csv"
+DEFAULT_MANIFEST = SCRIPT_DIR / "evidence" / "manifest.json"
 DEFAULT_OUTPUT = (
     REPO_ROOT
     / "docs"
@@ -98,9 +92,48 @@ PUBLICATION_RCPARAMS = {
 }
 
 
+def format_experiment_subtitle(manifest: dict[str, object]) -> str:
+    software = manifest["software"]
+    benchmark = manifest["benchmark"]
+    size = int(benchmark["size"])
+    return (
+        f'{manifest["hardware"]} | ROCm {software["rocm"]} | '
+        f"N={size:,} FP32 | kernel-only GPU event 计时"
+    )
+
+
+def format_experiment_note(manifest: dict[str, object]) -> str:
+    runs = int(manifest["benchmark"]["independent_runs"])
+    return (
+        f"柱长 = {runs} 个独立进程 median 的中位数；"
+        "误差线 = 独立进程范围。"
+    )
+
+
+def validate_summary_metadata(
+    rows: list[dict[str, str]], manifest: dict[str, object]
+) -> None:
+    expected_shape = int(manifest["benchmark"]["size"])
+    summary_shapes = {int(row["shape"]) for row in rows}
+    if summary_shapes != {expected_shape}:
+        raise ValueError(
+            f"summary shapes {sorted(summary_shapes)} disagree with manifest "
+            f"shape {expected_shape}"
+        )
+
+    expected_runs = int(manifest["benchmark"]["independent_runs"])
+    summary_run_counts = {int(row["run_count"]) for row in rows}
+    if summary_run_counts != {expected_runs}:
+        raise ValueError(
+            f"summary run counts {sorted(summary_run_counts)} disagree with "
+            f"manifest independent runs {expected_runs}"
+        )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--summary", type=Path, default=DEFAULT_SUMMARY)
+    parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--out", type=Path, default=DEFAULT_OUTPUT)
     return parser.parse_args()
 
@@ -114,7 +147,7 @@ def read_rows(path: Path) -> list[dict[str, str]]:
     return [by_name[name] for name in ORDER]
 
 
-def pick_cjk_font() -> None:
+def pick_cjk_font(plt: object, font_manager: object) -> None:
     candidates = [
         "PingFang SC",
         "Hiragino Sans GB",
@@ -132,11 +165,21 @@ def pick_cjk_font() -> None:
 
 def main() -> None:
     args = parse_args()
+    manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+    rows = read_rows(args.summary)
+    validate_summary_metadata(rows, manifest)
+
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib import font_manager
+    from matplotlib.patches import Patch
+
     plt.rcParams.update(PUBLICATION_RCPARAMS)
-    pick_cjk_font()
+    pick_cjk_font(plt, font_manager)
     plt.rcParams["axes.unicode_minus"] = False
 
-    rows = read_rows(args.summary)
     names = [row["implementation"] for row in rows]
     labels = [LABELS[name] for name in names]
     bandwidth = [float(row["effective_bandwidth_gbs"]) for row in rows]
@@ -276,7 +319,7 @@ def main() -> None:
     figure.text(
         0.02,
         0.905,
-        "Radeon RX 9070 XT | ROCm 7.13 | 原生 Ubuntu 24.04 | N=16,777,216 FP32 | kernel-only GPU event 计时",
+        format_experiment_subtitle(manifest),
         ha="left",
         fontsize=13,
         color=PALETTE["muted"],
@@ -284,7 +327,7 @@ def main() -> None:
     figure.text(
         0.02,
         0.02,
-        "柱长 = 3 个独立进程 median 的中位数；误差线 = 3 进程范围。除受控跨步版本外，各实现时间范围彼此重叠。",
+        format_experiment_note(manifest),
         ha="left",
         fontsize=12,
         color=PALETTE["muted"],
