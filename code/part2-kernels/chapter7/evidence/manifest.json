@@ -1,0 +1,25 @@
+{
+  "operator": "vector-add",
+  "generated_at": "2026-07-19T05:33:12.614236+00:00",
+  "git_commit": "7a518acb9ee6e0285b238b1532a7619767c66511",
+  "source_sha256": "1dea46e7a255fe057dd30225f2a3aa93faa5a77d0262cabd8db637eae9a19e82",
+  "hardware": "AMD Radeon RX 9070 XT",
+  "software": {
+    "rocm": "7.13.99004",
+    "torch": "2.11.0+rocm7.13.0",
+    "triton": "3.6.0"
+  },
+  "benchmark": {
+    "timestamp": "2026-07-19T13:32:26+08:00",
+    "size": "16777216",
+    "hip_block": "256",
+    "triton_block": "1024",
+    "warmup": "10",
+    "repeat": "50",
+    "seed": "20260716",
+    "independent_runs": "3",
+    "gpu_arch": "gfx1201",
+    "run_edge_cases": "1",
+    "run_triton_viz": "1"
+  }
+}

@@ -24,6 +24,9 @@ AGENTS.md
 **/EXPERIMENT.md
 code/**/profiles/
 code/**/results/
+!code/part2-kernels/chapter*/EXPERIMENT.md
+!code/part2-kernels/chapter*/evidence/
+!code/part2-kernels/chapter*/evidence/**
 scripts/gpu-queue
 bak/
 

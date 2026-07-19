@@ -1,0 +1,8 @@
+operator,implementation,runtime,shape,dtype,block,grid,correct,run_count,min_ms,median_ms,mean_ms,effective_bandwidth_gbs,max_abs_error,median_ms_run_min,median_ms_run_max,effective_bandwidth_gbs_run_min,effective_bandwidth_gbs_run_max,sources
+vector-add,hip-v0,hip,16777216,float32,256,65536,OK,3,0.332445,0.335586,0.336545,599.925459,0.0,0.335325,0.335805,599.534232,600.392426,logs/runs/hip_run1.log;logs/runs/hip_run2.log;logs/runs/hip_run3.log
+vector-add,hip-v1-contiguous,hip,16777216,float32,256,2048,OK,3,0.363525,0.366706,0.368838,549.013631,0.0,0.366426,0.369005,545.592408,549.433165,logs/runs/hip_run1.log;logs/runs/hip_run2.log;logs/runs/hip_run3.log
+vector-add,hip-v1-strided,hip,16777216,float32,256,2048,OK,3,2.403077,2.535119,2.54078,79.415048,0.0,2.52336,2.55268,78.868715,79.785128,logs/runs/hip_run1.log;logs/runs/hip_run2.log;logs/runs/hip_run3.log
+vector-add,hip-v2,hip,16777216,float32,256,256,OK,3,0.337126,0.342345,0.342758,588.080162,0.0,0.341845,0.342386,588.011442,588.940306,logs/runs/hip_run1.log;logs/runs/hip_run2.log;logs/runs/hip_run3.log
+vector-add,hip-v3,hip,16777216,float32,256,256,OK,3,0.339726,0.342065,0.343473,588.562373,0.0,0.342046,0.342185,588.355128,588.595091,logs/runs/hip_run1.log;logs/runs/hip_run2.log;logs/runs/hip_run3.log
+vector-add,triton-t0,triton,16777216,float32,256,65536,OK,3,0.334885,0.336685,0.343602,597.966339,0.0,0.335885,0.338385,594.963109,599.391455,logs/runs/triton_run1.log;logs/runs/triton_run2.log;logs/runs/triton_run3.log
+vector-add,triton-t1,triton,16777216,float32,1024,16384,OK,3,0.337605,0.338705,0.340786,594.400998,0.0,0.338445,0.339326,593.313201,594.856756,logs/runs/triton_run1.log;logs/runs/triton_run2.log;logs/runs/triton_run3.log

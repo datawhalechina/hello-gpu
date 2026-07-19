@@ -1,0 +1,8 @@
+implementation,trace_dispatches,trace_grid_size_x,trace_workgroup_size_x,trace_lds_bytes,trace_scratch_bytes,trace_vgpr_count,trace_accum_vgpr_count,trace_sgpr_count
+hip-v0,11,16777216,256,0,0,8,0,128
+hip-v1-contiguous,11,524288,256,0,0,16,0,128
+hip-v1-strided,11,524288,256,0,0,16,0,128
+hip-v2,11,65536,256,0,0,16,0,128
+hip-v3,11,65536,256,0,0,16,0,128
+triton-t0,11,8388608,128,0,0,8,0,128
+triton-t1,11,2097152,128,0,0,24,0,128
