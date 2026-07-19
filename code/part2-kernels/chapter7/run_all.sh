@@ -45,6 +45,7 @@ rm -f "${LOG_DIR}/runs"/run*.log "${LOG_DIR}/runs"/hip_run*.log "${LOG_DIR}/runs
     echo "source_sha256=${SOURCE_SHA256}"
     echo "size=${SIZE}"
     echo "hip_block=${HIP_BLOCK}"
+    echo "triton_t0_block=256"
     echo "triton_block=${TRITON_BLOCK}"
     echo "warmup=${WARMUP}"
     echo "repeat=${REPEAT}"

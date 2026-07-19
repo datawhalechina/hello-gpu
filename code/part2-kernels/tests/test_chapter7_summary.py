@@ -17,7 +17,7 @@ IMPLEMENTATIONS = (
     ("hip-v1-strided", "hip", "256"),
     ("hip-v2", "hip", "256"),
     ("hip-v3", "hip", "256"),
-    ("triton-t0", "triton", "1024"),
+    ("triton-t0", "triton", "256"),
     ("triton-t1", "triton", "1024"),
 )
 
@@ -62,6 +62,7 @@ class Chapter7SummaryTest(unittest.TestCase):
                     f"source_sha256={source_sha256}",
                     "size=1024",
                     "hip_block=256",
+                    "triton_t0_block=256",
                     "triton_block=1024",
                     "warmup=2",
                     "repeat=5",
@@ -106,6 +107,7 @@ class Chapter7SummaryTest(unittest.TestCase):
                     f"source_sha256={source_sha256}",
                     "size=1024",
                     "hip_block=256",
+                    "triton_t0_block=256",
                     "triton_block=1024",
                     "seed=7",
                     "",

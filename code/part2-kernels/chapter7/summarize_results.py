@@ -336,9 +336,13 @@ def validate_evidence_inputs(
         if {record.get(record_field) for record in records} != {benchmark.get(benchmark_field)}:
             errors.append(f"metadata {record_field} does not match benchmark_manifest")
     for record in records:
-        expected_block = benchmark.get(
-            "hip_block" if record.get("runtime") == "hip" else "triton_block"
-        )
+        if record.get("runtime") == "hip":
+            block_field = "hip_block"
+        elif record.get("implementation") == "triton-t0":
+            block_field = "triton_t0_block"
+        else:
+            block_field = "triton_block"
+        expected_block = benchmark.get(block_field)
         if record.get("block") != expected_block:
             errors.append(f"record {record.get('implementation')} block does not match benchmark_manifest")
     return errors
@@ -352,7 +356,7 @@ def validate_profile_config(paths: ChapterPaths, benchmark: dict[str, str]) -> l
         return []
     profile = read_env_file(profile_path)
     errors: list[str] = []
-    for field in ("source_commit", "source_sha256", "size", "hip_block", "triton_block", "seed"):
+    for field in ("source_commit", "source_sha256", "size", "hip_block", "triton_t0_block", "triton_block", "seed"):
         if profile.get(field) != benchmark.get(field):
             errors.append(f"profile_config {field} does not match benchmark_manifest")
     return errors
