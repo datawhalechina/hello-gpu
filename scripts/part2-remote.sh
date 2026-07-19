@@ -70,9 +70,12 @@ case "${command}" in
     fetch)
         chapter="${2:-}"
         require_chapter "${chapter}"
+        remote_evidence_dir="${REMOTE_ROOT}/code/part2-kernels/${chapter}/evidence"
+        ssh -o BatchMode=yes "${REMOTE_HOST}" \
+            "$(remote_path_guard "${remote_evidence_dir}")"
         mkdir -p "${REPO_ROOT}/code/part2-kernels/${chapter}/evidence"
         rsync -az --protect-args \
-            "${REMOTE_HOST}:${REMOTE_ROOT}/code/part2-kernels/${chapter}/evidence/" \
+            "${REMOTE_HOST}:${remote_evidence_dir}/" \
             "${REPO_ROOT}/code/part2-kernels/${chapter}/evidence/"
         ;;
     *)

@@ -18,8 +18,16 @@ if bash "${TARGET}" unknown 2>/dev/null; then
 fi
 
 test_tmp="$(mktemp -d "${TMPDIR:-/tmp}/part2-remote-test.XXXXXX")"
+local_evidence_dir="$(cd "${SCRIPT_DIR}/.." && pwd)/code/part2-kernels/chapter7/evidence"
+local_evidence_created=0
+if [[ ! -e "${local_evidence_dir}" ]]; then
+    local_evidence_created=1
+fi
 cleanup() {
     rm -rf "${test_tmp}"
+    if ((local_evidence_created)); then
+        rmdir "${local_evidence_dir}" 2>/dev/null || true
+    fi
 }
 trap cleanup EXIT
 
@@ -127,6 +135,18 @@ if PART2_REMOTE_ROOT="${remote_root}" \
 fi
 grep -Fq "remote target escapes remote root" "${escaped_sync_output}"
 [[ ! -e "${outside_root}/part2-kernels" ]]
+[[ ! -e "${fake_rsync_called}" ]]
+
+escaped_fetch_output="${test_tmp}/escaped-fetch"
+if PART2_REMOTE_ROOT="${remote_root}" \
+    PART2_FAKE_RSYNC_CALLED="${fake_rsync_called}" \
+    PART2_FAKE_SSH_COMMAND="${fake_ssh_command}" \
+    PATH="${fake_bin}:${PATH}" \
+    bash "${TARGET}" fetch chapter7 > "${escaped_fetch_output}" 2>&1; then
+    echo "escaped fetch path unexpectedly accepted" >&2
+    exit 1
+fi
+grep -Fq "remote target escapes remote root" "${escaped_fetch_output}"
 [[ ! -e "${fake_rsync_called}" ]]
 
 echo "part2 remote wrapper contract: PASS"
