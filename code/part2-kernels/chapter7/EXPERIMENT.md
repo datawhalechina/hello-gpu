@@ -95,11 +95,11 @@ ssh -o BatchMode=yes hwj-frp-9070xt-2404 \
 bash scripts/part2-remote.sh fetch chapter7
 ```
 
-从仓库内 `code/part2-kernels` 验证并生成发布图：
+从仓库内 `code/part2-kernels` 验证 curated evidence：
 
 ```bash
-python -m unittest discover -s tests -v
-python - <<'PY'
+python3 -m unittest discover -s tests -v
+python3 - <<'PY'
 import csv
 import json
 from pathlib import Path
@@ -113,10 +113,17 @@ if errors:
     raise SystemExit("\n".join(errors))
 print(f"validated {len(records)} publication records")
 PY
-python chapter7/plot_vector_add_ch7.py \
-  --summary chapter7/evidence/summary.csv \
-  --manifest chapter7/evidence/manifest.json \
-  --out ../../docs/part2-kernels/chapter7/images/vector-add-ch7-bandwidth.png
+cd ../..
+```
+
+使用远端 Part 2 `.venv` 从 curated evidence 生成图，然后只传回最终 PNG：
+
+```bash
+ssh -o BatchMode=yes hwj-frp-9070xt-2404 \
+  "cd /home/hellogpu/hdb/hello-gpu-part2/code/part2-kernels && source .venv/bin/activate && python chapter7/plot_vector_add_ch7.py --summary chapter7/evidence/summary.csv --manifest chapter7/evidence/manifest.json --out chapter7/evidence/vector-add-ch7-bandwidth.png"
+rsync -az \
+  hwj-frp-9070xt-2404:/home/hellogpu/hdb/hello-gpu-part2/code/part2-kernels/chapter7/evidence/vector-add-ch7-bandwidth.png \
+  docs/part2-kernels/chapter7/images/vector-add-ch7-bandwidth.png
 ```
 
 ## Curated evidence files

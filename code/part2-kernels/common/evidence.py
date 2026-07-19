@@ -10,6 +10,7 @@ MANIFEST_FIELDS = (
     "source_sha256",
     "hardware",
     "software",
+    "platform",
     "benchmark",
 )
 

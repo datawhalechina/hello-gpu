@@ -12,6 +12,51 @@ from pathlib import Path
 
 
 class Chapter7SummaryTest(unittest.TestCase):
+    def test_summary_curates_native_platform_evidence(self) -> None:
+        script = Path(__file__).parents[1] / "chapter7" / "summarize_results.py"
+        with tempfile.TemporaryDirectory() as temporary:
+            chapter = Path(temporary)
+            runs = chapter / "logs" / "runs"
+            runs.mkdir(parents=True)
+            (runs / "hip_run1.log").write_text(
+                "RESULT operator=vector-add implementation=hip-v0 runtime=hip "
+                "shape=1024 dtype=float32 block=256 grid=4 correct=OK "
+                "median_ms=0.02\n",
+                encoding="utf-8",
+            )
+            (chapter / "logs" / "environment.log").write_text(
+                '[os-release]\nPRETTY_NAME="Ubuntu 24.04.4 LTS"\n'
+                "VERSION_ID=24.04\n[virtualization]\nnone\n",
+                encoding="utf-8",
+            )
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(script),
+                    "--chapter-dir",
+                    str(chapter),
+                    "--git-commit",
+                    "abc1234",
+                ],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            manifest = json.loads(
+                (chapter / "evidence" / "manifest.json").read_text()
+            )
+            self.assertEqual(
+                manifest["platform"],
+                {
+                    "os_pretty_name": "Ubuntu 24.04.4 LTS",
+                    "virtualization": "none",
+                    "execution": "native",
+                },
+            )
+
     def test_profile_all_refreshes_curated_evidence_after_profiles(self) -> None:
         script = (
             Path(__file__).parents[1] / "chapter7" / "profile_all.sh"
@@ -174,6 +219,14 @@ class Chapter7SummaryTest(unittest.TestCase):
             )
             self.assertEqual(manifest["operator"], "vector-add")
             self.assertEqual(manifest["git_commit"], "abc1234")
+            self.assertEqual(
+                manifest["platform"],
+                {
+                    "os_pretty_name": "unavailable",
+                    "virtualization": "unavailable",
+                    "execution": "unavailable",
+                },
+            )
             with (chapter / "evidence" / "summary.csv").open(
                 encoding="utf-8", newline=""
             ) as summary_file:

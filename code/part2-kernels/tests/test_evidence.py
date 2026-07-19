@@ -26,6 +26,7 @@ class EvidenceContractTest(unittest.TestCase):
                 "manifest missing field: source_sha256",
                 "manifest missing field: hardware",
                 "manifest missing field: software",
+                "manifest missing field: platform",
                 "manifest missing field: benchmark",
             ],
         )

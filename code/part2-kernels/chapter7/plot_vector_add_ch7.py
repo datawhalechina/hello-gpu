@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+from dataclasses import dataclass
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -90,6 +91,52 @@ PUBLICATION_RCPARAMS = {
     "legend.frameon": False,
     "svg.fonttype": "none",
 }
+
+
+@dataclass(frozen=True)
+class PublicationLayout:
+    figure_width_inches: float
+    figure_height_inches: float
+    axes_bottom: float
+    footnote_y: float
+    footnote_font_size: float
+    xlabel_font_size: float
+    xlabel_labelpad: float
+    tick_label_font_size: float
+    tick_length: float
+    tick_pad: float
+
+
+def publication_layout() -> PublicationLayout:
+    return PublicationLayout(
+        figure_width_inches=16.0,
+        figure_height_inches=6.4,
+        axes_bottom=0.20,
+        footnote_y=0.02,
+        footnote_font_size=12.0,
+        xlabel_font_size=16.0,
+        xlabel_labelpad=10.0,
+        tick_label_font_size=13.0,
+        tick_length=6.0,
+        tick_pad=3.5,
+    )
+
+
+def footnote_xlabel_clearance_points(layout: PublicationLayout) -> float:
+    figure_height_points = layout.figure_height_inches * 72.0
+    footnote_top = (
+        layout.footnote_y * figure_height_points
+        + layout.footnote_font_size * 1.2
+    )
+    xlabel_bottom = (
+        layout.axes_bottom * figure_height_points
+        - layout.tick_length
+        - layout.tick_pad
+        - layout.tick_label_font_size * 1.2
+        - layout.xlabel_labelpad
+        - layout.xlabel_font_size * 1.2
+    )
+    return xlabel_bottom - footnote_top
 
 
 def format_experiment_subtitle(manifest: dict[str, object]) -> str:
@@ -203,6 +250,7 @@ def main() -> None:
     plt.rcParams.update(PUBLICATION_RCPARAMS)
     pick_cjk_font(plt, font_manager)
     plt.rcParams["axes.unicode_minus"] = False
+    layout = publication_layout()
 
     names = [row["implementation"] for row in rows]
     labels = [LABELS[name] for name in names]
@@ -233,7 +281,7 @@ def main() -> None:
     figure, (ax_bw, ax_norm) = plt.subplots(
         1,
         2,
-        figsize=(16, 6.4),
+        figsize=(layout.figure_width_inches, layout.figure_height_inches),
         dpi=300,
         sharey=True,
         gridspec_kw={"width_ratios": [1.15, 1.0], "wspace": 0.06},
@@ -258,10 +306,20 @@ def main() -> None:
     ax_bw.set_yticks(positions, labels, fontsize=15)
     ax_bw.invert_yaxis()
     ax_bw.set_xlim(0, max(bandwidth) * 1.18)
-    ax_bw.set_xlabel("有效带宽 (GB/s，按逻辑字节计算)", fontsize=16, labelpad=10)
+    ax_bw.set_xlabel(
+        "有效带宽 (GB/s，按逻辑字节计算)",
+        fontsize=layout.xlabel_font_size,
+        labelpad=layout.xlabel_labelpad,
+    )
     ax_bw.xaxis.grid(True, color=PALETTE["neutral"], linewidth=0.8, alpha=0.6)
     ax_bw.set_axisbelow(True)
-    ax_bw.tick_params(axis="both", length=6, width=1.5, labelsize=13)
+    ax_bw.tick_params(
+        axis="both",
+        length=layout.tick_length,
+        width=1.5,
+        labelsize=layout.tick_label_font_size,
+        pad=layout.tick_pad,
+    )
 
     for bar, value in zip(bars, bandwidth, strict=True):
         ax_bw.text(
@@ -299,10 +357,20 @@ def main() -> None:
         va="bottom",
     )
     ax_norm.set_xlim(0, max(norm_max) * 1.12)
-    ax_norm.set_xlabel("median 时间（相对 HIP v0 归一化）", fontsize=16, labelpad=10)
+    ax_norm.set_xlabel(
+        "median 时间（相对 HIP v0 归一化）",
+        fontsize=layout.xlabel_font_size,
+        labelpad=layout.xlabel_labelpad,
+    )
     ax_norm.xaxis.grid(True, color=PALETTE["neutral"], linewidth=0.8, alpha=0.6)
     ax_norm.set_axisbelow(True)
-    ax_norm.tick_params(axis="both", length=6, width=1.5, labelsize=13)
+    ax_norm.tick_params(
+        axis="both",
+        length=layout.tick_length,
+        width=1.5,
+        labelsize=layout.tick_label_font_size,
+        pad=layout.tick_pad,
+    )
 
     for bar, value in zip(bars2, norm, strict=True):
         ax_norm.text(
@@ -350,13 +418,18 @@ def main() -> None:
     )
     figure.text(
         0.02,
-        0.02,
+        layout.footnote_y,
         format_experiment_note(manifest),
         ha="left",
-        fontsize=12,
+        fontsize=layout.footnote_font_size,
         color=PALETTE["muted"],
     )
-    figure.subplots_adjust(left=0.16, right=0.985, top=0.84, bottom=0.13)
+    figure.subplots_adjust(
+        left=0.16,
+        right=0.985,
+        top=0.84,
+        bottom=layout.axes_bottom,
+    )
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(args.out, facecolor="white")

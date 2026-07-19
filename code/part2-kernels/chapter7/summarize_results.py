@@ -6,6 +6,7 @@ import argparse
 import csv
 import hashlib
 import json
+import shlex
 import statistics
 import sys
 from collections import defaultdict
@@ -42,6 +43,17 @@ TRACE_FIELDS = {
 }
 SOURCE_SUFFIXES = {".hip", ".py", ".sh"}
 UNAVAILABLE = "unavailable"
+
+
+def normalize_environment_value(value: str) -> str:
+    value = value.strip()
+    if not value or value.startswith(UNAVAILABLE):
+        return UNAVAILABLE
+    try:
+        tokens = shlex.split(value)
+    except ValueError:
+        return value
+    return " ".join(tokens) or UNAVAILABLE
 
 
 def parse_args() -> argparse.Namespace:
@@ -89,8 +101,38 @@ def read_environment_value(path: Path, key: str) -> str:
     for line in path.read_text(encoding="utf-8").splitlines():
         candidate, separator, value = line.partition("=")
         if separator and candidate == key:
-            return value or UNAVAILABLE
+            return normalize_environment_value(value)
     return UNAVAILABLE
+
+
+def read_environment_section_value(path: Path, section: str) -> str:
+    if not path.exists():
+        return UNAVAILABLE
+    in_section = False
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line == f"[{section}]":
+            in_section = True
+            continue
+        if in_section and line.startswith("[") and line.endswith("]"):
+            return UNAVAILABLE
+        if in_section and line.strip():
+            return normalize_environment_value(line)
+    return UNAVAILABLE
+
+
+def read_platform(path: Path) -> dict[str, str]:
+    virtualization = read_environment_section_value(path, "virtualization")
+    if virtualization == UNAVAILABLE:
+        execution = UNAVAILABLE
+    elif virtualization == "none":
+        execution = "native"
+    else:
+        execution = "virtualized"
+    return {
+        "os_pretty_name": read_environment_value(path, "PRETTY_NAME"),
+        "virtualization": virtualization,
+        "execution": execution,
+    }
 
 
 def read_env_file(path: Path) -> dict[str, str]:
@@ -223,23 +265,23 @@ def main() -> None:
         raise SystemExit("no RESULT records found; run run_all.sh first")
 
     summary = aggregate(records)
+    environment_log = paths.logs / "environment.log"
     manifest = {
         "operator": "vector-add",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "git_commit": args.git_commit,
         "source_sha256": source_sha256(paths.root),
         "hardware": read_environment_value(
-            paths.logs / "environment.log", "torch.cuda.device_name"
+            environment_log, "torch.cuda.device_name"
         ),
         "software": {
             "rocm": read_environment_value(
-                paths.logs / "environment.log", "torch.version.hip"
+                environment_log, "torch.version.hip"
             ),
-            "torch": read_environment_value(paths.logs / "environment.log", "torch"),
-            "triton": read_environment_value(
-                paths.logs / "environment.log", "triton"
-            ),
+            "torch": read_environment_value(environment_log, "torch"),
+            "triton": read_environment_value(environment_log, "triton"),
         },
+        "platform": read_platform(environment_log),
         "benchmark": read_env_file(paths.logs / "benchmark_manifest.env"),
     }
     errors = (

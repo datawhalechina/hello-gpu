@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from chapter7 import plot_vector_add_ch7 as plot
 from chapter7.plot_vector_add_ch7 import (
     format_experiment_note,
     format_experiment_subtitle,
@@ -175,6 +176,14 @@ class Chapter7PlotMetadataTest(unittest.TestCase):
         self.assertIn("N=1,024", format_experiment_subtitle(manifest))
         self.assertIn("5 个独立进程", format_experiment_note(manifest))
 
+    def test_publication_layout_reserves_bottom_text_clearance(self) -> None:
+        layout = plot.publication_layout()
+
+        self.assertGreaterEqual(
+            plot.footnote_xlabel_clearance_points(layout),
+            10.0,
+        )
+
     def test_plot_rejects_summary_shape_that_disagrees_with_manifest(self) -> None:
         manifest = {"benchmark": {"size": "1024", "independent_runs": "5"}}
         rows = [{"shape": "2048", "run_count": "5"}]
@@ -222,6 +231,43 @@ class Chapter7PublicCommandContractTest(unittest.TestCase):
             rerun_section,
         )
         self.assertNotIn("results/", rerun_section)
+
+    def test_experiment_documents_remote_plot_and_single_png_transfer(self) -> None:
+        experiment = (
+            Path(__file__).parents[1] / "chapter7" / "EXPERIMENT.md"
+        ).read_text(encoding="utf-8")
+        reproduction = experiment.split("## Reproduction commands", 1)[1].split(
+            "## Curated evidence files", 1
+        )[0]
+
+        self.assertIn("python3 -m unittest discover -s tests -v", reproduction)
+        self.assertIn("python3 - <<'PY'", reproduction)
+        self.assertNotIn("python -m unittest discover -s tests -v", reproduction)
+        self.assertIn(
+            "source .venv/bin/activate && python "
+            "chapter7/plot_vector_add_ch7.py",
+            reproduction,
+        )
+        self.assertIn(
+            "--out chapter7/evidence/vector-add-ch7-bandwidth.png",
+            reproduction,
+        )
+        self.assertIn("rsync -az", reproduction)
+        self.assertIn(
+            "hwj-frp-9070xt-2404:/home/hellogpu/hdb/hello-gpu-part2/"
+            "code/part2-kernels/chapter7/evidence/"
+            "vector-add-ch7-bandwidth.png",
+            reproduction,
+        )
+        self.assertIn(
+            "docs/part2-kernels/chapter7/images/"
+            "vector-add-ch7-bandwidth.png",
+            reproduction,
+        )
+        self.assertNotIn(
+            "--out ../../docs/part2-kernels/chapter7/images/",
+            reproduction,
+        )
 
 
 if __name__ == "__main__":
