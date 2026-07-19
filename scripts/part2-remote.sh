@@ -24,6 +24,13 @@ quote_for_remote_shell() {
     printf "'%s'" "${value}"
 }
 
+remote_path_guard() {
+    local target="$1"
+    printf 'remote_root=$(realpath -e -- %s) || exit 2; remote_target=$(realpath -m -- %s) || exit 2; case "$remote_target" in "$remote_root"/*) ;; *) echo "remote target escapes remote root" >&2; exit 2 ;; esac' \
+        "$(quote_for_remote_shell "${REMOTE_ROOT}")" \
+        "$(quote_for_remote_shell "${target}")"
+}
+
 command="${1:---help}"
 case "${command}" in
     --help|-h)
@@ -35,8 +42,9 @@ case "${command}" in
         ;;
     sync)
         remote_kernel_root="${REMOTE_ROOT}/code/part2-kernels"
+        remote_sync_command="mkdir -p -- $(quote_for_remote_shell "${REMOTE_ROOT}"); $(remote_path_guard "${remote_kernel_root}"); mkdir -p -- \"\$remote_target\""
         ssh -o BatchMode=yes "${REMOTE_HOST}" \
-            "mkdir -p -- $(quote_for_remote_shell "${remote_kernel_root}")"
+            "${remote_sync_command}"
         rsync -az --protect-args \
             --exclude '.venv/' --exclude '__pycache__/' --exclude 'logs/' \
             --exclude 'profiles/' --exclude 'results/' \
@@ -53,7 +61,7 @@ case "${command}" in
         fi
 
         remote_chapter_dir="${REMOTE_ROOT}/code/part2-kernels/${chapter}"
-        remote_run_command="cd -- $(quote_for_remote_shell "${remote_chapter_dir}") && exec --"
+        remote_run_command="$(remote_path_guard "${remote_chapter_dir}"); cd -- \"\$remote_target\" && exec --"
         for argument in "$@"; do
             remote_run_command+=" $(quote_for_remote_shell "${argument}")"
         done
