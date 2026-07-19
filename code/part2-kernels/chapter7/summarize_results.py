@@ -130,9 +130,13 @@ def read_trace_fields(paths: ChapterPaths, implementation: str) -> dict[str, obj
         return unavailable
 
     with path.open(encoding="utf-8", newline="") as file:
+        reader = csv.DictReader(file)
+        fieldnames = set(reader.fieldnames or ())
+        if "Kernel_Name" not in fieldnames:
+            return unavailable
         target_rows = [
             row
-            for row in csv.DictReader(file)
+            for row in reader
             if "vector_add" in row.get("Kernel_Name", "")
         ]
 
@@ -141,6 +145,9 @@ def read_trace_fields(paths: ChapterPaths, implementation: str) -> dict[str, obj
         "trace_dispatches": len(target_rows),
     }
     for source, destination in TRACE_FIELDS.items():
+        if source not in fieldnames:
+            fields[destination] = UNAVAILABLE
+            continue
         values = {row[source] for row in target_rows if row.get(source)}
         fields[destination] = next(iter(values)) if len(values) == 1 else UNAVAILABLE
     return fields
