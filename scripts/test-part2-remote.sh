@@ -74,9 +74,30 @@ cat > "${fake_bin}/rsync" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 
+for argument in "$@"; do
+    if [[ "${argument}" == "--protect-args" ]]; then
+        echo "rsync: unrecognized option '--protect-args'" >&2
+        exit 1
+    fi
+done
 : > "${PART2_FAKE_RSYNC_CALLED}"
 EOF
 chmod +x "${fake_bin}/rsync"
+
+PART2_REMOTE_ROOT="${remote_root}" \
+PART2_FAKE_RSYNC_CALLED="${fake_rsync_called}" \
+PART2_FAKE_SSH_COMMAND="${fake_ssh_command}" \
+PATH="${fake_bin}:${PATH}" \
+    bash "${TARGET}" sync
+rm -f "${fake_rsync_called}"
+
+mkdir -p "${remote_root}/code/part2-kernels/chapter7/evidence"
+PART2_REMOTE_ROOT="${remote_root}" \
+PART2_FAKE_RSYNC_CALLED="${fake_rsync_called}" \
+PART2_FAKE_SSH_COMMAND="${fake_ssh_command}" \
+PATH="${fake_bin}:${PATH}" \
+    bash "${TARGET}" fetch chapter7
+rm -f "${fake_rsync_called}"
 
 actual_output="${test_tmp}/actual"
 expected_output="${test_tmp}/expected"

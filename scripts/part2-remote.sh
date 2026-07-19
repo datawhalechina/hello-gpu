@@ -45,7 +45,7 @@ case "${command}" in
         remote_sync_command="mkdir -p -- $(quote_for_remote_shell "${REMOTE_ROOT}"); $(remote_path_guard "${remote_kernel_root}"); mkdir -p -- \"\$remote_target\""
         ssh -o BatchMode=yes "${REMOTE_HOST}" \
             "${remote_sync_command}"
-        rsync -az --protect-args \
+        rsync -az \
             --exclude '.venv/' --exclude '__pycache__/' --exclude 'logs/' \
             --exclude 'profiles/' --exclude 'results/' \
             "${REPO_ROOT}/code/part2-kernels/" \
@@ -74,7 +74,7 @@ case "${command}" in
         ssh -o BatchMode=yes "${REMOTE_HOST}" \
             "$(remote_path_guard "${remote_evidence_dir}")"
         mkdir -p "${REPO_ROOT}/code/part2-kernels/${chapter}/evidence"
-        rsync -az --protect-args \
+        rsync -az \
             "${REMOTE_HOST}:${remote_evidence_dir}/" \
             "${REPO_ROOT}/code/part2-kernels/${chapter}/evidence/"
         ;;
