@@ -140,10 +140,33 @@ def parse_args() -> argparse.Namespace:
 
 def read_rows(path: Path) -> list[dict[str, str]]:
     with path.open(encoding="utf-8", newline="") as file:
-        by_name = {row["implementation"]: row for row in csv.DictReader(file)}
-    missing = [name for name in ORDER if name not in by_name]
+        return list(csv.DictReader(file))
+
+
+def order_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    counts: dict[str, int] = {}
+    for row in rows:
+        implementation = row["implementation"]
+        counts[implementation] = counts.get(implementation, 0) + 1
+
+    duplicates = sorted(name for name, count in counts.items() if count > 1)
+    if duplicates:
+        raise ValueError(
+            f"summary has duplicate implementations: {', '.join(duplicates)}"
+        )
+
+    implementations = set(counts)
+    missing = [name for name in ORDER if name not in implementations]
+    unexpected = sorted(implementations - set(ORDER))
+    errors: list[str] = []
     if missing:
-        raise ValueError(f"summary is missing implementations: {', '.join(missing)}")
+        errors.append(f"missing implementations: {', '.join(missing)}")
+    if unexpected:
+        errors.append(f"unexpected implementations: {', '.join(unexpected)}")
+    if errors:
+        raise ValueError(f"summary has {'; '.join(errors)}")
+
+    by_name = {row["implementation"]: row for row in rows}
     return [by_name[name] for name in ORDER]
 
 
@@ -168,6 +191,7 @@ def main() -> None:
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
     rows = read_rows(args.summary)
     validate_summary_metadata(rows, manifest)
+    rows = order_rows(rows)
 
     import matplotlib
 
