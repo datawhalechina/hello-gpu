@@ -397,5 +397,6 @@ rocprofv3 --kernel-trace \
 
 - [AMD HIP 编程模型](https://rocm.docs.amd.com/projects/HIP/en/latest/understand/programming_model.html)：thread、block、grid、wavefront 与同步边界。
 - [AMD HIP C++ Language Extensions](https://rocm.docs.amd.com/projects/HIP/en/latest/reference/kernel_language.html)：`__shared__`、同步与 shuffle 等 kernel 语言能力。
-- [Triton Reduction 教程](https://triton-lang.org/main/getting-started/tutorials/02-fused-softmax.html)：在 Softmax 中使用 `tl.max`、`tl.sum` 的官方示例。
+- [Triton `tl.sum` API](https://triton-lang.org/main/python-api/generated/triton.language.sum.html)：本章直接使用的归约原语。
+- [Triton Fused Softmax 教程](https://triton-lang.org/main/getting-started/tutorials/02-fused-softmax.html)：在完整算子中组合 `tl.max`、`tl.sum` 的官方示例。
 - [PyTorch HIP 语义](https://docs.pytorch.org/docs/stable/notes/hip.html)：ROCm 构建为什么继续复用 `torch.cuda` 接口名。

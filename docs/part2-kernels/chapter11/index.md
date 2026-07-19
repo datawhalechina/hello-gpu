@@ -1,6 +1,6 @@
 ---
 title: "第11章 Fusion：融合算子"
-description: "Hello GPU 第11章 · 以 FlashAttention 为例，学习在线计算、减少中间写回与 IO-aware"
+description: "Hello GPU 第11章 · 用 FlashAttention-style 在线 Attention 学习减少中间写回与 IO-aware"
 ---
 
 # 第11章 Fusion：融合算子
@@ -9,7 +9,7 @@ description: "Hello GPU 第11章 · 以 FlashAttention 为例，学习在线计�
 
 前四章分别练习了逐元素、归约、归一化和矩阵乘。本章把它们组合成一次完整的数据流：先计算 `QKᵀ`，再做逐行 Softmax，最后乘以 `V`。真正的新问题不是公式，而是中间的 `S×S` 矩阵要不要写回显存。
 
-本章提供两条教学路线：HIP 先实现三段式物化版本，再实现不保存完整 Scores/Probability 的在线版本；Triton 用一个 program 处理一行 query，并在 key tile 之间维护在线 Softmax 状态。代码是可运行的第一版，不附带未经验证的性能结论。
+本章提供两条教学路线：HIP 先实现三段式物化版本，再实现不保存完整 Scores/Probability 的在线版本；Triton 用一个 program 处理一行 query，并在 key tile 之间维护在线 Softmax 状态。这是 **FlashAttention-style 的教学实现**，借用了在线 Softmax 和避免物化 `S×S` 中间量的思想，不等同于复现完整论文 kernel。代码不附带未经验证的性能结论。
 
 ## 11.1 先固定 Attention 的语义
 
@@ -187,6 +187,6 @@ HIP 把线程协作和同步完整暴露出来；Triton 更接近 tile 级数学
 
 ## 延伸阅读
 
-- Tri Dao 等人的 FlashAttention 论文：重点关注 online Softmax 与 IO-aware 分块。
-- AMD HIP Programming Manual：复习 LDS、同步和 wavefront。
-- Triton fused attention 教程：对照 program/tile 状态如何映射到编译器。
+- [FlashAttention 论文](https://arxiv.org/abs/2205.14135)：重点关注 IO-aware 分块与中间量生命周期。
+- [AMD HIP Programming Model](https://rocm.docs.amd.com/projects/HIP/en/latest/understand/programming_model.html)：复习 LDS、同步和 wavefront。
+- [Triton Fused Attention 教程](https://triton-lang.org/main/getting-started/tutorials/06-fused-attention.html)：对照更完整的 tile-level 在线状态如何映射到 program。

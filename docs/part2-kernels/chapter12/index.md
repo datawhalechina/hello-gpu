@@ -226,12 +226,13 @@ LeetGPU 或其他平台题目可以作为扩展练习，但隐藏 shape、评分
 ## 本章小结
 
 - RMSNorm 把逐元素平方、行归约、广播和权重缩放组合在一个小而完整的算子中。
+- 相对 LayerNorm，RMSNorm 去掉的是 re-centering（减均值），仍保留基于均方根的 re-scaling，并可带学习权重。
 - HIP serial 建立最短基线，HIP block 和 Triton row program 表达行内并行归约。
 - 融合主要减少中间数组和 dispatch；真实物理读写仍需 profiler 验证。
 - 当前第一版已经提供 HIP、Triton、正确性 reference、GPU event 和运行入口，并通过 RX 9070 XT 小规模正确性 smoke test；后续统一补正式性能与 profiling 数据，而不是虚构优化结论。
 
 ## 延伸阅读
 
-- RMSNorm 原论文：理解它相对 LayerNorm 移除了哪一项统计量。
-- AMD HIP Programming Manual：LDS、同步和 wave shuffle。
-- Triton reduction / layer normalization 教程：对照行级 program 的资源约束。
+- [RMSNorm 原论文](https://papers.neurips.cc/paper_files/paper/2019/file/1e8a19426224ca89e83cef47f1e7f53b-Paper.pdf)：理解它相对 LayerNorm 移除了 re-centering，而不是移除全部归一化缩放。
+- [AMD HIP Kernel Language](https://rocm.docs.amd.com/projects/HIP/en/latest/reference/kernel_language.html)：LDS、同步和 shuffle。
+- [Triton Layer Normalization 教程](https://triton-lang.org/main/getting-started/tutorials/05-layer-norm.html)：对照行级 program 的资源约束。

@@ -506,7 +506,7 @@ rocprofv3 --kernel-trace \
 
 ## 延伸阅读
 
-- AMD HIP Programming Model 与性能指南
-- ROCprofiler SDK / `rocprofv3` kernel trace 文档
-- Triton Matrix Multiplication 教程与 `tl.dot` API
-- PyTorch ROCm 的 CUDA semantics 兼容接口说明
+- [AMD HIP Programming Model](https://rocm.docs.amd.com/projects/HIP/en/latest/understand/programming_model.html)
+- [`rocprofv3` 使用文档](https://rocm.docs.amd.com/projects/rocprofiler-sdk/en/latest/how-to/using-rocprofv3.html)
+- [Triton Matrix Multiplication 教程](https://triton-lang.org/main/getting-started/tutorials/03-matrix-multiplication.html) 与 [`tl.dot` API](https://triton-lang.org/main/python-api/generated/triton.language.dot.html)
+- [PyTorch HIP 语义](https://docs.pytorch.org/docs/stable/notes/hip.html)

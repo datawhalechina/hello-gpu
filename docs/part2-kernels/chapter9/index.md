@@ -616,6 +616,10 @@ cols = 31, 32, 33, 255, 256, 257, 1024, 4097
 
 ## 延伸阅读
 
+- [Triton Fused Softmax 教程](https://triton-lang.org/main/getting-started/tutorials/02-fused-softmax.html)：官方的一行一个 program 教学实现；本章的 program 映射只描述当前实现，不代表所有 Softmax kernel。
+- [Triton `tl.max` API](https://triton-lang.org/main/python-api/generated/triton.language.max.html) 与 [`tl.sum` API](https://triton-lang.org/main/python-api/generated/triton.language.sum.html)：两次归约的语言语义。
+- [AMD HIP Kernel Language](https://rocm.docs.amd.com/projects/HIP/en/latest/reference/kernel_language.html)：LDS、同步和 kernel 内建变量。
+- [`rocprofv3` 使用文档](https://rocm.docs.amd.com/projects/rocprofiler-sdk/en/latest/how-to/using-rocprofv3.html)：kernel trace 的官方命令说明。
 - [第 7 章 Element-Wise：逐元素算子](../chapter7/index.md)
 - [第 8 章 Reduction：归约算子](../chapter8/index.md)
 - [第 5 章 用 rocprof 找到慢点](../../part1-profiling/chapter5/index.md)
