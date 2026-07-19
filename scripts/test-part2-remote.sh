@@ -33,8 +33,11 @@ trap cleanup EXIT
 
 fake_bin="${test_tmp}/bin"
 fake_ssh_command="${test_tmp}/ssh-command"
+fake_ssh_called="${test_tmp}/ssh-called"
 fake_rsync_called="${test_tmp}/rsync-called"
-remote_root="${test_tmp}/remote root"
+fake_rsync_args="${test_tmp}/rsync-args"
+fake_remote_rsync_called="${test_tmp}/remote-rsync-called"
+remote_root="${test_tmp}/remote root' ;\$(touch pwned);#"
 outside_root="${test_tmp}/outside"
 mkdir -p "${fake_bin}" "${remote_root}/code/part2-kernels/chapter7"
 
@@ -46,6 +49,7 @@ set -euo pipefail
 [[ "$2" == "BatchMode=yes" ]]
 shift 3
 [[ "$#" == "1" ]]
+: >> "${PART2_FAKE_SSH_CALLED}"
 printf '%s' "$1" > "${PART2_FAKE_SSH_COMMAND}"
 bash -c "$1"
 EOF
@@ -74,30 +78,66 @@ cat > "${fake_bin}/rsync" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ "${1:-}" == "--server" ]]; then
+    : > "${PART2_FAKE_REMOTE_RSYNC_CALLED}"
+    exit 0
+fi
+
+: > "${PART2_FAKE_RSYNC_ARGS}"
+remote_command=""
 for argument in "$@"; do
-    if [[ "${argument}" == "--protect-args" ]]; then
-        echo "rsync: unrecognized option '--protect-args'" >&2
-        exit 1
-    fi
+    printf '<%s>\n' "${argument}" >> "${PART2_FAKE_RSYNC_ARGS}"
+    case "${argument}" in
+        --protect-args|--delete|--delete-*)
+            echo "forbidden rsync option: ${argument}" >&2
+            exit 1
+            ;;
+        --rsync-path=*)
+            remote_command="${argument#--rsync-path=}"
+            ;;
+    esac
 done
+
+[[ -n "${remote_command}" ]]
+[[ "$*" == *"${PART2_REMOTE_HOST}:."* ]]
+bash -c "${remote_command} --server"
 : > "${PART2_FAKE_RSYNC_CALLED}"
 EOF
 chmod +x "${fake_bin}/rsync"
 
 PART2_REMOTE_ROOT="${remote_root}" \
+PART2_REMOTE_HOST="fake-host" \
 PART2_FAKE_RSYNC_CALLED="${fake_rsync_called}" \
+PART2_FAKE_RSYNC_ARGS="${fake_rsync_args}" \
+PART2_FAKE_REMOTE_RSYNC_CALLED="${fake_remote_rsync_called}" \
 PART2_FAKE_SSH_COMMAND="${fake_ssh_command}" \
+PART2_FAKE_SSH_CALLED="${fake_ssh_called}" \
 PATH="${fake_bin}:${PATH}" \
     bash "${TARGET}" sync
+[[ ! -e "${fake_ssh_called}" ]]
+[[ -e "${fake_remote_rsync_called}" ]]
+grep -Fxq '<fake-host:.>' "${fake_rsync_args}"
+grep -Fq '<--rsync-path=' "${fake_rsync_args}"
+[[ ! -e "${test_tmp}/pwned" ]]
 rm -f "${fake_rsync_called}"
+rm -f "${fake_remote_rsync_called}"
 
 mkdir -p "${remote_root}/code/part2-kernels/chapter7/evidence"
 PART2_REMOTE_ROOT="${remote_root}" \
+PART2_REMOTE_HOST="fake-host" \
 PART2_FAKE_RSYNC_CALLED="${fake_rsync_called}" \
+PART2_FAKE_RSYNC_ARGS="${fake_rsync_args}" \
+PART2_FAKE_REMOTE_RSYNC_CALLED="${fake_remote_rsync_called}" \
 PART2_FAKE_SSH_COMMAND="${fake_ssh_command}" \
+PART2_FAKE_SSH_CALLED="${fake_ssh_called}" \
 PATH="${fake_bin}:${PATH}" \
     bash "${TARGET}" fetch chapter7
+[[ ! -e "${fake_ssh_called}" ]]
+[[ -e "${fake_remote_rsync_called}" ]]
+grep -Fxq '<fake-host:.>' "${fake_rsync_args}"
+[[ ! -e "${test_tmp}/pwned" ]]
 rm -f "${fake_rsync_called}"
+rm -f "${fake_remote_rsync_called}"
 
 actual_output="${test_tmp}/actual"
 expected_output="${test_tmp}/expected"
@@ -111,6 +151,7 @@ printf '<%s>\n' \
 
 PART2_REMOTE_ROOT="${remote_root}" \
 PART2_FAKE_SSH_COMMAND="${fake_ssh_command}" \
+PART2_FAKE_SSH_CALLED="${fake_ssh_called}" \
 PATH="${fake_bin}:${PATH}" \
     bash "${TARGET}" run chapter7 printf '<%s>\n' \
         '' \
@@ -135,6 +176,7 @@ ln -s "${outside_root}" "${remote_root}/code/part2-kernels/chapter7"
 escaped_run_output="${test_tmp}/escaped-run"
 if PART2_REMOTE_ROOT="${remote_root}" \
     PART2_FAKE_SSH_COMMAND="${fake_ssh_command}" \
+    PART2_FAKE_SSH_CALLED="${fake_ssh_called}" \
     PATH="${fake_bin}:${PATH}" \
     bash "${TARGET}" run chapter7 true > "${escaped_run_output}" 2>&1; then
     echo "escaped run path unexpectedly accepted" >&2
@@ -147,8 +189,12 @@ ln -s "${outside_root}" "${remote_root}/code"
 
 escaped_sync_output="${test_tmp}/escaped-sync"
 if PART2_REMOTE_ROOT="${remote_root}" \
+    PART2_REMOTE_HOST="fake-host" \
     PART2_FAKE_RSYNC_CALLED="${fake_rsync_called}" \
+    PART2_FAKE_RSYNC_ARGS="${fake_rsync_args}" \
+    PART2_FAKE_REMOTE_RSYNC_CALLED="${fake_remote_rsync_called}" \
     PART2_FAKE_SSH_COMMAND="${fake_ssh_command}" \
+    PART2_FAKE_SSH_CALLED="${fake_ssh_called}" \
     PATH="${fake_bin}:${PATH}" \
     bash "${TARGET}" sync > "${escaped_sync_output}" 2>&1; then
     echo "escaped sync path unexpectedly accepted" >&2
@@ -157,11 +203,16 @@ fi
 grep -Fq "remote target escapes remote root" "${escaped_sync_output}"
 [[ ! -e "${outside_root}/part2-kernels" ]]
 [[ ! -e "${fake_rsync_called}" ]]
+[[ ! -e "${fake_remote_rsync_called}" ]]
 
 escaped_fetch_output="${test_tmp}/escaped-fetch"
 if PART2_REMOTE_ROOT="${remote_root}" \
+    PART2_REMOTE_HOST="fake-host" \
     PART2_FAKE_RSYNC_CALLED="${fake_rsync_called}" \
+    PART2_FAKE_RSYNC_ARGS="${fake_rsync_args}" \
+    PART2_FAKE_REMOTE_RSYNC_CALLED="${fake_remote_rsync_called}" \
     PART2_FAKE_SSH_COMMAND="${fake_ssh_command}" \
+    PART2_FAKE_SSH_CALLED="${fake_ssh_called}" \
     PATH="${fake_bin}:${PATH}" \
     bash "${TARGET}" fetch chapter7 > "${escaped_fetch_output}" 2>&1; then
     echo "escaped fetch path unexpectedly accepted" >&2
@@ -169,5 +220,6 @@ if PART2_REMOTE_ROOT="${remote_root}" \
 fi
 grep -Fq "remote target escapes remote root" "${escaped_fetch_output}"
 [[ ! -e "${fake_rsync_called}" ]]
+[[ ! -e "${fake_remote_rsync_called}" ]]
 
 echo "part2 remote wrapper contract: PASS"

@@ -42,14 +42,13 @@ case "${command}" in
         ;;
     sync)
         remote_kernel_root="${REMOTE_ROOT}/code/part2-kernels"
-        remote_sync_command="mkdir -p -- $(quote_for_remote_shell "${REMOTE_ROOT}"); $(remote_path_guard "${remote_kernel_root}"); mkdir -p -- \"\$remote_target\""
-        ssh -o BatchMode=yes "${REMOTE_HOST}" \
-            "${remote_sync_command}"
+        remote_sync_command="mkdir -p -- $(quote_for_remote_shell "${REMOTE_ROOT}"); $(remote_path_guard "${remote_kernel_root}"); mkdir -p -- \"\$remote_target\"; cd -- \"\$remote_target\" && exec rsync"
         rsync -az \
             --exclude '.venv/' --exclude '__pycache__/' --exclude 'logs/' \
             --exclude 'profiles/' --exclude 'results/' \
+            "--rsync-path=${remote_sync_command}" \
             "${REPO_ROOT}/code/part2-kernels/" \
-            "${REMOTE_HOST}:${remote_kernel_root}/"
+            "${REMOTE_HOST}:."
         ;;
     run)
         chapter="${2:-}"
@@ -71,11 +70,11 @@ case "${command}" in
         chapter="${2:-}"
         require_chapter "${chapter}"
         remote_evidence_dir="${REMOTE_ROOT}/code/part2-kernels/${chapter}/evidence"
-        ssh -o BatchMode=yes "${REMOTE_HOST}" \
-            "$(remote_path_guard "${remote_evidence_dir}")"
+        remote_fetch_command="$(remote_path_guard "${remote_evidence_dir}"); cd -- \"\$remote_target\" && exec rsync"
         mkdir -p "${REPO_ROOT}/code/part2-kernels/${chapter}/evidence"
         rsync -az \
-            "${REMOTE_HOST}:${remote_evidence_dir}/" \
+            "--rsync-path=${remote_fetch_command}" \
+            "${REMOTE_HOST}:." \
             "${REPO_ROOT}/code/part2-kernels/${chapter}/evidence/"
         ;;
     *)
