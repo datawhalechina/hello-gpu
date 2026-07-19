@@ -165,18 +165,50 @@ int main(int argc, char** argv) {
 
     for (const std::string version : {"serial", "block"}) {
         if (options.version != "all" && options.version != version) continue;
+        launch(version);
+        HIP_CHECK(hipDeviceSynchronize());
+        std::vector<float> actual(elements);
+        HIP_CHECK(hipMemcpy(actual.data(), d_output, bytes,
+                            hipMemcpyDeviceToHost));
+        float precheck_error = 0.0f;
+        for (int i = 0; i < elements; ++i) {
+            precheck_error = std::max(precheck_error,
+                                      std::abs(actual[i] - reference[i]));
+        }
+        if (precheck_error >= 2e-5f) {
+            std::cout << "RESULT operator=rmsnorm implementation=hip-" << version
+                      << " runtime=hip shape=" << options.rows << 'x' << options.cols
+                      << " rows=" << options.rows << " cols=" << options.cols
+                      << " dtype=float32 block=" << options.block
+                      << " warmup=" << options.warmup << " repeat=" << options.repeat
+                      << " seed=" << options.seed << " timed=0 correct=FAIL"
+                      << " precheck=FAIL postcheck=NA min_ms=NA median_ms=NA mean_ms=NA"
+                      << " max_abs_error=" << precheck_error << '\n';
+            return 1;
+        }
         for (int i = 0; i < options.warmup; ++i) launch(version);
         HIP_CHECK(hipDeviceSynchronize());
-        hipEvent_t start, stop;
-        HIP_CHECK(hipEventCreate(&start));
-        HIP_CHECK(hipEventCreate(&stop));
-        HIP_CHECK(hipEventRecord(start));
-        for (int i = 0; i < options.repeat; ++i) launch(version);
-        HIP_CHECK(hipEventRecord(stop));
-        HIP_CHECK(hipEventSynchronize(stop));
-        float total_ms = 0.0f;
-        HIP_CHECK(hipEventElapsedTime(&total_ms, start, stop));
-        std::vector<float> actual(elements);
+        std::vector<hipEvent_t> starts(options.repeat), stops(options.repeat);
+        for (int i = 0; i < options.repeat; ++i) {
+            HIP_CHECK(hipEventCreate(&starts[i]));
+            HIP_CHECK(hipEventCreate(&stops[i]));
+            HIP_CHECK(hipEventRecord(starts[i]));
+            launch(version);
+            HIP_CHECK(hipEventRecord(stops[i]));
+        }
+        HIP_CHECK(hipDeviceSynchronize());
+        std::vector<float> times_ms(options.repeat);
+        for (int i = 0; i < options.repeat; ++i) {
+            HIP_CHECK(hipEventElapsedTime(&times_ms[i], starts[i], stops[i]));
+            HIP_CHECK(hipEventDestroy(starts[i]));
+            HIP_CHECK(hipEventDestroy(stops[i]));
+        }
+        std::sort(times_ms.begin(), times_ms.end());
+        float sum_ms = 0.0f;
+        for (float time_ms : times_ms) sum_ms += time_ms;
+        const float median_ms = options.repeat % 2 == 0
+            ? (times_ms[options.repeat / 2 - 1] + times_ms[options.repeat / 2]) / 2.0f
+            : times_ms[options.repeat / 2];
         HIP_CHECK(hipMemcpy(actual.data(), d_output, bytes,
                             hipMemcpyDeviceToHost));
         float max_error = 0.0f;
@@ -185,13 +217,16 @@ int main(int argc, char** argv) {
         }
         bool correct = max_error < 2e-5f;
         std::cout << "RESULT operator=rmsnorm implementation=hip-" << version
-                  << " runtime=hip rows=" << options.rows
-                  << " cols=" << options.cols << " block=" << options.block
+                  << " runtime=hip shape=" << options.rows << 'x' << options.cols
+                  << " rows=" << options.rows << " cols=" << options.cols
+                  << " dtype=float32 block=" << options.block
+                  << " warmup=" << options.warmup << " repeat=" << options.repeat
+                  << " seed=" << options.seed << " timed=1"
                   << " correct=" << (correct ? "OK" : "FAIL")
-                  << " mean_ms=" << total_ms / options.repeat
+                  << " precheck=OK postcheck=" << (correct ? "OK" : "FAIL")
+                  << " min_ms=" << times_ms.front() << " median_ms=" << median_ms
+                  << " mean_ms=" << sum_ms / options.repeat
                   << " max_abs_error=" << max_error << '\n';
-        HIP_CHECK(hipEventDestroy(start));
-        HIP_CHECK(hipEventDestroy(stop));
         if (!correct) return 1;
     }
 

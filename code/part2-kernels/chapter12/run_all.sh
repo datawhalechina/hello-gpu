@@ -8,6 +8,8 @@ ROWS="${ROWS:-1024}"
 COLS="${COLS:-4096}"
 WARMUP="${WARMUP:-5}"
 REPEAT="${REPEAT:-20}"
+SEED="${SEED:-20260719}"
+RUN_EDGE_CASES="${RUN_EDGE_CASES:-1}"
 BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hello-gpu-ch12.XXXXXX")"
 trap 'rm -rf "${BUILD_DIR}"' EXIT
 
@@ -17,12 +19,14 @@ source "${PART_DIR}/activate-rocm.sh"
 hipcc --offload-arch="${GPU_ARCH}" -O3 -std=c++17 \
     "${SCRIPT_DIR}/rmsnorm_hip.hip" -o "${BUILD_DIR}/rmsnorm_hip"
 
-echo "[chapter12] edge correctness"
-"${BUILD_DIR}/rmsnorm_hip" --version all --rows 3 --cols 13 --warmup 0 --repeat 1
-python "${SCRIPT_DIR}/rmsnorm_triton.py" --version all --rows 3 --cols 13 --warmup 0 --repeat 1
+if [[ "${RUN_EDGE_CASES}" == "1" ]]; then
+    echo "[chapter12] edge correctness"
+    "${BUILD_DIR}/rmsnorm_hip" --version all --rows 33 --cols 257 --warmup 0 --repeat 1 --seed "${SEED}"
+    python "${SCRIPT_DIR}/rmsnorm_triton.py" --version all --rows 33 --cols 257 --warmup 0 --repeat 1 --seed "${SEED}"
+fi
 
 echo "[chapter12] teaching benchmark"
 "${BUILD_DIR}/rmsnorm_hip" --version all --rows "${ROWS}" --cols "${COLS}" \
-    --warmup "${WARMUP}" --repeat "${REPEAT}"
+    --warmup "${WARMUP}" --repeat "${REPEAT}" --seed "${SEED}"
 python "${SCRIPT_DIR}/rmsnorm_triton.py" --version all \
-    --rows "${ROWS}" --cols "${COLS}" --warmup "${WARMUP}" --repeat "${REPEAT}"
+    --rows "${ROWS}" --cols "${COLS}" --warmup "${WARMUP}" --repeat "${REPEAT}" --seed "${SEED}"

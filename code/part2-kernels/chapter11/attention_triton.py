@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import math
+import statistics
 
 import torch
 import triton
@@ -61,10 +62,15 @@ def online_attention_kernel(
     )
 
 
-def launch(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, block_k: int) -> torch.Tensor:
+def launch(
+    q: torch.Tensor,
+    k: torch.Tensor,
+    v: torch.Tensor,
+    output: torch.Tensor,
+    block_k: int,
+) -> None:
     seq, dim = q.shape
     block_d = triton.next_power_of_2(dim)
-    output = torch.empty_like(q)
     online_attention_kernel[(seq,)](
         q,
         k,
@@ -77,22 +83,27 @@ def launch(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, block_k: int) -> t
         BLOCK_D=block_d,
         num_warps=4 if block_d <= 128 else 8,
     )
-    return output
-
-
-def time_launch(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, block_k: int,
-                warmup: int, repeat: int) -> tuple[torch.Tensor, float]:
+def time_launch(
+    q: torch.Tensor,
+    k: torch.Tensor,
+    v: torch.Tensor,
+    output: torch.Tensor,
+    block_k: int,
+    warmup: int,
+    repeat: int,
+) -> tuple[float, float, float]:
     for _ in range(warmup):
-        output = launch(q, k, v, block_k)
+        launch(q, k, v, output, block_k)
     torch.cuda.synchronize()
-    start = torch.cuda.Event(enable_timing=True)
-    stop = torch.cuda.Event(enable_timing=True)
-    start.record()
-    for _ in range(repeat):
-        output = launch(q, k, v, block_k)
-    stop.record()
-    stop.synchronize()
-    return output, start.elapsed_time(stop) / repeat
+    starts = [torch.cuda.Event(enable_timing=True) for _ in range(repeat)]
+    stops = [torch.cuda.Event(enable_timing=True) for _ in range(repeat)]
+    for start, stop in zip(starts, stops, strict=True):
+        start.record()
+        launch(q, k, v, output, block_k)
+        stop.record()
+    torch.cuda.synchronize()
+    times_ms = [start.elapsed_time(stop) for start, stop in zip(starts, stops, strict=True)]
+    return min(times_ms), statistics.median(times_ms), statistics.fmean(times_ms)
 
 
 def main() -> None:
@@ -116,16 +127,32 @@ def main() -> None:
     for version, block_k in configurations.items():
         if args.version not in ("all", version):
             continue
-        output, mean_ms = time_launch(
-            q, k, v, block_k, args.warmup, args.repeat
+        output = torch.empty_like(q)
+        launch(q, k, v, output, block_k)
+        torch.cuda.synchronize()
+        precheck = (output - reference).abs().max().item() < 2e-4
+        if not precheck:
+            print(
+                "RESULT operator=attention "
+                f"implementation=triton-{version} runtime=triton shape={args.seq}x{args.dim} "
+                f"seq={args.seq} dim={args.dim} dtype=float32 block_k={block_k} "
+                f"warmup={args.warmup} repeat={args.repeat} seed={args.seed} timed=0 "
+                "correct=FAIL precheck=FAIL postcheck=NA min_ms=NA median_ms=NA mean_ms=NA"
+            )
+            raise SystemExit(1)
+        min_ms, median_ms, mean_ms = time_launch(
+            q, k, v, output, block_k, args.warmup, args.repeat
         )
         max_error = (output - reference).abs().max().item()
         correct = max_error < 2e-4
         print(
             "RESULT operator=attention "
-            f"implementation=triton-{version} runtime=triton seq={args.seq} "
-            f"dim={args.dim} block_k={block_k} correct={'OK' if correct else 'FAIL'} "
-            f"mean_ms={mean_ms:.6f} max_abs_error={max_error:.8g}"
+            f"implementation=triton-{version} runtime=triton shape={args.seq}x{args.dim} "
+            f"seq={args.seq} dim={args.dim} dtype=float32 block_k={block_k} "
+            f"warmup={args.warmup} repeat={args.repeat} seed={args.seed} timed=1 "
+            f"correct={'OK' if correct else 'FAIL'} precheck=OK "
+            f"postcheck={'OK' if correct else 'FAIL'} min_ms={min_ms:.6f} "
+            f"median_ms={median_ms:.6f} mean_ms={mean_ms:.6f} max_abs_error={max_error:.8g}"
         )
         if not correct:
             raise SystemExit(1)

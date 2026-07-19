@@ -337,12 +337,13 @@ bool run_version(const Version& version,
                      "precheck failed for %s at flat index %zu\n",
                      version.name.c_str(), precheck.first_bad_index);
         std::printf(
-            "RESULT implementation=%s runtime=hip m=%zu n=%zu k=%zu "
-            "tile=%u warmup=%d repeat=%d timed=0 correct=FAIL "
-            "min_ms=NA median_ms=NA mean_ms=NA tflops=NA "
+            "RESULT operator=matmul implementation=%s runtime=hip "
+            "shape=%zux%zux%zu dtype=float32 m=%zu n=%zu k=%zu "
+            "tile=%u warmup=%d repeat=%d seed=%zu timed=0 correct=FAIL "
+            "precheck=FAIL postcheck=NA min_ms=NA median_ms=NA mean_ms=NA tflops=NA "
             "max_abs_error=%.9g\n",
-            version.name.c_str(), args.m, args.n, args.k, kTile,
-            args.warmup, args.repeat, precheck.max_absolute_error);
+            version.name.c_str(), args.m, args.n, args.k, args.m, args.n, args.k, kTile,
+            args.warmup, args.repeat, args.seed, precheck.max_absolute_error);
         return false;
     }
 
@@ -353,12 +354,14 @@ bool run_version(const Version& version,
         static_cast<double>(args.k);
     const double tflops = operations / (timing.median_ms * 1.0e-3) / 1.0e12;
     std::printf(
-        "RESULT implementation=%s runtime=hip m=%zu n=%zu k=%zu "
-        "tile=%u warmup=%d repeat=%d timed=1 correct=%s "
-        "min_ms=%.6f median_ms=%.6f mean_ms=%.6f tflops=%.6f "
+        "RESULT operator=matmul implementation=%s runtime=hip "
+        "shape=%zux%zux%zu dtype=float32 m=%zu n=%zu k=%zu "
+        "tile=%u warmup=%d repeat=%d seed=%zu timed=1 correct=%s "
+        "precheck=OK postcheck=%s min_ms=%.6f median_ms=%.6f mean_ms=%.6f tflops=%.6f "
         "max_abs_error=%.9g\n",
-        version.name.c_str(), args.m, args.n, args.k, kTile,
-        args.warmup, args.repeat, postcheck.correct ? "OK" : "FAIL",
+        version.name.c_str(), args.m, args.n, args.k, args.m, args.n, args.k, kTile,
+        args.warmup, args.repeat, args.seed, postcheck.correct ? "OK" : "FAIL",
+        postcheck.correct ? "OK" : "FAIL",
         timing.minimum_ms, timing.median_ms, timing.mean_ms, tflops,
         postcheck.max_absolute_error);
     return postcheck.correct;

@@ -12,7 +12,6 @@ WARMUP="${WARMUP:-10}"
 REPEAT="${REPEAT:-50}"
 SEED="${SEED:-20260719}"
 RUN_EDGE_CASES="${RUN_EDGE_CASES:-1}"
-RUN_PROFILE="${RUN_PROFILE:-0}"
 BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hello-gpu-ch9.XXXXXX")"
 HIP_BINARY="${BUILD_DIR}/softmax_hip"
 
@@ -80,31 +79,3 @@ SHAPES
 fi
 
 run_shape "${ROWS}" "${COLS}" "${WARMUP}" "${REPEAT}"
-
-# Optional kernel-trace examples. They are disabled by default because a trace
-# contains the precheck, warmup, and timed dispatches and must be interpreted as
-# a dispatch sequence rather than as one aggregate benchmark number.
-if [[ "${RUN_PROFILE}" == "1" ]]; then
-    PROFILE_DIR="${SCRIPT_DIR}/profiles"
-    mkdir -p "${PROFILE_DIR}"
-
-    rocprofv3 \
-        --kernel-trace \
-        --output-directory "${PROFILE_DIR}" \
-        --output-file "softmax-hip" \
-        --output-format csv \
-        -- "${HIP_BINARY}" \
-        --version all --rows "${ROWS}" --cols "${COLS}" \
-        --block "${HIP_BLOCK}" --warmup 0 --repeat 5 --seed "${SEED}"
-
-    rocprofv3 \
-        --kernel-trace \
-        --output-directory "${PROFILE_DIR}" \
-        --output-file "softmax-triton" \
-        --output-format csv \
-        -- python "${SCRIPT_DIR}/softmax_triton.py" \
-        --version all --rows "${ROWS}" --cols "${COLS}" \
-        --warmup 0 --repeat 5 --seed "${SEED}"
-
-    echo "profiles written to ${PROFILE_DIR}"
-fi

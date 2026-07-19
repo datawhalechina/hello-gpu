@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import statistics
 
 import torch
 import triton
@@ -32,13 +33,12 @@ def rmsnorm_kernel(
     )
 
 
-def launch(input_tensor: torch.Tensor, weight: torch.Tensor, epsilon: float,
-           num_warps: int) -> torch.Tensor:
+def launch(input_tensor: torch.Tensor, weight: torch.Tensor, output: torch.Tensor,
+           epsilon: float, num_warps: int) -> None:
     rows, cols = input_tensor.shape
     block_size = triton.next_power_of_2(cols)
     if block_size > 65536:
         raise ValueError("this teaching kernel supports cols <= 65536")
-    output = torch.empty_like(input_tensor)
     rmsnorm_kernel[(rows,)](
         input_tensor,
         weight,
@@ -48,22 +48,20 @@ def launch(input_tensor: torch.Tensor, weight: torch.Tensor, epsilon: float,
         BLOCK_SIZE=block_size,
         num_warps=num_warps,
     )
-    return output
-
-
-def time_launch(input_tensor: torch.Tensor, weight: torch.Tensor, epsilon: float,
-                num_warps: int, warmup: int, repeat: int) -> tuple[torch.Tensor, float]:
+def time_launch(input_tensor: torch.Tensor, weight: torch.Tensor, output: torch.Tensor,
+                epsilon: float, num_warps: int, warmup: int, repeat: int) -> tuple[float, float, float]:
     for _ in range(warmup):
-        output = launch(input_tensor, weight, epsilon, num_warps)
+        launch(input_tensor, weight, output, epsilon, num_warps)
     torch.cuda.synchronize()
-    start = torch.cuda.Event(enable_timing=True)
-    stop = torch.cuda.Event(enable_timing=True)
-    start.record()
-    for _ in range(repeat):
-        output = launch(input_tensor, weight, epsilon, num_warps)
-    stop.record()
-    stop.synchronize()
-    return output, start.elapsed_time(stop) / repeat
+    starts = [torch.cuda.Event(enable_timing=True) for _ in range(repeat)]
+    stops = [torch.cuda.Event(enable_timing=True) for _ in range(repeat)]
+    for start, stop in zip(starts, stops, strict=True):
+        start.record()
+        launch(input_tensor, weight, output, epsilon, num_warps)
+        stop.record()
+    torch.cuda.synchronize()
+    times_ms = [start.elapsed_time(stop) for start, stop in zip(starts, stops, strict=True)]
+    return min(times_ms), statistics.median(times_ms), statistics.fmean(times_ms)
 
 
 def main() -> None:
@@ -91,9 +89,23 @@ def main() -> None:
     for version, num_warps in configurations.items():
         if args.version not in ("all", version):
             continue
-        output, mean_ms = time_launch(
+        output = torch.empty_like(input_tensor)
+        launch(input_tensor, weight, output, args.epsilon, num_warps)
+        torch.cuda.synchronize()
+        precheck = (output - reference).abs().max().item() < 2e-5
+        if not precheck:
+            print(
+                "RESULT operator=rmsnorm "
+                f"implementation=triton-{version} runtime=triton shape={args.rows}x{args.cols} "
+                f"rows={args.rows} cols={args.cols} dtype=float32 num_warps={num_warps} "
+                f"warmup={args.warmup} repeat={args.repeat} seed={args.seed} timed=0 "
+                "correct=FAIL precheck=FAIL postcheck=NA min_ms=NA median_ms=NA mean_ms=NA"
+            )
+            raise SystemExit(1)
+        min_ms, median_ms, mean_ms = time_launch(
             input_tensor,
             weight,
+            output,
             args.epsilon,
             num_warps,
             args.warmup,
@@ -103,10 +115,12 @@ def main() -> None:
         correct = max_error < 2e-5
         print(
             "RESULT operator=rmsnorm "
-            f"implementation=triton-{version} runtime=triton rows={args.rows} "
-            f"cols={args.cols} num_warps={num_warps} "
-            f"correct={'OK' if correct else 'FAIL'} mean_ms={mean_ms:.6f} "
-            f"max_abs_error={max_error:.8g}"
+            f"implementation=triton-{version} runtime=triton shape={args.rows}x{args.cols} "
+            f"rows={args.rows} cols={args.cols} dtype=float32 num_warps={num_warps} "
+            f"warmup={args.warmup} repeat={args.repeat} seed={args.seed} timed=1 "
+            f"correct={'OK' if correct else 'FAIL'} precheck=OK "
+            f"postcheck={'OK' if correct else 'FAIL'} min_ms={min_ms:.6f} "
+            f"median_ms={median_ms:.6f} mean_ms={mean_ms:.6f} max_abs_error={max_error:.8g}"
         )
         if not correct:
             raise SystemExit(1)
