@@ -275,6 +275,8 @@ def validate_evidence_inputs(
         errors.append("benchmark_manifest source_commit does not match --git-commit")
     if benchmark.get("source_sha256") != manifest["source_sha256"]:
         errors.append("benchmark_manifest source_sha256 does not match current source hash")
+    if benchmark.get("independent_runs") != "3":
+        errors.append("benchmark_manifest independent_runs must be exactly 3")
     if len(independent_paths) != 3:
         errors.append(f"expected exactly 3 independent sources, found {len(independent_paths)}")
 
@@ -305,6 +307,13 @@ def validate_evidence_inputs(
         for field in ("correct", "precheck", "postcheck"):
             if record.get(field) != "OK":
                 errors.append(f"record {index} {field} is not OK")
+        if record.get("operator") != "vector-add":
+            errors.append(f"record {index} operator must be vector-add")
+        expected_runtime = "hip" if record.get("implementation", "").startswith("hip-") else "triton"
+        if record.get("runtime") != expected_runtime:
+            errors.append(f"record {index} runtime does not match implementation")
+        if record.get("timed") != "1":
+            errors.append(f"record {index} timed must be 1")
         for field in ("median_ms", "effective_bandwidth_gbs"):
             try:
                 value = float(record[field])
@@ -338,6 +347,8 @@ def validate_evidence_inputs(
 def validate_profile_config(paths: ChapterPaths, benchmark: dict[str, str]) -> list[str]:
     profile_path = paths.profiles / "profile_config.env"
     if not profile_path.exists():
+        if any(paths.profiles.glob("*_kernel_trace.csv")):
+            return ["profile_config.env is required when kernel traces exist"]
         return []
     profile = read_env_file(profile_path)
     errors: list[str] = []

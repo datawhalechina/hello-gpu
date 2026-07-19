@@ -45,6 +45,10 @@ class Chapter7SummaryTest(unittest.TestCase):
         mixed_shape: bool = False,
         bad_metric: bool = False,
         profile_source_commit: str | None = None,
+        independent_runs: int = 3,
+        bad_operator: bool = False,
+        bad_runtime: bool = False,
+        bad_timed: bool = False,
     ) -> None:
         (chapter / "benchmark.py").write_text("# benchmark source\n", encoding="utf-8")
         source_sha256 = source_sha256 or self._source_hash(chapter)
@@ -62,7 +66,7 @@ class Chapter7SummaryTest(unittest.TestCase):
                     "warmup=2",
                     "repeat=5",
                     "seed=7",
-                    "independent_runs=3",
+                    f"independent_runs={independent_runs}",
                     "gpu_arch=gfx1201",
                     "run_edge_cases=1",
                     "run_triton_viz=1",
@@ -82,11 +86,14 @@ class Chapter7SummaryTest(unittest.TestCase):
             for implementation, runtime, block in IMPLEMENTATIONS:
                 shape = "2048" if mixed_shape and run == 2 and implementation == "hip-v0" else "1024"
                 bandwidth = "0" if bad_metric and run == 1 and implementation == "hip-v0" else "1.0"
+                operator = "other-op" if bad_operator and run == 1 and implementation == "hip-v0" else "vector-add"
+                record_runtime = "triton" if bad_runtime and run == 1 and implementation == "hip-v0" else runtime
+                timed = "0" if bad_timed and run == 1 and implementation == "hip-v0" else "1"
                 records.append(
-                    "RESULT operator=vector-add "
-                    f"implementation={implementation} runtime={runtime} "
+                    f"RESULT operator={operator} "
+                    f"implementation={implementation} runtime={record_runtime} "
                     f"shape={shape} dtype=float32 block={block} grid=4 warmup=2 "
-                    "repeat=5 seed=7 timed=1 correct=OK precheck=OK postcheck=OK "
+                    f"repeat=5 seed=7 timed={timed} correct=OK precheck=OK postcheck=OK "
                     f"min_ms=0.01 median_ms=0.02 mean_ms=0.02 effective_bandwidth_gbs={bandwidth} max_abs_error=0\n"
                 )
             (runs / f"run{run}.log").write_text("".join(records), encoding="utf-8")
@@ -191,6 +198,56 @@ class Chapter7SummaryTest(unittest.TestCase):
 
             self.assertNotEqual(completed.returncode, 0)
             self.assertIn("profile_config", completed.stderr)
+
+    def test_summary_rejects_record_operator_runtime_and_timed_mismatches(self) -> None:
+        cases = (
+            ("operator", {"bad_operator": True}),
+            ("runtime", {"bad_runtime": True}),
+            ("timed", {"bad_timed": True}),
+        )
+        for field, kwargs in cases:
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as temporary:
+                chapter = Path(temporary)
+                self._write_fixture(chapter, **kwargs)
+
+                completed = self._summarize(chapter)
+
+                self.assertNotEqual(completed.returncode, 0)
+                self.assertIn(field, completed.stderr)
+
+    def test_summary_rejects_trace_without_profile_config(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            chapter = Path(temporary)
+            self._write_fixture(chapter)
+            (chapter / "profiles" / "profile_config.env").unlink()
+            (chapter / "profiles" / "hip-v0_kernel_trace.csv").write_text(
+                "Kernel_Name\nvector_add\n", encoding="utf-8"
+            )
+
+            completed = self._summarize(chapter)
+
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn("profile_config.env", completed.stderr)
+
+    def test_summary_allows_missing_profile_config_without_trace(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            chapter = Path(temporary)
+            self._write_fixture(chapter)
+            (chapter / "profiles" / "profile_config.env").unlink()
+
+            completed = self._summarize(chapter)
+
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+
+    def test_summary_rejects_manifest_independent_runs_not_three(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            chapter = Path(temporary)
+            self._write_fixture(chapter, independent_runs=2)
+
+            completed = self._summarize(chapter)
+
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn("independent_runs", completed.stderr)
 
     def test_run_and_profile_manifests_record_source_identity(self) -> None:
         chapter = Path(__file__).parents[1] / "chapter7"
