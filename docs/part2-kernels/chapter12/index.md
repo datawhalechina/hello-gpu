@@ -9,7 +9,7 @@ description: "Hello GPU 第12章 · 综合逐元素、归约与融合，独立�
 
 RMSNorm 很适合作为 Part 2 的结业题：平方是 Element-Wise，均值是 Reduction，归一化和权重缩放又是 Element-Wise，而高效实现希望把这些步骤融合在一次读写中。
 
-本章不再堆叠新术语，而是完整走一遍“固定语义 → 建立基线 → 融合 → 正确性 → 计时 → profiling → 记录负结果”的工作流。代码包含 HIP 与 Triton 两条路线，当前是完成优先的教学第一版；HIP 编译、Triton JIT 与小规模正确性 smoke test 已通过，正式远端性能数据将在统一实验阶段补充。
+本章不再堆叠新术语，而是完整走一遍“固定语义 → 建立基线 → 融合 → 正确性 → 计时 → profiling → 记录负结果”的工作流。HIP/Triton 边界检查、3 个独立正式进程和逐实现 trace 已在 RX 9070 XT 上完成。
 
 ## 12.1 从 LayerNorm 到 RMSNorm
 
@@ -223,13 +223,21 @@ profiling 字段:
 
 LeetGPU 或其他平台题目可以作为扩展练习，但隐藏 shape、评分口径和硬件可能不同。平台成绩不能替代本书实验机上的可复跑记录。
 
+## 正式实验结果
+
+![Chapter 12 RMSNorm 性能对比](./images/rmsnorm-performance.png)
+
+主 shape 为 `1024×4096` FP32。HIP serial 为 `1.50486 ms`，block 协作版为 `0.058440 ms`；Triton t0/t1 为 `0.033360/0.030081 ms`。串行行归约是明确负基线，而 t0/t1 的差距只适用于当前列数和资源配置。
+
+完整记录见 `code/part2-kernels/chapter12/EXPERIMENT.md`。
+
 ## 本章小结
 
 - RMSNorm 把逐元素平方、行归约、广播和权重缩放组合在一个小而完整的算子中。
 - 相对 LayerNorm，RMSNorm 去掉的是 re-centering（减均值），仍保留基于均方根的 re-scaling，并可带学习权重。
 - HIP serial 建立最短基线，HIP block 和 Triton row program 表达行内并行归约。
 - 融合主要减少中间数组和 dispatch；真实物理读写仍需 profiler 验证。
-- 当前第一版已经提供 HIP、Triton、正确性 reference、GPU event 和运行入口，并通过 RX 9070 XT 小规模正确性 smoke test；后续统一补正式性能与 profiling 数据，而不是虚构优化结论。
+- 当前实现已经提供 HIP、Triton、正确性 reference、GPU event、边界检查、3 个独立正式进程与逐实现 profiling 证据。
 
 ## 延伸阅读
 

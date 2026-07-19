@@ -18,7 +18,7 @@ description: "Hello GPU 第8章 · 以 Sum Reduction 为例，学习跨线程协
 3. 局部累加、Wave Shuffle 和二阶段 partial 分别减少了哪一层协作成本；
 4. HIP 与 Triton 的源码层次不同，为什么仍能映射到同一棵归约树。
 
-配套代码位于 `code/part2-kernels/chapter8/`。这是第 8 章第一版教学实现：**HIP 编译、Triton JIT 和小规模正确性 smoke test 已在目标 Radeon RX 9070 XT 上跑通，但尚未完成正式多轮测量，因此本章不发布性能数字，也不预先宣布哪个版本最快。**
+配套代码位于 `code/part2-kernels/chapter8/`。HIP、Triton、边界正确性、3 个独立正式进程和逐实现 `rocprofv3` trace 均已在 Radeon RX 9070 XT 上完成；本章只发布与 evidence 绑定的当前 shape 结论。
 
 ## 8.1 从“每个输出独立”到“大家合成一个结果”
 
@@ -361,8 +361,8 @@ rocprofv3 --kernel-trace \
 
 读 trace 时先验证结构，而不是急着比较总时间：HIP atomic/LDS 每次计时应看到一次主要归约 dispatch，two-stage 应看到 partial 与 final 两类归约 dispatch；Triton 两版也应出现第一阶段和第二阶段。随后再观察 grid、workgroup、LDS、VGPR 与每个 dispatch 的持续时间。
 
-::: warning 首版实验状态
-这些命令已经在目标 Radeon RX 9070 XT + ROCm 环境完成小规模 smoke test，HIP、Triton 和边界正确性均通过。一次 smoke test 不构成正式性能证据；最终结论仍必须以多轮远端 `RESULT` 与 `rocprofv3` 产物回填。
+::: tip 正式实验状态
+目标 Radeon RX 9070 XT + ROCm 环境已完成边界检查、3 个独立正式进程与 5 个独立 profile。正文结果来自提交的 curated evidence；原始日志和完整 trace 不跟踪进 Git。
 :::
 
 ## 8.10 练习与验收
@@ -383,6 +383,14 @@ rocprofv3 --kernel-trace \
 - 能复述 event 的计时边界，并明确逻辑带宽不等于物理显存流量；
 - 若某项未运行或失败，实验记录明确写出，不能静默跳过。
 
+## 正式实验结果
+
+![Chapter 8 Sum Reduction 性能对比](./images/reduction-performance.png)
+
+主 shape 为 `N=16,777,216` FP32。`hip-atomic` 的进程 median 中位数为 `34.4608 ms`，`hip-lds` 为 `4.32771 ms`，而二阶段 HIP、Triton t0/t1 位于 `0.0508–0.0599 ms`。这说明全局同地址争用和仅做 block 内归约都是本 shape 的负基线；同时，逻辑带宽不能当作物理显存（GDDR6）流量。
+
+完整协议、三进程范围、负结果与证据路径见 `code/part2-kernels/chapter8/EXPERIMENT.md`。
+
 ## 本章小结
 
 - Reduction 的难点来自多输入共同更新少输出；普通 `*output += value` 存在数据竞争。
@@ -391,7 +399,7 @@ rocprofv3 --kernel-trace \
 - 普通 kernel 没有跨 block 全局屏障。写 partial 后结束 dispatch，再用第二阶段合并，是清晰且可验证的同步边界。
 - Triton 用 program、grid-stride tile、mask 与 `tl.sum` 表达相同层次；抽象更高并不免除 partial buffer、第二阶段和完整计时。
 - 浮点归约的顺序会影响舍入。正确性标准必须同时说明 reference、输入分布、dtype 与容差。
-- 本章第一版已完成教程、可运行实验入口和 RX 9070 XT 小规模正确性 smoke test；正式性能与资源结论仍需多轮 benchmark 和 `rocprofv3` 证据。
+- 本章已完成教程、可运行实验入口、边界检查、3 个独立 benchmark 进程和逐实现 `rocprofv3` 证据。
 
 ## 延伸阅读
 

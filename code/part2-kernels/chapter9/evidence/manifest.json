@@ -1,0 +1,58 @@
+{
+  "benchmark": {
+    "dtype": "float32",
+    "operator": "softmax",
+    "repeat": "50",
+    "seed": "20260719",
+    "shape": "4096x1024",
+    "warmup": "10"
+  },
+  "environment": {
+    "BUG_REPORT_URL": "\"https://bugs.launchpad.net/ubuntu/\"",
+    "HOME_URL": "\"https://www.ubuntu.com/\"",
+    "ID": "ubuntu",
+    "ID_LIKE": "debian",
+    "LOGO": "ubuntu-logo",
+    "NAME": "\"Ubuntu\"",
+    "PRETTY_NAME": "\"Ubuntu 24.04.4 LTS\"",
+    "PRIVACY_POLICY_URL": "\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"",
+    "SUPPORT_URL": "\"https://help.ubuntu.com/\"",
+    "UBUNTU_CODENAME": "noble",
+    "VERSION": "\"24.04.4 LTS (Noble Numbat)\"",
+    "VERSION_CODENAME": "noble",
+    "VERSION_ID": "\"24.04\"",
+    "numpy": "2.5.1",
+    "torch": "2.11.0+rocm7.13.0",
+    "torch.cuda.device_name": "AMD Radeon RX 9070 XT",
+    "torch.cuda.is_available": "True",
+    "torch.version.hip": "7.13.99004",
+    "triton": "3.6.0",
+    "triton_viz": "3.0"
+  },
+  "generated_at": "2026-07-19T08:23:40.767314+00:00",
+  "git_commit": "ef1722a6743bc0a9d6528d1fa938ad64976f0c05",
+  "implementations": [
+    "hip-baseline-3kernel",
+    "hip-fused-block-lds",
+    "triton-t0-compact",
+    "triton-t1-wide"
+  ],
+  "operator": "softmax",
+  "process_count": 3,
+  "profile_config": {
+    "cols": "1024",
+    "gpu_arch": "gfx1201",
+    "hip_block": "256",
+    "profile_repeat": "5",
+    "profile_warmup": "0",
+    "rows": "4096",
+    "seed": "20260719",
+    "source_commit": "ef1722a6743bc0a9d6528d1fa938ad64976f0c05"
+  },
+  "run_logs": [
+    "chapter9-process-1.log",
+    "chapter9-process-2.log",
+    "chapter9-process-3.log"
+  ],
+  "run_logs_sha256": "cfec951e3178156cf5705dfed7e1b146133129d5f25328aba54b8c16962ff025"
+}

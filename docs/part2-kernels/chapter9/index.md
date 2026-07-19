@@ -30,7 +30,7 @@ code/part2-kernels/chapter9/
 ```
 
 ::: warning 首版实验状态
-本章第一版已经提供完整代码、边界用例和实验命令，并在项目目标机 Radeon RX 9070 XT、ROCm 7.13、原生 Ubuntu 24.04 上完成了小规模编译/JIT 与正确性 smoke test。正式多轮性能和 profiling 尚未执行，因此正文不提供性能数字，也不预设 HIP、Triton 或融合版谁更快。
+本章已经在 Radeon RX 9070 XT、ROCm 7.13、原生 Ubuntu 24.04 上完成边界正确性、3 个独立正式进程和逐实现 profiling。下文的性能结论只对应 `4096×1024` FP32 与已提交 evidence，不外推到其他列数或 dtype。
 :::
 
 ## 9.1 逐行 Softmax 到底算什么
@@ -603,6 +603,14 @@ cols = 31, 32, 33, 255, 256, 257, 1024, 4097
 
 **成功标准：**分别报告输入/输出 dtype、累加 dtype、误差阈值与失败 shape；不要沿用本章 FP32 阈值却不解释。
 
+## 正式实验结果
+
+![Chapter 9 Row Softmax 性能对比](./images/softmax-performance.png)
+
+主 shape 为 `4096×1024` FP32。HIP 三 kernel baseline 为 `0.744228 ms`，融合 LDS 版为 `0.115781 ms`；Triton compact/wide 分别为 `0.038361/0.060801 ms`。当前 shape 上 `t1-wide` 反而慢于 `t0-compact`，因此“更宽 block/更多 warps”被记录为负结果，而不是默认优化。
+
+完整记录见 `code/part2-kernels/chapter9/EXPERIMENT.md`。
+
 ## 本章小结
 
 - 逐行 Softmax 的列之间共享最大值和分母，行之间可以并行。
@@ -612,7 +620,7 @@ cols = 31, 32, 33, 255, 256, 257, 1024, 4097
 - Wave32 是硬件执行背景，但当前 HIP 首版是 block 级 LDS 算法，不应误称为 wave shuffle 优化。
 - Triton 用一个 program 描述一整行，`BLOCK_SIZE` 与 mask 负责逻辑覆盖，`num_warps` 是需要实测的编译/调度参数。
 - 非二次幂列、极大正负平移、单元素行、长行和 dtype 都属于正确性矩阵，而不是附加项。
-- 本章首版已完成实现、本地静态检查和目标 ROCm 机器的小规模正确性 smoke test；性能、资源和 profiler 结论仍待正式实验补入。
+- 本章已完成实现、边界检查、3 个独立正式进程、逐实现 profile 与 curated evidence。
 
 ## 延伸阅读
 

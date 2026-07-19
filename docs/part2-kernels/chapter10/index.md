@@ -25,7 +25,7 @@ C[M, N] = A[M, K] @ B[K, N]
 | `triton-baseline` | Triton | 32×32×32 tile，`GROUP_M=1` |
 | `triton-grouped` | Triton | kernel 不变，只把 program 排序改为 `GROUP_M=8` |
 
-本章**不提供尚未复跑的性能数字**。当前源码已完成静态语法检查，但 HIP 编译、GPU 正确性、kernel 时间、VGPR/LDS 和排序收益都必须在 Radeon RX 9070 XT（gfx1201）+ ROCm 7.13 + 原生 Ubuntu 24.04 实验机上重新采集后，才能形成性能结论。
+本章的 HIP/Triton 编译、边界正确性、3 个独立正式进程和逐实现 trace 已在 Radeon RX 9070 XT（gfx1201）+ ROCm 7.13 + 原生 Ubuntu 24.04 上完成。性能数字只描述 `512³` FP32 与当前实现。
 
 读完后，你应该能回答：
 
@@ -482,7 +482,7 @@ rocprofv3 --kernel-trace \
 | LDS | 检查 HIP tiled 是否确实分配共享存储 |
 | VGPR/SGPR | 为后续寄存器分块建立 baseline |
 
-当前仓库没有提交本章远端 profile 或性能表。完成实验后，应把硬件、提交 SHA、命令、原始 `RESULT`、trace 路径和结论一起记录；没有原始证据时不能把某个版本写成“更快”。
+当前仓库已提交 curated summary、manifest、profile 索引和实验记录；原始三进程日志与完整 trace 保留在仓库外。没有这些证据时仍不能只抄一个毫秒数并写成“更快”。
 
 ## 10.13 练习
 
@@ -494,6 +494,14 @@ rocprofv3 --kernel-trace \
 6. 选择一个极瘦矩阵，如 `M=4096, N=8, K=1024`。先预测固定 `32×32` tile 会浪费哪些位置，再用正确性与 trace 验证。
 7. 为转置 B 设计新的 row-major 地址公式。先修改 CPU reference，再修改 HIP/Triton；若只改 kernel 而 reference 不变，测试应失败。
 
+## 正式实验结果
+
+![Chapter 10 Matmul 性能对比](./images/matmul-performance.png)
+
+主 shape 为 `512×512×512` FP32。HIP tiled 的 `0.183022 ms` 稳定优于 naive 的 `0.400323 ms`。Triton grouped 的中心值为 `0.086721 ms`，但三进程范围与 baseline 重叠；`torch-mm` 也出现较宽进程范围。因此这里保留范围，不把单次最低值写成稳定胜负。
+
+完整记录见 `code/part2-kernels/chapter10/EXPERIMENT.md`。
+
 ## 本章小结
 
 - Matmul 的每个输出是长度 K 的点积；row-major 地址分别使用 K、N、N 作为行步长。
@@ -502,7 +510,7 @@ rocprofv3 --kernel-trace \
 - M/N 尾块保护输出覆盖，K 尾块保护点积输入；HIP 用 LDS 填零，Triton 用 mask 与 `other=0`。
 - 寄存器分块能增加 LDS fragment 的复用，也会提高 VGPR 压力；当前第一版只讲实验设计，不虚构 v2/v3 收益。
 - Triton baseline/grouped 使用相同 `tl.dot` tile，只改变 program 排序；更少 cache miss 是待验证假设，不是代码名称自带的结论。
-- 当前已完成源码、静态检查以及 9070XT 上的小规模 HIP/Triton 编译与正确性 smoke test；正式性能和 profiler 资源数据仍待多轮远端实验。
+- 当前已完成源码、静态检查、边界正确性、3 个独立正式进程与逐实现 profiler 证据。
 
 ## 延伸阅读
 

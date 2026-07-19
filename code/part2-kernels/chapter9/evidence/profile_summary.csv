@@ -1,0 +1,5 @@
+implementation,source,trace_dispatches,kernel_names,grid_size_x,workgroup_size_x,lds_block_size,scratch_size,vgpr_count,sgpr_count
+hip-baseline-3kernel,hip-baseline-3kernel_kernel_trace.csv,18,"(anonymous namespace)::normalize_rows(float const*, float const*, float*, unsigned long, unsigned long);(anonymous namespace)::row_exp_sum_serial(float const*, float const*, float*, float*, unsigned long, unsigned long);(anonymous namespace)::row_max_serial(float const*, float*, unsigned long, unsigned long)",unavailable,256,0,0,unavailable,128
+hip-fused-block-lds,hip-fused-block-lds_kernel_trace.csv,6,"(anonymous namespace)::softmax_fused_lds(float const*, float*, unsigned long, unsigned long)",1048576,256,0,0,16,128
+triton-t0-compact,triton-t0-compact_kernel_trace.csv,6,softmax_row_kernel,524288,128,0,0,40,128
+triton-t1-wide,triton-t1-wide_kernel_trace.csv,6,softmax_row_kernel,1048576,256,0,0,40,128

@@ -1,0 +1,5 @@
+operator,implementation,runtime,shape,correct,run_count,median_ms,dtype,sources,min_ms,min_ms_run_min,min_ms_run_max,median_ms_run_min,median_ms_run_max,mean_ms,mean_ms_run_min,mean_ms_run_max
+softmax,hip-baseline-3kernel,hip,4096x1024,OK,3,0.744228,float32,chapter9-process-1.log;chapter9-process-2.log;chapter9-process-3.log,0.672526,0.664606,0.673487,0.743547,0.746188,0.775872,0.760602,0.785061
+softmax,hip-fused-block-lds,hip,4096x1024,OK,3,0.115781,float32,chapter9-process-1.log;chapter9-process-2.log;chapter9-process-3.log,0.111322,0.110521,0.111762,0.114701,0.116281,0.119973,0.116928,0.12524
+softmax,triton-t0-compact,triton,4096x1024,OK,3,0.038361,float32,chapter9-process-1.log;chapter9-process-2.log;chapter9-process-3.log,0.03704,0.036921,0.03708,0.037941,0.038841,0.046631,0.044271,0.047425
+softmax,triton-t1-wide,triton,4096x1024,OK,3,0.060801,float32,chapter9-process-1.log;chapter9-process-2.log;chapter9-process-3.log,0.060281,0.0586,0.060481,0.060581,0.060841,0.060778,0.060744,0.069302

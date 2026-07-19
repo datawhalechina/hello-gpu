@@ -7,7 +7,7 @@ description: "从 Element-Wise 到 Fused RMSNorm，用 HIP 与 Triton 完成可�
 
 Part 1 已经教你量准时间、找到慢点并用 Roofline 选择排查方向。Part 2 开始把这些方法真正用在算子上：先固定数学语义和正确性，再提出瓶颈假设，分别沿 HIP 与 Triton 迭代，最后用同一份证据回答“改动有没有用”。
 
-当前阶段已经完成第 7–12 章的第一版正文和配套教学代码。[第 7 章 Element-Wise](./chapter7/index.md) 还包含 RX 9070 XT 上的 curated evidence；第 8–12 章先提供可阅读、可运行的 HIP/Triton 路线，不填写尚未统一远端复测的性能数字。
+第 7–12 章的正文、HIP/Triton 教学代码、边界正确性、3 个独立正式进程、逐实现 `rocprofv3` trace、curated evidence 与实验记录均已完成。所有性能结论都绑定 RX 9070 XT 上的固定 shape 和源码提交，不把教学结果外推为硬件通用结论。
 
 ## 这篇解决什么问题
 
@@ -40,11 +40,11 @@ Part 2 不把“优化技巧”整理成孤立清单，而是让六章依次引�
 | 顺序 | 章节 | 新增的核心问题 | 当前范围 |
 | ----: | ---- | ---- | ---- |
 | 1 | [第 7 章 Element-Wise：逐元素算子](./chapter7/index.md) | 输出彼此独立时，怎样划分下标、保持连续访问并处理尾部 | 完整正文与 curated evidence |
-| 2 | [第 8 章 Reduction：归约算子](./chapter8/index.md) | 多个输入共同生成较少输出时，怎样做跨线程协作 | 第一版正文 + HIP/Triton |
-| 3 | [第 9 章 Softmax（Normalization）](./chapter9/index.md) | 怎样把数值稳定的归约与逐元素计算组合起来 | 第一版正文 + HIP/Triton |
-| 4 | [第 10 章 GEMM-Like：矩阵乘类算子](./chapter10/index.md) | 怎样用 tile、数据复用和寄存器累加提高计算强度 | 第一版正文 + HIP/Triton |
-| 5 | [第 11 章 Attention/Fusion](./chapter11/index.md) | 怎样在线计算并减少中间结果的全局写回 | 第一版教学前向 + HIP/Triton |
-| 6 | [第 12 章 综合实战：Fused RMSNorm](./chapter12/index.md) | 怎样综合逐元素、归约与融合，独立完成完整优化闭环 | 第一版正文 + HIP/Triton |
+| 2 | [第 8 章 Reduction：归约算子](./chapter8/index.md) | 多个输入共同生成较少输出时，怎样做跨线程协作 | 正文 + HIP/Triton + evidence |
+| 3 | [第 9 章 Softmax（Normalization）](./chapter9/index.md) | 怎样把数值稳定的归约与逐元素计算组合起来 | 正文 + HIP/Triton + evidence |
+| 4 | [第 10 章 GEMM-Like：矩阵乘类算子](./chapter10/index.md) | 怎样用 tile、数据复用和寄存器累加提高计算强度 | 正文 + HIP/Triton + evidence |
+| 5 | [第 11 章 Attention/Fusion](./chapter11/index.md) | 怎样在线计算并减少中间结果的全局写回 | 教学前向 + HIP/Triton + evidence |
+| 6 | [第 12 章 综合实战：Fused RMSNorm](./chapter12/index.md) | 怎样综合逐元素、归约与融合，独立完成完整优化闭环 | 正文 + HIP/Triton + evidence |
 
 第 12 章不是突然出现的新技巧，而是一次结业题：数学语义来自 RMSNorm，数据依赖复用 Reduction，融合边界复用 Softmax 与 Attention/Fusion，实验记录则沿用前五章的统一契约。
 
@@ -109,4 +109,4 @@ code/part2-kernels/
 └── tests/
 ```
 
-第 7 章的发布表格只读取 `chapter7/evidence/` 中的 curated evidence；实验环境、参数、源码身份、负结果和复跑流程记录在 `chapter7/EXPERIMENT.md`。第 8–12 章可以分别执行各自的 `run_all.sh` 完成第一轮正确性和计时检查；在统一远端复测与证据整理完成前，正文只讲方法和运行入口，不发布性能排名。
+第 7–12 章的发布表格都只读取各章 `evidence/` 中的 curated evidence；实验环境、参数、源码身份、三进程范围、负结果和复跑流程记录在各章 `EXPERIMENT.md`。原始日志与完整 trace 不进入 Git，正文中的排名只描述对应固定 shape。

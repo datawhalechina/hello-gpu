@@ -6,9 +6,9 @@
 
 ## Source identity
 
-- Git commit: `9832d1e91d9f6bce7888005b5ef9bca60e3c6fdf`
-- Chapter source SHA-256: `e3e32487b36b1168fd291f87dc8c49adf22f5beb73eb673f2efd867a4d8d33da`
-- Evidence generated at: `2026-07-19T05:54:40.408571+00:00`
+- Git commit: `ef1722a6743bc0a9d6528d1fa938ad64976f0c05`
+- Chapter source SHA-256: `5e2e42f864fb7d519df4f88cf30eb8d40f195bd52a9a9d1d0df5618c8ec874fe`
+- Evidence generated at: `2026-07-19T08:17:01.287705+00:00`
 - Manifest identity: `evidence/manifest.json`
 
 ## Hardware and software
@@ -47,7 +47,7 @@
 | Warmup iterations | 10 |
 | Timed repetitions per process | 50 |
 | Independent processes | 3 |
-| Seed | 20260716 |
+| Seed | 20260719 |
 | HIP block | 256 |
 | Triton block | 1024 |
 
@@ -57,13 +57,13 @@
 
 | Implementation | Median (ms) | Run range (ms) | Logical effective bandwidth (GB/s) | Run range (GB/s) |
 | --- | ---: | ---: | ---: | ---: |
-| `hip-v0` | 0.336263 | 0.336163–0.336263 | 598.716769 | 598.716769–598.894875 |
-| `hip-v1-contiguous` | 0.369564 | 0.368244–0.369643 | 544.767872 | 544.650711–546.721372 |
-| `hip-v1-strided` | 2.559888 | 2.549787–2.563447 | 78.646641 | 78.537436–78.958202 |
-| `hip-v2` | 0.338584 | 0.338523–0.340203 | 594.613415 | 591.782847–594.720571 |
-| `hip-v3` | 0.342123 | 0.341663–0.342303 | 588.462602 | 588.152304–589.254032 |
-| `triton-t0` | 0.337544 | 0.337444–0.337843 | 596.446356 | 595.916738–596.622218 |
-| `triton-t1` | 0.339224 | 0.339163–0.339764 | 593.491574 | 592.548335–593.597465 |
+| `hip-v0` | 0.336324 | 0.336224–0.337965 | 598.609044 | 595.703362–598.787113 |
+| `hip-v1-contiguous` | 0.369584 | 0.367805–0.370344 | 544.738374 | 543.620507–547.373904 |
+| `hip-v1-strided` | 2.567170 | 2.539349–2.581509 | 78.423556 | 77.987935–79.282759 |
+| `hip-v2` | 0.343484 | 0.341984–0.345644 | 586.130918 | 582.468070–588.701781 |
+| `hip-v3` | 0.345224 | 0.344864–0.347444 | 583.176683 | 579.450457–583.785476 |
+| `triton-t0` | 0.336204 | 0.335084–0.336803 | 598.823604 | 597.756836–600.824263 |
+| `triton-t1` | 0.338504 | 0.338404–0.338844 | 594.753950 | 594.157167–594.929706 |
 
 ## Profiling evidence
 
@@ -71,18 +71,18 @@
 
 | Implementation | Dispatches | Grid X | Workgroup X | LDS B | Scratch B | VGPR | Accum VGPR | SGPR |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `hip-v0` | 11 | 16777216 | 256 | 0 | 0 | 8 | 0 | 128 |
-| `hip-v1-contiguous` | 11 | 524288 | 256 | 0 | 0 | 16 | 0 | 128 |
-| `hip-v1-strided` | 11 | 524288 | 256 | 0 | 0 | 16 | 0 | 128 |
-| `hip-v2` | 11 | 65536 | 256 | 0 | 0 | 16 | 0 | 128 |
-| `hip-v3` | 11 | 65536 | 256 | 0 | 0 | 16 | 0 | 128 |
-| `triton-t0` | 11 | 8388608 | 128 | 0 | 0 | 8 | 0 | 128 |
-| `triton-t1` | 11 | 2097152 | 128 | 0 | 0 | 24 | 0 | 128 |
+| `hip-v0` | 6 | 16777216 | 256 | 0 | 0 | 8 | 0 | 128 |
+| `hip-v1-contiguous` | 6 | 524288 | 256 | 0 | 0 | 16 | 0 | 128 |
+| `hip-v1-strided` | 6 | 524288 | 256 | 0 | 0 | 16 | 0 | 128 |
+| `hip-v2` | 6 | 65536 | 256 | 0 | 0 | 16 | 0 | 128 |
+| `hip-v3` | 6 | 65536 | 256 | 0 | 0 | 16 | 0 | 128 |
+| `triton-t0` | 6 | 8388608 | 128 | 0 | 0 | 8 | 0 | 128 |
+| `triton-t1` | 6 | 2097152 | 128 | 0 | 0 | 24 | 0 | 128 |
 
 ## Negative results and limits
 
-- 受控的 HIP 跨步实现是本次明显负例：median 为 2.559888 ms，logical effective bandwidth 为 78.646641 GB/s；它验证了地址布局会主导这个带宽敏感算子。
-- 本次短实验中 `hip-v0` 与 `triton-t0` 的 logical effective bandwidth 分别为 598.716769 GB/s 与 596.446356 GB/s。这个有限 shape、软件栈与短协议的比较不建立永久的 HIP-versus-Triton winner。
+- 受控的 HIP 跨步实现是本次明显负例：median 为 2.567170 ms，logical effective bandwidth 为 78.423556 GB/s；它验证了地址布局会主导这个带宽敏感算子。
+- 本次短实验中 `hip-v0` 与 `triton-t0` 的 logical effective bandwidth 分别为 598.609044 GB/s 与 598.823604 GB/s。二者三进程范围重叠；这个有限 shape、软件栈与短协议不建立永久的 HIP-versus-Triton winner。
 - logical effective bandwidth 是按算子语义所需的逻辑读写字节计算的比较指标，logical effective bandwidth ≠ physical GDDR6 traffic。当前 kernel trace 也不是物理显存流量计数器证据。
 - 这些结果只适用于 manifest 记录的硬件、软件、shape、block、warmup、repeat 与独立进程协议；不能外推到其他算子、shape 或系统状态。
 

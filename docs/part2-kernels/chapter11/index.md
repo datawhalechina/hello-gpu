@@ -1,6 +1,6 @@
 ---
 title: "第11章 Fusion：融合算子"
-description: "Hello GPU 第11章 · 以 FlashAttention 为例，学习在线计算、减少中间写回与 IO-aware"
+description: "Hello GPU 第11章 · 用 FlashAttention-style 在线 Attention 学习减少中间写回与 IO-aware"
 ---
 
 # 第11章 Fusion：融合算子
@@ -9,7 +9,7 @@ description: "Hello GPU 第11章 · 以 FlashAttention 为例，学习在线计�
 
 前四章分别练习了逐元素、归约、归一化和矩阵乘。本章把它们组合成一次完整的数据流：先计算 `QKᵀ`，再做逐行 Softmax，最后乘以 `V`。真正的新问题不是公式，而是中间的 `S×S` 矩阵要不要写回显存。
 
-本章提供两条教学路线：HIP 先实现三段式物化版本，再实现不保存完整 Scores/Probability 的在线版本；Triton 用一个 program 处理一行 query，并在 key tile 之间维护在线 Softmax 状态。这是 **FlashAttention-style 的教学实现**，借用了在线 Softmax 和避免物化 `S×S` 中间量的思想，不等同于复现完整论文 kernel。代码不附带未经验证的性能结论。
+本章提供两条教学路线：HIP 先实现三段式物化版本，再实现不保存完整 Scores/Probability 的在线版本；Triton 用一个 program 处理一行 query，并在 key tile 之间维护在线 Softmax 状态。这是 **FlashAttention-style 的教学实现**，借用了在线 Softmax 和避免物化 `S×S` 中间量的思想，不等同于复现完整论文 kernel。正式数字来自 RX 9070 XT 上 3 个独立进程和独立 trace。
 
 ## 11.1 先固定 Attention 的语义
 
@@ -178,12 +178,20 @@ HIP 把线程协作和同步完整暴露出来；Triton 更接近 tile 级数学
 5. 比较 `BLOCK_K=16/32/64`，记录负结果而不是只保留最快配置。
 6. 将物化版本替换为 rocBLAS/PyTorch 强基线，再判断融合收益。
 
+## 正式实验结果
+
+![Chapter 11 Attention 性能对比](./images/attention-performance.png)
+
+主 shape 为 `S=128, D=64` FP32。HIP online 为 `0.227383 ms`，慢于 materialized 的 `0.0586405 ms`：消除 `S×S` 中间量并没有抵消当前教学实现中的频繁同步。Triton t0/t1 为 `0.024580/0.017380 ms`。这些结果不代表完整 FlashAttention 实现，也不外推到长序列、causal、batch/head 或混合精度。
+
+完整记录见 `code/part2-kernels/chapter11/EXPERIMENT.md`。
+
 ## 本章小结
 
 - Attention 的融合目标不是少写几行代码，而是避免 `S×S` 中间矩阵的物化和往返。
 - 在线 Softmax 的关键是最大值变化时同时重缩放历史 denominator 和 numerator。
 - HIP 与 Triton 的抽象层级不同，但都可以表达同一套在线状态机。
-- 当前代码是完成优先的教学第一版，HIP 编译、Triton JIT 与小规模正确性 smoke test 已在 RX 9070 XT 上通过；性能数字必须等正式多轮远端实验后再发布。
+- 当前代码是强调数据流的教学实现；HIP/Triton 已在 RX 9070 XT 上完成边界检查、3 个独立正式进程与逐实现 trace，结论严格限定在本章 shape。
 
 ## 延伸阅读
 

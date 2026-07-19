@@ -1,0 +1,5 @@
+operator,implementation,runtime,shape,correct,run_count,median_ms,seq,dim,dtype,sources,min_ms,min_ms_run_min,min_ms_run_max,median_ms_run_min,median_ms_run_max,mean_ms,mean_ms_run_min,mean_ms_run_max
+attention,hip-materialized,hip,128x64,OK,3,0.0586405,128,64,float32,chapter11-process-1.log;chapter11-process-2.log;chapter11-process-3.log,0.057721,0.05744,0.057841,0.058561,0.058741,0.0592533,0.058656,0.0594361
+attention,hip-online,hip,128x64,OK,3,0.227383,128,64,float32,chapter11-process-1.log;chapter11-process-2.log;chapter11-process-3.log,0.219642,0.219042,0.220482,0.225102,0.227542,0.230734,0.229424,0.230899
+attention,triton-t0,triton,128x64,OK,3,0.02458,128,64,float32,chapter11-process-1.log;chapter11-process-2.log;chapter11-process-3.log,0.023601,0.0236,0.02372,0.024441,0.0246,0.025814,0.024691,0.025985
+attention,triton-t1,triton,128x64,OK,3,0.01738,128,64,float32,chapter11-process-1.log;chapter11-process-2.log;chapter11-process-3.log,0.01656,0.016521,0.01672,0.01706,0.0174,0.018495,0.017927,0.019561

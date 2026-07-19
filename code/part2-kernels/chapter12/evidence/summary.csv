@@ -1,0 +1,5 @@
+operator,implementation,runtime,shape,correct,run_count,median_ms,rows,cols,dtype,sources,min_ms,min_ms_run_min,min_ms_run_max,median_ms_run_min,median_ms_run_max,mean_ms,mean_ms_run_min,mean_ms_run_max
+rmsnorm,hip-block,hip,1024x4096,OK,3,0.05844,1024,4096,float32,chapter12-process-1.log;chapter12-process-2.log;chapter12-process-3.log,0.056161,0.05568,0.056961,0.058041,0.0590205,0.0681751,0.0663639,0.0765953
+rmsnorm,hip-serial,hip,1024x4096,OK,3,1.50486,1024,4096,float32,chapter12-process-1.log;chapter12-process-2.log;chapter12-process-3.log,1.38318,1.38013,1.39198,1.5016,1.51004,1.50568,1.4984,1.51166
+rmsnorm,triton-t0,triton,1024x4096,OK,3,0.03336,1024,4096,float32,chapter12-process-1.log;chapter12-process-2.log;chapter12-process-3.log,0.03144,0.03116,0.03204,0.0331,0.03374,0.043573,0.03835,0.047126
+rmsnorm,triton-t1,triton,1024x4096,OK,3,0.030081,1024,4096,float32,chapter12-process-1.log;chapter12-process-2.log;chapter12-process-3.log,0.02932,0.02904,0.029681,0.030041,0.03116,0.030084,0.029964,0.034552

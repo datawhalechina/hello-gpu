@@ -1,8 +1,8 @@
 {
   "operator": "vector-add",
-  "generated_at": "2026-07-19T05:54:40.408571+00:00",
-  "git_commit": "9832d1e91d9f6bce7888005b5ef9bca60e3c6fdf",
-  "source_sha256": "e3e32487b36b1168fd291f87dc8c49adf22f5beb73eb673f2efd867a4d8d33da",
+  "generated_at": "2026-07-19T08:17:01.287705+00:00",
+  "git_commit": "ef1722a6743bc0a9d6528d1fa938ad64976f0c05",
+  "source_sha256": "5e2e42f864fb7d519df4f88cf30eb8d40f195bd52a9a9d1d0df5618c8ec874fe",
   "hardware": "AMD Radeon RX 9070 XT",
   "software": {
     "rocm": "7.13.99004",
@@ -15,16 +15,20 @@
     "execution": "native"
   },
   "benchmark": {
-    "timestamp": "2026-07-19T13:53:56+08:00",
+    "timestamp": "2026-07-19T16:16:01+08:00",
+    "source_commit": "ef1722a6743bc0a9d6528d1fa938ad64976f0c05",
+    "source_sha256": "5e2e42f864fb7d519df4f88cf30eb8d40f195bd52a9a9d1d0df5618c8ec874fe",
     "size": "16777216",
     "hip_block": "256",
+    "triton_t0_block": "256",
     "triton_block": "1024",
     "warmup": "10",
     "repeat": "50",
-    "seed": "20260716",
+    "seed": "20260719",
     "independent_runs": "3",
     "gpu_arch": "gfx1201",
     "run_edge_cases": "1",
-    "run_triton_viz": "1"
+    "run_triton_viz": "0",
+    "grid": "auto"
   }
 }
