@@ -216,6 +216,21 @@ def read_environment(path: Path | None) -> dict[str, str]:
     return result
 
 
+def read_profile_config(profile_dir: Path | None, git_commit: str) -> dict[str, str]:
+    if profile_dir is None:
+        return {}
+    config_path = profile_dir / "profile_config.env"
+    if not config_path.is_file():
+        raise PublicationError(f"profile config does not exist: {config_path}")
+    config = read_environment(config_path)
+    if config.get("source_commit") != git_commit:
+        raise PublicationError(
+            "profile source_commit mismatch: "
+            f"{config.get('source_commit', '<missing>')} != {git_commit}"
+        )
+    return config
+
+
 def summarize_profiles(profile_dir: Path | None) -> list[dict[str, object]]:
     if profile_dir is None:
         return []
@@ -308,6 +323,7 @@ def publish(
     summary = aggregate(records)
     profiles = summarize_profiles(profile_dir)
     environment = read_environment(environment_file)
+    profile_config = read_profile_config(profile_dir, git_commit)
     if profile_dir is not None:
         expected_profiled = {
             record["implementation"]
@@ -329,6 +345,7 @@ def publish(
         "run_logs": [path.name for path in run_logs],
         "run_logs_sha256": _log_digest(run_logs),
         "environment": environment,
+        "profile_config": profile_config,
         "benchmark": {
             field: records[0][field] for field in IDENTITY_FIELDS if field in records[0]
         },

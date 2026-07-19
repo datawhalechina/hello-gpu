@@ -69,6 +69,10 @@ class PublicationTest(unittest.TestCase):
     def write_profiles(self) -> Path:
         profile_dir = self.root / "profiles"
         profile_dir.mkdir()
+        (profile_dir / "profile_config.env").write_text(
+            "source_commit=abc123\nshape=N=16777216\nseed=20260719\n",
+            encoding="utf-8",
+        )
         for implementation in ("hip-lds", "triton-t1"):
             (profile_dir / f"{implementation}_kernel_trace.csv").write_text(
                 "Kernel_Name,Grid_Size_X,Workgroup_Size_X\n"
@@ -217,6 +221,22 @@ class PublicationTest(unittest.TestCase):
         malformed = profile_dir / "hip-lds_kernel_trace.csv"
         malformed.write_text("Wrong_Field\nvalue\n", encoding="utf-8")
         with self.assertRaisesRegex(PublicationError, "lacks Kernel_Name"):
+            publish(
+                chapter_dir=self.chapter,
+                operator="sum-reduction",
+                git_commit="abc123",
+                run_logs=paths,
+                environment_file=self.environment,
+                profile_dir=profile_dir,
+            )
+
+    def test_profile_source_commit_must_match_publication(self) -> None:
+        paths = self.write_logs()
+        profile_dir = self.write_profiles()
+        (profile_dir / "profile_config.env").write_text(
+            "source_commit=stale123\n", encoding="utf-8"
+        )
+        with self.assertRaisesRegex(PublicationError, "source_commit mismatch"):
             publish(
                 chapter_dir=self.chapter,
                 operator="sum-reduction",
