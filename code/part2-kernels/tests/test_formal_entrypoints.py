@@ -97,6 +97,30 @@ class FormalEntrypointsTest(unittest.TestCase):
         self.assertNotIn('profile "torch-mm"', source)
         self.assertNotIn("for version in torch", source)
 
+    def test_profiles_stage_then_atomically_replace_complete_results(self) -> None:
+        for chapter in CHAPTERS:
+            with self.subTest(chapter=chapter):
+                source = (ROOT / chapter / "profile_all.sh").read_text(encoding="utf-8")
+                self.assertIn('.profiles-staging.XXXXXX', source)
+                self.assertIn('PROFILE_DIR="${STAGING_ROOT}/profiles"', source)
+                self.assertIn('PREVIOUS_PROFILES="${STAGING_ROOT}/previous-profiles"', source)
+                self.assertIn('mv "${PROFILE_DIR}" "${SCRIPT_DIR}/profiles"', source)
+                self.assertIn('PUBLISHED=1', source)
+
+    def test_profile_configs_record_complete_execution_parameters(self) -> None:
+        for chapter in CHAPTERS:
+            with self.subTest(chapter=chapter):
+                source = (ROOT / chapter / "profile_all.sh").read_text(encoding="utf-8")
+                self.assertIn("gpu_arch=%s", source)
+                self.assertIn("profile_warmup=%s", source)
+                self.assertIn("profile_repeat=%s", source)
+        chapter8 = (ROOT / "chapter8" / "profile_all.sh").read_text(encoding="utf-8")
+        chapter12 = (ROOT / "chapter12" / "profile_all.sh").read_text(encoding="utf-8")
+        self.assertIn("triton_programs=%s", chapter8)
+        self.assertIn('EPSILON="${EPSILON:-1e-5}"', chapter12)
+        self.assertIn('--epsilon "${EPSILON}"', chapter12)
+        self.assertIn("epsilon=%s", chapter12)
+
 
 if __name__ == "__main__":
     unittest.main()
