@@ -19,10 +19,20 @@ source "${PART_DIR}/activate-rocm.sh"
 hipcc --offload-arch="${GPU_ARCH}" -O3 -std=c++17 \
     "${SCRIPT_DIR}/attention_hip.hip" -o "${BUILD_DIR}/attention_hip"
 
+run_edge() {
+    local seq="$1"
+    local dim="$2"
+    "${BUILD_DIR}/attention_hip" --version all --seq "${seq}" --dim "${dim}" \
+        --warmup 0 --repeat 1 --seed "${SEED}"
+    python "${SCRIPT_DIR}/attention_triton.py" --version all \
+        --seq "${seq}" --dim "${dim}" --warmup 0 --repeat 1 --seed "${SEED}"
+}
+
 if [[ "${RUN_EDGE_CASES}" == "1" ]]; then
     echo "[chapter11] edge correctness"
-    "${BUILD_DIR}/attention_hip" --version all --seq 33 --dim 31 --warmup 0 --repeat 1 --seed "${SEED}"
-    python "${SCRIPT_DIR}/attention_triton.py" --version all --seq 33 --dim 31 --warmup 0 --repeat 1 --seed "${SEED}"
+    run_edge 1 1
+    run_edge 7 13
+    run_edge 33 31
 fi
 
 echo "[chapter11] teaching benchmark"

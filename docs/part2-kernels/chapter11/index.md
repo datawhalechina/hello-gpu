@@ -53,7 +53,7 @@ new_m = max(m, x)
 alpha = exp(m - new_m)
 beta  = exp(x - new_m)
 l     = l * alpha + beta
-acc   = acc * alpha + beta * V[x]
+acc   = acc * alpha + beta * V_i
 m     = new_m
 ```
 
@@ -124,7 +124,7 @@ python attention_triton.py --version all --seq 128 --dim 64
 
 每条实现都与 CPU 或 PyTorch 的 `softmax(Q @ K.T / sqrt(D)) @ V` 比较。为了专门压力测试数值稳定性，还应把 Q/K 放大，使原始 score 足以让直接 `exp(score)` 溢出；稳定实现仍应输出有限值。
 
-当前首版自动脚本覆盖 `7×13` 和 `128×64`。其余形状可直接通过 CLI 添加，不需要改 kernel。
+当前自动脚本覆盖表中的 `1×1`、`7×13`、`33×31` 三个边界形状和 `128×64` 教学主形状。在实现支持范围内可以通过 CLI 添加其他形状，但并非任意大：当前 Triton 路径明确限制 `D <= 256`，HIP online 路径还受 `(block + D + 4) × sizeof(float)` 动态 LDS 和设备 grid/memory 上限约束。HIP 入口会在分配和 launch 前核对整数乘法、设备最大线程数、Grid X 与动态 LDS；超过这些范围时应重新分块，而不是只放大参数。
 
 ## 11.8 计时和 Profiling 看什么
 

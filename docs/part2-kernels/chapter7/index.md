@@ -520,7 +520,7 @@ Triton ladder 只把 `BLOCK_SIZE` 从 256 改为 1024，并保持 `num_warps=4`�
 
 发布行都经过独立进程汇总，`correct` 与 `max_abs_error` 直接来自 `summary.csv`。正式计时前，`run_all.sh` 还会检查小于 wave、block 边界、block 加一和不能被向量宽度整除的输入。
 
-| Implementation | Runtime | Shape | Block | Grid | Correct | Max abs error |
+| Implementation | Runtime | Shape | Block/Tile | Logical Grid (blocks/programs) | Correct | Max abs error |
 | ---- | ---- | ----: | ----: | ----: | ---- | ----: |
 | `hip-v0` | hip | 16777216 | 256 | 65536 | OK | 0.0 |
 | `hip-v1-contiguous` | hip | 16777216 | 256 | 2048 | OK | 0.0 |
@@ -529,6 +529,8 @@ Triton ladder 只把 `BLOCK_SIZE` 从 256 改为 1024，并保持 `num_warps=4`�
 | `hip-v3` | hip | 16777216 | 256 | 256 | OK | 0.0 |
 | `triton-t0` | triton | 16777216 | 256 | 65536 | OK | 0.0 |
 | `triton-t1` | triton | 16777216 | 1024 | 16384 | OK | 0.0 |
+
+这里的 `Logical Grid` 是 Host 入口打印的并行实例数：HIP 表示 block 数，Triton 表示 program 数。它与下一节 rocprofv3 的 `Grid_Size_X` 不是同一字段；后者记录硬件 work-item 数，通常等于 HIP `blocks × threads_per_block`，而 Triton program 到 work-item 的映射由编译器决定。
 
 ### 7.6.2 Benchmark 口径与发布结果
 

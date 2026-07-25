@@ -83,6 +83,8 @@ def launch(
         BLOCK_D=block_d,
         num_warps=4 if block_d <= 128 else 8,
     )
+
+
 def time_launch(
     q: torch.Tensor,
     k: torch.Tensor,
@@ -115,8 +117,17 @@ def main() -> None:
     parser.add_argument("--repeat", type=int, default=20)
     parser.add_argument("--seed", type=int, default=20260719)
     args = parser.parse_args()
-    if args.seq <= 0 or args.dim <= 0 or args.dim > 256 or args.repeat <= 0:
-        raise SystemExit("seq and dim must be positive, dim <= 256, repeat > 0")
+    if (
+        args.seq <= 0
+        or args.dim <= 0
+        or args.dim > 256
+        or args.warmup < 0
+        or args.repeat <= 0
+    ):
+        raise SystemExit(
+            "seq and dim must be positive, dim <= 256, "
+            "warmup >= 0, repeat > 0"
+        )
 
     torch.manual_seed(args.seed)
     q = torch.randn((args.seq, args.dim), device="cuda", dtype=torch.float32) * 0.5

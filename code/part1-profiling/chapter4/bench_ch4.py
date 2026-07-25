@@ -108,7 +108,7 @@ def main():
         print(f"{name:>6} | {min_ms:>7.3f} ms | {med_ms:>8.3f} ms | {gbs:>7.1f}")
 
     print("\n--- 骨架 B：Triton vector copy (float32) ---")
-    print(f"{'footprint':>12} | {'min_ms':>9} | {'GB/s':>8}")
+    print(f"{'footprint':>12} | {'avg_ms':>9} | {'GB/s':>8}")
     print("-" * 36)
     if not ensure_triton_jit_build_env():
         raise SystemExit(2)

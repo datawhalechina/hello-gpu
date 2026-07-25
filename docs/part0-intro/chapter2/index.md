@@ -70,7 +70,7 @@ flowchart TB
     S0 --> SALU0[SALU + Scalar regs]
     S0 --> BR0[Branch / Message]
     WGP --> LDS[LDS · 共享内存 / 最多 64 KB]
-    WGP --> L0[L0 / Vector L1 / Texture]
+    WGP --> L0[L0 vector / scalar / instruction cache]
 ```
 
 RDNA 体系下 WGP / CU / SIMD 的层级
@@ -91,7 +91,7 @@ GPU 工厂里 CU、Workgroup、Wavefront、Lane 之间的层级关系
 - **Branch / Message Unit**：处理跳转、栈、s_waitcnt（等待访存完成）、跨 wave 通信等控制信号。
 - **VGPR File（Vector 寄存器堆）**：每个 lane 私有一组 32 位寄存器，是 GPU 上"一线"的存储——SIMD 真正吃饭用的本子。
 - **LDS（Local Data Share，本地共享内存）**：CU 或 WGP 内部一块软件可控的高速 scratchpad，多数 RDNA 上一个 workgroup 最多可见 64 KB，wavefront 之间通过它做 block 内归约和 tile 复用。
-- **L0 / Vector L1 / Texture cache**：和 SIMD 配套的近端缓存。
+- **L0 vector / scalar / instruction cache**：靠近执行单元的片上缓存；容量口径见 2.6 节的官方规格表。
 
 把这些单元摆在一起，CU 的"分工"就很清楚了：SALU 决定**走哪条路**，VALU 决定**算什么**，LDS / 缓存决定**数据从哪里来**，VGPR/SGPR 决定**多少东西能同时在飞**。后面三节会逐一展开后两件事。
 
@@ -99,15 +99,15 @@ GPU 工厂里 CU、Workgroup、Wavefront、Lane 之间的层级关系
 
 这一节讲 GPU 是怎么"一群线程一起走"的——wavefront 的概念，以及它对分支、访存的影响。
 
-先记一个数字：**RDNA 上一个 wave 通常是 32 个 work-item（也叫 wave32）**，但也支持 wave64 模式。为什么是 32？因为它对应硬件 SIMD 的宽度——RDNA 的 SIMD 是 SIMD32，单周期发射就能覆盖一个 wave32。
+先记一个数字：**RDNA 上一个 wave 通常是 32 个 work-item（也叫 wave32）**，但也支持 wave64 模式。为什么是 32？因为它对应硬件 SIMD 的宽度——RDNA 的 SIMD 是 SIMD32，一次指令发射可以覆盖一个 wave32。这里说的是发射宽度，不表示任意向量指令都能在一个周期内完成。
 
 ::: figure fig-wave-issue-timing
 ```mermaid
 sequenceDiagram
     participant CU as RDNA SIMD32
     Note over CU: 一条 v_add_f32 指令
-    CU->>CU: cycle t · 32 lanes 同时算
-    Note over CU: wave32 与 SIMD32 同宽，单周期完成
+    CU->>CU: cycle t · 向 32 lanes 发射
+    Note over CU: wave32 与 SIMD32 同宽；完成延迟取决于具体指令
 ```
 
 同一条向量指令在 RDNA SIMD32（wave32）上的执行节奏
@@ -193,7 +193,7 @@ LDS 还有第二个性质：它不是一块纯线性内存，而是**分 bank** 
 
 > **一个最小例子**：假设你写的 kernel 里每个线程有很多临时变量（中间结果、循环展开后的临时值、不必要的寄存器变量），编译器为了把它们都放下，每个线程要占的 VGPR 数就上去了。VGPR 总量是固定的，每个 wave 占的越多，同一个 SIMD 上能同时塞下的 wave 就越少。wave 少了，原来"A 在等访存时 B 顶上"的腾挪空间也就小了——结果就是访存延迟没人挡，VALU 闲在那里等数据。所以"减少不必要的临时变量、控制循环展开次数"在 GPU 上不仅是代码风格问题，而是直接影响 occupancy。
 
-## 2.5 显存层次：寄存器 → LDS → L1/L2 → GDDR6
+## 2.5 显存层次：寄存器 → LDS → L0/L2/Infinity Cache → GDDR6
 
 这一节把"数据从哪里来"完整拆开——从寄存器一直走到显存，让你看清一次访存到底走了几跳、哪一跳代价最高。
 
@@ -203,47 +203,50 @@ LDS 还有第二个性质：它不是一块纯线性内存，而是**分 bank** 
 | ---- | ---- | ---- | ---- | ---- |
 | 寄存器（VGPR/SGPR）| 每个 lane/wave 私有 | 每个 wave 几 KB | 最高 | 最低 |
 | LDS | CU/WGP 内部 | 每 workgroup 最多 64 KB | 很高 | 很低 |
-| L0 / Vector L1 | CU 私有缓存 | 几十 KB | 高 | 低 |
-| L2 cache | 全局共享 | 几 MB | 中 | 中 |
+| L0 cache | 靠近执行单元 | vector 32 KiB；scalar 16 KiB；instruction 32 KiB | 高 | 低 |
+| L2 cache | 全局共享 | 8 MiB | 中 | 中 |
+| Infinity Cache | 片上末级缓存 | 64 MiB | 中 | 中到高 |
 | GDDR6 显存 | 板载 | 16 GB | **~510 GB/s**（实测，标称 ~760）| 高 |
 
 > 上表 GDDR6 带宽用大数组 copy micro-benchmark 实测（footprint ≥1 GiB，纯 GDDR6 平台，排除 L2 命中）。标称 ~760 GB/s 是理论峰值；实测 ~510 GB/s 是 copy kernel 能达到的稳态有效带宽，受内存事务效率、L2、内存控制器影响——后续所有 Roofline 计算以实测值为准。脚本见 `code/part0-intro/chapter2/micro_bench.py`，原始输出见本章末尾。
 
 几个对优化最关键的点：
 
-- **离 lane 越近越快**：寄存器 > LDS > L1 > L2 > GDDR6。优化的核心思路之一就是**让数据尽量待在离 lane 近的地方**——用寄存器复用、用 LDS 缓存 tile、用合并访存提升 cache 命中率。
+- **离 lane 越近通常越快**：寄存器、LDS、L0、L2/Infinity Cache、GDDR6 构成逐级远离执行单元的数据路径。优化的核心思路之一就是增加片上复用，并让全局访问连续、对齐。
 - **GDDR6 不是 HBM**：9070XT 的显存带宽实测约 **510 GB/s**（标称 ~760 GB/s），远低于 HBM 设备（动辄几 TB/s）。这意味着对 9070XT 来说，**memory-bound 算子的优化空间更大也更关键**——很多算子会卡在带宽上。
 - **合并访存（Coalescing）**：连续的线程访问连续的地址时，硬件可以把多次访问合并成较少的内存事务。第 5 章会用两个 vector add 配置练习 profiling，同时也会检查对照实验是否还改变了线程工作划分。
 
-## 2.6 L1 / L2 Cache：片上缓存怎么工作
+## 2.6 L0 / L2 / Infinity Cache：片上缓存怎么工作
 
-上一节的显存层次表里，L1/L2 只占了两行。但对算子优化来说，它们直接决定了一个 wavefront 的 32 个 lane 究竟会触发几次外部内存事务——是合并访存这件事在硬件侧的执行者。
+上一节的显存层次表里，L0、L2 和 Infinity Cache 只占了几行。但对算子优化来说，它们会影响一个 wavefront 的请求有多少能在片上命中，以及最终有多少流量到达 GDDR6。
 
 ### 几个尺寸先记住
 
-9070XT（RDNA4）的片上缓存层次（量级，以实测为准）：
+ROCm 的 RX 9070 XT 规格表给出以下容量。这里照录公开字段，不把其他 RDNA 代际的 Graphics L1 或 cacheline 模型直接套到 RDNA4：
 
-| 层级 | 位置 | 容量 | 说明 |
-| ---- | ---- | ---- | ---- |
-| L0 vector cache | 每 SIMD 私有 | ~32 KB | 最贴近 VALU 的一层 |
-| L1 / Vector L1 | 每 SA（Shader Array）| ~128-256 KB | RDNA3+ 在这层做了扩容 |
-| L2 | 全 GPU 共享 | 数 MB | 16-way 关联，所有 CU 共享 |
+| 官方规格字段 | 容量 | 本章如何理解 |
+| ---- | ----: | ---- |
+| L0 Vector Cache | 32 KiB | 服务向量访存的近端缓存 |
+| L0 Scalar Cache | 16 KiB | 服务 wave 共享的标量读取 |
+| L0 Instruction Cache | 32 KiB | 缓存指令 |
+| L2 Cache | 8 MiB | 全 GPU 共享的缓存层 |
+| Infinity Cache | 64 MiB | 位于 L2 与 GDDR6 之间的大容量末级缓存 |
 
-> RDNA4 的精确 cacheline 大小和聚合粒度，AMD 未在公开资料里以一句话给出。但有一条跨架构都成立的规则：**"连续线程读连续地址 + 自然对齐"始终是最安全的写法**——具体聚合数字以 RDNA ISA 白皮书与微基准为准，不要直接挪用 GCN 的 64 字节模型。
+> 同一张 ROCm 规格表把 RX 9070 XT 的 `Graphics L1 Cache` 标为 `N/A`。这不表示芯片没有任何图形或纹理缓存，而是提醒我们不要在计算教程里凭其他代际资料虚构一层 `128-256 KB Vector L1`。RDNA4 的精确 cacheline 大小和聚合粒度应以目标 ISA 文档与微基准为准，不要直接挪用 GCN 的 64 字节模型。
 
-### L1 / L2 给算子的三个关键含义
+### 片上 cache 给算子的三个关键含义
 
-| 关注点 | L1 / L2 怎么影响 | 算子例子 |
+| 关注点 | cache 怎么影响 | 算子例子 |
 | ---- | ---- | ---- |
 | 复用粒度 | 同一个 cacheline 被多少 lane / wave 重读 | GEMM tile、卷积 stencil |
-| 命中策略 | 流式访问 vs 时间局部性 | 大向量逐元素 op：基本不命中 L1，靠合并访存；GEMM tile：靠 L1/L2 复用 |
-| 写一致性 | 写直达（write-through）到 L2，如何对其他 CU 可见 | reduction、原子 op、跨 block 同步 |
+| 命中策略 | 流式访问 vs 时间局部性 | 大向量逐元素 op 复用少；GEMM tile 可以增加片上复用 |
+| 可见性与顺序 | cache 命中不等于线程同步 | reduction、原子 op、跨 block 协作 |
 
-举个具体场景。一个 vector add 把两个数组逐元素加起来：每个元素只读一次、写一次，没有任何复用——L1 命中率会非常低，性能完全由 L2 → GDDR6 这条链路的有效带宽决定。这就是典型 memory-bound。
+举个具体场景。一个 vector add 把两个数组逐元素加起来：每个元素只读一次、写一次，几乎没有算法层面的复用。大工作集下它通常受内存路径限制，但具体流量落在 L0、L2、Infinity Cache 还是 GDDR6，不能只凭一次时间反推，需要结合 footprint 扫描、trace 或可用的硬件计数器。
 
-换个场景，一个 GEMM 把 K 维度切 tile 加载到 LDS：每个 A、B 元素被 tile 内的多个线程重复用——这时 L1/L2 命中率高，性能更接近 compute-bound。理解 L1 / L2 是为了**心里有一根"什么样的访问会命中、什么样的不会"的尺**。
+换个场景，一个 GEMM 把 K 维度切 tile 加载到 LDS：每个 A、B 元素被 tile 内的多个线程重复用，LDS 和 cache 都可能减少更低层级的重复流量。它最终是否 compute-bound，仍要由同口径的性能测量判断。理解 cache 是为了先形成“哪里可能发生复用、哪里只是流式经过”的假设，再用实验验证。
 
-> **写一致性的坑**：GPU 上的 L1 通常是写直达（write-through）——L1 收到写请求后会更新 L2。这避免了"两个 L1 各自缓存同一份数据，不知道谁是新的"这种一致性问题。代价是写带宽压力更大，所以多线程写同一行 cacheline 时，**硬件会把它折叠成单次写**——这个机制在 reduction 和原子操作里都会再遇到。
+> **写一致性的坑**：不要把 cacheline 上的请求合并理解成线程同步。多个线程用普通 store 并发写同一地址属于数据竞争，最终值不能依赖；需要合并更新时应使用原子操作，或先在 wave/block 内归约，再由唯一线程写回。多个 lane 读取同一地址时可能走广播路径，但这不能类推到并发写。
 
 ## 2.7 LDS 详解与 bank 冲突
 
@@ -314,48 +317,48 @@ flowchart TD
 
 ## 2.8 全局内存合并访存（Coalescing）
 
-合并访存是初学者最早听说、但最容易"以为自己懂了其实没懂"的一个概念。它讲的是同一个 wave 内的 32 个 lane 怎样合并自己的内存请求；理解它的关键不是"连续就好"，而是**理解硬件按多少字节、怎么对齐去聚合 wave 内的请求**。
+合并访存是初学者最早接触的概念之一。它讲的是同一个 wave 内的 lane 怎样聚合自己的内存请求；连续且自然对齐的地址通常需要更少的请求，分散地址通常需要更多请求。
 
 ### 合并规则与事务条数
 
-AMD GPU 的 L2 cache 访问以 cacheline 为单位（经典 GCN 是 64 字节、按 64 字节对齐；RDNA 的具体粒度见 ISA 文档）。一个 wave 的 32 个 lane 各自的访问，会被硬件聚合成"覆盖目标 cacheline 集合的最少请求数"。
+事务数取决于访问宽度、对齐、目标缓存层级和具体架构。经典 GCN 的 64 字节模型不能直接当作 RDNA4 的精确规则；公开资料不足以支持下面为 RDNA4 固定写出“2 条”或“32 条”事务。因此这里保留定性模型：比较同一 wave 的请求是覆盖连续地址区间，还是散落在许多地址区间。
 
 ::: figure fig-coalesce-txns
 ```mermaid
 flowchart TD
     subgraph Good["合并访存：32 lane 读 32 个连续 fp32"]
         G1["32 lane × 4 B = 128 B"]
-        G2["对齐到 2 条 64 B cacheline"]
-        G3["硬件发出 2 次内存事务"]
+        G2["覆盖一个连续且自然对齐的地址区间"]
+        G3["通常聚合成较少的内存请求"]
     end
     subgraph Bad["未合并：32 lane 各自相距很远"]
-        B1["每个 lane 落在不同 cacheline"]
-        B2["硬件被迫发出最多 32 次事务"]
-        B3["有效带宽下降可达一个数量级"]
+        B1["请求散落在多个地址区间"]
+        B2["通常需要更多内存请求"]
+        B3["有效带宽可能明显下降"]
     end
 ```
 
 合并访存与非合并访存：差距来自硬件发出的事务条数
 :::
 
-如 @fig-coalesce-txns 所示，"连续线程访问连续地址"被翻译成硬件语言，就是"用最少条 cacheline 事务覆盖 wave 的请求集合"。
+如 @fig-coalesce-txns 所示，“连续线程访问连续地址”的价值在于让硬件更容易用较少的请求覆盖整个 wave 的地址集合。精确事务数应由目标架构文档、反汇编和受控微基准确认。
 
 ### 几种典型访存模式的代价对比
 
-| 模式 | 例子 | wave 发出的事务条数 | 备注 |
+| 模式 | 例子 | 定性结果 | 备注 |
 | ---- | ---- | ---- | ---- |
-| 连续读（最佳）| `out[tid] = in[tid]` | 2 条（32×4 B = 128 B）| 全合并 |
-| 跨步 2 读 | `out[tid] = in[tid * 2]` | 至少 ×2 | 有效带宽折半 |
-| 跨步 16 读 | `out[tid] = in[tid * 16]` | 接近 32 条 | 几乎没有合并 |
-| 同地址广播 | 所有 lane 读 `in[0]` | 1 条 + 广播 | 命中后基本免费 |
-| 写多 lane → 同地址 | 普通 store | 硬件折叠成 1 次 | atomics 不享受这个优化 |
-| 2D 行主图像列读 | `img[col * H + row]` | 灾难性 | 改 layout 或转置 |
+| 连续读 | `out[tid] = in[tid]` | 请求集中、通常易于合并 | 仍受对齐和访问宽度影响 |
+| 跨步 2 读 | `out[tid] = in[tid * 2]` | 覆盖范围扩大，通常需要更多请求 | 性能下降幅度需实测 |
+| 跨步 16 读 | `out[tid] = in[tid * 16]` | 地址高度分散，合并机会较少 | 还可能改变 cache 命中 |
+| 同地址广播 | 所有 lane 读 `in[0]` | 可使用读取广播路径 | 延迟仍取决于命中的缓存层级 |
+| 写多 lane → 同地址 | 普通 store | 数据竞争，结果不能依赖 | 合并更新应使用 atomic 或归约 |
+| 2D 行主图像列读 | `img[col * H + row]` | 行主布局下地址分散 | 比较改 layout、分块转置或融合方案 |
 
 ### 给算子写法的三条直觉
 
 1. **先想"哪个变量随 lane 索引变化"**，让它做内层 stride 1 的访问；
-2. **fp16 / bf16 的算子尽量做向量化 load**：AMD 上常见的 `global_load_dwordx4` 一条指令一个 lane 加载 16 字节，整个 wave 合起来 512 字节——比 4 条 dword 指令少一个数量级的发射开销；
-3. **遇到 transpose / strided slice，把转置或 gather 单独做成一个 kernel**，不要塞进主算子里。
+2. **向量化 load 需要同时验证对齐和生成指令**：若 4 次标量 dword load 能合成一次 dwordx4，源级 load 指令数最多从 4 降到 1；实际收益仍取决于瓶颈、对齐、寄存器压力和编译结果；
+3. **transpose / strided slice 是否拆分要算总成本**：独立 kernel 便于复用和调试，但会增加 launch 与中间读写；融合分块有时反而更省流量，应按目标 shape 实测。
 
 [第 3 章](../chapter3/index.md) 的 vector add 是连续线程读连续地址的典型；[第 5 章](../../part1-profiling/chapter5/index.md) 会用两个配置练习 profiler，并检查对照实验是否足够公平；[第 8 章 Reduction](../../part2-kernels/chapter8/index.md) 和 [第 10 章 GEMM](../../part2-kernels/chapter10/index.md) 会继续应用这些检查方法。
 
@@ -375,11 +378,9 @@ GPUOpen 官方博客 "How to accelerate AI applications on RDNA 3 using WMMA" �
 - 编译器内置函数形如（**只是指令入口形态，本章不要求复制运行**）：
 
 ```cpp
-// RDNA：16x16x16 fp16 → fp32，wave32
-float8 d = __builtin_amdgcn_wmma_f32_16x16x16_f16_w32(a_frag, b_frag, c_frag);
-// RDNA：16x16x16 int8 → int32，wave32
-int8   d = __builtin_amdgcn_wmma_i32_16x16x16_iu8_w32(/*unsigned*/ false, a8,
-                                                      false, b8, c32, false);
+// RDNA4/gfx12：16x16x16 fp16 → fp32，wave32
+float8 d =
+    __builtin_amdgcn_wmma_f32_16x16x16_f16_w32_gfx12(a_frag, b_frag, c_frag);
 ```
 
 > **听说过 NVIDIA Tensor Core 的话**：WMMA 在角色上和 Tensor Core 一致——都是"一条指令完成一个小 matmul tile"的专用矩阵单元，不是同一套指令集，但解决的是同一类问题。
@@ -400,7 +401,7 @@ flowchart TD
 
 实操含义：
 
-- 在 9070XT（RDNA4）上写矩阵相关 kernel，**优先确认 WMMA 路径**：要么用 rocWMMA 帮你封好，要么直接调 `__builtin_amdgcn_wmma_*` 内置函数。第 2 篇的 [GEMM](../../part2-kernels/chapter10/index.md) 会做对比实验。
+- 在 9070XT（RDNA4）上写低精度矩阵相关 kernel，应确认是否使用了预期的 WMMA 路径：可以使用 rocWMMA，也可以在明确 target 与 fragment 布局后使用 `__builtin_amdgcn_wmma_*`。第 10 章先实现可读的 FP32 naive/LDS/Triton 基线，并把 WMMA 留作后续单独实验，不声称已经完成 WMMA 对照。
 - WMMA 的 tile 形状决定了 BLOCK_M / BLOCK_N / BLOCK_K 的最佳取值。第 2 篇的 Triton 章节会把这点反复用到。
 
 ## 2.10 Roofline 的硬件来源
@@ -429,10 +430,10 @@ Roofline 的两条线：左半边由带宽决定，右半边由算力决定
 
 两条线的硬件来源很具体：
 
-- **峰值算力 P_peak** 来自"每 CU / 每周期能做多少 FLOP × CU 数 × 时钟"。对 9070XT，实测 `torch.matmul`（4096×4096）的峰值：**fp16（走 WMMA）约 79.9 TFLOPS、fp32（走 SIMD FMA）约 10.6 TFLOPS**。使能 WMMA 时这条线高得多，不走 WMMA 时会大幅下降。
-- **峰值带宽 B_peak** 来自 GDDR6 显存。9070XT 标称 ~760 GB/s，但**实测 copy 有效带宽约 510 GB/s**（footprint ≥1 GiB 平台）。注意这个数字远低于 HBM 设备的几 TB/s——所以 9070XT 的 Roofline 拐点位置会和数据中心卡很不一样。
+- **理论峰值算力 P_theoretical** 来自“每 CU / 每周期能做多少 FLOP × CU 数 × 时钟”。本章脚本实际得到的是当前 PyTorch/rocBLAS、shape 和设备状态下的 **库实测参考值 P_measured_library**：`torch.matmul(4096×4096)` 的 fp16 约 79.9 TFLOPS、fp32 约 10.6 TFLOPS。仅凭这个时间不能证明具体生成了哪条矩阵指令。
+- **带宽参考值**可以来自规格推导，也可以来自独立 copy micro-benchmark。后者是当前软件实现达到的 `B_measured_copy`，不等于理论物理峰值。第 2～6 章现有带宽规格、MiB/GB 单位和衍生图片仍需在重新采集数据后统一修订，详见对应跟踪 issue。
 
-> 上面这些 P_peak / B_peak 数字都用 `code/part0-intro/chapter2/micro_bench.py` 在 9070XT + ROCm 7.13 + 原生 Ubuntu 24.04 上实测得到（见本章末尾输出）。标称值仅作上限参考，Roofline 计算一律用实测值。
+> `code/part0-intro/chapter2/micro_bench.py` 提供的是 measured reference，不是硬件理论规格。使用这些值画经验 Roofline 时，应在图例中写清软件栈、shape 和测量方法。
 
 把这两条线画到同一张图上，每个 kernel 都会落在某一个点上。先用最简单的 Vector Add `c[i] = a[i] + b[i]` 走一遍"算术强度怎么从代码里算出来"：
 
@@ -459,8 +460,8 @@ Roofline 的两条线：左半边由带宽决定，右半边由算力决定
 读到这里，三件事应该串起来了：
 
 1. **"算子是 memory-bound 还是 compute-bound" = "落在斜线上还是水平线上"**；
-2. **优化 memory-bound 算子，就是想办法把工作点往右挪**——更高的复用、更大的 tile、合并访存、LDS 缓存；
-3. **优化 compute-bound 算子，就是想办法把水平线往上抬**——用矩阵单元（WMMA）、更合适的精度、更高 occupancy 来逼近 P_peak。
+2. **优化 memory-bound 算子，是减少实际流量或提高可用带宽**：融合和复用可能减少字节数、提高算术强度；改善合并访问也可能让同一算法强度下的工作点向上靠近带宽参考线；
+3. **优化 compute-bound 算子，是让工作点向上接近既定计算参考线**。若改用不同精度或矩阵指令，计算上限本身也变了，应为新计算路径单独定义 reference roof，而不是把它描述成同一条硬件水平线被软件“抬高”。
 
 后面 [第 3 章](../chapter3/index.md) 会用 vector add 跑通第一个程序，[第 6 章](../../part1-profiling/chapter6/index.md) 会把算子点画到真实 Roofline 上。
 
@@ -497,9 +498,9 @@ torch: 2.11.0+rocm7.13.0
 
 读这张表的几个要点：
 
-- **带宽随 footprint 增大先升后稳**：64 MiB 时 534.7 GB/s（部分 L2 命中拉高），到 1024 MiB 后稳定在 ~510–511 GB/s（纯 GDDR6 平台，L2 已被打穿）。**B_peak 取稳态值约 510 GB/s**，不取 L2 命中虚高的那个。
+- **带宽随 footprint 增大先升后稳**：64 MiB 时打印值为 534.7 GB/s，到 1024 MiB 后稳定在 ~510–511 GB/s。较小工作集可能受到 L0、L2、Infinity Cache、TLB 与时钟状态共同影响，不能只凭这一列时间把高值归因于 L2。
 - **实测 ≈ 标称的 67%**：标称 ~760 GB/s 是理论峰值，实测 ~510 GB/s 是 copy kernel 的有效带宽。这个差距是正常的（事务开销、L2、内存控制器），后续算 Roofline 一律用实测 510 GB/s，不用标称。
-- **fp16 算力是 fp32 的 ~7.5 倍**：fp16（79.9 TFLOPS）走 WMMA 矩阵单元，fp32（10.6 TFLOPS）走 SIMD FMA。这就是为什么后面 GEMM / Attention 章会反复强调"用 WMMA"——它能把手头算力提高近一个数量级。
+- **当前库实测中 fp16 吞吐约为 fp32 的 7.5 倍**：79.9 与 10.6 TFLOPS 是两个 dtype 下的 `torch.matmul` 观测值。它们说明精度与底层执行路径会显著影响吞吐，但不能单凭时间断言 fp16 一定使用了哪条 WMMA 指令、fp32 一定只走哪类 SIMD FMA；需要再看 trace、反汇编或库文档。
 - **拐点算术强度 ≈ P_peak / B_peak**：fp16 下拐点约 79.9/0.510 ≈ 157 FLOP/Byte，fp32 下约 10.6/0.510 ≈ 21 FLOP/Byte。一个算子的算术强度超过这个拐点才算 compute-bound，否则就是 memory-bound——Vector Add（0.083）远在拐点左侧。
 
 ## 本章小结
@@ -519,7 +520,7 @@ torch: 2.11.0+rocm7.13.0
 
 1. CU、SIMD、wavefront 三者是什么关系？一个 wave 是怎么落到 SIMD 上的？
 2. 为什么同一个 wave 内分支走向不同会变慢？EXEC mask 是硬件做的还是你写代码控制的？
-3. VGPR / SGPR / LDS 为什么会限制 occupancy？哪一个先打满，会出现什么样的标签？
+3. VGPR / SGPR / LDS 为什么会限制 occupancy？哪一个先打满，会出现什么样的现象？
 4. 9070XT 的显存层次有哪几层？为什么说它和 HBM 设备的 Roofline 拐点不一样？
 5. WMMA 是什么？它和"手写 GEMM 一条一条加"有什么区别？
 6. Vector Add 为什么通常是 memory-bound？大 GEMM 配合 WMMA 为什么能跑到 compute-bound？
@@ -529,7 +530,8 @@ torch: 2.11.0+rocm7.13.0
 **初学者优先看**
 
 - [ROCm Conceptual: Device hardware glossary](https://rocm.docs.amd.com/en/latest/reference/glossary/device-hardware.html) — 本章所有硬件术语的对照字典
-- [AMD Radeon RX 9070 XT 官方页面](https://www.amd.com/en/products/graphics/desktops/radeon/9000-series/amd-radeon-rx-9070-xt.html) — 本书基线硬件
+- [AMD Radeon RX 9070 XT 官方页面](https://www.amd.com/en/products/graphics/desktops/radeon/9000-series/amd-radeon-rx-9070xt.html) — 本书基线硬件
+- [ROCm：AMD GPU specifications](https://rocm.docs.amd.com/en/latest/reference/gpu-specs.html) — wave、LDS 与各级 cache 的公开规格字段
 
 **写 kernel 时再看：架构文档**
 

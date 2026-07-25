@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import math
 import statistics
 
 import torch
@@ -48,6 +49,8 @@ def launch(input_tensor: torch.Tensor, weight: torch.Tensor, output: torch.Tenso
         BLOCK_SIZE=block_size,
         num_warps=num_warps,
     )
+
+
 def time_launch(input_tensor: torch.Tensor, weight: torch.Tensor, output: torch.Tensor,
                 epsilon: float, num_warps: int, warmup: int, repeat: int) -> tuple[float, float, float]:
     for _ in range(warmup):
@@ -74,8 +77,19 @@ def main() -> None:
     parser.add_argument("--repeat", type=int, default=20)
     parser.add_argument("--seed", type=int, default=20260719)
     args = parser.parse_args()
-    if args.rows <= 0 or args.cols <= 0 or args.epsilon <= 0 or args.repeat <= 0:
-        raise SystemExit("rows, cols, epsilon and repeat must be positive")
+    if (
+        args.rows <= 0
+        or args.cols <= 0
+        or args.cols > 65536
+        or not math.isfinite(args.epsilon)
+        or args.epsilon <= 0
+        or args.warmup < 0
+        or args.repeat <= 0
+    ):
+        raise SystemExit(
+            "rows, cols, epsilon and repeat must be positive, "
+            "cols <= 65536, epsilon finite, warmup non-negative"
+        )
 
     torch.manual_seed(args.seed)
     input_tensor = torch.randn(

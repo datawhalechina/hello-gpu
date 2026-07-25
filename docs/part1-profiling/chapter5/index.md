@@ -95,7 +95,7 @@ cd code/part1-profiling
 source ./activate-rocm.sh
 cd chapter5
 mkdir -p logs
-hipcc --offload-arch=gfx1201 -O3 vector_add.hip -o vector_add_bench
+hipcc --offload-arch=gfx1201 -O3 -std=c++17 vector_add.hip -o vector_add_bench
 ```
 
 然后运行连续访存版，再把 `linecross` 的 stride 分别设为 1 和 32：
@@ -124,6 +124,8 @@ hipcc --offload-arch=gfx1201 -O3 vector_add.hip -o vector_add_bench
 | `--stride` | `linecross` 中每个 lane 负责多少个连续元素 |
 | `--warmup` / `--repeat` | 热身次数和正式计时次数 |
 | `--output-json` | 把本次参数和结果写入 JSON |
+
+程序会在分配显存前检查参数：`size`、`repeat` 和 `linecross` 的 stride 必须为正，`warmup` 不能为负，block 必须是 32 的整数倍并且不超过设备上限。非法参数应直接返回非零，而不是进入除零、异常分配或非法 launch。
 
 程序会同时输出延迟和**有效带宽**。按算法口径，vector add 每个元素需要读 `a`、读 `b`、写 `c`，合计 12 B 有效数据，因此：
 
@@ -161,13 +163,13 @@ rocprofv3 --kernel-trace -o logs/final_kt_linecross32.csv -f csv \
        --warmup 5 --repeat 10
 ```
 
-程序一共启动 15 次 kernel：前 5 次是 warmup，后 10 次才是正式结果。第一次打开生成的 CSV，先找下面几组列：
+目标 kernel 一共启动 15 次：前 5 次是 warmup，后 10 次才是正式结果。`rocprofv3` 还可能记录运行时辅助 dispatch，因此第一次打开 CSV 时，先按 `Kernel_Name` 过滤出 `kernel_coalesced` 或 `kernel_linecross`，再找下面几组列：
 
 | 列 | 先用它回答什么 |
 | ---- | ---- |
 | `Kernel_Name` | 到底运行了哪个 kernel |
 | `Start_Timestamp` / `End_Timestamp` | 单次 kernel 花了多久 |
-| `Grid_Size` | 一共启动了多少个 work-item |
+| `Grid_Size_X` / `Workgroup_Size_X` | X 维一共启动了多少个 work-item / 每个 workgroup 的大小 |
 | `VGPR_Count` / `SGPR_Count` | kernel 的寄存器分配 |
 
 时间戳单位是纳秒：
@@ -176,7 +178,7 @@ rocprofv3 --kernel-trace -o logs/final_kt_linecross32.csv -f csv \
 kernel 时间（μs）= (End_Timestamp - Start_Timestamp) / 1000
 ```
 
-跳过最前面的 5 行 warmup，再统计后 10 行。这次运行得到：
+在过滤后的目标 kernel 行中跳过最前面的 5 行 warmup，再统计后 10 行。不要直接跳过原始 CSV 的前 5 行，因为拷贝、填充等辅助 dispatch 可能出现在目标 kernel 前后。这次运行得到：
 
 | kernel | 单次最短时间 | 中位数 | Grid Size | VGPR | SGPR |
 | ---- | ----: | ----: | ----: | ----: | ----: |

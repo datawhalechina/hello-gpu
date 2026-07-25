@@ -309,7 +309,7 @@ uv sync
 bash chapter8/run_all.sh
 ```
 
-`run_all.sh` 会激活 `code/part2-kernels/.venv`，默认按 `gfx1201` 编译 HIP，然后依次运行 8 个边界长度与主 shape。输出不写复杂 evidence 目录；本章首版直接以清晰的 `ENV`、阶段标题和 `RESULT` 行作为复跑反馈。
+`run_all.sh` 会激活 `code/part2-kernels/.venv`，默认按 `gfx1201` 编译 HIP，然后依次运行 8 个边界长度与主 shape。它只在终端输出 `ENV`、阶段标题和 `RESULT` 行，不会改写本章 `evidence/`。仓库中已提交的正式汇总由独立的多进程收集与 publication 流程生成；原始日志和完整 trace 不跟踪进 Git。
 
 常用覆盖参数：
 

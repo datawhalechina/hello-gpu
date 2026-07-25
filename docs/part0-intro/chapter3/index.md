@@ -18,7 +18,8 @@ code/part0-intro/
 ├── activate-rocm.sh
 └── chapter3/
     ├── vector_add.hip
-    └── benchmark_vector_add.py
+    ├── benchmark_vector_add.py
+    └── plot_roofline.py
 ```
 
 ## 3.1 从已经验证的环境开始
@@ -153,7 +154,7 @@ def benchmark_cpu(size, warmup, repeat):
         _ = c.sum().item()
         end = time.perf_counter()
         times.append((end - start) * 1000)
-    return times
+    return times, c
 
 
 def benchmark_gpu(size, warmup, repeat):
@@ -178,7 +179,12 @@ def benchmark_gpu(size, warmup, repeat):
         torch.cuda.synchronize()
         times.append(start.elapsed_time(end))
     _ = c.sum().item()
-    return times
+    return times, c
+
+
+def is_correct(output):
+    expected = torch.full_like(output, 3.0)
+    return bool(torch.isfinite(output).all().item() and torch.equal(output, expected))
 
 
 def summarize(name, times, size):
@@ -204,12 +210,15 @@ def main():
     print(f"warmup: {args.warmup}")
     print(f"repeat: {args.repeat}")
 
-    cpu_times = benchmark_cpu(args.size, args.warmup, args.repeat)
-    gpu_times = benchmark_gpu(args.size, args.warmup, args.repeat)
+    cpu_times, cpu_output = benchmark_cpu(args.size, args.warmup, args.repeat)
+    gpu_times, gpu_output = benchmark_gpu(args.size, args.warmup, args.repeat)
 
     summarize("cpu", cpu_times, args.size)
     summarize("gpu", gpu_times, args.size)
-    print("status: PASS")
+    correct = is_correct(cpu_output) and is_correct(gpu_output)
+    print(f"status: {'PASS' if correct else 'FAIL'}")
+    if not correct:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
@@ -257,7 +266,7 @@ gpu_bandwidth_gb_s_by_min: 583.332163
 status: PASS
 ```
 
-GPU min 延迟 0.345 ms，估算有效带宽约 583 GB/s——比 CPU（27.4 GB/s）快约 21 倍。
+GPU min 延迟 0.345 ms，按两读一写估算的逻辑有效带宽约为 583 GB/s。这里不能用 CPU/GPU 的打印值计算加速比：CPU 计时区间还包含 `c.sum().item()`，GPU event 只包围 `a + b`，两者不是同一工作量。这个不一致将在重做第 2～6 章带宽与 Roofline 数据时一并修正；当前 GPU 数字只用于后续同口径 GPU 实验的起点。
 
 </details>
 

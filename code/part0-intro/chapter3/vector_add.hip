@@ -1,7 +1,9 @@
 #include <hip/hip_runtime.h>
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <vector>
 
 #define HIP_CHECK(call)                                                     \
@@ -49,8 +51,14 @@ int main() {
 
   float max_error = 0.0f;
   for (int i = 0; i < n; ++i) {
-    max_error = std::max(max_error, std::abs(h_c[i] - 3.0f));
+    const float error = std::abs(h_c[i] - 3.0f);
+    if (!std::isfinite(error)) {
+      max_error = std::numeric_limits<float>::infinity();
+      break;
+    }
+    max_error = std::max(max_error, error);
   }
+  const bool correct = std::isfinite(max_error) && max_error == 0.0f;
 
   hipDeviceProp_t prop{};
   HIP_CHECK(hipGetDeviceProperties(&prop, 0));
@@ -60,11 +68,11 @@ int main() {
   std::cout << "blocks: " << blocks << std::endl;
   std::cout << "threads_per_block: " << threads << std::endl;
   std::cout << "max_error: " << max_error << std::endl;
-  std::cout << "status: " << (max_error == 0.0f ? "PASS" : "FAIL") << std::endl;
+  std::cout << "status: " << (correct ? "PASS" : "FAIL") << std::endl;
 
   HIP_CHECK(hipFree(d_a));
   HIP_CHECK(hipFree(d_b));
   HIP_CHECK(hipFree(d_c));
 
-  return max_error == 0.0f ? 0 : 1;
+  return correct ? 0 : 1;
 }

@@ -28,7 +28,7 @@ def benchmark_cpu(size, warmup, repeat):
         _ = c.sum().item()
         end = time.perf_counter()
         times.append((end - start) * 1000)
-    return times
+    return times, c
 
 
 def benchmark_gpu(size, warmup, repeat):
@@ -53,7 +53,12 @@ def benchmark_gpu(size, warmup, repeat):
         torch.cuda.synchronize()
         times.append(start.elapsed_time(end))
     _ = c.sum().item()
-    return times
+    return times, c
+
+
+def is_correct(output):
+    expected = torch.full_like(output, 3.0)
+    return bool(torch.isfinite(output).all().item() and torch.equal(output, expected))
 
 
 def summarize(name, times, size):
@@ -79,12 +84,15 @@ def main():
     print(f"warmup: {args.warmup}")
     print(f"repeat: {args.repeat}")
 
-    cpu_times = benchmark_cpu(args.size, args.warmup, args.repeat)
-    gpu_times = benchmark_gpu(args.size, args.warmup, args.repeat)
+    cpu_times, cpu_output = benchmark_cpu(args.size, args.warmup, args.repeat)
+    gpu_times, gpu_output = benchmark_gpu(args.size, args.warmup, args.repeat)
 
     summarize("cpu", cpu_times, args.size)
     summarize("gpu", gpu_times, args.size)
-    print("status: PASS")
+    correct = is_correct(cpu_output) and is_correct(gpu_output)
+    print(f"status: {'PASS' if correct else 'FAIL'}")
+    if not correct:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

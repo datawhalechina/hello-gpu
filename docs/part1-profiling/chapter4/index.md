@@ -120,15 +120,15 @@ flowchart LR
 
 [第 3 章](../../part0-intro/chapter3/index.md)的 `benchmark_vector_add.py` 里 `repeat=30` 就是为了让你拿到一串时间、再看 median / min 而不是单次值——本章只是把那个做法背后的道理讲清楚。
 
-## 4.4 GPU event 计时
+## 4.4 GPU event 与 wall-clock 计时
 
-这一节讲本章最关键的技术细节：**为什么不能用 `time.time()` / wall clock 量 kernel，而要用 GPU event**。
+这一节讲本章最关键的技术细节：**device-only kernel 时间和 host-observed 端到端时间要用不同计时边界**。
 
-GPU 任务通常是**异步提交**的：你在 host 端调用 `torch.softmax(x)` 或 `kernel<<<...>>>()` 时，CPU 只是把命令塞进队列就立刻返回了，kernel 真正执行完可能还要等一会儿。如果你用 `time.time()` 在调用前后取差，量到的多半是「CPU 把命令塞进队列花了多久」，而不是「GPU 算了多久」——这就是直觉表里「GPU 时间很短，说明程序很快」那条坑的来源。
+GPU 任务通常是**异步提交**的：你在 host 端调用 `torch.softmax(x)` 或 `kernel<<<...>>>()` 时，CPU 可能只把命令塞进队列就返回。如果直接在调用前后读取 wall clock、却不在终点同步，量到的主要是提交时间。要测设备时间，可以在同一 GPU stream 上记录 event；要测用户观察到的端到端延迟，可以使用高精度 wall clock，但必须在计时终点同步，并明确是否包含 launch、拷贝、分配和框架开销。
 
-正确的做法是用 GPU 自己的计时机制，在设备时间线上打两个事件，再算它们之间的间隔。下面三段骨架分别对应 PyTorch、Triton、HIP 三种最常见的入口，演示的就是这套「warmup → record event → repeat → synchronize → elapsed」的最小流程。脚本与日志会落在 `code/part1-profiling/chapter4/`。
+下面三段内嵌骨架分别对应 PyTorch、Triton、HIP 三种常见入口，演示「warmup → record event → repeat → synchronize → elapsed」的 device-only 流程。仓库中的可执行综合入口是 `code/part1-profiling/chapter4/bench_ch4.py`；本章没有提交独立的骨架文件或 `logs/` 目录，关键输出直接嵌在正文中。
 
-### 骨架 A：PyTorch 端到端 op 计时
+### 骨架 A：PyTorch op 的设备执行时间
 
 最常见的入口：你想知道 `torch.nn.functional.softmax(x)` 在某个 shape 上有多快。
 
@@ -136,8 +136,7 @@ GPU 任务通常是**异步提交**的：你在 host 端调用 `torch.softmax(x)
 <summary>代码骨架：bench_torch_op.py</summary>
 
 ```python
-# code/part1-profiling/chapter4/bench_torch_op.py
-# 用法：python bench_torch_op.py --shape 4096,4096 --dtype fp16 --repeats 200
+# 正文内嵌骨架；仓库可执行综合入口为 bench_ch4.py
 # 目标：演示一个可信的 PyTorch 算子 benchmark（示例算子可换成任意 op）
 # 硬件上下文：Radeon RX 9070 XT + ROCm 7.13（实测见下方 §4.4 结果表）
 import argparse
@@ -153,7 +152,7 @@ def bench(shape, dtype, repeats=200, warmup=20):
         torch.softmax(x, dim=-1)
     torch.cuda.synchronize()
 
-    # 用 GPU event 计时，不要用 time.time()
+    # 用 GPU event 测设备执行时间
     start = [torch.cuda.Event(enable_timing=True) for _ in range(repeats)]
     end   = [torch.cuda.Event(enable_timing=True) for _ in range(repeats)]
     for i in range(repeats):
@@ -190,8 +189,8 @@ if __name__ == "__main__":
 
 要点：
 
-- 用 `torch.cuda.Event` 而不是 `time.time()`——前者计的是 GPU 时间，后者会被异步 launch 误导；
-- warmup 至少 20 次，并在 warmup 后 `synchronize`；
+- 用 `torch.cuda.Event` 测设备执行时间；若改用 wall clock 测端到端延迟，必须在终点同步并写清计时范围；
+- 本例 warmup 20 次，并在 warmup 后 `synchronize`；实际次数应以 JIT、autotune、时钟和样本是否稳定为准；
 - 同时输出 mean / median / min / p95 / std，单一数字不够。
 
 ### 骨架 B：Triton kernel 计时与有效带宽
@@ -202,8 +201,7 @@ if __name__ == "__main__":
 <summary>代码骨架：bench_triton_copy.py</summary>
 
 ```python
-# code/part1-profiling/chapter4/bench_triton_copy.py
-# 用法：python bench_triton_copy.py --n 16777216 --repeats 200
+# 正文内嵌骨架；仓库可执行综合入口为 bench_ch4.py
 # 目标：用最简单的 copy kernel 验证 benchmark 流程，并估算有效带宽
 # 硬件上下文：Radeon RX 9070 XT + ROCm 7.13（实测见下方 §4.4 结果表）
 import argparse
@@ -269,12 +267,21 @@ if __name__ == "__main__":
 <summary>代码骨架：bench_hip.cpp</summary>
 
 ```cpp
-// code/part1-profiling/chapter4/bench_hip.cpp
-// 用法：hipcc -O3 bench_hip.cpp -o bench_hip && ./bench_hip
+// 正文内嵌骨架；用于说明 HIP event 的最小流程
 // 目标：HIP event 最小计时模板
 // 硬件上下文：Radeon RX 9070 XT + ROCm 7.13（实测见下方 §4.4 结果表）
 #include <hip/hip_runtime.h>
 #include <cstdio>
+
+#define HIP_CHECK(call)                                                      \
+    do {                                                                     \
+        const hipError_t error = (call);                                     \
+        if (error != hipSuccess) {                                           \
+            std::fprintf(stderr, "HIP error: %s\n",                         \
+                         hipGetErrorString(error));                           \
+            return 1;                                                        \
+        }                                                                    \
+    } while (0)
 
 __global__ void my_kernel(float* x, int n) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -285,28 +292,34 @@ int main() {
     const int n = 1 << 24;
     const int warmup = 20, repeats = 200;
     float* d;
-    hipMalloc(&d, n * sizeof(float));
+    HIP_CHECK(hipMalloc(&d, n * sizeof(float)));
+    HIP_CHECK(hipMemset(d, 0, n * sizeof(float)));
 
     int block = 256;
     int grid  = (n + block - 1) / block;
 
     for (int i = 0; i < warmup; ++i)
         my_kernel<<<grid, block>>>(d, n);
-    hipDeviceSynchronize();
+    HIP_CHECK(hipGetLastError());
+    HIP_CHECK(hipDeviceSynchronize());
 
     hipEvent_t s, e;
-    hipEventCreate(&s); hipEventCreate(&e);
-    hipEventRecord(s);
+    HIP_CHECK(hipEventCreate(&s));
+    HIP_CHECK(hipEventCreate(&e));
+    HIP_CHECK(hipEventRecord(s));
     for (int i = 0; i < repeats; ++i)
         my_kernel<<<grid, block>>>(d, n);
-    hipEventRecord(e);
-    hipEventSynchronize(e);
+    HIP_CHECK(hipGetLastError());
+    HIP_CHECK(hipEventRecord(e));
+    HIP_CHECK(hipEventSynchronize(e));
 
     float ms = 0.f;
-    hipEventElapsedTime(&ms, s, e);
+    HIP_CHECK(hipEventElapsedTime(&ms, s, e));
     printf("avg per launch = %.4f ms\n", ms / repeats);
 
-    hipFree(d);
+    HIP_CHECK(hipEventDestroy(s));
+    HIP_CHECK(hipEventDestroy(e));
+    HIP_CHECK(hipFree(d));
     return 0;
 }
 ```
@@ -332,9 +345,9 @@ int main() {
 | ---- | ---- | ---- | ----: | ----: | ----: |
 | 骨架 A — PyTorch vector add | `c = a + b` | 4096² / fp32 | 0.337 / 0.335 ms | 600.8 GB/s | ~0.083 FLOP/B |
 | 骨架 A — PyTorch vector add | `c = a + b` | 4096² / fp16 | 0.173 / 0.171 ms | 587.3 GB/s | ~0.17 FLOP/B |
-| 骨架 B — Triton vector copy | `y = x` | 8 MiB（pair） | 0.020 ms（min） | 785.1 GB/s | — |
-| 骨架 B — Triton vector copy | `y = x` | 64 MiB（pair） | 0.223 ms（min） | 572.8 GB/s | — |
-| 骨架 B — Triton vector copy | `y = x` | 256 MiB（pair） | 0.900 ms（min） | 568.6 GB/s | — |
+| 骨架 B — Triton vector copy | `y = x` | 每个张量 8 MiB | 0.020 ms（批次平均） | 785.1 GB/s | — |
+| 骨架 B — Triton vector copy | `y = x` | 每个张量 64 MiB | 0.223 ms（批次平均） | 572.8 GB/s | — |
+| 骨架 B — Triton vector copy | `y = x` | 每个张量 256 MiB | 0.900 ms（批次平均） | 568.6 GB/s | — |
 
 ```text
 GPU: AMD Radeon RX 9070 XT
@@ -347,20 +360,20 @@ hipcc: 7.13.99004 / arch gfx1201 / 原生 Ubuntu 24.04 (6.17.0-35-generic)
   fp16 |   0.171 ms |    0.173 ms |   587.3
 
 --- 骨架 B：Triton vector copy (float32) ---
-   footprint |    min_ms |     GB/s
+   footprint |    avg_ms |     GB/s
         8 MiB |   0.020 ms |   785.1
        64 MiB |   0.223 ms |   572.8
       256 MiB |   0.900 ms |   568.6
 ```
 
-> 时延口径：vector add 用 GPU event 逐次计时，同时报告 min 与 median；vector copy 用「一段 event 覆盖 200 次连续 launch 后求平均」，列出的就是单次平均（≈ min）。原始日志见 `code/part1-profiling/chapter4/logs/`。有效带宽的口径：vector add 按 `3 × elems × dtype` 字节（两读一写），vector copy 按 `2 × footprint` 字节（一读一写）。
+> 时延口径：vector add 用 GPU event 逐次计时，同时报告 min 与 median；vector copy 用一段 event 覆盖 200 次连续 launch 后求平均，因此只有批次平均值，不能据此推出 min、median 或波动。有效带宽的口径是 vector add 按 `3 × elems × dtype` 字节（两读一写），vector copy 按每次 `2 × footprint` 字节（一读一写）。现有带宽单位将在第 2～6 章统一重算时一并校正。
 
 </details>
 
 读这张表的关键点：
 
 - **memory-bound 算子的「快」上限就是带宽**：vector add 在 fp32 / fp16 下有效带宽几乎一致（600.8 vs 587.3 GB/s），但 fp16 的时间只有 fp32 的约一半（0.171 vs 0.335 ms）——这正是直觉表里「改 dtype 之后吞吐翻倍 ≠ 真省了带宽」那条的实测印证。fp16 真省到的是 byte 数，算术强度（FLOP/B）跟着翻倍。
-- **vector copy 的 footprint 扫描能画出 cache 层级**：8 MiB 时有效带宽冲到 785.1 GB/s（落在 L2 命中区，数据基本没往返 GDDR6），64 MiB 以后跌到 ~570 GB/s 并稳定下来——这就是踩进 GDDR6 平台后的真实带宽。这条曲线就是后面所有 memory-bound 算子要参照的带宽线。
+- **vector copy 的 footprint 扫描能提示 cache/显存边界**：8 MiB 时较高的逻辑有效带宽说明片上 cache 可能参与；每个张量 64 MiB 后结果下降并趋稳。仅凭时间不能把命中精确归到 L2、Infinity Cache 或 GDDR6，后续参考线还需要结合正确单位和更完整的 footprint 扫描重建。
 
 > 太小的输入（几 MiB 以下）测出来的不是带宽峰值，是 launch overhead——每次 copy 真正干活只有几 μs，被启动开销稀释。太大的输入又只能看到 GDDR6 平台。要看 cache 层级必须跑 footprint 扫描，而不是只跑一个 size。
 
@@ -403,7 +416,7 @@ hipcc: 7.13.99004 / arch gfx1201 / 原生 Ubuntu 24.04 (6.17.0-35-generic)
 | warmup | 让缓存、JIT、设备状态进入稳定状态 | 第一轮特别慢，直接拿来平均 |
 | repeat | 单次结果可能只是偶然 | 只跑一次就下结论 |
 | synchronize | GPU 任务常常异步提交 | 只量到 CPU 提交时间 |
-| 计时器选择 | wall clock vs GPU event 精度差异大 | 用 `time.time()` 量微秒级 kernel |
+| 计时器选择 | device-only 与端到端问题需要不同计时边界 | 用未同步的 wall clock 量异步 kernel |
 | 锁定时钟 / 后台干扰 | 频率波动会污染数据 | 后台跑着别的 GPU 任务 |
 | 记录环境 | 后续复查需要硬件、驱动、框架版本 | 只有一个数字，没有上下文 |
 | 只改一个变量 | 才知道是谁带来变化 | 同时改 shape、dtype、实现和参数 |
@@ -415,7 +428,7 @@ hipcc: 7.13.99004 / arch gfx1201 / 原生 Ubuntu 24.04 (6.17.0-35-generic)
 - 性能优化不是从改代码开始，而是从定义问题和设计测量开始；**没有稳定测量，就没有可靠优化**。
 - 首轮的一次性开销（编译、冷缓存、爬频）要在 warmup 里消掉；正式统计只看稳态段，warmup 之后记得 synchronize。
 - 单次结果不可信，要 repeat 多次并汇总 mean / median / min / p95 / std；波动大时先修测量方法，而不是急着优化代码。
-- GPU 任务是异步提交的，必须用 GPU event（`torch.cuda.Event` / `hipEvent_t`）而不是 `time.time()` 量 kernel 真实耗时；本章给出 PyTorch / Triton / HIP 三段最小骨架。
+- GPU 任务是异步提交的：GPU event（`torch.cuda.Event` / `hipEvent_t`）适合测设备时间；同步后的高精度 wall clock 适合测 host-observed/端到端延迟。两者都必须明确计时范围。
 - 伪优化有很多伪装（缓存命中、launch overhead、改 dtype 只省了 byte、print 意外同步……），核心对策是「让实验可复查」和「先建立可信 baseline」。
 - [下一章](../chapter5/index.md) 会用两个 vector add 版本，把本章的 benchmark 流程和 `rocprofv3` 串成「量准 → 找到慢点 → 验证」的完整路线。
 

@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <limits>
 #include <random>
 #include <string>
 #include <vector>
@@ -98,7 +99,8 @@ Options parse_options(int argc, char** argv) {
                         (options.block & (options.block - 1)) == 0;
     if (!valid_version || options.rows <= 0 || options.cols <= 0 ||
         !power_of_two || options.block > 1024 || options.warmup < 0 ||
-        options.repeat <= 0 || options.epsilon <= 0.0f) {
+        options.repeat <= 0 || !std::isfinite(options.epsilon) ||
+        options.epsilon <= 0.0f) {
         std::cerr << "invalid arguments\n";
         std::exit(2);
     }
@@ -108,7 +110,9 @@ Options parse_options(int argc, char** argv) {
 std::vector<float> reference_rmsnorm(const std::vector<float>& input,
                                      const std::vector<float>& weight,
                                      int rows, int cols, float epsilon) {
-    std::vector<float> output(rows * cols);
+    const std::size_t elements =
+        static_cast<std::size_t>(rows) * static_cast<std::size_t>(cols);
+    std::vector<float> output(elements);
     for (int row = 0; row < rows; ++row) {
         double square_sum = 0.0;
         for (int col = 0; col < cols; ++col) {
@@ -125,11 +129,53 @@ std::vector<float> reference_rmsnorm(const std::vector<float>& input,
     return output;
 }
 
+float maximum_absolute_error(const std::vector<float>& actual,
+                             const std::vector<float>& reference) {
+    if (actual.size() != reference.size()) {
+        return std::numeric_limits<float>::infinity();
+    }
+    float maximum = 0.0f;
+    for (std::size_t index = 0; index < actual.size(); ++index) {
+        const float error = std::abs(actual[index] - reference[index]);
+        if (!std::isfinite(error)) {
+            return std::numeric_limits<float>::infinity();
+        }
+        maximum = std::max(maximum, error);
+    }
+    return maximum;
+}
+
 int main(int argc, char** argv) {
     Options options = parse_options(argc, argv);
-    int elements = options.rows * options.cols;
-    size_t bytes = elements * sizeof(float);
+    if (options.rows > std::numeric_limits<int>::max() / options.cols) {
+        std::cerr << "rows * cols exceeds the supported int indexing range\n";
+        return 2;
+    }
+    hipDeviceProp_t properties{};
+    HIP_CHECK(hipGetDeviceProperties(&properties, 0));
+    if (options.block > properties.maxThreadsPerBlock) {
+        std::cerr << "block exceeds the device thread limit\n";
+        return 2;
+    }
+    const std::size_t elements =
+        static_cast<std::size_t>(options.rows) *
+        static_cast<std::size_t>(options.cols);
+    const size_t bytes = elements * sizeof(float);
     size_t weight_bytes = options.cols * sizeof(float);
+    const std::size_t serial_grid =
+        static_cast<std::size_t>(options.rows) / options.block +
+        (options.rows % options.block != 0);
+    const std::size_t max_grid_x =
+        static_cast<std::size_t>(properties.maxGridSize[0]);
+    const bool runs_serial =
+        options.version == "all" || options.version == "serial";
+    const bool runs_block =
+        options.version == "all" || options.version == "block";
+    if ((runs_serial && serial_grid > max_grid_x) ||
+        (runs_block && static_cast<std::size_t>(options.rows) > max_grid_x)) {
+        std::cerr << "calculated grid exceeds the device limit\n";
+        return 2;
+    }
     std::mt19937 generator(options.seed);
     std::uniform_real_distribution<float> distribution(-1.0f, 1.0f);
     std::vector<float> input(elements), weight(options.cols);
@@ -148,8 +194,8 @@ int main(int argc, char** argv) {
 
     auto launch = [&](const std::string& version) {
         if (version == "serial") {
-            int grid = (options.rows + options.block - 1) / options.block;
-            hipLaunchKernelGGL(rmsnorm_serial_kernel, dim3(grid),
+            hipLaunchKernelGGL(rmsnorm_serial_kernel,
+                               dim3(static_cast<unsigned int>(serial_grid)),
                                dim3(options.block), 0, 0, d_input, d_weight,
                                d_output, options.rows, options.cols,
                                options.epsilon);
@@ -170,11 +216,8 @@ int main(int argc, char** argv) {
         std::vector<float> actual(elements);
         HIP_CHECK(hipMemcpy(actual.data(), d_output, bytes,
                             hipMemcpyDeviceToHost));
-        float precheck_error = 0.0f;
-        for (int i = 0; i < elements; ++i) {
-            precheck_error = std::max(precheck_error,
-                                      std::abs(actual[i] - reference[i]));
-        }
+        const float precheck_error =
+            maximum_absolute_error(actual, reference);
         if (precheck_error >= 2e-5f) {
             std::cout << "RESULT operator=rmsnorm implementation=hip-" << version
                       << " runtime=hip shape=" << options.rows << 'x' << options.cols
@@ -211,11 +254,8 @@ int main(int argc, char** argv) {
             : times_ms[options.repeat / 2];
         HIP_CHECK(hipMemcpy(actual.data(), d_output, bytes,
                             hipMemcpyDeviceToHost));
-        float max_error = 0.0f;
-        for (int i = 0; i < elements; ++i) {
-            max_error = std::max(max_error, std::abs(actual[i] - reference[i]));
-        }
-        bool correct = max_error < 2e-5f;
+        const float max_error = maximum_absolute_error(actual, reference);
+        const bool correct = max_error < 2e-5f;
         std::cout << "RESULT operator=rmsnorm implementation=hip-" << version
                   << " runtime=hip shape=" << options.rows << 'x' << options.cols
                   << " rows=" << options.rows << " cols=" << options.cols

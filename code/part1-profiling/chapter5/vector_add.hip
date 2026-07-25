@@ -1,8 +1,8 @@
 // code/part1-profiling/chapter5/vector_add.hip
-// 第 5 章 profiling 主线程序：合并访存 vs 跨 cache line 反例
+// 第 5 章 profiling 主线程序：合并访存 vs 地址分散组合对照
 //
 // 用法：
-//   hipcc --offload-arch=gfx1201 -O3 vector_add.hip -o vector_add_bench
+//   hipcc --offload-arch=gfx1201 -O3 -std=c++17 vector_add.hip -o vector_add_bench
 //   ./vector_add_bench --kernel coalesced --size 16777216 --block 256 \
 //       --warmup 20 --repeat 100 --output-json logs/coalesced_size16777216.json
 //   ./vector_add_bench --kernel linecross --size 16777216 --block 256 --stride 32 \
@@ -14,6 +14,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <numeric>
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -32,15 +33,11 @@ __global__ void kernel_coalesced(const float* __restrict__ a,
     }
 }
 
-// strided 非合并访存反例（公平对比版）：
-//   - 与 coalesced 版处理【完全相同】的有效元素（读 n 个 a、n 个 b、写 n 个 c）；
-//   - 唯一差别是 wavefront 内线程→地址的映射被打散：
-//       每个 wavefront 负责输出区间 [wave_id*32, wave_id*32+32)（写连续，合并写），
-//       但读 a/b 时按下标 wave_id*32 + (lane*stride % 32) 取，使 wave 内相邻 lane
-//       读跨步地址，破坏读路径的合并。
-//   - stride 必须与 wavefront 宽度(=32)互质，否则 (lane*stride % 32) 会退化成
-//     少数几个固定下标，无法制造真正的跨步。stride=1 即等价于合并版（恒等映射）。
-//   - 这样两版的访存字节数完全相同，唯一变量是【读路径合并度】，可干净对比。
+// wave 内地址置换对照：
+//   - 每个 wave 仍读取同一个连续的 32 元素集合，只改变 lane 与元素的对应顺序；
+//   - coalescer 关注整个 wave 的地址集合，因此这不是“非合并访存”反例；
+//   - stride 必须与 32 互质，才能形成不重复的置换；尾 wave 不完整时不运行此版本。
+// 该 kernel 仅保留为地址集合与 lane 顺序的对照，正文实验使用 coalesced/linecross。
 __global__ void kernel_strided(const float* __restrict__ a,
                                const float* __restrict__ b,
                                float*       __restrict__ c,
@@ -52,7 +49,7 @@ __global__ void kernel_strided(const float* __restrict__ a,
     int lane           = threadIdx.x & (W - 1);         // 本线程在 wave 内的 lane
     int wave_id        = blockIdx.x * waves_in_block + wave_in_block;  // 全局 wave 编号
     int base           = wave_id * W;                   // 本 wave 输出区间起点（连续覆盖 0..n）
-    int local_idx      = (lane * stride) & (W - 1);     // 打散后的 lane 内偏移（0..31）
+    int local_idx      = (lane * (stride & (W - 1))) & (W - 1);
     int a_idx          = base + local_idx;              // 读：跨步映射
     int c_idx          = base + lane;                   // 写：连续（合并写）
     if (c_idx < n && a_idx < n) {
@@ -60,13 +57,12 @@ __global__ void kernel_strided(const float* __restrict__ a,
     }
 }
 
-// linecross：制造跨 cache line 访问的教学反例。
+// linecross：制造 wave 内分散地址的教学反例。
 //   每个 wavefront 负责【连续】的 W*stride 个输出位置 [tile_base, tile_base+W*stride)，
 //   把它们切成 W 段，每段 stride 个连续元素，交给一个 lane：
 //     lane k 处理 [tile_base + k*stride, tile_base + (k+1)*stride) 这 stride 个元素。
-//   这样相邻 lane 的起始地址相距 stride*4 字节：
-//     - stride <  32：相邻 lane 落在/接近同一 cache line（合并）
-//     - stride >= 32：相邻 lane 落在不同 cache line（跨步，合并被破坏）
+//   这样相邻 lane 的起始地址相距 stride*4 字节；stride 越大，同一轮的
+//   地址集合通常越分散。精确事务数和 cacheline 边界取决于目标架构。
 //   每个元素仍按 c[i]=a[i]+b[i] 计算，但 stride 还会同时改变每线程循环次数和 grid。
 //   因此它适合观察组合趋势，不是只改变访存合并度的严格单变量对照。
 __global__ void kernel_linecross(const float* __restrict__ a,
@@ -126,6 +122,35 @@ static Args parse_args(int argc, char** argv) {
         else if (s == "--output-json") a.output_json = next(s);
         else { fprintf(stderr, "unknown arg: %s\n", s.c_str()); exit(1); }
     }
+    const bool valid_kernel = a.kernel == "coalesced" ||
+                              a.kernel == "strided" ||
+                              a.kernel == "linecross";
+    if (!valid_kernel) {
+        fprintf(stderr, "--kernel must be coalesced, strided, or linecross\n");
+        exit(2);
+    }
+    if (a.size <= 0 || a.block < 32 || a.block > 1024 ||
+        a.block % 32 != 0 || a.warmup < 0 || a.repeat <= 0) {
+        fprintf(stderr,
+                "--size/--repeat must be positive, --warmup non-negative, "
+                "and --block a multiple of 32 in [32, 1024]\n");
+        exit(2);
+    }
+    if ((a.kernel == "strided" || a.kernel == "linecross") &&
+        a.stride <= 0) {
+        fprintf(stderr, "--stride must be positive for this kernel\n");
+        exit(2);
+    }
+    if (a.kernel == "linecross" && a.stride > a.size) {
+        fprintf(stderr, "linecross requires --stride <= --size\n");
+        exit(2);
+    }
+    if (a.kernel == "strided" &&
+        (std::gcd(a.stride, 32) != 1 || a.size % 32 != 0)) {
+        fprintf(stderr,
+                "strided requires stride coprime with 32 and size divisible by 32\n");
+        exit(2);
+    }
     return a;
 }
 
@@ -138,6 +163,10 @@ int main(int argc, char** argv) {
     int dev = 0;
     hipDeviceProp_t prop;
     HIP_CHECK(hipGetDeviceProperties(&prop, dev));
+    if (args.block > prop.maxThreadsPerBlock) {
+        fprintf(stderr, "--block exceeds the device maxThreadsPerBlock\n");
+        return 2;
+    }
     printf("GPU: %s (gfx arch: %s)\n", prop.name, prop.gcnArchName);
     printf("kernel=%s size=%d block=%d stride=%d warmup=%d repeat=%d\n",
            args.kernel.c_str(), n, args.block, args.stride, args.warmup, args.repeat);
@@ -154,16 +183,24 @@ int main(int argc, char** argv) {
     HIP_CHECK(hipMemcpy(d_b, hb.data(), bytes, hipMemcpyHostToDevice));
 
     // grid 计算：
-    //   coalesced / strided（wavefront 内打散）：每个线程一个输出位置 → grid = n/block
-    //   linecross（跨 cache line）：每个 wavefront 覆盖 W*stride 个位置 → grid = n/(block/32*W*stride)
-    int grid;
+    //   coalesced / strided（wave 内地址置换）：每个线程一个输出位置 → grid = n/block
+    //   linecross（wave 内地址分散）：每个 wave 覆盖 W*stride 个位置
+    size_t grid_size;
     if (args.kernel == "linecross") {
-        int waves_per_block = args.block / 32;
-        int per_block = waves_per_block * 32 * args.stride;   // 每个 block 处理的元素数
-        grid = (n + per_block - 1) / per_block;
+        const size_t waves_per_block = static_cast<size_t>(args.block) / 32;
+        const size_t per_block =
+            waves_per_block * 32 * static_cast<size_t>(args.stride);
+        grid_size = (static_cast<size_t>(n) + per_block - 1) / per_block;
     } else {
-        grid = (n + args.block - 1) / args.block;
+        grid_size =
+            (static_cast<size_t>(n) + args.block - 1) / args.block;
     }
+    if (grid_size == 0 ||
+        grid_size > static_cast<size_t>(prop.maxGridSize[0])) {
+        fprintf(stderr, "calculated grid exceeds the device limit\n");
+        return 2;
+    }
+    const unsigned int grid = static_cast<unsigned int>(grid_size);
 
     auto launch = [&](hipEvent_t, hipEvent_t) {
         if (args.kernel == "coalesced")
@@ -179,22 +216,23 @@ int main(int argc, char** argv) {
     for (int i = 0; i < args.warmup; ++i) launch((hipEvent_t)0, (hipEvent_t)0);
     HIP_CHECK(hipDeviceSynchronize());
 
-    // 计时：per-iteration event（取 min）+ 一段 event 覆盖 repeat（取 avg）
+    // 计时：每次 launch 使用一对 event，再汇总 min / median / avg。
     std::vector<hipEvent_t> starts(args.repeat), ends(args.repeat);
     for (int i = 0; i < args.repeat; ++i) {
-        hipEventCreate(&starts[i]);
-        hipEventCreate(&ends[i]);
+        HIP_CHECK(hipEventCreate(&starts[i]));
+        HIP_CHECK(hipEventCreate(&ends[i]));
     }
     for (int i = 0; i < args.repeat; ++i) {
-        hipEventRecord(starts[i]);
+        HIP_CHECK(hipEventRecord(starts[i]));
         launch(starts[i], ends[i]);
-        hipEventRecord(ends[i]);
+        HIP_CHECK(hipGetLastError());
+        HIP_CHECK(hipEventRecord(ends[i]));
     }
     HIP_CHECK(hipDeviceSynchronize());
 
     std::vector<float> times(args.repeat);
     for (int i = 0; i < args.repeat; ++i) {
-        hipEventElapsedTime(&times[i], starts[i], ends[i]);
+        HIP_CHECK(hipEventElapsedTime(&times[i], starts[i], ends[i]));
     }
     std::sort(times.begin(), times.end());
     float min_ms    = times.front();
@@ -204,25 +242,26 @@ int main(int argc, char** argv) {
     // 有效带宽：vector add = 读 a + 读 b + 写 c = 3n floats（三版都处理 n 个元素）
     double eff_bw_gbs = (3.0 * bytes) / (min_ms * 1e-3) / 1e9;
 
-    // 正确性校验（只在前 1024 个元素抽检，避免大 memcpy 拖慢）
-    HIP_CHECK(hipMemcpy(hc.data(), d_c, std::min<size_t>(1024, n) * sizeof(float), hipMemcpyDeviceToHost));
+    // 正确性校验在计时区间外执行，覆盖完整输出。
+    HIP_CHECK(hipMemcpy(hc.data(), d_c, bytes, hipMemcpyDeviceToHost));
     int errors = 0;
-    int check_n = (int)std::min<size_t>(1024, n);
-    for (int i = 0; i < check_n; ++i) {
+    for (int i = 0; i < n; ++i) {
         // 三版都写了所有 c[0..n)，但 a 的读取下标随 kernel/stride 不同：
         //   coalesced : a_idx = i
-        //   strided   : a_idx = (i & ~31) + ((i & 31) * stride & 31)    （wavefront 内打散，同 cache line）
+        //   strided   : a_idx = (i & ~31) + ((i & 31) * stride & 31)
+        //               （wave 内置换同一连续 32 元素集合）
         //   linecross : a_idx = i                                          （读写都跨步，下标恒等 i，只是 wave 内 lane 顺序跨步）
         int a_idx;
         if (args.kernel == "strided") {
             int lane = i & 31;
             int base = i & ~31;
-            a_idx = base + ((lane * args.stride) & 31);
+            a_idx = base + ((lane * (args.stride & 31)) & 31);
         } else {
             a_idx = i;   // coalesced 与 linecross 都满足 c[i]=a[i]+b[i]
         }
         float expected = ha[a_idx] + hb[a_idx];
-        if (std::fabs(hc[i] - expected) > 1e-3f) {
+        if (!std::isfinite(hc[i]) || !std::isfinite(expected) ||
+            std::fabs(hc[i] - expected) > 1e-3f) {
             if (errors < 5) printf("MISMATCH %s idx=%d got=%.4f exp=%.4f (a_idx=%d)\n",
                                    args.kernel.c_str(), i, hc[i], expected, a_idx);
             errors++;
@@ -230,10 +269,11 @@ int main(int argc, char** argv) {
     }
 
     // 输出
-    printf("grid=%d block=%d\n", grid, args.block);
+    printf("grid=%u block=%d\n", grid, args.block);
     printf("min_ms=%.4f  median_ms=%.4f  avg_ms=%.4f\n", min_ms, median_ms, avg_ms);
     printf("eff_bandwidth=%.2f GB/s  (3*n*4 / min_ms, n=%d)\n", eff_bw_gbs, n);
-    printf("correctness=%s (errors=%d in first 1024 elems)\n", errors == 0 ? "OK" : "FAIL", errors);
+    printf("correctness=%s (errors=%d in all %d elems)\n",
+           errors == 0 ? "OK" : "FAIL", errors, n);
 
     if (!args.output_json.empty()) {
         FILE* f = fopen(args.output_json.c_str(), "w");
@@ -254,9 +294,11 @@ int main(int argc, char** argv) {
     }
 
     for (int i = 0; i < args.repeat; ++i) {
-        hipEventDestroy(starts[i]);
-        hipEventDestroy(ends[i]);
+        HIP_CHECK(hipEventDestroy(starts[i]));
+        HIP_CHECK(hipEventDestroy(ends[i]));
     }
-    (void)hipFree(d_a); (void)hipFree(d_b); (void)hipFree(d_c);
+    HIP_CHECK(hipFree(d_a));
+    HIP_CHECK(hipFree(d_b));
+    HIP_CHECK(hipFree(d_c));
     return errors == 0 ? 0 : 1;
 }

@@ -46,7 +46,7 @@ code/part0-intro/
 
 如果你的硬件或 ROCm 版本和上面对不上，不用担心——验证顺序仍然可以照搬，只是包版本、设备名、工具输出会有差异，到时候自己对照一下就好（换卡时的完整调整流程见 [附录 B · 换一张卡](../../appendix/appendix-b-switch-gpu/index.md)）。
 
-本章所有命令输出均在 Radeon RX 9070 XT（gfx1201）+ ROCm 7.13 + 原生 Ubuntu 24.04 上实测，原始日志见 `code/part0-intro/chapter1/logs/`。
+本章所有命令输出均在 Radeon RX 9070 XT（gfx1201）+ ROCm 7.13 + 原生 Ubuntu 24.04 上实测，关键输出已逐段嵌入正文；本章没有单独提交 `logs/` 目录。
 
 ## 1.2 平台边界：原生 Linux 优先，WSL2 可用
 
@@ -323,6 +323,8 @@ result_checksum: -12872.921875
 
 </details>
 
+脚本没有固定随机种子，因此 `result_checksum` 每次可能不同。这里检查的是 shape、dtype、device 和计算能否完成，不应把 checksum 与示例逐位对照。
+
 这里有个**几乎每个新手都会问的问题**：为什么 ROCm 版 PyTorch 里到处都是 `cuda`？答案是历史包袱——PyTorch 的设备字符串一直沿用 `cuda` 这个名字，没有为 ROCm 单独开一条。看到 `device="cuda"` 不代表你跑在 NVIDIA 卡上，把它读作"把 tensor 放到当前可用的 GPU 后端"就行。第二道门推开之后，这个命名的小别扭很快就会被你忘掉。
 
 这一步过了，至少说明三件事：
@@ -363,8 +365,10 @@ flowchart TD
 ```cpp
 #include <hip/hip_runtime.h>
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <vector>
 
 #define HIP_CHECK(call)                                                     \
@@ -412,8 +416,14 @@ int main() {
 
   float max_error = 0.0f;
   for (int i = 0; i < n; ++i) {
-    max_error = std::max(max_error, std::abs(h_c[i] - 3.0f));
+    const float error = std::abs(h_c[i] - 3.0f);
+    if (!std::isfinite(error)) {
+      max_error = std::numeric_limits<float>::infinity();
+      break;
+    }
+    max_error = std::max(max_error, error);
   }
+  const bool correct = std::isfinite(max_error) && max_error == 0.0f;
 
   hipDeviceProp_t prop{};
   HIP_CHECK(hipGetDeviceProperties(&prop, 0));
@@ -423,13 +433,13 @@ int main() {
   std::cout << "blocks: " << blocks << std::endl;
   std::cout << "threads_per_block: " << threads << std::endl;
   std::cout << "max_error: " << max_error << std::endl;
-  std::cout << "status: " << (max_error == 0.0f ? "PASS" : "FAIL") << std::endl;
+  std::cout << "status: " << (correct ? "PASS" : "FAIL") << std::endl;
 
   HIP_CHECK(hipFree(d_a));
   HIP_CHECK(hipFree(d_b));
   HIP_CHECK(hipFree(d_c));
 
-  return max_error == 0.0f ? 0 : 1;
+  return correct ? 0 : 1;
 }
 ```
 
@@ -554,7 +564,7 @@ HIP / Triton / profiling 工具
 
 - 本章推开了三道环境验证门：**ROCm 可见、PyTorch ROCm、最小 HIP 路径**，每一道都是上一道的延伸，跳不过去。
 - 本教程当前基线是原生 Ubuntu 24.04 + ROCm 7.13；WSL2 读者通常也能跑通计算路径，但 `rocm-smi` / `amd-smi` 与硬件性能计数器相关能力不能作为可用前提。
-- 环境通过 `pyproject.toml` + `uv.lock` 固化，进入 `code/part0-intro` 后只需 `uv sync` 就能复现——不用手动装任何东西。
+- 在 GPU 驱动、`uv` 和系统编译工具已经就绪的前提下，`pyproject.toml` + `uv.lock` 固化了本篇 Python/ROCm wheel 依赖；进入 `code/part0-intro` 后用 `uv sync` 安装，不需要再手工拼装 `pip` 包版本。
 - `activate-rocm.sh` 负责处理 ROCm wheel 的环境变量，最核心的职责是让 `ROCM_PATH` 指向 `_rocm_sdk_devel`，而不是 `_rocm_sdk_core`。
 - PyTorch ROCm 里看到 `cuda:0` 完全正常，是历史命名问题，**不代表**你在用 NVIDIA GPU。
 - 环境不通时不要只甩一句"失败了"——把机器信息、目录、命令、完整输出、版本号和最近改动一起拿出来，排错效率会高一个数量级。

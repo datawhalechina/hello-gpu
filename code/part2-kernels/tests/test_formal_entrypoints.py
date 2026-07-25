@@ -5,6 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).parents[1]
+REPO_ROOT = ROOT.parents[1]
 CHAPTERS = ("chapter8", "chapter9", "chapter10", "chapter11", "chapter12")
 RESULT_FIELDS = (
     "operator=",
@@ -51,10 +52,75 @@ class FormalEntrypointsTest(unittest.TestCase):
     def test_chapter11_and_12_formal_edges_and_seed_are_explicit(self) -> None:
         chapter11 = (ROOT / "chapter11" / "run_all.sh").read_text(encoding="utf-8")
         chapter12 = (ROOT / "chapter12" / "run_all.sh").read_text(encoding="utf-8")
-        self.assertIn("--seq 33 --dim 31", chapter11)
+        for edge in ("run_edge 1 1", "run_edge 7 13", "run_edge 33 31"):
+            self.assertIn(edge, chapter11)
         self.assertIn("--seed \"${SEED}\"", chapter11)
-        self.assertIn("--rows 33 --cols 257", chapter12)
+        for edge in ("run_edge 1 1", "run_edge 3 13", "run_edge 33 257"):
+            self.assertIn(edge, chapter12)
         self.assertIn("--seed \"${SEED}\"", chapter12)
+
+    def test_documented_profile_and_edge_commands_match_entrypoints(self) -> None:
+        docs = ROOT.parents[1] / "docs" / "part2-kernels"
+        chapter9 = (docs / "chapter9" / "index.md").read_text(encoding="utf-8")
+        chapter11 = (docs / "chapter11" / "index.md").read_text(encoding="utf-8")
+        chapter12 = (docs / "chapter12" / "index.md").read_text(encoding="utf-8")
+
+        self.assertNotIn("RUN_PROFILE=1", chapter9)
+        self.assertIn("bash chapter9/profile_all.sh", chapter9)
+        for shape in ("`1×1`", "`7×13`", "`33×31`", "`128×64`"):
+            self.assertIn(shape, chapter11)
+        for shape in ("`1×1`", "`3×13`", "`33×257`", "`1024×4096`"):
+            self.assertIn(shape, chapter12)
+
+    def test_correctness_checks_reject_nonfinite_outputs(self) -> None:
+        sources = (
+            REPO_ROOT / "code/part0-intro/chapter1/vector_add.hip",
+            REPO_ROOT / "code/part0-intro/chapter3/vector_add.hip",
+            REPO_ROOT / "code/part1-profiling/chapter5/vector_add.hip",
+            ROOT / "chapter11/attention_hip.hip",
+            ROOT / "chapter12/rmsnorm_hip.hip",
+        )
+        for source_path in sources:
+            with self.subTest(source=source_path):
+                source = source_path.read_text(encoding="utf-8")
+                self.assertIn("std::isfinite", source)
+
+    def test_triton_entrypoints_reject_negative_warmup(self) -> None:
+        for chapter, filename in (
+            ("chapter11", "attention_triton.py"),
+            ("chapter12", "rmsnorm_triton.py"),
+        ):
+            with self.subTest(chapter=chapter):
+                source = (ROOT / chapter / filename).read_text(encoding="utf-8")
+                self.assertIn("args.warmup < 0", source)
+
+    def test_teaching_entrypoints_guard_declared_resource_limits(self) -> None:
+        attention_hip = (ROOT / "chapter11/attention_hip.hip").read_text(
+            encoding="utf-8"
+        )
+        rmsnorm_hip = (ROOT / "chapter12/rmsnorm_hip.hip").read_text(
+            encoding="utf-8"
+        )
+        rmsnorm_triton = (ROOT / "chapter12/rmsnorm_triton.py").read_text(
+            encoding="utf-8"
+        )
+        chapter5 = (
+            REPO_ROOT / "code/part1-profiling/chapter5/vector_add.hip"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("properties.sharedMemPerBlock", attention_hip)
+        for source in (attention_hip, rmsnorm_hip):
+            self.assertIn("properties.maxGridSize[0]", source)
+            self.assertIn("properties.maxThreadsPerBlock", source)
+        self.assertIn("args.cols > 65536", rmsnorm_triton)
+        self.assertIn("a.stride > a.size", chapter5)
+
+    def test_documented_grid_and_evidence_semantics_match_scripts(self) -> None:
+        docs = REPO_ROOT / "docs/part2-kernels"
+        chapter7 = (docs / "chapter7/index.md").read_text(encoding="utf-8")
+        chapter8 = (docs / "chapter8/index.md").read_text(encoding="utf-8")
+        self.assertIn("Logical Grid (blocks/programs)", chapter7)
+        self.assertIn("不会改写本章 `evidence/`", chapter8)
 
     def test_chapter10_results_include_formal_fields(self) -> None:
         implementations = (

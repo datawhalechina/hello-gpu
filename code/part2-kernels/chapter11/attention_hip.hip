@@ -206,12 +206,67 @@ std::vector<float> reference_attention(const std::vector<float>& q,
     return output;
 }
 
+float maximum_absolute_error(const std::vector<float>& actual,
+                             const std::vector<float>& reference) {
+    if (actual.size() != reference.size()) {
+        return std::numeric_limits<float>::infinity();
+    }
+    float maximum = 0.0f;
+    for (std::size_t index = 0; index < actual.size(); ++index) {
+        const float error = std::abs(actual[index] - reference[index]);
+        if (!std::isfinite(error)) {
+            return std::numeric_limits<float>::infinity();
+        }
+        maximum = std::max(maximum, error);
+    }
+    return maximum;
+}
+
 int main(int argc, char** argv) {
     Options options = parse_options(argc, argv);
-    int qkv_elements = options.seq * options.dim;
-    int score_elements = options.seq * options.seq;
-    size_t qkv_bytes = qkv_elements * sizeof(float);
-    size_t score_bytes = score_elements * sizeof(float);
+    if (options.seq > std::numeric_limits<int>::max() / options.dim ||
+        options.seq > std::numeric_limits<int>::max() / options.seq) {
+        std::cerr << "shape exceeds the supported int indexing range\n";
+        return 2;
+    }
+    hipDeviceProp_t properties{};
+    HIP_CHECK(hipGetDeviceProperties(&properties, 0));
+    if (options.block > properties.maxThreadsPerBlock) {
+        std::cerr << "block exceeds the device thread limit\n";
+        return 2;
+    }
+    const int qkv_elements = options.seq * options.dim;
+    const int score_elements = options.seq * options.seq;
+    const size_t qkv_bytes =
+        static_cast<size_t>(qkv_elements) * sizeof(float);
+    const size_t score_bytes =
+        static_cast<size_t>(score_elements) * sizeof(float);
+    const size_t online_shared =
+        (static_cast<size_t>(options.block) +
+         static_cast<size_t>(options.dim) + 4U) *
+        sizeof(float);
+    const bool runs_materialized =
+        options.version == "all" || options.version == "materialized";
+    const bool runs_online =
+        options.version == "all" || options.version == "online";
+    const size_t score_grid =
+        static_cast<size_t>(score_elements) / options.block +
+        (score_elements % options.block != 0);
+    const size_t output_grid =
+        static_cast<size_t>(qkv_elements) / options.block +
+        (qkv_elements % options.block != 0);
+    const size_t max_grid_x =
+        static_cast<size_t>(properties.maxGridSize[0]);
+    if (static_cast<size_t>(options.seq) > max_grid_x ||
+        (runs_materialized &&
+         (score_grid > max_grid_x || output_grid > max_grid_x))) {
+        std::cerr << "calculated grid exceeds the device limit\n";
+        return 2;
+    }
+    if (runs_online && online_shared > properties.sharedMemPerBlock) {
+        std::cerr << "online kernel dynamic LDS exceeds the device limit\n";
+        return 2;
+    }
 
     std::mt19937 generator(options.seed);
     std::uniform_real_distribution<float> distribution(-0.5f, 0.5f);
@@ -234,21 +289,18 @@ int main(int argc, char** argv) {
     HIP_CHECK(hipMemcpy(d_value, value.data(), qkv_bytes, hipMemcpyHostToDevice));
 
     float scale = 1.0f / std::sqrt(static_cast<float>(options.dim));
-    int score_grid = (score_elements + options.block - 1) / options.block;
-    int output_grid = (qkv_elements + options.block - 1) / options.block;
-    size_t online_shared =
-        (options.block + options.dim + 4) * sizeof(float);
-
     auto launch = [&](const std::string& version) {
         if (version == "materialized") {
-            hipLaunchKernelGGL(scores_kernel, dim3(score_grid),
+            hipLaunchKernelGGL(scores_kernel,
+                               dim3(static_cast<unsigned int>(score_grid)),
                                dim3(options.block), 0, 0, d_q, d_k, d_scores,
                                options.seq, options.dim, scale);
             hipLaunchKernelGGL(softmax_rows_kernel, dim3(options.seq),
                                dim3(options.block),
                                options.block * sizeof(float), 0, d_scores,
                                d_probabilities, options.seq);
-            hipLaunchKernelGGL(probability_value_kernel, dim3(output_grid),
+            hipLaunchKernelGGL(probability_value_kernel,
+                               dim3(static_cast<unsigned int>(output_grid)),
                                dim3(options.block), 0, 0, d_probabilities,
                                d_value, d_output, options.seq, options.dim);
         } else {
@@ -267,11 +319,8 @@ int main(int argc, char** argv) {
         std::vector<float> actual(qkv_elements);
         HIP_CHECK(hipMemcpy(actual.data(), d_output, qkv_bytes,
                             hipMemcpyDeviceToHost));
-        float precheck_error = 0.0f;
-        for (int i = 0; i < qkv_elements; ++i) {
-            precheck_error = std::max(precheck_error,
-                                      std::abs(actual[i] - reference[i]));
-        }
+        const float precheck_error =
+            maximum_absolute_error(actual, reference);
         if (precheck_error >= 2e-4f) {
             std::cout << "RESULT operator=attention implementation=hip-" << version
                       << " runtime=hip shape=" << options.seq << 'x' << options.dim
@@ -308,11 +357,8 @@ int main(int argc, char** argv) {
             : times_ms[options.repeat / 2];
         HIP_CHECK(hipMemcpy(actual.data(), d_output, qkv_bytes,
                             hipMemcpyDeviceToHost));
-        float max_error = 0.0f;
-        for (int i = 0; i < qkv_elements; ++i) {
-            max_error = std::max(max_error, std::abs(actual[i] - reference[i]));
-        }
-        bool correct = max_error < 2e-4f;
+        const float max_error = maximum_absolute_error(actual, reference);
+        const bool correct = max_error < 2e-4f;
         std::cout << "RESULT operator=attention implementation=hip-" << version
                   << " runtime=hip shape=" << options.seq << 'x' << options.dim
                   << " seq=" << options.seq << " dim=" << options.dim

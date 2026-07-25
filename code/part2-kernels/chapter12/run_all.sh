@@ -19,10 +19,20 @@ source "${PART_DIR}/activate-rocm.sh"
 hipcc --offload-arch="${GPU_ARCH}" -O3 -std=c++17 \
     "${SCRIPT_DIR}/rmsnorm_hip.hip" -o "${BUILD_DIR}/rmsnorm_hip"
 
+run_edge() {
+    local rows="$1"
+    local cols="$2"
+    "${BUILD_DIR}/rmsnorm_hip" --version all --rows "${rows}" --cols "${cols}" \
+        --warmup 0 --repeat 1 --seed "${SEED}"
+    python "${SCRIPT_DIR}/rmsnorm_triton.py" --version all \
+        --rows "${rows}" --cols "${cols}" --warmup 0 --repeat 1 --seed "${SEED}"
+}
+
 if [[ "${RUN_EDGE_CASES}" == "1" ]]; then
     echo "[chapter12] edge correctness"
-    "${BUILD_DIR}/rmsnorm_hip" --version all --rows 33 --cols 257 --warmup 0 --repeat 1 --seed "${SEED}"
-    python "${SCRIPT_DIR}/rmsnorm_triton.py" --version all --rows 33 --cols 257 --warmup 0 --repeat 1 --seed "${SEED}"
+    run_edge 1 1
+    run_edge 3 13
+    run_edge 33 257
 fi
 
 echo "[chapter12] teaching benchmark"

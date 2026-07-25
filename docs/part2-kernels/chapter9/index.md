@@ -533,14 +533,15 @@ correct=OK precheck=OK postcheck=OK
 
 ## 9.12 用 rocprofv3 看融合发生在哪里
 
-直接运行脚本的可选 profile 路径：
+正式 benchmark 与 profile 使用独立入口，避免 profiler 开销混入 GPU event 计时：
 
 ```bash
 cd code/part2-kernels
-RUN_PROFILE=1 WARMUP=2 REPEAT=10 bash chapter9/run_all.sh
+export SOURCE_COMMIT="$(git rev-parse HEAD)"
+PROFILE_WARMUP=0 PROFILE_REPEAT=5 bash chapter9/profile_all.sh
 ```
 
-它会在 `chapter9/profiles/` 写 HIP 与 Triton 的 kernel trace CSV。也可以对单版本手动采集：
+`profile_all.sh` 会在 `chapter9/profiles/` 写 HIP 与 Triton 的 kernel trace CSV。也可以对单版本手动采集：
 
 ```bash
 rocprofv3 \
