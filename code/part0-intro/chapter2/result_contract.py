@@ -166,45 +166,60 @@ def _aggregate(rows: list[dict[str, str]]) -> list[dict[str, str]]:
     return summaries
 
 
-def _contains_label(value: str, label: str) -> bool:
-    return re.search(rf"(?:^|[_-]){re.escape(label)}(?:$|[_-])", value) is not None
-
-
 def _profile_pair(trace_path: Path, profile_dir: Path) -> tuple[str, str]:
+    try:
+        relative = trace_path.relative_to(profile_dir)
+    except ValueError as error:
+        raise ValueError(f"{trace_path}: outside resolved profile root") from error
+    if ".." in relative.parts:
+        raise ValueError(f"{trace_path}: lexical '..' is not allowed")
+
+    resolved_root = profile_dir.resolve()
+    resolved_trace = trace_path.resolve()
+    try:
+        resolved_trace.relative_to(resolved_root)
+    except ValueError as error:
+        raise ValueError(f"{trace_path}: outside resolved profile root") from error
+
     prefix = trace_path.name.removesuffix("_kernel_trace.csv")
-    relative = trace_path.relative_to(profile_dir)
     pair_keys = {
         f"{experiment}__{implementation}": (experiment, implementation)
         for experiment, implementation in EXPECTED_PAIRS
     }
     implementations = set().union(*EXPECTED_IMPLEMENTATIONS.values())
-    evidence: list[set[tuple[str, str]]] = []
 
-    for component in relative.parts[:-1]:
-        if component in pair_keys:
-            evidence.append({pair_keys[component]})
-        if component in EXPECTED_IMPLEMENTATIONS:
-            evidence.append({pair for pair in EXPECTED_PAIRS if pair[0] == component})
-        if component in implementations:
-            evidence.append({pair for pair in EXPECTED_PAIRS if pair[1] == component})
+    filename_pairs: set[tuple[str, str]] | None = None
+    if prefix in pair_keys:
+        filename_pairs = {pair_keys[prefix]}
+    elif prefix in implementations:
+        filename_pairs = {
+            pair for pair in EXPECTED_PAIRS if pair[1] == prefix
+        }
 
-    for experiment in EXPECTED_IMPLEMENTATIONS:
-        if _contains_label(prefix, experiment):
-            evidence.append({pair for pair in EXPECTED_PAIRS if pair[0] == experiment})
-    for implementation in implementations:
-        if _contains_label(prefix, implementation):
-            evidence.append({pair for pair in EXPECTED_PAIRS if pair[1] == implementation})
+    components = relative.parts[:-1]
+    canonical_pair = next(
+        (pair_keys[component] for component in components if component in pair_keys),
+        None,
+    )
+    if canonical_pair is not None:
+        if filename_pairs is not None and canonical_pair not in filename_pairs:
+            raise ValueError(f"{trace_path}: conflicting profile identity")
+        return canonical_pair
 
-    if not evidence:
+    legacy_pair = (
+        (components[0], components[1])
+        if len(components) >= 2
+        and (components[0], components[1]) in EXPECTED_PAIRS
+        else None
+    )
+    if legacy_pair is not None:
+        if filename_pairs is not None and legacy_pair not in filename_pairs:
+            raise ValueError(f"{trace_path}: conflicting profile identity")
+        return legacy_pair
+
+    if filename_pairs is None or len(filename_pairs) != 1:
         raise ValueError(f"{trace_path}: cannot derive a unique profile identity")
-    candidates = set(EXPECTED_PAIRS)
-    for choices in evidence:
-        candidates &= choices
-    if not candidates:
-        raise ValueError(f"{trace_path}: conflicting profile identity")
-    if len(candidates) != 1:
-        raise ValueError(f"{trace_path}: cannot derive a unique profile identity")
-    return candidates.pop()
+    return filename_pairs.pop()
 
 
 def _kernel_names(trace_path: Path) -> list[str]:

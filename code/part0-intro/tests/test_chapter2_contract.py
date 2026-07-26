@@ -1598,11 +1598,13 @@ class Chapter2PublicationTest(unittest.TestCase):
 
     def test_cli_publishes_with_repeatable_run_logs(self):
         profile, _ = self.write_rocprof_profile()
+        profile_pointer = self.root / "profile-pointer"
+        profile_pointer.symlink_to(profile, target_is_directory=True)
         command = [sys.executable, str(CHAPTER_DIR / "result_contract.py")]
         for path in (self.log1, self.log2, self.log3):
             command.extend(("--run-log", str(path)))
         command.extend((
-            "--profile-dir", str(profile),
+            "--profile-dir", str(profile_pointer),
             "--source-commit", "a" * 40,
             "--evidence-dir", str(self.evidence),
         ))
@@ -1620,6 +1622,60 @@ class Chapter2PublicationTest(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "conflicting profile identity"):
             self.module._profile_pair(conflicting, profile)
+
+    def test_profile_rejects_false_and_ambiguous_top_level_filename_labels(self):
+        profile = self.root / "profile-labels"
+        profile.mkdir()
+        for filename in (
+            "not-wmma_kernel_trace.csv",
+            "stride-1_kernel_trace.csv",
+        ):
+            with self.subTest(filename=filename):
+                trace = profile / filename
+                trace.write_text("Kernel_Name\nkernel\n")
+                with self.assertRaisesRegex(ValueError, "unique profile identity"):
+                    self.module._profile_pair(trace, profile)
+
+    def test_canonical_profile_ignores_hostname_identity_labels(self):
+        profile = self.root / "hostname-profile"
+        trace = (
+            profile
+            / "branch-divergence__wave-uniform"
+            / "matrix-path"
+            / "4100_kernel_trace.csv"
+        )
+        trace.parent.mkdir(parents=True)
+        trace.write_text("Kernel_Name\nkernel\n")
+
+        self.assertEqual(
+            self.module._profile_pair(trace, profile),
+            ("branch-divergence", "wave-uniform"),
+        )
+
+    def test_profile_pair_rejects_lexical_parent_component(self):
+        profile = self.root / "parent-profile"
+        trace = (
+            profile
+            / "matrix-path__wmma"
+            / "host"
+            / ".."
+            / "host"
+            / "4100_kernel_trace.csv"
+        )
+
+        with self.assertRaisesRegex(ValueError, r"lexical.*\.\."):
+            self.module._profile_pair(trace, profile)
+
+    def test_profile_summary_rejects_internal_symlink_to_external_trace(self):
+        profile, traces = self.write_rocprof_profile()
+        external = self.root / "external_kernel_trace.csv"
+        external.write_text("Kernel_Name\noutside_kernel\n")
+        trace = traces[("matrix-path", "wmma")]
+        trace.unlink()
+        trace.symlink_to(external)
+
+        with self.assertRaisesRegex(ValueError, "outside resolved profile root"):
+            self.module._profile_summary(profile, "a" * 40)
 
     def test_profile_rejects_missing_expected_pair(self):
         profile, traces = self.write_profile()
