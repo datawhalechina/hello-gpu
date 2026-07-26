@@ -1506,6 +1506,31 @@ class Chapter2PublicationTest(unittest.TestCase):
                 traces[(experiment, implementation)] = trace
         return profile, traces
 
+    def write_rocprof_profile(
+        self, *, commit: str = "a" * 40
+    ) -> tuple[Path, dict[tuple[str, str], Path]]:
+        profile = self.root / "rocprof-profile"
+        profile.mkdir(exist_ok=True)
+        (profile / "profile_config.env").write_text(f"source_commit={commit}\n")
+        traces = {}
+        pid = 4100
+        for experiment, implementations in EXPECTED_IMPLEMENTATIONS.items():
+            for implementation in sorted(implementations):
+                trace = (
+                    profile
+                    / f"{experiment}__{implementation}"
+                    / "rx9070xt-host"
+                    / f"{pid}_kernel_trace.csv"
+                )
+                trace.parent.mkdir(parents=True)
+                trace.write_text(
+                    "Kernel_Name,DurationNs\n"
+                    f"{implementation}_kernel,100\n"
+                )
+                traces[(experiment, implementation)] = trace
+                pid += 1
+        return profile, traces
+
     def test_publication_requires_three_distinct_logs(self):
         with self.assertRaisesRegex(ValueError, "exactly 3 distinct"):
             self.module.validate_runs([self.log1, self.log1, self.log2])
@@ -1572,7 +1597,7 @@ class Chapter2PublicationTest(unittest.TestCase):
         }, profile_rows)
 
     def test_cli_publishes_with_repeatable_run_logs(self):
-        profile, _ = self.write_profile()
+        profile, _ = self.write_rocprof_profile()
         command = [sys.executable, str(CHAPTER_DIR / "result_contract.py")]
         for path in (self.log1, self.log2, self.log3):
             command.extend(("--run-log", str(path)))
@@ -1586,6 +1611,15 @@ class Chapter2PublicationTest(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue((self.evidence / "manifest.json").is_file())
+
+    def test_profile_rejects_conflicting_canonical_path_and_filename_identity(self):
+        profile, traces = self.write_rocprof_profile()
+        trace = traces[("branch-divergence", "wave-uniform")]
+        conflicting = trace.with_name("matrix-path__wmma_kernel_trace.csv")
+        trace.rename(conflicting)
+
+        with self.assertRaisesRegex(ValueError, "conflicting profile identity"):
+            self.module._profile_pair(conflicting, profile)
 
     def test_profile_rejects_missing_expected_pair(self):
         profile, traces = self.write_profile()

@@ -172,28 +172,39 @@ def _contains_label(value: str, label: str) -> bool:
 
 def _profile_pair(trace_path: Path, profile_dir: Path) -> tuple[str, str]:
     prefix = trace_path.name.removesuffix("_kernel_trace.csv")
-    implementations = {
-        implementation
-        for _, implementation in EXPECTED_PAIRS
-        if _contains_label(prefix, implementation)
-    }
-    if len(implementations) != 1:
-        raise ValueError(f"{trace_path}: cannot derive a unique profile implementation")
-    implementation = implementations.pop()
-
     relative = trace_path.relative_to(profile_dir)
-    location = "_".join(relative.parts[:-1])
-    experiments = {
-        experiment
-        for experiment, candidate in EXPECTED_PAIRS
-        if candidate == implementation
-        and (_contains_label(prefix, experiment) or _contains_label(location, experiment))
+    pair_keys = {
+        f"{experiment}__{implementation}": (experiment, implementation)
+        for experiment, implementation in EXPECTED_PAIRS
     }
-    if len(experiments) != 1:
-        raise ValueError(
-            f"{trace_path}: cannot uniquely map profile experiment/implementation"
-        )
-    return experiments.pop(), implementation
+    implementations = set().union(*EXPECTED_IMPLEMENTATIONS.values())
+    evidence: list[set[tuple[str, str]]] = []
+
+    for component in relative.parts[:-1]:
+        if component in pair_keys:
+            evidence.append({pair_keys[component]})
+        if component in EXPECTED_IMPLEMENTATIONS:
+            evidence.append({pair for pair in EXPECTED_PAIRS if pair[0] == component})
+        if component in implementations:
+            evidence.append({pair for pair in EXPECTED_PAIRS if pair[1] == component})
+
+    for experiment in EXPECTED_IMPLEMENTATIONS:
+        if _contains_label(prefix, experiment):
+            evidence.append({pair for pair in EXPECTED_PAIRS if pair[0] == experiment})
+    for implementation in implementations:
+        if _contains_label(prefix, implementation):
+            evidence.append({pair for pair in EXPECTED_PAIRS if pair[1] == implementation})
+
+    if not evidence:
+        raise ValueError(f"{trace_path}: cannot derive a unique profile identity")
+    candidates = set(EXPECTED_PAIRS)
+    for choices in evidence:
+        candidates &= choices
+    if not candidates:
+        raise ValueError(f"{trace_path}: conflicting profile identity")
+    if len(candidates) != 1:
+        raise ValueError(f"{trace_path}: cannot derive a unique profile identity")
+    return candidates.pop()
 
 
 def _kernel_names(trace_path: Path) -> list[str]:
