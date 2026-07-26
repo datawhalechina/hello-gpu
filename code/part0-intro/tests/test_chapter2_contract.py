@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import importlib.util
 import json
 import os
 import re
+import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -775,6 +778,660 @@ void target() {
             "real_body();",
             self.extract_braced(embedded_literals, "void target()"),
         )
+
+
+class Chapter2EntrypointTest(unittest.TestCase):
+    def setUp(self):
+        self.tempdir = tempfile.TemporaryDirectory()
+        self.root = Path(self.tempdir.name)
+        self.tools = self.root / "tools"
+        self.tools.mkdir()
+        self.tool_log = self.root / "tool.log"
+        self.previous_mplconfigdir = os.environ.get("MPLCONFIGDIR")
+        os.environ["MPLCONFIGDIR"] = str(self.root / "mplconfig")
+        self.write_fake_tools()
+        self.environment = os.environ | {
+            "PATH": f"{self.tools}:{os.environ['PATH']}",
+            "FAKE_TOOL_LOG": str(self.tool_log),
+            "SOURCE_COMMIT": "a" * 40,
+            "MPLCONFIGDIR": str(self.root / "mplconfig"),
+        }
+
+    def tearDown(self):
+        if self.previous_mplconfigdir is None:
+            os.environ.pop("MPLCONFIGDIR", None)
+        else:
+            os.environ["MPLCONFIGDIR"] = self.previous_mplconfigdir
+        self.tempdir.cleanup()
+
+    def write_fake_tools(self):
+        hipcc = self.tools / "hipcc"
+        hipcc.write_text(
+            """#!/usr/bin/env python3
+import os
+import pathlib
+import shlex
+import sys
+
+args = sys.argv[1:]
+output = pathlib.Path(args[args.index('-o') + 1])
+source = pathlib.Path(next(arg for arg in args if arg.endswith('.hip'))).stem
+experiment = {
+    'branch_divergence': 'branch-divergence',
+    'global_memory_access': 'global-memory',
+    'lds_bank_conflict': 'lds-banks',
+    'rdna4_wmma': 'matrix-path',
+}[source]
+with open(os.environ['FAKE_TOOL_LOG'], 'a') as log:
+    log.write('hipcc ' + shlex.join(args) + '\\n')
+binary = '''#!/usr/bin/env python3
+import os
+import sys
+experiment = {experiment!r}
+args = sys.argv[1:]
+implementation = args[args.index("--implementation") + 1]
+warmup = args[args.index("--warmup") + 1]
+repeat = args[args.index("--repeat") + 1]
+seed = args[args.index("--seed") + 1]
+size = args[args.index("--size") + 1]
+with open(os.environ["FAKE_TOOL_LOG"], "a") as log:
+    log.write("binary experiment=%s implementation=%s size=%s warmup=%s repeat=%s seed=%s\\\\n" % (experiment, implementation, size, warmup, repeat, seed))
+print('ENV runtime=hip gpu="Fake GPU" arch=gfx1201')
+print('RESULT experiment=%s implementation=%s runtime=hip shape=N=1 dtype=fp32 warmup=%s repeat=%s seed=%s timed=1 correct=OK precheck=OK postcheck=OK min_ms=1 median_ms=1 mean_ms=1 logical_bandwidth_gbs=1 tflops=1' % (experiment, implementation, warmup, repeat, seed))
+'''.format(experiment=experiment)
+output.write_text(binary)
+output.chmod(0o755)
+"""
+        )
+        rocprof = self.tools / "rocprofv3"
+        rocprof.write_text(
+            "#!/usr/bin/env python3\n"
+            "import os, pathlib, shlex, subprocess, sys\n"
+            "args = sys.argv[1:]\n"
+            "if args == ['--version']:\n"
+            "    print('rocprofv3 fake ROCm 7.13')\n"
+            "    raise SystemExit(0)\n"
+            "directory = pathlib.Path(args[args.index('--output-directory') + 1])\n"
+            "directory.mkdir(parents=True, exist_ok=True)\n"
+            "with open(os.environ['FAKE_TOOL_LOG'], 'a') as log: log.write('rocprofv3 ' + shlex.join(args) + '\\n')\n"
+            "child = args[args.index('--') + 1:]\n"
+            "if os.environ.get('FAKE_RUN_PROFILE_CHILD') == '1' and subprocess.run(child, check=False).returncode != 0: raise SystemExit(1)\n"
+            "mode = os.environ.get('FAKE_TRACE_MODE', '')\n"
+            "key = directory.name\n"
+            "if key != os.environ.get('FAKE_TRACE_KEY', '') or mode != 'missing':\n"
+            "    payload = 'Kernel_Name,DurationNs\\nfake,' + os.environ.get('FAKE_TRACE_PAYLOAD', '1') + '\\n'\n"
+            "    (directory / 'fake_kernel_trace.csv').write_text('' if key == os.environ.get('FAKE_TRACE_KEY', '') and mode == 'empty' else payload)\n"
+        )
+        git = self.tools / "git"
+        git.write_text(
+            "#!/usr/bin/env python3\n"
+            "import os, pathlib, sys\n"
+            "args = sys.argv[1:]\n"
+            "if args[:1] == ['-C']: args = args[2:]\n"
+            "if 'rev-parse' in args:\n"
+            "    raise SystemExit(1 if os.environ.get('FAKE_GIT_MISSING') else 0)\n"
+            "if 'show' in args:\n"
+            "    spec = args[-1]\n"
+            "    name = spec.rsplit(':', 1)[1].rsplit('/', 1)[1]\n"
+            "    data = (pathlib.Path(os.environ['FAKE_GIT_CHAPTER_DIR']) / name).read_bytes()\n"
+            "    if os.environ.get('FAKE_GIT_SOURCE_MISMATCH') == name: data += b'changed'\n"
+            "    sys.stdout.buffer.write(data)\n"
+            "    raise SystemExit(0)\n"
+            "raise SystemExit(1)\n"
+        )
+        objdump = self.tools / "llvm-objdump"
+        objdump.write_text(
+            "#!/usr/bin/env python3\n"
+            "import os\n"
+            "target = os.environ.get('FAKE_BINARY_TARGET', 'gfx1201')\n"
+            "mode = os.environ.get('FAKE_OBJDUMP_FORMAT', 'bundle')\n"
+            "if mode == 'structured': print('arch            ' + target)\n"
+            "elif mode == 'multiple': print('hipv4-amdgcn-amd-amdhsa--gfx1201\\narch            gfx9999')\n"
+            "elif mode == 'missing': print('no AMDGPU target found')\n"
+            "else: print('hipv4-amdgcn-amd-amdhsa--' + target)\n"
+        )
+        rocminfo = self.tools / "rocminfo"
+        rocminfo.write_text(
+            "#!/usr/bin/env python3\n"
+            "import os\n"
+            "print('Agent 1')\n"
+            "print('  Name: gfx000')\n"
+            "print('  Marketing Name: CPU agent')\n"
+            "print('Agent 2')\n"
+            "print('  Name: gfx1201')\n"
+            "print('  Marketing Name: ' + os.environ.get('FAKE_HARDWARE', 'RX 9070 XT'))\n"
+        )
+        for tool in (hipcc, rocprof, git, objdump, rocminfo):
+            tool.chmod(0o755)
+
+    def run_script(self, name: str, *arguments: str, **environment):
+        script = CHAPTER_DIR / name
+        if not script.is_file():
+            self.fail(f"missing formal Chapter 2 file: {script.relative_to(ROOT)}")
+        part_dir = self.root / "part"
+        chapter_dir = part_dir / "chapter2"
+        chapter_dir.mkdir(parents=True, exist_ok=True)
+        activate_objdump = environment.pop("ACTIVATE_OBJDUMP", False)
+        activation = "#!/usr/bin/env bash\n"
+        if activate_objdump:
+            activation_tools = self.root / "activation-tools"
+            activation_tools.mkdir(exist_ok=True)
+            shutil.copy2(self.tools / "llvm-objdump", activation_tools / "activation-llvm-objdump")
+            activation += f"export PATH={shlex.quote(str(activation_tools))}:$PATH\n"
+        else:
+            activation += ":\n"
+        (part_dir / "activate-rocm.sh").write_text(activation)
+        for source in (
+            name,
+            "branch_divergence.hip",
+            "global_memory_access.hip",
+            "lds_bank_conflict.hip",
+            "rdna4_wmma.hip",
+        ):
+            shutil.copy2(CHAPTER_DIR / source, chapter_dir / source)
+        environment = environment | {"FAKE_GIT_CHAPTER_DIR": str(chapter_dir)}
+        return subprocess.run(
+            ["bash", str(chapter_dir / name), *arguments],
+            cwd=chapter_dir,
+            text=True,
+            capture_output=True,
+            check=False,
+            env=self.environment | environment,
+        )
+
+    def test_entrypoint_shell_syntax_is_valid(self):
+        for name in ("run_all.sh", "profile_all.sh"):
+            result = subprocess.run(
+                ["bash", "-n", str(CHAPTER_DIR / name)],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_run_all_compiles_once_and_skips_edge_results_when_requested(self):
+        result = self.run_script("run_all.sh", RUN_EDGE_CASES="0")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        result_lines = [line for line in result.stdout.splitlines() if line.startswith("RESULT ")]
+        self.assertEqual(len(result_lines), 10)
+        pairs = {
+            tuple(
+                token.split("=", 1)[1]
+                for token in line.split()
+                if token.startswith(("experiment=", "implementation="))
+            )
+            for line in result_lines
+        }
+        self.assertEqual(
+            pairs,
+            {(experiment, implementation)
+             for experiment, implementations in EXPECTED_IMPLEMENTATIONS.items()
+             for implementation in implementations},
+        )
+        for line in result_lines:
+            fields = dict(token.split("=", 1) for token in line.split()[1:])
+            self.assertEqual(
+                (fields["warmup"], fields["repeat"], fields["seed"]),
+                ("10", "50", "20260726"),
+            )
+        compiled = [line for line in self.tool_log.read_text().splitlines() if line.startswith("hipcc ")]
+        self.assertEqual(len(compiled), 4)
+        self.assertEqual(
+            {Path(next(arg for arg in shlex.split(line.removeprefix("hipcc ")) if arg.endswith(".hip"))).name for line in compiled},
+            {"branch_divergence.hip", "global_memory_access.hip", "lds_bank_conflict.hip", "rdna4_wmma.hip"},
+        )
+        for line in compiled:
+            self.assertIn("--offload-arch=gfx1201", shlex.split(line.removeprefix("hipcc ")))
+
+    def test_default_edge_checks_run_before_formal_output_and_are_discarded(self):
+        result = self.run_script("run_all.sh")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            len([line for line in result.stdout.splitlines() if line.startswith("RESULT ")]),
+            10,
+        )
+        executions = [
+            line for line in self.tool_log.read_text().splitlines()
+            if line.startswith("binary ")
+        ]
+        self.assertEqual(len(executions), 14)
+        edge = [dict(token.split("=", 1) for token in line.split()[1:]) for line in executions[:4]]
+        self.assertEqual([fields["implementation"] for fields in edge], ["all", "all", "all", "all"])
+        formal = [dict(token.split("=", 1) for token in line.split()[1:]) for line in executions[4:]]
+        self.assertEqual(
+            [(fields["experiment"], fields["implementation"], fields["size"]) for fields in formal],
+            [
+                ("branch-divergence", "wave-uniform", "16777216"),
+                ("branch-divergence", "wave-divergent", "16777216"),
+                ("global-memory", "stride-1", "16777216"),
+                ("global-memory", "stride-17", "16777216"),
+                ("global-memory", "stride-257", "16777216"),
+                ("lds-banks", "stride-1", "16777216"),
+                ("lds-banks", "stride-32", "16777216"),
+                ("lds-banks", "stride-33", "16777216"),
+                ("matrix-path", "valu", "4096"),
+                ("matrix-path", "wmma", "4096"),
+            ],
+        )
+        self.assertTrue(all(
+            (fields["warmup"], fields["repeat"], fields["seed"]) == ("10", "50", "20260726")
+            for fields in formal
+        ))
+
+    def test_invalid_source_commit_stops_before_compilation_or_publication(self):
+        for invalid in ("a" * 39, "a" * 41, "g" * 40):
+            with self.subTest(invalid=invalid):
+                self.tool_log.unlink(missing_ok=True)
+                profile_dir = self.root / f"invalid-{len(invalid)}"
+                run_result = self.run_script("run_all.sh", SOURCE_COMMIT=invalid)
+                profile_result = self.run_script(
+                    "profile_all.sh", SOURCE_COMMIT=invalid,
+                    PROFILE_DIR=str(profile_dir),
+                )
+                self.assertNotEqual(run_result.returncode, 0)
+                self.assertNotEqual(profile_result.returncode, 0)
+                self.assertEqual(run_result.stdout, "")
+                self.assertEqual(profile_result.stdout, "")
+                self.assertFalse(self.tool_log.exists())
+                self.assertFalse(profile_dir.exists())
+
+    def test_missing_commit_or_source_mismatch_stops_before_compile(self):
+        for name, environment in (
+            ("missing commit", {"FAKE_GIT_MISSING": "1"}),
+            ("source mismatch", {"FAKE_GIT_SOURCE_MISMATCH": "branch_divergence.hip"}),
+        ):
+            with self.subTest(name=name):
+                self.tool_log.unlink(missing_ok=True)
+                for script in ("run_all.sh", "profile_all.sh"):
+                    self.tool_log.unlink(missing_ok=True)
+                    result = self.run_script(script, **environment)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertFalse(self.tool_log.exists())
+
+    def test_invalid_edge_toggle_stops_before_compilation(self):
+        self.tool_log.unlink(missing_ok=True)
+        result = self.run_script("run_all.sh", RUN_EDGE_CASES="unexpected")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(self.tool_log.exists())
+
+    def test_profile_runs_one_implementation_per_trace_and_writes_complete_config(self):
+        profile_dir = self.root / "profile directory" / "profiles"
+        profile_dir.parent.mkdir()
+        untrusted_hardware = f"RX 9070 XT; touch {self.root / 'injected'}"
+        result = self.run_script(
+            "profile_all.sh", PROFILE_DIR=str(profile_dir), FAKE_HARDWARE=untrusted_hardware,
+            FAKE_RUN_PROFILE_CHILD="1", FAKE_OBJDUMP_FORMAT="bundle",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        commands = [line for line in self.tool_log.read_text().splitlines() if line.startswith("rocprofv3 ")]
+        self.assertEqual(len(commands), 10)
+        self.assertEqual(
+            len([line for line in self.tool_log.read_text().splitlines() if line.startswith("binary ")]),
+            10,
+        )
+        expected_keys = {
+            f"{experiment}__{implementation}"
+            for experiment, implementations in EXPECTED_IMPLEMENTATIONS.items()
+            for implementation in implementations
+        }
+        expected_route = {
+            ("branch-divergence", "wave-uniform"): ("branch_divergence", "16777216"),
+            ("branch-divergence", "wave-divergent"): ("branch_divergence", "16777216"),
+            ("global-memory", "stride-1"): ("global_memory_access", "16777216"),
+            ("global-memory", "stride-17"): ("global_memory_access", "16777216"),
+            ("global-memory", "stride-257"): ("global_memory_access", "16777216"),
+            ("lds-banks", "stride-1"): ("lds_bank_conflict", "16777216"),
+            ("lds-banks", "stride-32"): ("lds_bank_conflict", "16777216"),
+            ("lds-banks", "stride-33"): ("lds_bank_conflict", "16777216"),
+            ("matrix-path", "valu"): ("rdna4_wmma", "4096"),
+            ("matrix-path", "wmma"): ("rdna4_wmma", "4096"),
+        }
+        observed_route = {}
+        for command in commands:
+            args = shlex.split(command.removeprefix("rocprofv3 "))
+            self.assertEqual(args[:5], ["--kernel-trace", "--output-format", "csv", "--output-directory", args[4]])
+            self.assertEqual(args[5], "--")
+            self.assertEqual(args.count("--implementation"), 1)
+            profile_key = Path(args[args.index("--output-directory") + 1]).name
+            implementation = args[args.index("--implementation") + 1]
+            self.assertEqual(profile_key.split("__", 1)[1], implementation)
+            expected_binary, expected_size = expected_route[(profile_key.split("__", 1)[0], implementation)]
+            self.assertEqual(Path(args[6]).name, expected_binary)
+            self.assertEqual(args[-8:], ["--size", args[-7], "--warmup", "1", "--repeat", "1", "--seed", "20260726"])
+            self.assertEqual(args[-7], expected_size)
+            observed_route[(profile_key.split("__", 1)[0], implementation)] = (Path(args[6]).name, args[-7])
+        self.assertEqual(observed_route, expected_route)
+        self.assertEqual(
+            {
+                Path(shlex.split(command.removeprefix("rocprofv3 "))[
+                    shlex.split(command.removeprefix("rocprofv3 ")).index("--output-directory") + 1
+                ]).name
+                for command in commands
+            },
+            expected_keys,
+        )
+        self.assertEqual(
+            {path.parent.name for path in profile_dir.rglob("*_kernel_trace.csv")},
+            expected_keys,
+        )
+        self.assertTrue(profile_dir.is_symlink())
+        self.assertTrue(profile_dir.is_dir())
+        compiled = [line for line in self.tool_log.read_text().splitlines() if line.startswith("hipcc ")]
+        self.assertEqual(len(compiled), 4)
+        config = (profile_dir / "profile_config.env").read_text()
+        for line in config.splitlines():
+            self.assertRegex(line, r"^[A-Za-z_][A-Za-z0-9_]*=")
+        variables = [
+            "hardware", "observed_hardware", "rocm_version",
+            "binary_branch_divergence_sha256", "binary_global_memory_access_sha256",
+            "binary_lds_bank_conflict_sha256", "binary_rdna4_wmma_sha256",
+        ]
+        for binary in ("branch_divergence", "global_memory_access", "lds_bank_conflict", "rdna4_wmma"):
+            variables.extend((f"compile_{binary}_argv", f"compile_{binary}_replay_argv", f"binary_{binary}_target"))
+        for (experiment, implementation) in expected_route:
+            variable = f"profile_{experiment.replace('-', '_')}_{implementation.replace('-', '_')}"
+            variables.extend((f"{variable}_argv", f"{variable}_replay_argv", f"{variable}_binary_sha256"))
+        config_check = subprocess.run(
+            ["bash", "-c", 'source "$1"; shift; for name; do printf "%s\\0%s\\0" "$name" "${!name}"; done', "bash", str(profile_dir / "profile_config.env"), *variables],
+            capture_output=True, check=False, env=self.environment,
+        )
+        self.assertEqual(config_check.returncode, 0, config_check.stderr.decode())
+        values = dict(zip(config_check.stdout.split(b"\0")[0::2], config_check.stdout.split(b"\0")[1::2]))
+        values = {key.decode(): value.decode() for key, value in values.items() if key}
+        self.assertEqual(values["hardware"], untrusted_hardware)
+        self.assertEqual(values["observed_hardware"], untrusted_hardware)
+        self.assertFalse((self.root / "injected").exists())
+        self.assertIn("--implementation wave-uniform", values["profile_branch_divergence_wave_uniform_argv"])
+        for field in ("source_commit", "hardware", "observed_hardware", "gpu_arch", "profile_shapes", "warmup", "repeat", "seed", "rocm_version", "gpu_target"):
+            self.assertRegex(config, rf"(?m)^{field}=.+$")
+        for binary in ("branch_divergence", "global_memory_access", "lds_bank_conflict", "rdna4_wmma"):
+            self.assertRegex(config, rf"(?m)^binary_{binary}_sha256=[0-9a-f]{{64}}$")
+            self.assertRegex(config, rf"(?m)^binary_{binary}_target=gfx1201$")
+            self.assertRegex(config, rf"(?m)^source_{binary}_sha256=[0-9a-f]{{64}}$")
+            actual_compile = shlex.split(values[f"compile_{binary}_argv"])
+            replay_compile = shlex.split(values[f"compile_{binary}_replay_argv"])
+            self.assertEqual(actual_compile[0], "hipcc")
+            self.assertEqual(replay_compile[0], "hipcc")
+            self.assertIn("--offload-arch=gfx1201", actual_compile)
+            self.assertIn("--offload-arch=gfx1201", replay_compile)
+            self.assertEqual(Path(actual_compile[actual_compile.index("-o") + 1]).name, binary)
+            self.assertEqual(
+                replay_compile[replay_compile.index("-o") + 1],
+                str(profile_dir.parent / f".{profile_dir.name}.replay-{binary}"),
+            )
+            self.assertEqual(values[f"binary_{binary}_target"], "gfx1201")
+        for (experiment, implementation), (binary, size) in expected_route.items():
+            variable = f"profile_{experiment.replace('-', '_')}_{implementation.replace('-', '_')}"
+            actual = shlex.split(values[f"{variable}_argv"])
+            replay = shlex.split(values[f"{variable}_replay_argv"])
+            self.assertEqual(actual[0], "rocprofv3")
+            self.assertEqual(replay[0], "rocprofv3")
+            self.assertEqual(Path(actual[actual.index("--") + 1]).name, binary)
+            self.assertEqual(
+                replay[replay.index("--") + 1],
+                str(profile_dir.parent / f".{profile_dir.name}.replay-{binary}"),
+            )
+            self.assertEqual(actual[actual.index("--size") + 1], size)
+            self.assertEqual(replay[replay.index("--size") + 1], size)
+            self.assertEqual(values[f"{variable}_binary_sha256"], values[f"binary_{binary}_sha256"])
+        self.assertNotIn(".staging.", config)
+        self.assertIn("hello-gpu-ch2-profile", config)
+        self.assertIn("profile_branch_divergence_wave_uniform_replay_argv=", config)
+
+    def test_profile_trace_failure_preserves_existing_published_pointer(self):
+        profile_dir = self.root / "profiles-trace-failures"
+        published = self.run_script("profile_all.sh", PROFILE_DIR=str(profile_dir))
+        self.assertEqual(published.returncode, 0, published.stderr)
+        target_before = profile_dir.resolve()
+        config_before = (profile_dir / "profile_config.env").read_bytes()
+        for mode in ("missing", "empty"):
+            with self.subTest(mode=mode):
+                result = self.run_script(
+                    "profile_all.sh",
+                    PROFILE_DIR=str(profile_dir),
+                    FAKE_TRACE_MODE=mode,
+                    FAKE_TRACE_KEY="matrix-path__wmma",
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(profile_dir.resolve(), target_before)
+                self.assertEqual((profile_dir / "profile_config.env").read_bytes(), config_before)
+
+    def test_hardware_override_must_match_rocminfo_before_compilation(self):
+        profile_dir = self.root / "wrong-hardware"
+        result = self.run_script(
+            "profile_all.sh", PROFILE_DIR=str(profile_dir), HARDWARE="different GPU",
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("does not match rocminfo", result.stderr)
+        self.assertFalse(self.tool_log.exists())
+        self.assertFalse(profile_dir.exists())
+
+    def test_activation_can_supply_llvm_objdump(self):
+        profile_dir = self.root / "activation-objdump"
+        result = self.run_script(
+            "profile_all.sh", PROFILE_DIR=str(profile_dir), ACTIVATE_OBJDUMP=True,
+            LLVM_OBJDUMP="activation-llvm-objdump",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(profile_dir.is_symlink())
+
+    def test_executed_replay_keeps_published_evidence_immutable(self):
+        profile_dir = self.root / "replay-immutable"
+        published = self.run_script("profile_all.sh", PROFILE_DIR=str(profile_dir))
+        self.assertEqual(published.returncode, 0, published.stderr)
+        target_before = profile_dir.resolve()
+        config_before = (profile_dir / "profile_config.env").read_bytes()
+        traces_before = {
+            path.relative_to(profile_dir): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in profile_dir.rglob("*_kernel_trace.csv")
+        }
+        sourced = subprocess.run(
+            ["bash", "-c", 'source "$1"; printf "%s\\0%s\\0" "$compile_branch_divergence_replay_argv" "$profile_branch_divergence_wave_uniform_replay_argv"', "bash", str(profile_dir / "profile_config.env")],
+            capture_output=True, check=False, env=self.environment,
+        )
+        self.assertEqual(sourced.returncode, 0, sourced.stderr.decode())
+        compile_replay, profile_replay, _ = sourced.stdout.decode().split("\0")
+        compiled = subprocess.run(shlex.split(compile_replay), text=True, capture_output=True, check=False, env=self.environment)
+        self.assertEqual(compiled.returncode, 0, compiled.stderr)
+        replayed = subprocess.run(
+            shlex.split(profile_replay), text=True, capture_output=True, check=False,
+            env=self.environment | {"FAKE_RUN_PROFILE_CHILD": "1", "FAKE_TRACE_PAYLOAD": "replay"},
+        )
+        self.assertEqual(replayed.returncode, 0, replayed.stderr)
+        traces_after = {
+            path.relative_to(profile_dir): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in profile_dir.rglob("*_kernel_trace.csv")
+        }
+        self.assertEqual(profile_dir.resolve(), target_before)
+        self.assertEqual((profile_dir / "profile_config.env").read_bytes(), config_before)
+        self.assertEqual(traces_after, traces_before)
+
+    def test_objdump_target_parser_accepts_bundle_and_structured_and_rejects_ambiguity(self):
+        for label, environment, should_succeed in (
+            ("structured", {"FAKE_OBJDUMP_FORMAT": "structured"}, True),
+            ("multiple", {"FAKE_OBJDUMP_FORMAT": "multiple"}, False),
+            ("missing", {"FAKE_OBJDUMP_FORMAT": "missing"}, False),
+            ("wrong", {"FAKE_BINARY_TARGET": "gfx9999"}, False),
+            ("unavailable", {"LLVM_OBJDUMP": "missing-llvm-objdump"}, False),
+        ):
+            with self.subTest(label=label):
+                profile_dir = self.root / f"objdump-{label}"
+                result = self.run_script(
+                    "profile_all.sh", PROFILE_DIR=str(profile_dir), **environment,
+                )
+                self.assertEqual(result.returncode == 0, should_succeed, result.stderr)
+                if should_succeed:
+                    self.assertTrue(profile_dir.is_symlink())
+                else:
+                    self.assertFalse(profile_dir.exists())
+                    if label == "unavailable":
+                        self.assertIn("llvm-objdump is unavailable", result.stderr)
+
+    def test_profile_rejects_real_directory_and_advances_symlink_pointer(self):
+        real_directory = self.root / "real-profiles"
+        real_directory.mkdir()
+        sentinel = real_directory / "sentinel.txt"
+        sentinel.write_text("keep")
+        failed = self.run_script("profile_all.sh", PROFILE_DIR=str(real_directory))
+        self.assertNotEqual(failed.returncode, 0)
+        self.assertEqual(sentinel.read_text(), "keep")
+
+        pointer = self.root / "pointer-profiles"
+        first = self.run_script("profile_all.sh", PROFILE_DIR=str(pointer))
+        self.assertEqual(first.returncode, 0, first.stderr)
+        first_target = pointer.resolve()
+        second = self.run_script("profile_all.sh", PROFILE_DIR=str(pointer))
+        self.assertEqual(second.returncode, 0, second.stderr)
+        self.assertTrue(pointer.is_symlink(), f"{pointer} -> {pointer.resolve()}")
+        self.assertNotEqual(pointer.resolve(), first_target)
+
+    def test_profile_positional_directory_overrides_environment_and_is_atomic(self):
+        positional = self.root / "positional-profiles"
+        conflicting = self.root / "environment-profiles"
+        default = self.root / "part" / "chapter2" / "profiles"
+        result = self.run_script(
+            "profile_all.sh", str(positional), PROFILE_DIR=str(conflicting),
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(positional.is_symlink())
+        self.assertEqual(
+            {path.parent.name for path in positional.rglob("*_kernel_trace.csv")},
+            {
+                f"{experiment}__{implementation}"
+                for experiment, implementations in EXPECTED_IMPLEMENTATIONS.items()
+                for implementation in implementations
+            },
+        )
+        self.assertFalse(conflicting.exists())
+        self.assertFalse(default.exists())
+
+    def test_profile_rejects_extra_positionals_before_compilation_or_publication(self):
+        positional = self.root / "positional-profiles"
+        conflicting = self.root / "environment-profiles"
+        default = self.root / "part" / "chapter2" / "profiles"
+        self.tool_log.unlink(missing_ok=True)
+        result = self.run_script(
+            "profile_all.sh", str(positional), "unexpected", PROFILE_DIR=str(conflicting),
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Usage:", result.stderr)
+        self.assertFalse(self.tool_log.exists())
+        self.assertFalse(positional.exists())
+        self.assertFalse(conflicting.exists())
+        self.assertFalse(default.exists())
+
+    def write_summary(self, path: Path, *, omit=None, duplicate=False, correct="OK", median="1", updates=None, update_pair=None):
+        fieldnames = [
+            "experiment", "implementation", "correct", "precheck", "postcheck",
+            "run_count",
+            "median_ms", "median_ms_process_min", "median_ms_process_max",
+            "logical_bandwidth_gbs", "logical_bandwidth_gbs_process_min",
+            "logical_bandwidth_gbs_process_max", "tflops", "tflops_process_min",
+            "tflops_process_max",
+        ]
+        rows = []
+        for experiment, implementations in EXPECTED_IMPLEMENTATIONS.items():
+            for implementation in sorted(implementations):
+                if (experiment, implementation) == omit:
+                    continue
+                is_global = experiment == "global-memory"
+                is_matrix = experiment == "matrix-path"
+                rows.append({
+                    "experiment": experiment, "implementation": implementation,
+                    "correct": correct, "precheck": "OK", "postcheck": "OK",
+                    "run_count": "3",
+                    "median_ms": median, "median_ms_process_min": "0.9",
+                    "median_ms_process_max": "1.1", "logical_bandwidth_gbs": "100" if is_global else "0",
+                    "logical_bandwidth_gbs_process_min": "90" if is_global else "0",
+                    "logical_bandwidth_gbs_process_max": "110" if is_global else "0", "tflops": "10" if is_matrix else "0",
+                    "tflops_process_min": "9" if is_matrix else "0", "tflops_process_max": "11" if is_matrix else "0",
+                })
+        if updates:
+            next(row for row in rows if update_pair is None or (
+                row["experiment"], row["implementation"]
+            ) == update_pair).update(updates)
+        if duplicate:
+            rows.append(rows[0].copy())
+        with path.open("w", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
+
+    def assert_plot_rejected(self, **kwargs):
+        summary = self.root / "summary.csv"
+        self.write_summary(summary, **kwargs)
+        path = CHAPTER_DIR / "plot_results.py"
+        spec = importlib.util.spec_from_file_location("chapter2_plot_contract", path)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        with self.assertRaises(ValueError):
+            module.read_summary(summary)
+
+    def test_plot_rejects_duplicate_missing_non_ok_and_malformed_rows(self):
+        with self.subTest("duplicate"):
+            self.assert_plot_rejected(duplicate=True)
+        with self.subTest("missing"):
+            self.assert_plot_rejected(omit=("matrix-path", "wmma"))
+        with self.subTest("non-OK"):
+            self.assert_plot_rejected(correct="FAIL")
+        with self.subTest("failed precheck"):
+            self.assert_plot_rejected(updates={"precheck": "FAIL"})
+        with self.subTest("failed postcheck"):
+            self.assert_plot_rejected(updates={"postcheck": "FAIL"})
+        with self.subTest("non-positive timing"):
+            self.assert_plot_rejected(median="0")
+        with self.subTest("non-positive bandwidth"):
+            self.assert_plot_rejected(
+                updates={"logical_bandwidth_gbs": "0"},
+                update_pair=("global-memory", "stride-1"),
+            )
+        with self.subTest("non-positive tflops"):
+            self.assert_plot_rejected(
+                updates={"tflops": "0"},
+                update_pair=("matrix-path", "valu"),
+            )
+        with self.subTest("non-finite process value"):
+            self.assert_plot_rejected(updates={"median_ms_process_max": "nan"})
+        with self.subTest("minimum exceeds median"):
+            self.assert_plot_rejected(updates={"median_ms_process_min": "2"})
+        with self.subTest("maximum below median"):
+            self.assert_plot_rejected(updates={"median_ms_process_max": "0.5"})
+
+    def test_plot_creates_deterministic_headless_png(self):
+        if importlib.util.find_spec("matplotlib") is None:
+            self.skipTest("matplotlib is unavailable in the current interpreter")
+        summary = self.root / "summary.csv"
+        first = self.root / "first.png"
+        second = self.root / "second.png"
+        self.write_summary(summary)
+        for output in (first, second):
+            result = subprocess.run(
+                [sys.executable, str(CHAPTER_DIR / "plot_results.py"),
+                 "--summary", str(summary), "--output", str(output)],
+                text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(output.is_file())
+            self.assertGreater(output.stat().st_size, 0)
+        self.assertEqual(first.read_bytes(), second.read_bytes())
+        path = CHAPTER_DIR / "plot_results.py"
+        spec = importlib.util.spec_from_file_location("chapter2_plot_results", path)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        figure = module.build_figure(module.read_summary(summary))
+        self.assertEqual(len(figure.axes), 4)
+        for axis in figure.axes:
+            self.assertIn("RX 9070 XT · 3 independent processes", axis.get_title())
+            self.assertGreaterEqual(len(axis.containers), 2)
+        self.assertEqual(figure.axes[0].get_yscale(), "symlog")
+        self.assertEqual(figure.axes[1].get_yscale(), "log")
+        self.assertEqual(figure.axes[2].get_yscale(), "symlog")
+        self.assertEqual(figure.axes[3].get_yscale(), "log")
+        module.pyplot().close(figure)
 
 
 class Chapter2PublicationTest(unittest.TestCase):
