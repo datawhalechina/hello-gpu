@@ -197,10 +197,7 @@ def _profile_pair(trace_path: Path, profile_dir: Path) -> tuple[str, str]:
         }
 
     components = relative.parts[:-1]
-    canonical_pair = next(
-        (pair_keys[component] for component in components if component in pair_keys),
-        None,
-    )
+    canonical_pair = pair_keys.get(components[0]) if components else None
     if canonical_pair is not None:
         if filename_pairs is not None and canonical_pair not in filename_pairs:
             raise ValueError(f"{trace_path}: conflicting profile identity")

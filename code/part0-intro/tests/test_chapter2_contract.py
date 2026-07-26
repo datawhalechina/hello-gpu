@@ -1652,6 +1652,20 @@ class Chapter2PublicationTest(unittest.TestCase):
             ("branch-divergence", "wave-uniform"),
         )
 
+    def test_profile_rejects_canonical_key_below_first_component(self):
+        profile = self.root / "untrusted-profile"
+        trace = (
+            profile
+            / "untrusted-host"
+            / "matrix-path__wmma"
+            / "4100_kernel_trace.csv"
+        )
+        trace.parent.mkdir(parents=True)
+        trace.write_text("Kernel_Name\nkernel\n")
+
+        with self.assertRaisesRegex(ValueError, "unique profile identity"):
+            self.module._profile_pair(trace, profile)
+
     def test_profile_pair_rejects_lexical_parent_component(self):
         profile = self.root / "parent-profile"
         trace = (
