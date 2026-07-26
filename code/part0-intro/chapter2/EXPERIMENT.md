@@ -111,8 +111,9 @@ three-process range was wider. The robust conclusion is the large
 `stride-32` penalty in this wave32/shared-memory indexing pattern; the small
 `stride-1` versus `stride-33` difference is not treated as significant.
 
-The reported LDS “logical GB/s” counts requested LDS reads. It is not HBM or
-GDDR6 bandwidth.
+The reported LDS “logical GB/s” counts the 256 requested LDS reads plus one
+logical global load and one logical global store per item. It is not physical
+LDS, HBM, or GDDR6 traffic.
 
 ### Matrix path
 
