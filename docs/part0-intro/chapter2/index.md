@@ -241,7 +241,7 @@ flowchart LR
     T[consecutive lanes: tid 0, 1, 2, ...] --> S1[stride 1: input 0, 1, 2, ...]
     T --> S17[stride 17: input 0, 17, 34, ...]
     T --> S257[stride 257: input 0, 257, 514, ...]
-    S1 --> O[all variants: output[tid]]
+    S1 --> O["all variants: output[tid]"]
     S17 --> O
     S257 --> O
 ```
@@ -317,7 +317,7 @@ LDS 地址映射示意：它显示实验的索引模式，而不是声称 gfx120
 ::: figure fig-ch2-valu-wmma
 ```mermaid
 flowchart LR
-    V[VALU: one thread computes one C[row, col] with k loop] --> VC[16 by 16 FP32 output]
+    V["VALU: one thread computes one C[row, col] with k loop"] --> VC[16 by 16 FP32 output]
     W[WMMA gfx12: one wave32 distributes fragments] --> F[A: transposed/column-major]
     W --> G[B/C/D: row-major]
     F --> I[wmma f32 16x16x16 f16 w32 gfx12]

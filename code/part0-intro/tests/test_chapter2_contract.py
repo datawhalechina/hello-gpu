@@ -158,6 +158,35 @@ class Chapter2ContractTest(unittest.TestCase):
                     "use punctuation that remains inside the message text",
                 )
 
+    def test_flowchart_labels_quote_nested_square_brackets(self):
+        text = DOC_PATH.read_text()
+        mermaid_blocks = re.findall(
+            r"```mermaid\s*\n(.*?)\n```",
+            text,
+            flags=re.DOTALL,
+        )
+        flowchart_blocks = [
+            block
+            for block in mermaid_blocks
+            if block.lstrip().startswith("flowchart")
+        ]
+        self.assertTrue(flowchart_blocks, "Chapter 2 must retain its flowcharts")
+        unquoted_nested_label = re.compile(
+            r"\b[A-Za-z_]\w*\[(?!\")[^\]\n]*\[[^\]\n]*\][^\]\n]*\]"
+        )
+        invalid_lines = [
+            line
+            for block in flowchart_blocks
+            for line in block.splitlines()[1:]
+            if unquoted_nested_label.search(line)
+        ]
+        self.assertEqual(
+            invalid_lines,
+            [],
+            "Mermaid flowchart labels containing square brackets must be "
+            "quoted so GitHub does not parse them as nested node syntax",
+        )
+
 
 class Chapter2HipSourceContractTest(unittest.TestCase):
     def read_source(self, name: str) -> str:
