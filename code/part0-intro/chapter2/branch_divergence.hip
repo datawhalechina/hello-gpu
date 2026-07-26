@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <limits>
 #include <numeric>
 #include <random>
 #include <stdexcept>
@@ -47,14 +48,53 @@ struct Implementation {
     const char* name;
 };
 
-[[noreturn]] void usage_error(const std::string& message) {
+void print_usage(FILE* stream) {
     std::fprintf(
-        stderr,
-        "%s\nUsage: branch_divergence [--implementation "
+        stream,
+        "Usage: branch_divergence [--implementation "
         "all|wave-uniform|wave-divergent] [--size N] [--warmup N] "
-        "[--repeat N] [--seed N]\n",
-        message.c_str());
+        "[--repeat N] [--seed N]\n");
+}
+
+[[noreturn]] void usage_error(const std::string& message) {
+    std::fprintf(stderr, "%s\n", message.c_str());
+    print_usage(stderr);
     std::exit(EXIT_FAILURE);
+}
+
+std::size_t parse_unsigned(const std::string& value,
+                           const std::string& option) {
+    if (value.empty() || value.front() == '-') {
+        usage_error("invalid value for " + option + ": " + value);
+    }
+    std::size_t parsed = 0;
+    unsigned long long result = 0;
+    try {
+        result = std::stoull(value, &parsed, 10);
+    } catch (const std::exception&) {
+        usage_error("invalid value for " + option + ": " + value);
+    }
+    if (parsed != value.size() ||
+        result > std::numeric_limits<std::size_t>::max()) {
+        usage_error("invalid value for " + option + ": " + value);
+    }
+    return static_cast<std::size_t>(result);
+}
+
+int parse_integer(const std::string& value, const std::string& option) {
+    std::size_t parsed = 0;
+    long long result = 0;
+    try {
+        result = std::stoll(value, &parsed, 10);
+    } catch (const std::exception&) {
+        usage_error("invalid value for " + option + ": " + value);
+    }
+    if (parsed != value.size() ||
+        result < std::numeric_limits<int>::min() ||
+        result > std::numeric_limits<int>::max()) {
+        usage_error("invalid value for " + option + ": " + value);
+    }
+    return static_cast<int>(result);
 }
 
 Args parse_args(int argc, char** argv) {
@@ -62,28 +102,25 @@ Args parse_args(int argc, char** argv) {
     for (int index = 1; index < argc; ++index) {
         const std::string option = argv[index];
         if (option == "--help" || option == "-h") {
-            usage_error("Branch divergence HIP teaching benchmark");
+            print_usage(stdout);
+            std::exit(EXIT_SUCCESS);
         }
         if (index + 1 >= argc) {
             usage_error("missing value for " + option);
         }
         const std::string value = argv[++index];
-        try {
-            if (option == "--implementation") {
-                args.implementation = value;
-            } else if (option == "--size") {
-                args.size = std::stoull(value);
-            } else if (option == "--warmup") {
-                args.warmup = std::stoi(value);
-            } else if (option == "--repeat") {
-                args.repeat = std::stoi(value);
-            } else if (option == "--seed") {
-                args.seed = std::stoull(value);
-            } else {
-                usage_error("unknown option: " + option);
-            }
-        } catch (const std::exception&) {
-            usage_error("invalid value for " + option + ": " + value);
+        if (option == "--implementation") {
+            args.implementation = value;
+        } else if (option == "--size") {
+            args.size = parse_unsigned(value, option);
+        } else if (option == "--warmup") {
+            args.warmup = parse_integer(value, option);
+        } else if (option == "--repeat") {
+            args.repeat = parse_integer(value, option);
+        } else if (option == "--seed") {
+            args.seed = parse_unsigned(value, option);
+        } else {
+            usage_error("unknown option: " + option);
         }
     }
 
@@ -147,8 +184,13 @@ __global__ void branch_kernel(const float* input, float* output,
 }
 
 unsigned int grid_for(std::size_t n) {
-    return static_cast<unsigned int>(
-        (n + static_cast<std::size_t>(kBlockSize) - 1) / kBlockSize);
+    const std::size_t blocks =
+        n / static_cast<std::size_t>(kBlockSize) +
+        (n % static_cast<std::size_t>(kBlockSize) != 0);
+    if (blocks > std::numeric_limits<unsigned int>::max()) {
+        usage_error("--size produces a grid that overflows unsigned int");
+    }
+    return static_cast<unsigned int>(blocks);
 }
 
 void launch(BranchMode mode, const float* input, float* output,
@@ -226,7 +268,6 @@ Timing benchmark(const Implementation& implementation, const Args& args,
     std::vector<float> times_ms;
     times_ms.reserve(args.repeat);
 
-    // BEGIN_TIMED_LOOP
     for (int iteration = 0; iteration < args.repeat; ++iteration) {
         HIP_CHECK(hipEventRecord(start));
         launch(implementation.mode, device_input, device_output, args.size);
@@ -236,7 +277,6 @@ Timing benchmark(const Implementation& implementation, const Args& args,
         HIP_CHECK(hipEventElapsedTime(&elapsed_ms, start, stop));
         times_ms.push_back(elapsed_ms);
     }
-    // END_TIMED_LOOP
 
     HIP_CHECK(hipEventDestroy(start));
     HIP_CHECK(hipEventDestroy(stop));
@@ -249,6 +289,42 @@ Timing benchmark(const Implementation& implementation, const Args& args,
         std::accumulate(times_ms.begin(), times_ms.end(), 0.0f) /
         static_cast<float>(times_ms.size());
     return {times_ms.front(), median, mean};
+}
+
+void emit_result(const Implementation& implementation, const Args& args,
+                 bool timed, bool precheck_ok, bool postcheck_ok,
+                 const Timing& timing, double logical_bandwidth_gbs,
+                 double tflops, float max_error) {
+    const char* format = nullptr;
+    if (precheck_ok && postcheck_ok) {
+        format =
+            "RESULT experiment=branch-divergence implementation=%s "
+            "runtime=hip shape=N=%zu dtype=fp32 warmup=%d repeat=%d "
+            "seed=%zu timed=%d correct=OK precheck=OK postcheck=OK "
+            "min_ms=%.6f median_ms=%.6f mean_ms=%.6f "
+            "logical_bandwidth_gbs=%.6f tflops=%.6f "
+            "max_abs_error=%.9g\n";
+    } else if (!precheck_ok) {
+        format =
+            "RESULT experiment=branch-divergence implementation=%s "
+            "runtime=hip shape=N=%zu dtype=fp32 warmup=%d repeat=%d "
+            "seed=%zu timed=%d correct=FAIL precheck=FAIL postcheck=NA "
+            "min_ms=%.6f median_ms=%.6f mean_ms=%.6f "
+            "logical_bandwidth_gbs=%.6f tflops=%.6f "
+            "max_abs_error=%.9g\n";
+    } else {
+        format =
+            "RESULT experiment=branch-divergence implementation=%s "
+            "runtime=hip shape=N=%zu dtype=fp32 warmup=%d repeat=%d "
+            "seed=%zu timed=%d correct=FAIL precheck=OK postcheck=FAIL "
+            "min_ms=%.6f median_ms=%.6f mean_ms=%.6f "
+            "logical_bandwidth_gbs=%.6f tflops=%.6f "
+            "max_abs_error=%.9g\n";
+    }
+    std::printf(format, implementation.name, args.size, args.warmup,
+                args.repeat, args.seed, timed ? 1 : 0, timing.minimum_ms,
+                timing.median_ms, timing.mean_ms, logical_bandwidth_gbs,
+                tflops, max_error);
 }
 
 bool run_implementation(
@@ -272,45 +348,35 @@ bool run_implementation(
     const bool precheck_ok = validate(
         device_precheck_output, precheck_reference, precheck_output,
         &precheck_error);
-    if (!precheck_ok) {
-        std::printf(
-            "RESULT experiment=branch-divergence implementation=%s "
-            "runtime=hip shape=N=%zu dtype=fp32 warmup=%d repeat=%d "
-            "seed=%zu timed=0 correct=FAIL precheck=FAIL postcheck=NA "
-            "min_ms=0 median_ms=0 mean_ms=0 logical_bandwidth_gbs=0 "
-            "tflops=0 max_abs_error=%.9g\n",
-            implementation.name, args.size, args.warmup, args.repeat,
-            args.seed, precheck_error);
-        return false;
+
+    Timing timing{0.0f, 0.0f, 0.0f};
+    bool postcheck_ok = false;
+    float postcheck_error = 0.0f;
+    double logical_bandwidth_gbs = 0.0;
+    double tflops = 0.0;
+    if (precheck_ok) {
+        const std::vector<float> reference =
+            make_reference(input, implementation.mode, wave_size);
+        timing = benchmark(
+            implementation, args, device_input, device_output);
+        postcheck_ok =
+            validate(device_output, reference, output, &postcheck_error);
+        const double elapsed_seconds =
+            static_cast<double>(timing.median_ms) * 1.0e-3;
+        const double logical_bytes =
+            2.0 * static_cast<double>(args.size) * sizeof(float);
+        logical_bandwidth_gbs =
+            logical_bytes / elapsed_seconds / 1.0e9;
+        tflops =
+            (8.0 * static_cast<double>(args.size)) /
+            elapsed_seconds / 1.0e12;
     }
 
-    const std::vector<float> reference =
-        make_reference(input, implementation.mode, wave_size);
-    const Timing timing =
-        benchmark(implementation, args, device_input, device_output);
-    float postcheck_error = 0.0f;
-    const bool postcheck_ok =
-        validate(device_output, reference, output, &postcheck_error);
-    const double elapsed_seconds =
-        static_cast<double>(timing.median_ms) * 1.0e-3;
-    const double logical_bytes =
-        2.0 * static_cast<double>(args.size) * sizeof(float);
-    const double logical_bandwidth_gbs =
-        logical_bytes / elapsed_seconds / 1.0e9;
-    const double tflops =
-        (8.0 * static_cast<double>(args.size)) / elapsed_seconds / 1.0e12;
-
-    std::printf(
-        "RESULT experiment=branch-divergence implementation=%s runtime=hip "
-        "shape=N=%zu dtype=fp32 warmup=%d repeat=%d seed=%zu timed=1 "
-        "correct=%s precheck=OK postcheck=%s min_ms=%.6f median_ms=%.6f "
-        "mean_ms=%.6f logical_bandwidth_gbs=%.6f tflops=%.6f "
-        "max_abs_error=%.9g\n",
-        implementation.name, args.size, args.warmup, args.repeat, args.seed,
-        postcheck_ok ? "OK" : "FAIL", postcheck_ok ? "OK" : "FAIL",
-        timing.minimum_ms, timing.median_ms, timing.mean_ms,
-        logical_bandwidth_gbs, tflops, postcheck_error);
-    return postcheck_ok;
+    emit_result(
+        implementation, args, precheck_ok, precheck_ok, postcheck_ok, timing,
+        logical_bandwidth_gbs, tflops,
+        precheck_ok ? postcheck_error : precheck_error);
+    return precheck_ok && postcheck_ok;
 }
 
 }  // namespace
@@ -329,11 +395,13 @@ int main(int argc, char** argv) {
         usage_error("--size produces a grid larger than the device limit");
     }
     std::printf(
-        "ENV runtime=hip gpu=\"%s\" arch=%s compute_units=%d wave_size=%d\n",
+        "ENV runtime=hip gpu=\"%s\" arch=%s "
+        "hip_multiprocessor_count=%d wave_size=%d\n",
         properties.name, properties.gcnArchName,
         properties.multiProcessorCount, properties.warpSize);
 
-    std::mt19937 generator(static_cast<std::mt19937::result_type>(args.seed));
+    std::mt19937_64 generator(
+        static_cast<std::mt19937_64::result_type>(args.seed));
     std::uniform_real_distribution<float> distribution(-1.0f, 1.0f);
     std::vector<float> precheck_input(kPrecheckSize);
     std::vector<float> precheck_output(kPrecheckSize);

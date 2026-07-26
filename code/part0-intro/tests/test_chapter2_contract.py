@@ -4,6 +4,7 @@ import csv
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -140,13 +141,35 @@ class Chapter2HipSourceContractTest(unittest.TestCase):
             self.fail(f"missing formal Chapter 2 file: {path.relative_to(ROOT)}")
         return path.read_text()
 
+    def extract_braced(self, text: str, anchor: str) -> str:
+        if anchor not in text:
+            self.fail(f"missing source block: {anchor!r}")
+        anchor_start = text.index(anchor)
+        brace_start = text.index("{", anchor_start + len(anchor))
+        depth = 0
+        for index in range(brace_start, len(text)):
+            if text[index] == "{":
+                depth += 1
+            elif text[index] == "}":
+                depth -= 1
+                if depth == 0:
+                    return text[brace_start + 1:index]
+        self.fail(f"unclosed braced block after {anchor!r}")
+
+    def compact(self, text: str) -> str:
+        return re.sub(r"\s+", " ", text).strip()
+
     def assert_preallocated_timed_loop(self, text: str):
-        begin = "// BEGIN_TIMED_LOOP"
-        end = "// END_TIMED_LOOP"
-        self.assertIn(begin, text)
-        self.assertIn(end, text)
-        _, remainder = text.split(begin, 1)
-        timed_loop, _ = remainder.split(end, 1)
+        benchmark = self.extract_braced(text, "Timing benchmark(")
+        timed_loop = self.extract_braced(
+            benchmark,
+            "for (int iteration = 0; iteration < args.repeat; ++iteration)",
+        )
+        launch = self.extract_braced(text, "void launch(")
+        main = self.extract_braced(text, "int main(")
+        selection_loop = main.index(
+            "for (const Implementation& implementation : implementations)"
+        )
 
         self.assertIn("hipMalloc", text)
         self.assertIn("hipMemcpy", text)
@@ -154,23 +177,122 @@ class Chapter2HipSourceContractTest(unittest.TestCase):
         self.assertIn("launch(", timed_loop)
         for forbidden in ("hipMalloc", "hipFree", "hipMemcpy"):
             self.assertNotIn(forbidden, timed_loop)
+            self.assertNotIn(forbidden, launch)
+        for setup_call in ("hipMalloc", "hipMemcpy"):
+            self.assertGreater(main[:selection_loop].count(setup_call), 0)
+            self.assertEqual(main[selection_loop:].count(setup_call), 0)
+
+    def assert_cli_contract(self, text: str):
+        parse_args = self.extract_braced(text, "Args parse_args(")
+        grid_for = self.extract_braced(text, "unsigned int grid_for(")
+        for option in (
+            "--implementation", "--size", "--warmup", "--repeat", "--seed",
+        ):
+            self.assertIn(option, parse_args)
+        self.assertIn("std::exit(EXIT_SUCCESS)", parse_args)
+        self.assertIn("parse_unsigned", parse_args)
+        self.assertIn("parse_integer", parse_args)
+        self.assertIn("value.size()", text)
+        self.assertIn("std::numeric_limits<unsigned int>::max()", grid_for)
+        self.assertIn("std::mt19937_64", text)
+        self.assertIn("hip_multiprocessor_count=%d", text)
+        self.assertNotIn("compute_units=%d", text)
+        self.assertIn(
+            "properties.multiProcessorCount, properties.warpSize",
+            self.compact(text),
+        )
+
+    def assert_single_result_for_single_selection(
+        self, text: str, single_return_names: tuple[str, ...]
+    ):
+        selected = self.extract_braced(text, "selected_implementations(")
+        main = self.extract_braced(text, "int main(")
+        run = self.extract_braced(text, "bool run_implementation(")
+        emit = self.extract_braced(text, "void emit_result(")
+
+        for name in single_return_names:
+            self.assertIn(f"return {{{name}}};", selected)
+        implementation_loop = self.extract_braced(
+            main,
+            "for (const Implementation& implementation : implementations)",
+        )
+        self.assertEqual(implementation_loop.count("run_implementation("), 1)
+        self.assertEqual(run.count("emit_result("), 1)
+        self.assertEqual(emit.count("std::printf("), 1)
 
     def test_branch_divergence_source_contract(self):
         branch_text = self.read_source("branch_divergence.hip")
+        branch_kernel = self.extract_braced(branch_text, "__global__ void branch_kernel(")
+        branch_match = re.search(
+            r"if\s*\(take_a\)\s*\{(?P<a>.*?)\}\s*else\s*\{(?P<b>.*?)\}",
+            branch_kernel,
+            re.DOTALL,
+        )
 
+        self.assertIsNotNone(branch_match)
         self.assertIn("hipEventRecord", branch_text)
         self.assertIn("wave-uniform", branch_text)
         self.assertIn("wave-divergent", branch_text)
         self.assertIn("precheck=OK", branch_text)
+        self.assertIn(
+            self.compact(
+                """
+                bool take_a = mode == BranchMode::WaveUniform
+                    ? (((tid / warpSize) & 1u) == 0u)
+                    : ((tid & 1u) == 0u);
+                """
+            ),
+            self.compact(branch_kernel),
+        )
+        path_a = branch_match.group("a")
+        path_b = branch_match.group("b")
+        self.assertEqual(path_a.count("value = fmaf(value,"), 4)
+        self.assertEqual(path_b.count("value = fmaf(value,"), 4)
+        self.assertEqual(path_a.count("fmaf("), path_b.count("fmaf("))
+        self.assertNotEqual(self.compact(path_a), self.compact(path_b))
+        precheck_size = re.search(
+            r"kPrecheckSize\s*=\s*(\d+)", branch_text
+        )
+        self.assertIsNotNone(precheck_size)
+        self.assertEqual(int(precheck_size.group(1)), 257)
+        self.assertNotEqual(int(precheck_size.group(1)) % 256, 0)
+        self.assertIn(
+            "device_precheck_output, kPrecheckSize", self.compact(branch_text)
+        )
+        self.assert_cli_contract(branch_text)
+        self.assert_single_result_for_single_selection(
+            branch_text, ("uniform", "divergent")
+        )
         self.assert_preallocated_timed_loop(branch_text)
 
     def test_global_memory_source_contract(self):
         memory_text = self.read_source("global_memory_access.hip")
+        gather_copy = self.extract_braced(memory_text, "__global__ void gather_copy(")
+        parse_args = self.extract_braced(memory_text, "Args parse_args(")
+        bandwidth = self.extract_braced(
+            memory_text, "double logical_bandwidth_gbs("
+        )
 
         self.assertIn("stride-1", memory_text)
         self.assertIn("stride-17", memory_text)
         self.assertIn("stride-257", memory_text)
         self.assertIn("postcheck=OK", memory_text)
+        self.assertIn("if (!is_power_of_two(args.size))", parse_args)
+        self.assertIn(
+            "std::size_t source = (tid * Stride) & (n - 1);",
+            self.compact(gather_copy),
+        )
+        self.assertEqual(gather_copy.count("input[source]"), 1)
+        self.assertEqual(gather_copy.count("output[tid]"), 1)
+        self.assertIn(
+            "2.0 * static_cast<double>(n) * sizeof(float)",
+            self.compact(bandwidth),
+        )
+        self.assertIn("/ elapsed_seconds / 1.0e9", self.compact(bandwidth))
+        self.assert_cli_contract(memory_text)
+        self.assert_single_result_for_single_selection(
+            memory_text, ("stride_1", "stride_17", "stride_257")
+        )
         self.assert_preallocated_timed_loop(memory_text)
 
 
