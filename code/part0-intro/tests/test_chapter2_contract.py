@@ -133,6 +133,47 @@ class Chapter2ContractTest(unittest.TestCase):
             self.assertNotIn(phrase, text)
 
 
+class Chapter2HipSourceContractTest(unittest.TestCase):
+    def read_source(self, name: str) -> str:
+        path = CHAPTER_DIR / name
+        if not path.is_file():
+            self.fail(f"missing formal Chapter 2 file: {path.relative_to(ROOT)}")
+        return path.read_text()
+
+    def assert_preallocated_timed_loop(self, text: str):
+        begin = "// BEGIN_TIMED_LOOP"
+        end = "// END_TIMED_LOOP"
+        self.assertIn(begin, text)
+        self.assertIn(end, text)
+        _, remainder = text.split(begin, 1)
+        timed_loop, _ = remainder.split(end, 1)
+
+        self.assertIn("hipMalloc", text)
+        self.assertIn("hipMemcpy", text)
+        self.assertIn("hipEventRecord", timed_loop)
+        self.assertIn("launch(", timed_loop)
+        for forbidden in ("hipMalloc", "hipFree", "hipMemcpy"):
+            self.assertNotIn(forbidden, timed_loop)
+
+    def test_branch_divergence_source_contract(self):
+        branch_text = self.read_source("branch_divergence.hip")
+
+        self.assertIn("hipEventRecord", branch_text)
+        self.assertIn("wave-uniform", branch_text)
+        self.assertIn("wave-divergent", branch_text)
+        self.assertIn("precheck=OK", branch_text)
+        self.assert_preallocated_timed_loop(branch_text)
+
+    def test_global_memory_source_contract(self):
+        memory_text = self.read_source("global_memory_access.hip")
+
+        self.assertIn("stride-1", memory_text)
+        self.assertIn("stride-17", memory_text)
+        self.assertIn("stride-257", memory_text)
+        self.assertIn("postcheck=OK", memory_text)
+        self.assert_preallocated_timed_loop(memory_text)
+
+
 class Chapter2PublicationTest(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.TemporaryDirectory()
