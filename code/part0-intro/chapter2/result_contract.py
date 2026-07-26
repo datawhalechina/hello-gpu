@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import math
 import os
@@ -323,6 +324,13 @@ def publish(
 ) -> None:
     """Publish validated evidence as an all-or-nothing directory replacement."""
     rows = validate_runs(run_logs)
+    run_log_paths = [Path(path) for path in run_logs]
+    run_log_names = [path.name for path in run_log_paths]
+    duplicate_names = sorted({
+        name for name in run_log_names if run_log_names.count(name) > 1
+    })
+    if duplicate_names:
+        raise ValueError(f"duplicate run-log basename: {duplicate_names[0]}")
     summaries = _aggregate(rows)
     profiles = _profile_summary(profile_dir, source_commit)
     evidence_dir = Path(evidence_dir)
@@ -340,8 +348,20 @@ def publish(
         manifest = {
             "source_commit": source_commit,
             "process_count": PROCESS_COUNT,
-            "run_logs": [str(Path(path)) for path in run_logs],
+            "run_logs": [
+                {
+                    "name": path.name,
+                    "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                }
+                for path in run_log_paths
+            ],
         }
+        if profile_dir is not None:
+            profile_config = Path(profile_dir) / "profile_config.env"
+            manifest["profile_config"] = {
+                "name": profile_config.name,
+                "sha256": hashlib.sha256(profile_config.read_bytes()).hexdigest(),
+            }
         (temporary / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
         _write_csv(temporary / "summary.csv", summaries, fieldnames)
         (temporary / "summary.json").write_text(json.dumps(summaries, indent=2) + "\n")

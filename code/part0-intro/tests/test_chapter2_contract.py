@@ -1573,10 +1573,32 @@ class Chapter2PublicationTest(unittest.TestCase):
             [self.log1, self.log2, self.log3], profile, self.evidence, "a" * 40
         )
 
-        with (self.evidence / "manifest.json").open() as handle:
-            manifest = json.load(handle)
+        manifest_path = self.evidence / "manifest.json"
+        manifest_text = manifest_path.read_text()
+        manifest = json.loads(manifest_text)
         self.assertEqual(manifest["source_commit"], "a" * 40)
-        self.assertEqual(len(manifest["run_logs"]), 3)
+        self.assertEqual(
+            manifest["run_logs"],
+            [
+                {
+                    "name": path.name,
+                    "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                }
+                for path in (self.log1, self.log2, self.log3)
+            ],
+        )
+        self.assertEqual(
+            manifest["profile_config"],
+            {
+                "name": "profile_config.env",
+                "sha256": hashlib.sha256(
+                    (profile / "profile_config.env").read_bytes()
+                ).hexdigest(),
+            },
+        )
+        self.assertNotIn(str(self.root), manifest_text)
+        for artifact in manifest["run_logs"] + [manifest["profile_config"]]:
+            self.assertRegex(artifact["sha256"], r"^[0-9a-f]{64}$")
         with (self.evidence / "summary.csv").open(newline="") as handle:
             rows = list(csv.DictReader(handle))
         self.assertEqual(len(rows), 10)
@@ -1595,6 +1617,26 @@ class Chapter2PublicationTest(unittest.TestCase):
             "dispatch_count": "2",
             "unique_kernel_names": "wmma_kernel",
         }, profile_rows)
+
+    def test_publication_rejects_duplicate_run_log_basenames(self):
+        first = self.root / "process-a" / "run.log"
+        second = self.root / "process-b" / "run.log"
+        first.parent.mkdir()
+        second.parent.mkdir()
+        self.write_log(first, process=1)
+        self.write_log(second, process=2)
+        sentinel = self.evidence / "sentinel.txt"
+        sentinel.write_text("keep")
+
+        with self.assertRaisesRegex(ValueError, "duplicate run-log basename"):
+            self.module.publish(
+                [first, second, self.log3],
+                None,
+                self.evidence,
+                "a" * 40,
+            )
+
+        self.assertEqual(sentinel.read_text(), "keep")
 
     def test_cli_publishes_with_repeatable_run_logs(self):
         profile, _ = self.write_rocprof_profile()
