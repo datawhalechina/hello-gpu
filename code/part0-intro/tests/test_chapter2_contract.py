@@ -136,6 +136,28 @@ class Chapter2ContractTest(unittest.TestCase):
         for phrase in FORBIDDEN_CHAPTER_TEXT:
             self.assertNotIn(phrase, text)
 
+    def test_sequence_diagram_messages_avoid_mermaid_statement_separators(self):
+        text = DOC_PATH.read_text()
+        mermaid_blocks = re.findall(
+            r"```mermaid\s*\n(.*?)\n```",
+            text,
+            flags=re.DOTALL,
+        )
+        sequence_blocks = [
+            block
+            for block in mermaid_blocks
+            if block.lstrip().startswith("sequenceDiagram")
+        ]
+        self.assertTrue(sequence_blocks, "Chapter 2 must retain its EXEC timeline")
+        for block in sequence_blocks:
+            for line in block.splitlines()[1:]:
+                self.assertNotIn(
+                    ";",
+                    line,
+                    "ASCII semicolons terminate Mermaid sequence statements; "
+                    "use punctuation that remains inside the message text",
+                )
+
 
 class Chapter2HipSourceContractTest(unittest.TestCase):
     def read_source(self, name: str) -> str:

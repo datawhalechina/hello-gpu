@@ -136,7 +136,7 @@ sequenceDiagram
     Note over W: t0: EXEC = lanes 0-31
     W->>W: t1: evaluate predicate
     Note over W: t2: then path, EXEC = lanes selected by predicate
-    W->>W: t3: execute then instructions; inactive lanes do no vector work
+    W->>W: t3: execute then instructions, inactive lanes do no vector work
     Note over W: t4: else path, EXEC = remaining selected lanes
     W->>W: t5: execute else instructions
     Note over W: t6: restore EXEC and reconverge
