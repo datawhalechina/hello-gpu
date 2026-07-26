@@ -1611,6 +1611,10 @@ class Chapter2PublicationTest(unittest.TestCase):
         with (self.evidence / "profile_summary.csv").open(newline="") as handle:
             profile_rows = list(csv.DictReader(handle))
         self.assertEqual(len(profile_rows), 10)
+        self.assertNotIn(b"\r\n", (self.evidence / "summary.csv").read_bytes())
+        self.assertNotIn(
+            b"\r\n", (self.evidence / "profile_summary.csv").read_bytes()
+        )
         self.assertIn({
             "experiment": "matrix-path",
             "implementation": "wmma",
