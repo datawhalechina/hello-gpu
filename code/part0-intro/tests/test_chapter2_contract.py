@@ -141,25 +141,118 @@ class Chapter2HipSourceContractTest(unittest.TestCase):
             self.fail(f"missing formal Chapter 2 file: {path.relative_to(ROOT)}")
         return path.read_text()
 
+    def clean_cpp(self, text: str) -> str:
+        """Blank comments and literal contents without moving source braces."""
+        cleaned = list(text)
+        length = len(text)
+
+        def blank(start: int, end: int):
+            for index in range(start, end):
+                if cleaned[index] not in "\r\n":
+                    cleaned[index] = " "
+
+        index = 0
+        raw_prefixes = ('u8R"', 'uR"', 'UR"', 'LR"', 'R"')
+        while index < length:
+            if text.startswith("//", index):
+                end = text.find("\n", index + 2)
+                if end == -1:
+                    end = length
+                blank(index, end)
+                index = end
+                continue
+
+            if text.startswith("/*", index):
+                close = text.find("*/", index + 2)
+                if close == -1:
+                    self.fail("unterminated C++ block comment")
+                end = close + 2
+                blank(index, end)
+                index = end
+                continue
+
+            raw_prefix = next(
+                (
+                    prefix
+                    for prefix in raw_prefixes
+                    if text.startswith(prefix, index)
+                ),
+                None,
+            )
+            previous_is_identifier = (
+                index > 0
+                and (text[index - 1].isalnum() or text[index - 1] == "_")
+            )
+            if raw_prefix is not None and not previous_is_identifier:
+                delimiter_start = index + len(raw_prefix)
+                open_paren = text.find("(", delimiter_start)
+                delimiter = (
+                    text[delimiter_start:open_paren]
+                    if open_paren != -1
+                    else ""
+                )
+                invalid_delimiter = (
+                    open_paren == -1
+                    or len(delimiter) > 16
+                    or any(
+                        character.isspace()
+                        or character in "\\()"
+                        for character in delimiter
+                    )
+                )
+                if invalid_delimiter:
+                    self.fail("invalid C++ raw-string delimiter")
+                terminator = ")" + delimiter + '"'
+                close = text.find(terminator, open_paren + 1)
+                if close == -1:
+                    self.fail("unterminated C++ raw-string literal")
+                end = close + len(terminator)
+                blank(index, end)
+                index = end
+                continue
+
+            if text[index] in "\"'":
+                quote = text[index]
+                end = index + 1
+                while end < length:
+                    if text[end] == "\\":
+                        end += 2
+                        continue
+                    if text[end] == quote:
+                        end += 1
+                        break
+                    end += 1
+                else:
+                    self.fail("unterminated C++ quoted literal")
+                blank(index, min(end, length))
+                index = end
+                continue
+
+            index += 1
+
+        return "".join(cleaned)
+
     def extract_braced(self, text: str, anchor: str) -> str:
-        if anchor not in text:
+        code = self.clean_cpp(text)
+        if anchor not in code:
             self.fail(f"missing source block: {anchor!r}")
-        anchor_start = text.index(anchor)
-        brace_start = text.index("{", anchor_start + len(anchor))
+        anchor_start = code.index(anchor)
+        brace_start = code.index("{", anchor_start + len(anchor))
         depth = 0
-        for index in range(brace_start, len(text)):
-            if text[index] == "{":
+        for index in range(brace_start, len(code)):
+            if code[index] == "{":
                 depth += 1
-            elif text[index] == "}":
+            elif code[index] == "}":
                 depth -= 1
                 if depth == 0:
-                    return text[brace_start + 1:index]
+                    return code[brace_start + 1:index]
         self.fail(f"unclosed braced block after {anchor!r}")
 
     def compact(self, text: str) -> str:
         return re.sub(r"\s+", " ", text).strip()
 
     def assert_preallocated_timed_loop(self, text: str):
+        code = self.clean_cpp(text)
         benchmark = self.extract_braced(text, "Timing benchmark(")
         timed_loop = self.extract_braced(
             benchmark,
@@ -171,8 +264,8 @@ class Chapter2HipSourceContractTest(unittest.TestCase):
             "for (const Implementation& implementation : implementations)"
         )
 
-        self.assertIn("hipMalloc", text)
-        self.assertIn("hipMemcpy", text)
+        self.assertIn("hipMalloc", code)
+        self.assertIn("hipMemcpy", code)
         self.assertIn("hipEventRecord", timed_loop)
         self.assertIn("launch(", timed_loop)
         for forbidden in ("hipMalloc", "hipFree", "hipMemcpy"):
@@ -183,23 +276,24 @@ class Chapter2HipSourceContractTest(unittest.TestCase):
             self.assertEqual(main[selection_loop:].count(setup_call), 0)
 
     def assert_cli_contract(self, text: str):
+        code = self.clean_cpp(text)
         parse_args = self.extract_braced(text, "Args parse_args(")
         grid_for = self.extract_braced(text, "unsigned int grid_for(")
         for option in (
             "--implementation", "--size", "--warmup", "--repeat", "--seed",
         ):
-            self.assertIn(option, parse_args)
+            self.assertIn(option, text)
         self.assertIn("std::exit(EXIT_SUCCESS)", parse_args)
         self.assertIn("parse_unsigned", parse_args)
         self.assertIn("parse_integer", parse_args)
-        self.assertIn("value.size()", text)
+        self.assertIn("value.size()", code)
         self.assertIn("std::numeric_limits<unsigned int>::max()", grid_for)
-        self.assertIn("std::mt19937_64", text)
+        self.assertIn("std::mt19937_64", code)
         self.assertIn("hip_multiprocessor_count=%d", text)
         self.assertNotIn("compute_units=%d", text)
         self.assertIn(
             "properties.multiProcessorCount, properties.warpSize",
-            self.compact(text),
+            self.compact(code),
         )
 
     def assert_single_result_for_single_selection(
@@ -220,9 +314,9 @@ class Chapter2HipSourceContractTest(unittest.TestCase):
         self.assertEqual(run.count("emit_result("), 1)
         self.assertEqual(emit.count("std::printf("), 1)
 
-    def test_branch_divergence_source_contract(self):
-        branch_text = self.read_source("branch_divergence.hip")
-        branch_kernel = self.extract_braced(branch_text, "__global__ void branch_kernel(")
+    def assert_branch_source_contract(self, branch_text: str):
+        code = self.clean_cpp(branch_text)
+        branch_kernel = self.extract_braced(code, "__global__ void branch_kernel(")
         branch_match = re.search(
             r"if\s*\(take_a\)\s*\{(?P<a>.*?)\}\s*else\s*\{(?P<b>.*?)\}",
             branch_kernel,
@@ -230,7 +324,7 @@ class Chapter2HipSourceContractTest(unittest.TestCase):
         )
 
         self.assertIsNotNone(branch_match)
-        self.assertIn("hipEventRecord", branch_text)
+        self.assertIn("hipEventRecord", code)
         self.assertIn("wave-uniform", branch_text)
         self.assertIn("wave-divergent", branch_text)
         self.assertIn("precheck=OK", branch_text)
@@ -251,13 +345,13 @@ class Chapter2HipSourceContractTest(unittest.TestCase):
         self.assertEqual(path_a.count("fmaf("), path_b.count("fmaf("))
         self.assertNotEqual(self.compact(path_a), self.compact(path_b))
         precheck_size = re.search(
-            r"kPrecheckSize\s*=\s*(\d+)", branch_text
+            r"kPrecheckSize\s*=\s*(\d+)", code
         )
         self.assertIsNotNone(precheck_size)
         self.assertEqual(int(precheck_size.group(1)), 257)
         self.assertNotEqual(int(precheck_size.group(1)) % 256, 0)
         self.assertIn(
-            "device_precheck_output, kPrecheckSize", self.compact(branch_text)
+            "device_precheck_output, kPrecheckSize", self.compact(code)
         )
         self.assert_cli_contract(branch_text)
         self.assert_single_result_for_single_selection(
@@ -265,12 +359,12 @@ class Chapter2HipSourceContractTest(unittest.TestCase):
         )
         self.assert_preallocated_timed_loop(branch_text)
 
-    def test_global_memory_source_contract(self):
-        memory_text = self.read_source("global_memory_access.hip")
-        gather_copy = self.extract_braced(memory_text, "__global__ void gather_copy(")
-        parse_args = self.extract_braced(memory_text, "Args parse_args(")
+    def assert_global_memory_source_contract(self, memory_text: str):
+        code = self.clean_cpp(memory_text)
+        gather_copy = self.extract_braced(code, "__global__ void gather_copy(")
+        parse_args = self.extract_braced(code, "Args parse_args(")
         bandwidth = self.extract_braced(
-            memory_text, "double logical_bandwidth_gbs("
+            code, "double logical_bandwidth_gbs("
         )
 
         self.assertIn("stride-1", memory_text)
@@ -294,6 +388,103 @@ class Chapter2HipSourceContractTest(unittest.TestCase):
             memory_text, ("stride_1", "stride_17", "stride_257")
         )
         self.assert_preallocated_timed_loop(memory_text)
+
+    def test_branch_divergence_source_contract(self):
+        self.assert_branch_source_contract(
+            self.read_source("branch_divergence.hip")
+        )
+
+    def test_global_memory_source_contract(self):
+        self.assert_global_memory_source_contract(
+            self.read_source("global_memory_access.hip")
+        )
+
+    def test_branch_contract_rejects_commented_decoy_and_corrupt_kernel(self):
+        source = self.read_source("branch_divergence.hip")
+        kernel_body = self.extract_braced(
+            source, "__global__ void branch_kernel("
+        )
+        self.assertIn(kernel_body, source)
+        corrupt = source.replace(
+            kernel_body,
+            """
+    const std::size_t tid =
+        static_cast<std::size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+    if (tid < n) {
+        output[tid] = 0.0f;
+    }
+""",
+            1,
+        )
+        decoy = (
+            "/* Complete but inactive source-contract decoy:\n"
+            + source
+            + "\n*/\n"
+            + 'const char* raw_decoy = R"tag({ } // fake predicate)tag";\n'
+        )
+
+        with self.assertRaises(AssertionError):
+            self.assert_branch_source_contract(decoy + corrupt)
+
+    def test_memory_contract_rejects_commented_decoys_and_corrupt_code(self):
+        source = self.read_source("global_memory_access.hip")
+        gather = "        output[tid] = input[source];"
+        bandwidth = (
+            "return 2.0 * static_cast<double>(n) * sizeof(float) /\n"
+            "           elapsed_seconds / 1.0e9;"
+        )
+        self.assertIn(gather, source)
+        self.assertIn(bandwidth, source)
+        decoy = (
+            "/* Complete but inactive source-contract decoy:\n"
+            + source
+            + "\n*/\n"
+            + 'const char* string_decoy = "{ fake gather and bandwidth }";\n'
+        )
+        corruptions = {
+            "gather writes zero": source.replace(
+                gather, "        output[tid] = 0.0f;", 1
+            ),
+            "bandwidth returns zero": source.replace(
+                bandwidth, "return 0.0;", 1
+            ),
+        }
+        for name, corrupt in corruptions.items():
+            with self.subTest(name=name):
+                with self.assertRaises(AssertionError):
+                    self.assert_global_memory_source_contract(decoy + corrupt)
+
+    def test_extract_braced_ignores_comments_and_literal_braces(self):
+        decoys = {
+            "line comment": "// void target() { line_decoy(); }\n",
+            "block comment": "/* void target() { block_decoy(); } */\n",
+            "string": 'const char* s = "void target() { string_decoy(); }";\n',
+            "raw string": (
+                'const char* s = R"tag(void target() { raw_decoy(); })tag";\n'
+            ),
+        }
+        for name, prefix in decoys.items():
+            with self.subTest(name=name):
+                body = self.extract_braced(
+                    prefix + "void target() { real_body(); }\n",
+                    "void target()",
+                )
+                self.assertIn("real_body();", body)
+
+        embedded_literals = """
+void target() {
+    const char* quoted = "}";
+    const char close = '}';
+    // }
+    /* } */
+    const char* raw = R"tag(})tag";
+    real_body();
+}
+"""
+        self.assertIn(
+            "real_body();",
+            self.extract_braced(embedded_literals, "void target()"),
+        )
 
 
 class Chapter2PublicationTest(unittest.TestCase):
