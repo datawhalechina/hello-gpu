@@ -218,7 +218,7 @@ flowchart TB
 
 **Kernel 决策卡**
 
-- **事实：** 寄存器、LDS、缓存和 GDDR6 处于同一数据旅程的不同层；规格容量不说明任意 kernel 的命中率或实际带宽。
+- **事实：** register residency、显式 LDS/DS path 与 global cache/GDDR6 path 必须并列辨认；只有 global memory path 使用本节的缓存层级，规格容量不说明任意 kernel 的命中率或实际带宽。
 - **失败模式：** 把逻辑读写字节叫作物理 GDDR6 流量，或把 64 MiB Infinity Cache 归为 L2。
 - **编码检查：** 为每个数组写清复用范围、访问顺序和 `__shared__` 所有权，再决定是否需要显式 tile。
 - **验证方法：** 把算法字节、event 时间和可用硬件计数器分开记录；没有计数器时只报告逻辑指标并声明边界。
