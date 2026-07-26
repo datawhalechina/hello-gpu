@@ -49,7 +49,7 @@ std::size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
 if (tid < n) output[tid] = input[tid];
 ```
 
-把一个 work-item 映射到一个全局下标。[`global_memory_access.hip`](../../../code/part0-intro/chapter2/global_memory_access.hip) 中真实版本只把读取下标改为受控的 stride。这里 `block` 是软件划分的 workgroup：它告诉运行时每组 work-item 的形状；它**没有**承诺“一组 block 对应一个 CU”，也没有承诺这些组会以 grid 顺序完成。
+把一个 work-item 映射到一个全局下标。[`global_memory_access.hip`](https://github.com/datawhalechina/hello-gpu/blob/2107e8a171b9599063468854caccc04de4ea147e/code/part0-intro/chapter2/global_memory_access.hip) 中真实版本只把读取下标改为受控的 stride。这里 `block` 是软件划分的 workgroup：它告诉运行时每组 work-item 的形状；它**没有**承诺“一组 block 对应一个 CU”，也没有承诺这些组会以 grid 顺序完成。
 
 在这个站点应先问两个问题：一组 work-item 是否覆盖了正确的输出区域？最后一个 workgroup 越界的 lane 是否安全退出？这比“把 block 设成一个流行数字”更基础。对于需要 workgroup 内协作的 kernel，`__syncthreads()` 的参与条件也必须一致；否则问题首先是正确性，而不是吞吐率。
 
@@ -66,8 +66,9 @@ if (tid < n) output[tid] = input[tid];
 
 运行时还会把一个 workgroup 拆成一个或多个 wavefront。ROCm 的 `gfx1201` 规格列出 wave32 和 wave64；本机的 HIP 属性在四个实验中报告 `wave_size=32`，因此 `blockDim.x=256` 的示例可被读成 **8 个 wave32**，而不是“256 个独立同时执行的线程”。[ROCm GFX1201 wavefront specifications](https://rocm.docs.amd.com/en/latest/reference/gpu-specs.html)
 
-这一区分也解释了 branch 实验里两种谓词的写法：`wave-uniform` 用 `(tid / warpSize)` 让整组 lane 取同一路，`wave-divergent` 用 `(tid & 1)` 交替 lane。源码特意读取 runtime 的 `warpSize`，而不是把 32 硬编码为语言规则。[`branch_divergence.hip`](../../../code/part0-intro/chapter2/branch_divergence.hip)
+这一区分也解释了 branch 实验里两种谓词的写法：`wave-uniform` 用 `(tid / warpSize)` 让整组 lane 取同一路，`wave-divergent` 用 `(tid & 1)` 交替 lane。源码特意读取 runtime 的 `warpSize`，而不是把 32 硬编码为语言规则。[`branch_divergence.hip`](https://github.com/datawhalechina/hello-gpu/blob/2107e8a171b9599063468854caccc04de4ea147e/code/part0-intro/chapter2/branch_divergence.hip)
 
+::: figure fig-ch2-wavefront-split
 ```mermaid
 flowchart TB
     WG[一个 256-thread workgroup] --> W0[wave 0: lanes 0-31]
@@ -77,6 +78,9 @@ flowchart TB
     NOTE[仅当此 dispatch 以 wave32 执行时成立]
     W0 --- NOTE
 ```
+
+一个 256-thread workgroup 在实际 wave size 为 32 时的 8×wave32 分组示意；它不将此实例泛化到 wave64 或其他 block shape。
+:::
 
 wavefront 是执行时需要关心的粒度：同一个 wave 中的 lane 共享一段向量指令流，某些 lane 可以因边界或分支而失活；这并不改变它们仍属于同一波前。不要把 `warpSize=32` 当成“所有 AMD 目标都固定为 32”，也不要把某个 workgroup 的 thread 数自动等同于一条 wave 的宽度。
 
@@ -141,7 +145,7 @@ sequenceDiagram
 受控发散时间线：它显示 mask 的概念顺序，不主张每段恰好耗费一个周期。
 :::
 
-本仓库的最小实验固定 `N=16,777,216`、FP32、4 条依赖 FMA 的两条路径和其他计时设置，只改变谓词：按 `warpSize` 分组的 `wave-uniform`，与按 `tid` 奇偶交替的 `wave-divergent`。三进程中位数及范围分别为 **0.237341 [0.237041, 0.239320] ms** 和 **0.245241 [0.243860, 0.246920] ms**；后者慢 **3.33%**。完整协议、环境与 disassembly 审计在 [`EXPERIMENT.md`](../../../code/part0-intro/chapter2/EXPERIMENT.md)。
+本仓库的最小实验固定 `N=16,777,216`、FP32、4 条依赖 FMA 的两条路径和其他计时设置，只改变谓词：按 `warpSize` 分组的 `wave-uniform`，与按 `tid` 奇偶交替的 `wave-divergent`。三进程中位数及范围分别为 **0.237341 [0.237041, 0.239320] ms** 和 **0.245241 [0.243860, 0.246920] ms**；后者慢 **3.33%**。完整协议、环境与 disassembly 审计在 [`EXPERIMENT.md`](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part0-intro/chapter2/EXPERIMENT.md)。
 
 这个数值只说明该 RX 9070 XT 上、该受控谓词与指令组合存在可测差异；它**不是**“发散总会慢 3.33%”的通用惩罚。编译器可以改变分支形态，路径长度、访存、寄存器压力、wave size 和 data distribution 都会改变结果。对于短小条件，先检查生成代码与端到端 benchmark，再决定重排数据、拆 kernel 或保留分支。
 
@@ -173,7 +177,7 @@ flowchart LR
 驻留资源图：VGPR、SGPR、LDS 都可能成为上限；图不是从总容量直接计算 occupancy 的公式。
 :::
 
-三者的职责不同。VGPR 保存每个 lane 的向量临时值，SGPR 保存可由 wave 共享的标量状态，LDS 是 workgroup 显式协作与数据复用的片上区域。LDS 实验中的 `volatile __shared__ float shared[...]`、`__syncthreads()` 和 `wave = threadIdx.x / kWaveSize` 展示了后一种用法；它会在后半章用 stride-1/32/33 的受控对照讨论 bank 行为。[`lds_bank_conflict.hip`](../../../code/part0-intro/chapter2/lds_bank_conflict.hip)
+三者的职责不同。VGPR 保存每个 lane 的向量临时值，SGPR 保存可由 wave 共享的标量状态，LDS 是 workgroup 显式协作与数据复用的片上区域。LDS 实验中的 `volatile __shared__ float shared[...]`、`__syncthreads()` 和 `wave = threadIdx.x / kWaveSize` 展示了后一种用法；它会在后半章用 stride-1/32/33 的受控对照讨论 bank 行为。[`lds_bank_conflict.hip`](https://github.com/datawhalechina/hello-gpu/blob/2107e8a171b9599063468854caccc04de4ea147e/code/part0-intro/chapter2/lds_bank_conflict.hip)
 
 不能从“LDS 有 128 KiB”直接得出某 kernel 的 occupancy，也不能把 occupancy 当作越高越好。寄存器数、LDS 分配粒度、workgroup shape、硬件限制、实际可并发的 workgroup 与瓶颈性质共同决定有效并发；过度压低寄存器还可能引入 spill 或更多指令。正确的顺序是：先保证算法/访存语义，再读取 compiler resource usage，用 profile 判断是否真在等延迟。
 
@@ -188,19 +192,24 @@ flowchart LR
 
 ## 2.6 第六站：从片上资源到 GDDR6 的数据旅程
 
-一次 load/store 的数据不一定会走到最远的显存：它可能命中寄存器、LDS 或缓存；也可能继续向板载 GDDR6 请求。对 `gfx1201`，ROCm 规格列出 32 KiB L0 vector cache、8 MiB L2 和 64 MiB Infinity Cache；RX 9070 XT 产品规格列出 16 GB GDDR6、256-bit 接口与**最高 640 GB/s**的理论板卡带宽。[ROCm GFX1201 cache specifications](https://rocm.docs.amd.com/en/latest/reference/gpu-specs.html) [AMD RX 9070 XT 产品规格](https://www.amd.com/en/products/graphics/desktops/radeon/9000-series/amd-radeon-rx-9070xt.html) [AMD Radeon 9000 Quick Reference Guide](https://www.amd.com/content/dam/amd/en/documents/partner-hub/radeon/radeon-rx-9000-series-quick-reference-guide-non-competitive.pdf)
+先把几类完全不同的操作分开。编译器可能把可复用的临时值保留在 VGPR/SGPR 中；这叫 register-resident value，不是一次 load/store “命中寄存器”。`__shared__`/LDS 则由程序显式分配并用 DS 操作访问，是 workgroup-local 存储，**不是 cache**。只有 global vector/scalar memory operation 才沿各自的缓存/显存概念路径请求数据。对 `gfx1201`，ROCm 规格列出 32 KiB vector L0、16 KiB scalar L0、8 MiB L2 和 64 MiB Infinity Cache；RX 9070 XT 产品规格列出 16 GB GDDR6、256-bit 接口与**最高 640 GB/s**的理论板卡带宽。[ROCm GFX1201 cache specifications](https://rocm.docs.amd.com/en/latest/reference/gpu-specs.html) [AMD RX 9070 XT 产品规格](https://www.amd.com/en/products/graphics/desktops/radeon/9000-series/amd-radeon-rx-9070xt.html) [AMD Radeon 9000 Quick Reference Guide](https://www.amd.com/content/dam/amd/en/documents/partner-hub/radeon/radeon-rx-9000-series-quick-reference-guide-non-competitive.pdf)
 
 ::: figure fig-ch2-memory-hierarchy
 ```mermaid
 flowchart TB
-    R[VGPR / SGPR: wave-local state] --> LDS[LDS: workgroup-visible storage]
-    LDS --> L0[vector L0 cache: 32 KiB]
-    L0 --> L2[L2 cache: 8 MiB]
-    L2 --> IC[Infinity Cache: 64 MiB]
+    R[compiler keeps/reuses value in VGPR or SGPR] --> RU[register-resident value]
+    DS[explicit LDS/local DS operation] --> LDS[LDS: workgroup-local storage, not a cache]
+    V[global vector memory operation] --> VL0[vector L0: 32 KiB]
+    VL0 --> L1V[L1 buffer]
+    L1V --> L2[L2: 8 MiB]
+    L2 --> IC[Infinity Cache / MALL: 64 MiB]
     IC --> G[GDDR6: 16 GB, up to 640 GB/s theoretical board bandwidth]
+    S[global scalar memory operation] --> SL0[scalar L0: 16 KiB]
+    SL0 --> L1S[L1 buffer]
+    L1S --> L2
 ```
 
-`gfx1201` 的容量与逻辑层次图。箭头表示可能的数据路径，而不是固定延迟、带宽、命中率或每次访问必经的精确硬件流水线。
+`gfx1201` 的并列概念路径图：寄存器驻留、LDS/DS、vector-global 和 scalar-global 不能串成一条统一访问链。箭头不保证每次访问必经，也不是完整的物理拓扑、固定延迟、带宽或命中率图。
 :::
 
 图中的容量不是性能排名，也不能把 64 MiB Infinity Cache 误写成 L2。尤其要区分三件事：规格给的是容量和理论板卡带宽；程序的**逻辑字节**来自算法读写计数；物理 GDDR6 流量还取决于缓存、写入行为和硬件事务，需通过适当计数器或受控实验才能归因。后面的 global-memory 实验只报告前者的逻辑有效带宽。
@@ -248,7 +257,7 @@ flowchart LR
 | 17 | 0.771721 [0.770461, 0.772321] | 173.920 [173.785, 174.204] | -69.54% |
 | 257 | 1.887641 [1.884983, 1.923662] | 71.103 [69.772, 71.204] | -87.55% |
 
-结果支持的结论很具体：在这个 gfx1201 gather-copy、shape 和 odd-stride permutation 中，离散的读取下标显著降低了**逻辑有效带宽**。它不证明用了多少物理 memory transaction，也不证明数据必然绕过 L0、L2 或 Infinity Cache；因此不能用 571.042 GB/s 去反推 GDDR6 实际流量，更不能和 640 GB/s 理论板卡带宽作“已达百分之几”的归因。源码和协议见 [`global_memory_access.hip`](../../../code/part0-intro/chapter2/global_memory_access.hip)、[`EXPERIMENT.md`](../../../code/part0-intro/chapter2/EXPERIMENT.md) 与 [`evidence/summary.csv`](../../../code/part0-intro/chapter2/evidence/summary.csv)。
+结果支持的结论很具体：在这个 gfx1201 gather-copy、shape 和 odd-stride permutation 中，离散的读取下标显著降低了**逻辑有效带宽**。它不证明用了多少物理 memory transaction，也不证明数据必然绕过 L0、L2 或 Infinity Cache；因此不能用 571.042 GB/s 去反推 GDDR6 实际流量，更不能和 640 GB/s 理论板卡带宽作“已达百分之几”的归因。源码和协议见 [`global_memory_access.hip`](https://github.com/datawhalechina/hello-gpu/blob/2107e8a171b9599063468854caccc04de4ea147e/code/part0-intro/chapter2/global_memory_access.hip)、[`EXPERIMENT.md`](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part0-intro/chapter2/EXPERIMENT.md) 与 [`evidence/summary.csv`](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part0-intro/chapter2/evidence/summary.csv)。
 
 **迁移范围：** 连续邻近下标通常值得作为第一版假设；具体 stride 曲线、缓存影响和最佳布局必须用目标 dtype、shape、编译器和 GPU 重测。
 
@@ -290,7 +299,7 @@ LDS 地址映射示意：它显示实验的索引模式，而不是声称 gfx120
 | 32 | 42.218658 [41.267262, 52.018600] | 5.23× baseline 时间 |
 | 33 | 8.093651 [6.570887, 8.099028] | 中位数接近基线，但范围更宽 |
 
-`stride-32` 的中位数时间是 `stride-1` 的 5.23×，支持“该 wave32/shared-memory indexing pattern 在此平台上有大幅性能惩罚”。`stride-33` 的中心值接近 `stride-1`（+0.22%），但其三进程范围很 noisy，不能据此宣称 33 是普适 magic number 或小差异有统计意义。报告中的 LDS 逻辑 GB/s 只是 256 次请求读取加一读一写的算法计数，也不是物理 LDS、HBM 或 GDDR6 流量。源码、协议和条目在 [`lds_bank_conflict.hip`](../../../code/part0-intro/chapter2/lds_bank_conflict.hip)、[`EXPERIMENT.md`](../../../code/part0-intro/chapter2/EXPERIMENT.md) 与 [`evidence/summary.csv`](../../../code/part0-intro/chapter2/evidence/summary.csv)。
+`stride-32` 的中位数时间是 `stride-1` 的 5.23×，支持“该 wave32/shared-memory indexing pattern 在此平台上有大幅性能惩罚”。`stride-33` 的中心值接近 `stride-1`（+0.22%），但其三进程范围很 noisy，不能据此宣称 33 是普适 magic number 或小差异有统计意义。报告中的 LDS 逻辑 GB/s 只是 256 次请求读取加一读一写的算法计数，也不是物理 LDS、HBM 或 GDDR6 流量。源码、协议和条目在 [`lds_bank_conflict.hip`](https://github.com/datawhalechina/hello-gpu/blob/2107e8a171b9599063468854caccc04de4ea147e/code/part0-intro/chapter2/lds_bank_conflict.hip)、[`EXPERIMENT.md`](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part0-intro/chapter2/EXPERIMENT.md) 与 [`evidence/summary.csv`](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part0-intro/chapter2/evidence/summary.csv)。
 
 **迁移范围：** “先看同 wave 的共享地址模式，再测量”可迁移；本节的 32/33 结果仅属于当前 wave32、数组布局、循环、编译器与 gfx1201 的受控模式。
 
@@ -326,7 +335,7 @@ c_frag = __builtin_amdgcn_wmma_f32_16x16x16_f16_w32_gfx12(
     a_frag, b_frag, c_frag);
 ```
 
-在 batch=4,096 个独立 16×16×16 任务的三进程对照中，VALU 为 **0.037200 [0.036080, 0.038320] ms / 0.902001 TFLOPS**；WMMA 为 **0.016160 [0.016121, 0.016160] ms / 2.076388 TFLOPS**，即这个教学 kernel 的吞吐为 2.30×。完整程序还会拒绝非 gfx12/wave32 runtime。[`rdna4_wmma.hip`](../../../code/part0-intro/chapter2/rdna4_wmma.hip) [实验协议与证据](../../../code/part0-intro/chapter2/EXPERIMENT.md)
+在 batch=4,096 个独立 16×16×16 任务的三进程对照中，VALU 为 **0.037200 [0.036080, 0.038320] ms / 0.902001 TFLOPS**；WMMA 为 **0.016160 [0.016121, 0.016160] ms / 2.076388 TFLOPS**，即这个教学 kernel 的吞吐为 2.30×。完整程序还会拒绝非 gfx12/wave32 runtime。[`rdna4_wmma.hip`](https://github.com/datawhalechina/hello-gpu/blob/2107e8a171b9599063468854caccc04de4ea147e/code/part0-intro/chapter2/rdna4_wmma.hip) [实验协议与证据](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part0-intro/chapter2/EXPERIMENT.md)
 
 不要把这两个数与产品规格混为一谈。AMD 为 RX 9070 XT 标注的理论规格是 **48.7 TFLOPS FP32 vector** 和 **195 TFLOPS FP16 matrix**；它们是芯片/板卡的理论规格，而不是这段没有大矩阵 tiling、双缓冲、生产 epilogue 或 library 调度的教学 kernel 的实测峰值。[AMD RX 9070 XT theoretical compute specifications](https://www.amd.com/en/products/graphics/desktops/radeon/9000-series/amd-radeon-rx-9070xt.html) 此比较不是 rocBLAS benchmark，也不能证明 WMMA 总是更快。
 
@@ -341,7 +350,7 @@ c_frag = __builtin_amdgcn_wmma_f32_16x16x16_f16_w32_gfx12(
 
 ## 2.10 四个最小 HIP 实验
 
-前面各站已经解释了“为什么测”；这里把四项实验收回成可复跑的最小对照。所有数值来自同一 source commit `2107e8a171b9599063468854caccc04de4ea147e`、三独立进程、`warmup=10`、`repeat=50`，每个正式条目均记录 `correct=OK`、`precheck=OK`、`postcheck=OK`。协议、完整命令和数据源见 [`EXPERIMENT.md`](../../../code/part0-intro/chapter2/EXPERIMENT.md) 与 [`evidence/summary.csv`](../../../code/part0-intro/chapter2/evidence/summary.csv)。
+前面各站已经解释了“为什么测”；这里把四项实验收回成可复跑的最小对照。所有数值来自同一 source commit `2107e8a171b9599063468854caccc04de4ea147e`、三独立进程、`warmup=10`、`repeat=50`，每个正式条目均记录 `correct=OK`、`precheck=OK`、`postcheck=OK`。协议、完整命令和数据源见 [`EXPERIMENT.md`](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part0-intro/chapter2/EXPERIMENT.md) 与 [`evidence/summary.csv`](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part0-intro/chapter2/evidence/summary.csv)。
 
 ::: figure fig-ch2-labs
 ![四项 Chapter 2 HIP 对照的中位数结果；误差线表示三独立进程中位数范围，指标含逻辑带宽或教学 TFLOPS](./images/chapter2-labs.png)
@@ -359,7 +368,7 @@ bool take_a = mode == WaveUniform ? ((tid / warpSize & 1u) == 0u)
 - **唯一变量：** `take_a` 是按 wave 一致，还是在 lane 间交替；两条路径均为四条依赖 FP32 FMA。
 - **三进程范围：** uniform 0.237341 [0.237041, 0.239320] ms；divergent 0.245241 [0.243860, 0.246920] ms（+3.33%）。
 - **能证明：** 该 gfx1201、谓词和指令组合存在可测差异；**不能证明：** branch 的通用固定惩罚。
-- **复跑证据：** [`branch_divergence.hip`](../../../code/part0-intro/chapter2/branch_divergence.hip)、[`EXPERIMENT.md`](../../../code/part0-intro/chapter2/EXPERIMENT.md)、[`summary.csv`](../../../code/part0-intro/chapter2/evidence/summary.csv)。
+- **复跑证据：** [`branch_divergence.hip`](https://github.com/datawhalechina/hello-gpu/blob/2107e8a171b9599063468854caccc04de4ea147e/code/part0-intro/chapter2/branch_divergence.hip)、[`EXPERIMENT.md`](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part0-intro/chapter2/EXPERIMENT.md)、[`summary.csv`](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part0-intro/chapter2/evidence/summary.csv)。
 
 ### 全局内存：只改读取 stride
 
@@ -371,7 +380,7 @@ output[tid] = input[source];
 - **唯一变量：** `Stride=1/17/257`；每项仍为一个逻辑 FP32 load 加一个逻辑 store。
 - **三进程范围：** 571.042 [564.792, 578.673]、173.920 [173.785, 174.204]、71.103 [69.772, 71.204] logical GB/s（对应 0.235040、0.771721、1.887641 ms）。
 - **能证明：** 当前地址模式显著改变逻辑有效带宽；**不能证明：** 物理 transaction 数、GDDR6 流量或缓存层级归因。
-- **复跑证据：** [`global_memory_access.hip`](../../../code/part0-intro/chapter2/global_memory_access.hip)、[`EXPERIMENT.md`](../../../code/part0-intro/chapter2/EXPERIMENT.md)、[`summary.csv`](../../../code/part0-intro/chapter2/evidence/summary.csv)。
+- **复跑证据：** [`global_memory_access.hip`](https://github.com/datawhalechina/hello-gpu/blob/2107e8a171b9599063468854caccc04de4ea147e/code/part0-intro/chapter2/global_memory_access.hip)、[`EXPERIMENT.md`](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part0-intro/chapter2/EXPERIMENT.md)、[`summary.csv`](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part0-intro/chapter2/evidence/summary.csv)。
 
 ### LDS：只改共享数组索引 stride
 
@@ -383,7 +392,7 @@ accumulator += shared_pointer[index];
 - **唯一变量：** LDS 读的 `Stride=1/32/33`；256-thread block、256 次读取/item 与其他工作固定。
 - **三进程范围：** 1 为 8.075865 [8.065751, 8.096146] ms；32 为 42.218658 [41.267262, 52.018600] ms；33 为 8.093651 [6.570887, 8.099028] ms。
 - **能证明：** stride-32 在当前 wave32/shared-memory pattern 有大惩罚；**不能证明：** gfx1201 的固定 bank 公式，且 stride-33 的 noisy range 不支持微小差异结论。
-- **复跑证据：** [`lds_bank_conflict.hip`](../../../code/part0-intro/chapter2/lds_bank_conflict.hip)、[`EXPERIMENT.md`](../../../code/part0-intro/chapter2/EXPERIMENT.md)、[`summary.csv`](../../../code/part0-intro/chapter2/evidence/summary.csv)。
+- **复跑证据：** [`lds_bank_conflict.hip`](https://github.com/datawhalechina/hello-gpu/blob/2107e8a171b9599063468854caccc04de4ea147e/code/part0-intro/chapter2/lds_bank_conflict.hip)、[`EXPERIMENT.md`](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part0-intro/chapter2/EXPERIMENT.md)、[`summary.csv`](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part0-intro/chapter2/evidence/summary.csv)。
 
 ### 矩阵：只改 VALU 或 gfx12 WMMA 路径
 
@@ -395,7 +404,7 @@ c_frag = __builtin_amdgcn_wmma_f32_16x16x16_f16_w32_gfx12(
 - **唯一变量：** 相同 4,096 个独立 16×16×16 FP16→FP32 矩阵积选择普通 VALU 或 WMMA。
 - **三进程范围：** VALU 0.037200 [0.036080, 0.038320] ms / 0.902001 TFLOPS；WMMA 0.016160 [0.016121, 0.016160] ms / 2.076388 TFLOPS。
 - **能证明：** 在此教学任务上 WMMA 为 2.30×；**不能证明：** rocBLAS、生产 GEMM 或理论矩阵峰值。
-- **复跑证据：** [`rdna4_wmma.hip`](../../../code/part0-intro/chapter2/rdna4_wmma.hip)、[`EXPERIMENT.md`](../../../code/part0-intro/chapter2/EXPERIMENT.md)、[`summary.csv`](../../../code/part0-intro/chapter2/evidence/summary.csv)。
+- **复跑证据：** [`rdna4_wmma.hip`](https://github.com/datawhalechina/hello-gpu/blob/2107e8a171b9599063468854caccc04de4ea147e/code/part0-intro/chapter2/rdna4_wmma.hip)、[`EXPERIMENT.md`](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part0-intro/chapter2/EXPERIMENT.md)、[`summary.csv`](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part0-intro/chapter2/evidence/summary.csv)。
 
 ## 2.11 写 Kernel 前的硬件决策清单
 
