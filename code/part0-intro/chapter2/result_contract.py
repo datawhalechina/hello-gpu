@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import math
 import os
+import re
 import shlex
 import shutil
 import tempfile
@@ -34,6 +36,11 @@ BENCHMARK_IDENTITY_FIELDS = (
     "runtime", "shape", "dtype", "warmup", "repeat", "seed", "timed",
 )
 TIMING_FIELDS = ("min_ms", "median_ms", "mean_ms")
+EXPECTED_PAIRS = frozenset(
+    (experiment, implementation)
+    for experiment, implementations in EXPECTED_IMPLEMENTATIONS.items()
+    for implementation in implementations
+)
 
 
 def parse_result_line(line: str, source: str) -> dict[str, str] | None:
@@ -116,6 +123,8 @@ def validate_runs(paths: Sequence[Path]) -> list[dict[str, str]]:
             raise ValueError(
                 f"{path}: each process must have the same experiment/implementation pairs"
             )
+    if expected_pairs != EXPECTED_PAIRS:
+        raise ValueError("run logs must contain the complete expected experiment/implementation set")
 
     first_by_pair = {
         (row["experiment"], row["implementation"]): row for row in logs[0]
@@ -157,6 +166,61 @@ def _aggregate(rows: list[dict[str, str]]) -> list[dict[str, str]]:
     return summaries
 
 
+def _contains_label(value: str, label: str) -> bool:
+    return re.search(rf"(?:^|[_-]){re.escape(label)}(?:$|[_-])", value) is not None
+
+
+def _profile_pair(trace_path: Path, profile_dir: Path) -> tuple[str, str]:
+    prefix = trace_path.name.removesuffix("_kernel_trace.csv")
+    implementations = {
+        implementation
+        for _, implementation in EXPECTED_PAIRS
+        if _contains_label(prefix, implementation)
+    }
+    if len(implementations) != 1:
+        raise ValueError(f"{trace_path}: cannot derive a unique profile implementation")
+    implementation = implementations.pop()
+
+    relative = trace_path.relative_to(profile_dir)
+    location = "_".join(relative.parts[:-1])
+    experiments = {
+        experiment
+        for experiment, candidate in EXPECTED_PAIRS
+        if candidate == implementation
+        and (_contains_label(prefix, experiment) or _contains_label(location, experiment))
+    }
+    if len(experiments) != 1:
+        raise ValueError(
+            f"{trace_path}: cannot uniquely map profile experiment/implementation"
+        )
+    return experiments.pop(), implementation
+
+
+def _kernel_names(trace_path: Path) -> list[str]:
+    with trace_path.open(newline="") as handle:
+        reader = csv.DictReader(handle)
+        if not reader.fieldnames or any(header is None for header in reader.fieldnames):
+            raise ValueError(f"{trace_path}: malformed table")
+        normalized = {
+            re.sub(r"[^a-z0-9]", "", header.casefold()): header
+            for header in reader.fieldnames
+        }
+        if len(normalized) != len(reader.fieldnames) or "kernelname" not in normalized:
+            raise ValueError(f"{trace_path}: malformed table")
+        kernel_column = normalized["kernelname"]
+        names = []
+        for record in reader:
+            if None in record or record.get(kernel_column) is None:
+                raise ValueError(f"{trace_path}: malformed table")
+            kernel_name = record[kernel_column].strip()
+            if not kernel_name:
+                raise ValueError(f"{trace_path}: empty kernel")
+            names.append(kernel_name)
+    if not names:
+        raise ValueError(f"{trace_path}: no dispatch")
+    return names
+
+
 def _profile_summary(profile_dir: Path | None, source_commit: str) -> list[dict[str, str]]:
     if profile_dir is None:
         return []
@@ -172,34 +236,18 @@ def _profile_summary(profile_dir: Path | None, source_commit: str) -> list[dict[
     if config.get("source_commit") != source_commit:
         raise ValueError("profile_config.env.source_commit must match source_commit")
 
-    known_pairs = [
-        (experiment, implementation)
-        for experiment, implementations in EXPECTED_IMPLEMENTATIONS.items()
-        for implementation in implementations
-    ]
     profile_rows: dict[tuple[str, str], dict[str, object]] = {}
-    for trace_path in sorted(profile_dir.glob("*_kernel_trace.csv")):
-        prefix = trace_path.name.removesuffix("_kernel_trace.csv")
-        matches = [
-            pair for pair in known_pairs
-            if prefix == pair[1]
-            or prefix.endswith("_" + pair[1])
-            or prefix.endswith("-" + pair[1])
-        ]
-        if len(matches) != 1:
-            raise ValueError(f"{trace_path}: cannot derive profile implementation")
-        pair = matches[0]
-        with trace_path.open(newline="") as handle:
-            records = list(csv.DictReader(handle))
-        if records and "kernel_name" not in records[0]:
-            raise ValueError(f"{trace_path}: missing kernel_name column")
+    for trace_path in sorted(profile_dir.rglob("*_kernel_trace.csv")):
+        pair = _profile_pair(trace_path, profile_dir)
+        names = _kernel_names(trace_path)
         entry = profile_rows.setdefault(
             pair, {"dispatch_count": 0, "kernel_names": set()},
         )
-        entry["dispatch_count"] = int(entry["dispatch_count"]) + len(records)
-        entry["kernel_names"].update(
-            record["kernel_name"] for record in records if record["kernel_name"]
-        )
+        entry["dispatch_count"] = int(entry["dispatch_count"]) + len(names)
+        entry["kernel_names"].update(names)
+
+    if set(profile_rows) != EXPECTED_PAIRS:
+        raise ValueError("profile must contain the complete expected experiment/implementation set")
 
     return [
         {
@@ -217,6 +265,31 @@ def _write_csv(path: Path, rows: list[dict[str, str]], fieldnames: list[str]) ->
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
+
+
+def _replace_evidence(temporary: Path, evidence_dir: Path) -> None:
+    backup = evidence_dir.with_name(f".{evidence_dir.name}.previous")
+    if backup.exists():
+        shutil.rmtree(backup)
+    if not evidence_dir.exists():
+        os.replace(temporary, evidence_dir)
+        return
+
+    os.replace(evidence_dir, backup)
+    try:
+        os.replace(temporary, evidence_dir)
+    except OSError as replace_error:
+        try:
+            os.replace(backup, evidence_dir)
+        except OSError as restore_error:
+            raise OSError(
+                f"evidence replacement failed; prior evidence remains at {backup}"
+            ) from restore_error
+        raise replace_error
+    try:
+        shutil.rmtree(backup)
+    except OSError:
+        pass
 
 
 def publish(
@@ -251,20 +324,26 @@ def publish(
         (temporary / "summary.json").write_text(json.dumps(summaries, indent=2) + "\n")
         _write_csv(temporary / "profile_summary.csv", profiles, profile_fields)
 
-        backup = evidence_dir.with_name(f".{evidence_dir.name}.previous")
-        if backup.exists():
-            shutil.rmtree(backup)
-        if evidence_dir.exists():
-            os.replace(evidence_dir, backup)
-        try:
-            os.replace(temporary, evidence_dir)
-        except OSError:
-            if backup.exists():
-                os.replace(backup, evidence_dir)
-            raise
-        if backup.exists():
-            shutil.rmtree(backup)
+        _replace_evidence(temporary, evidence_dir)
     except BaseException:
         if temporary.exists():
             shutil.rmtree(temporary)
         raise
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Publish Chapter 2 benchmark evidence.")
+    parser.add_argument("--run-log", action="append", required=True, type=Path)
+    parser.add_argument("--profile-dir", type=Path)
+    parser.add_argument("--source-commit", required=True)
+    parser.add_argument("--evidence-dir", required=True, type=Path)
+    args = parser.parse_args(argv)
+    try:
+        publish(args.run_log, args.profile_dir, args.evidence_dir, args.source_commit)
+    except ValueError as error:
+        parser.error(str(error))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

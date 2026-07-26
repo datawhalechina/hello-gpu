@@ -3,8 +3,12 @@ from __future__ import annotations
 import csv
 import importlib.util
 import json
+import os
+import subprocess
+import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 
@@ -188,6 +192,19 @@ class Chapter2PublicationTest(unittest.TestCase):
                 )
         path.write_text("\n".join(lines) + "\n")
 
+    def write_profile(self, *, commit: str = "a" * 40) -> tuple[Path, dict[tuple[str, str], Path]]:
+        profile = self.root / "profile"
+        profile.mkdir(exist_ok=True)
+        (profile / "profile_config.env").write_text(f"source_commit={commit}\n")
+        traces = {}
+        for experiment, implementations in EXPECTED_IMPLEMENTATIONS.items():
+            for implementation in implementations:
+                trace = profile / experiment / implementation / f"{implementation}_kernel_trace.csv"
+                trace.parent.mkdir(parents=True, exist_ok=True)
+                trace.write_text("Kernel_Name,DurationNs\n" f"{implementation}_kernel,100\n")
+                traces[(experiment, implementation)] = trace
+        return profile, traces
+
     def test_publication_requires_three_distinct_logs(self):
         with self.assertRaisesRegex(ValueError, "exactly 3 distinct"):
             self.module.validate_runs([self.log1, self.log1, self.log2])
@@ -200,6 +217,12 @@ class Chapter2PublicationTest(unittest.TestCase):
     def test_each_process_has_same_pairs(self):
         self.write_log(self.log3, omit=("matrix-path", "wmma"))
         with self.assertRaisesRegex(ValueError, "same experiment/implementation"):
+            self.module.validate_runs([self.log1, self.log2, self.log3])
+
+    def test_publication_requires_complete_expected_pairs(self):
+        for path in (self.log1, self.log2, self.log3):
+            self.write_log(path, omit=("matrix-path", "wmma"))
+        with self.assertRaisesRegex(ValueError, "complete expected experiment/implementation"):
             self.module.validate_runs([self.log1, self.log2, self.log3])
 
     def test_failed_publication_preserves_existing_evidence(self):
@@ -215,11 +238,9 @@ class Chapter2PublicationTest(unittest.TestCase):
         self.assertEqual(sentinel.read_text(), "keep")
 
     def test_publication_writes_atomic_aggregate_and_profile_summary(self):
-        profile = self.root / "profile"
-        profile.mkdir()
-        (profile / "profile_config.env").write_text("source_commit=" + "a" * 40 + "\n")
-        (profile / "matrix-path__wmma_kernel_trace.csv").write_text(
-            "kernel_name,duration_ns\nwmma_kernel,100\nwmma_kernel,110\n"
+        profile, traces = self.write_profile()
+        traces[("matrix-path", "wmma")].write_text(
+            "Kernel_Name,DurationNs\nwmma_kernel,100\nwmma_kernel,110\n"
         )
 
         self.module.publish(
@@ -241,12 +262,90 @@ class Chapter2PublicationTest(unittest.TestCase):
             self.assertEqual(len(json.load(handle)), 10)
         with (self.evidence / "profile_summary.csv").open(newline="") as handle:
             profile_rows = list(csv.DictReader(handle))
-        self.assertEqual(profile_rows, [{
+        self.assertEqual(len(profile_rows), 10)
+        self.assertIn({
             "experiment": "matrix-path",
             "implementation": "wmma",
             "dispatch_count": "2",
             "unique_kernel_names": "wmma_kernel",
-        }])
+        }, profile_rows)
+
+    def test_cli_publishes_with_repeatable_run_logs(self):
+        profile, _ = self.write_profile()
+        command = [sys.executable, str(CHAPTER_DIR / "result_contract.py")]
+        for path in (self.log1, self.log2, self.log3):
+            command.extend(("--run-log", str(path)))
+        command.extend((
+            "--profile-dir", str(profile),
+            "--source-commit", "a" * 40,
+            "--evidence-dir", str(self.evidence),
+        ))
+
+        result = subprocess.run(command, text=True, capture_output=True, check=False)
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((self.evidence / "manifest.json").is_file())
+
+    def test_profile_rejects_missing_expected_pair(self):
+        profile, traces = self.write_profile()
+        traces[("matrix-path", "wmma")].unlink()
+        with self.assertRaisesRegex(ValueError, "complete expected experiment/implementation"):
+            self.module.publish(
+                [self.log1, self.log2, self.log3], profile, self.evidence, "a" * 40
+            )
+
+    def test_profile_rejects_no_dispatch_empty_kernel_and_malformed_table(self):
+        cases = {
+            "no dispatch": "Kernel_Name,DurationNs\n",
+            "empty kernel": "Kernel_Name,DurationNs\n,100\n",
+            "malformed table": "Kernel,DurationNs\nwmma_kernel,100\n",
+        }
+        for expected_error, contents in cases.items():
+            with self.subTest(expected_error=expected_error):
+                profile, traces = self.write_profile()
+                traces[("matrix-path", "wmma")].write_text(contents)
+                with self.assertRaisesRegex(ValueError, expected_error):
+                    self.module.publish(
+                        [self.log1, self.log2, self.log3], profile, self.evidence, "a" * 40
+                    )
+
+    def test_failed_second_rename_restores_existing_evidence(self):
+        sentinel = self.evidence / "sentinel.txt"
+        sentinel.write_text("keep")
+        real_replace = os.replace
+
+        def fail_second_replace(source, destination):
+            if Path(destination) == self.evidence and ".evidence.tmp-" in Path(source).name:
+                raise OSError("simulated second rename failure")
+            return real_replace(source, destination)
+
+        with mock.patch.object(self.module.os, "replace", side_effect=fail_second_replace):
+            with self.assertRaisesRegex(OSError, "second rename"):
+                self.module.publish(
+                    [self.log1, self.log2, self.log3], None, self.evidence, "a" * 40
+                )
+
+        self.assertEqual(sentinel.read_text(), "keep")
+        self.assertFalse((self.root / ".evidence.previous").exists())
+        self.assertFalse(list(self.root.glob(".evidence.tmp-*")))
+
+    def test_backup_cleanup_failure_keeps_published_evidence(self):
+        sentinel = self.evidence / "sentinel.txt"
+        sentinel.write_text("keep")
+        real_rmtree = self.module.shutil.rmtree
+
+        def fail_backup_cleanup(path, *args, **kwargs):
+            if Path(path).name == ".evidence.previous":
+                raise OSError("simulated backup cleanup failure")
+            return real_rmtree(path, *args, **kwargs)
+
+        with mock.patch.object(self.module.shutil, "rmtree", side_effect=fail_backup_cleanup):
+            self.module.publish(
+                [self.log1, self.log2, self.log3], None, self.evidence, "a" * 40
+            )
+
+        self.assertTrue((self.evidence / "manifest.json").is_file())
+        self.assertEqual((self.root / ".evidence.previous" / "sentinel.txt").read_text(), "keep")
 
 
 if __name__ == "__main__":
