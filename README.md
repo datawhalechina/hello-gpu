@@ -36,7 +36,7 @@ https://datawhalechina.github.io/hello-gpu/
 | **第 0 篇：入门与硬件速通** | | |
 | [第 0 章 写给读者的话](https://github.com/datawhalechina/hello-gpu/blob/main/docs/part0-intro/chapter0/index.md) | 教程定位、为什么选 9070XT、和市面教程差异、学习路线 | 🚧 |
 | [第 1 章 环境准备](https://github.com/datawhalechina/hello-gpu/blob/main/docs/part0-intro/chapter1/index.md) | 9070XT + 原生 Ubuntu + ROCm 7.13 验证、Windows/WSL2 边界、uv 环境、最小 smoke test | 🚧 |
-| [第 2 章 GPU 体系结构速通](https://github.com/datawhalechina/hello-gpu/blob/main/docs/part0-intro/chapter2/index.md) | CU/Wavefront/LDS/寄存器/显存层次，RDNA4 视角，不讲 MFMA/CDNA/HBM | 🚧 |
+| [第 2 章 GPU 体系结构：Kernel 执行旅程](https://github.com/datawhalechina/hello-gpu/blob/main/docs/part0-intro/chapter2/index.md) | 跟随一次 HIP Kernel 从 launch 到 wavefront、WGP/CU/SIMD、EXEC、片上资源、GDDR6 与 gfx12 WMMA | ✅ |
 | [第 3 章 第一个程序 + Roofline 心智模型](https://github.com/datawhalechina/hello-gpu/blob/main/docs/part0-intro/chapter3/index.md) | vector add 跑通、建立性能上限直觉、benchmark 习惯 | 🚧 |
 | **第 1 篇：Profiling 实战** | | |
 | [第 4 章 benchmark 与可信计时](https://github.com/datawhalechina/hello-gpu/blob/main/docs/part1-profiling/chapter4/index.md) | 热身、重复、GPU event、避免测量陷阱 | 🚧 |

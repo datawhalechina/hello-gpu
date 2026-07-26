@@ -38,18 +38,22 @@ export const parts = [
         ]
       },
       {
-        title: 'GPU 体系结构速通',
-        summary: 'CU/Wavefront/LDS/寄存器/显存层次，RDNA4 视角，不讲 MFMA/CDNA/HBM',
-        status: '🚧',
-        lead: '本章建立后续优化会反复用到的 GPU 硬件最小模型，但只讲 9070XT（RDNA4）用得到的部分。读完后，你应该能用自己的话讲清楚一个 kernel 从 launch 到执行经过哪些硬件单元，并知道 LDS、寄存器、wavefront 为什么是优化的核心资源。',
+        title: 'GPU 体系结构：Kernel 执行旅程',
+        summary: '跟随一次 HIP Kernel 从 launch 到 wavefront、WGP/CU/SIMD、EXEC、片上资源、GDDR6 与 gfx12 WMMA',
+        status: '✅',
+        lead: '本章跟随一次 HIP kernel 的执行旅程：从 host launch 到 workgroup、wavefront、WGP/CU/SIMD 和 EXEC，再到 VGPR、SGPR、LDS、缓存、GDDR6 与 gfx12 WMMA。读完后，你应该能把硬件术语放回同一条路径，并用受控实验区分可迁移的优化方法与需要重测的结果。',
         sections: [
-          ['GPU 为什么能并行', '用一张图说明 SIMT 执行模型，理解为什么 GPU 适合大规模数据并行。'],
-          ['Compute Unit（CU）的内部结构', '逐层拆解 CU：SIMD 单元 / VALU / SALU / 标量与向量寄存器堆。'],
-          ['Wavefront 与 SIMT 执行', '理解 32 或 64 线程一组的执行方式，以及分支收敛的代价。'],
-          ['VGPR、SGPR 与 LDS 资源', '解释片上寄存器与共享内存为什么是 kernel 优化的核心资源。'],
-          ['显存层次：寄存器 → LDS → L1/L2 → GDDR6', '说明 9070XT 的 16GB GDDR6（非 HBM）和各级缓存的容量、带宽、延迟分层。'],
-          ['WMMA：RDNA4 的矩阵加速单元', '介绍 RDNA3+ 引入的 WMMA（不是 CDNA 的 MFMA），以及它在 GEMM/Attention 算子里的角色。'],
-          ['Roofline 的硬件来源', '把硬件参数（峰值算力、带宽）翻译成 Roofline 上的两条线，建立「理论上限」直觉。']
+          ['第一站：从 Kernel launch 到 workgroup', '从 grid、block 与全局下标建立工作划分，并区分软件 workgroup 与物理调度位置。'],
+          ['第二站：workgroup 怎样拆成 wavefront', '用 wave32/wave64 和当前实验的 256-thread block 理解 lane 分组、尾部与分支边界。'],
+          ['第三站：wavefront 怎样落到 WGP、CU 和 SIMD', '按 LLVM 的 CU/WGP execution mode 解释 placement，不把 WGP 固定泛化为特定 CU/SIMD 拓扑。'],
+          ['第四站：分支、EXEC mask 与有效 lane', '用 EXEC 的有效 lane 集合理解 divergent control flow，并用受控谓词实验限定其代价结论。'],
+          ['第五站：VGPR、SGPR、LDS 与驻留资源', '将寄存器、LDS、scratch 与 workgroup shape 放入 residency 和延迟隐藏的资源约束。'],
+          ['第六站：从片上资源到 GDDR6 的数据旅程', '区分 `gfx1201` 的缓存/显存规格、逻辑算法字节和需要计数器验证的物理流量。'],
+          ['第七站：全局内存访问怎样浪费带宽', '通过只改变读取 stride 的 HIP 对照，观察 lane 地址排列对逻辑有效带宽的影响。'],
+          ['第八站：LDS bank 冲突怎样发生', '通过只改变共享数组索引 stride 的对照，学习先列 lane 到地址映射、再以测量判断。'],
+          ['第九站：普通 VALU 与 RDNA4 WMMA', '比较教学 16×16×16 VALU/WMMA 路径，掌握仅 gfx12 的 wave32 fragment layout 与证据边界。'],
+          ['四个最小 HIP 实验', '统一回顾分支、全局 stride、LDS stride 与 WMMA 的单变量对照、三进程范围和不能证明什么。'],
+          ['写 Kernel 前的硬件决策清单', '沿执行旅程检查工作划分、控制流、资源、地址、矩阵布局与可复跑证据。']
         ]
       },
       {
