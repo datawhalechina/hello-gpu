@@ -141,8 +141,24 @@ class Chapter2HipSourceContractTest(unittest.TestCase):
             self.fail(f"missing formal Chapter 2 file: {path.relative_to(ROOT)}")
         return path.read_text()
 
+    def splice_cpp_lines(self, text: str) -> str:
+        """Apply C++ translation phase 2 for LF and CRLF source lines."""
+        spliced: list[str] = []
+        index = 0
+        while index < len(text):
+            if text.startswith("\\\r\n", index):
+                index += 3
+                continue
+            if text.startswith("\\\n", index):
+                index += 2
+                continue
+            spliced.append(text[index])
+            index += 1
+        return "".join(spliced)
+
     def clean_cpp(self, text: str) -> str:
-        """Blank comments and literal contents without moving source braces."""
+        """Splice lines, then blank comments and C++ literal contents."""
+        text = self.splice_cpp_lines(text)
         cleaned = list(text)
         length = len(text)
 
@@ -453,6 +469,83 @@ class Chapter2HipSourceContractTest(unittest.TestCase):
             with self.subTest(name=name):
                 with self.assertRaises(AssertionError):
                     self.assert_global_memory_source_contract(decoy + corrupt)
+
+    def test_branch_contract_rejects_spliced_line_comment_decoy(self):
+        source = self.read_source("branch_divergence.hip")
+        kernel_body = self.extract_braced(
+            source, "__global__ void branch_kernel("
+        )
+        corrupt = source.replace(
+            kernel_body,
+            """
+    const std::size_t tid =
+        static_cast<std::size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+    if (tid < n) {
+        output[tid] = 0.0f;
+    }
+""",
+            1,
+        )
+        flattened_decoy = self.clean_cpp(source).replace("\n", " ")
+        spliced_comment = (
+            "// Inactive branch source follows after line splice: \\\n"
+            + flattened_decoy
+            + "\n"
+        )
+
+        with self.assertRaises(AssertionError):
+            self.assert_branch_source_contract(spliced_comment + corrupt)
+
+    def test_memory_contract_rejects_spliced_line_comment_decoys(self):
+        source = self.read_source("global_memory_access.hip")
+        gather = "        output[tid] = input[source];"
+        bandwidth = (
+            "return 2.0 * static_cast<double>(n) * sizeof(float) /\n"
+            "           elapsed_seconds / 1.0e9;"
+        )
+        flattened_decoy = self.clean_cpp(source).replace("\n", " ")
+        spliced_comment = (
+            "// Inactive memory source follows after line splice: \\\n"
+            + flattened_decoy
+            + "\n"
+        )
+        corruptions = {
+            "gather writes zero": source.replace(
+                gather, "        output[tid] = 0.0f;", 1
+            ),
+            "bandwidth returns zero": source.replace(
+                bandwidth, "return 0.0;", 1
+            ),
+        }
+        for name, corrupt in corruptions.items():
+            with self.subTest(name=name):
+                with self.assertRaises(AssertionError):
+                    self.assert_global_memory_source_contract(
+                        spliced_comment + corrupt
+                    )
+
+    def test_extract_braced_honors_spliced_comment_delimiters(self):
+        decoys = {
+            "line comment LF": (
+                "/\\\n/ void target() { line_lf_decoy(); }\n"
+            ),
+            "line comment CRLF": (
+                "/\\\r\n/ void target() { line_crlf_decoy(); }\r\n"
+            ),
+            "block comment opener": (
+                "/\\\n* void target() { block_open_decoy(); } */\n"
+            ),
+            "block comment closer": (
+                "/* void target() { block_close_decoy(); } *\\\r\n/\n"
+            ),
+        }
+        for name, prefix in decoys.items():
+            with self.subTest(name=name):
+                body = self.extract_braced(
+                    prefix + "void target() { real_body(); }\n",
+                    "void target()",
+                )
+                self.assertIn("real_body();", body)
 
     def test_extract_braced_ignores_comments_and_literal_braces(self):
         decoys = {
