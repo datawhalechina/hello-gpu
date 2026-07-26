@@ -405,6 +405,134 @@ class Chapter2HipSourceContractTest(unittest.TestCase):
         )
         self.assert_preallocated_timed_loop(memory_text)
 
+    def assert_validation_surrounds_timing(self, text: str):
+        run = self.compact(
+            self.extract_braced(text, "bool run_implementation(")
+        )
+        precheck = run.index("validate_precheck(")
+        benchmark = run.index("benchmark(")
+        postcheck = run.index("validate_samples(")
+        self.assertLess(precheck, benchmark)
+        self.assertLess(benchmark, postcheck)
+
+    def assert_lds_source_contract(self, lds_text: str):
+        code = self.clean_cpp(lds_text)
+        kernel = self.extract_braced(code, "__global__ void lds_kernel(")
+
+        self.assertIn("volatile __shared__", code)
+        self.assertIn("volatile float* shared_pointer = shared;", kernel)
+        self.assertRegex(code, r"kBlockSize\s*=\s*256")
+        self.assertRegex(code, r"kWaveSize\s*=\s*32")
+        self.assertRegex(code, r"kRegion\s*=\s*1056")
+        self.assertIn(
+            "kWavesPerBlock = kBlockSize / kWaveSize", self.compact(code)
+        )
+        self.assertIn(
+            "static_assert(kWavesPerBlock == 8", self.compact(code)
+        )
+        self.assertIn("template <unsigned int Stride>", code)
+        self.assertIn(
+            "unsigned wave = threadIdx.x / kWaveSize;", self.compact(kernel)
+        )
+        self.assertIn(
+            "unsigned lane = threadIdx.x % kWaveSize;", self.compact(kernel)
+        )
+        self.assertIn(
+            "unsigned index = wave * kRegion + lane * Stride + "
+            "(iteration & 31);",
+            self.compact(kernel),
+        )
+        self.assertIn("accumulator += shared_pointer[index];", kernel)
+        self.assertIn("launch_stride<1u>", code)
+        self.assertIn("launch_stride<32u>", code)
+        self.assertIn("launch_stride<33u>", code)
+        self.assertEqual(code.count("lds_kernel<"), 1)
+        self.assertIn("stride-1", lds_text)
+        self.assertIn("stride-32", lds_text)
+        self.assertIn("stride-33", lds_text)
+        self.assertIn("experiment=lds-banks", lds_text)
+        for token in (
+            "correct=OK", "correct=FAIL", "precheck=OK", "precheck=FAIL",
+            "postcheck=OK", "postcheck=FAIL", "postcheck=NA",
+        ):
+            self.assertIn(token, lds_text)
+        self.assert_cli_contract(lds_text)
+        self.assert_single_result_for_single_selection(
+            lds_text, ("stride_1", "stride_32", "stride_33")
+        )
+        self.assert_preallocated_timed_loop(lds_text)
+        self.assert_validation_surrounds_timing(lds_text)
+
+    def assert_wmma_source_contract(self, wmma_text: str):
+        code = self.clean_cpp(wmma_text)
+        valu_kernel = self.extract_braced(
+            code, "__global__ void valu_kernel("
+        )
+        wmma_kernel = self.extract_braced(
+            code, "__global__ void wmma_kernel("
+        )
+
+        self.assertIn("#if defined(__HIP_DEVICE_COMPILE__)", code)
+        self.assertIn("!defined(__gfx1200__)", code)
+        self.assertIn("!defined(__gfx1201__)", code)
+        self.assertIn("#error rdna4_wmma.hip requires an AMD gfx12 target", code)
+        self.assertIn(
+            "using Half8 = _Float16 __attribute__((ext_vector_type(8)));",
+            self.compact(code),
+        )
+        self.assertIn(
+            "using Float8 = float __attribute__((ext_vector_type(8)));",
+            self.compact(code),
+        )
+        self.assertIn("constexpr int kFragmentElements = 8;", code)
+        self.assertIn(
+            "const int laneWrapped = threadIdx.x % 16;", wmma_kernel
+        )
+        self.assertIn(
+            "const int laneGroup = threadIdx.x / 16;", wmma_kernel
+        )
+        self.assertIn(
+            "a_frag[ele] = matrix_a[16 * laneWrapped + "
+            "(ele + laneGroup * 8)];",
+            self.compact(wmma_kernel),
+        )
+        self.assertIn(
+            "b_frag[ele] = matrix_b[16 * "
+            "(ele + laneGroup * 8) + laneWrapped];",
+            self.compact(wmma_kernel),
+        )
+        self.assertIn(
+            "matrix_c[16 * (ele + laneGroup * 8) + laneWrapped] = "
+            "c_frag[ele];",
+            self.compact(wmma_kernel),
+        )
+        intrinsic = (
+            "__builtin_amdgcn_wmma_f32_16x16x16_f16_w32_gfx12"
+        )
+        self.assertEqual(wmma_kernel.count(intrinsic), 1)
+        self.assertIn("for (int k = 0; k < 16; ++k)", valu_kernel)
+        self.assertIn("matrix_a[row * 16 + k]", valu_kernel)
+        self.assertIn("matrix_b[k * 16 + column]", valu_kernel)
+        self.assertIn("matrix_c[row * 16 + column]", valu_kernel)
+        self.assertRegex(code, r"kPrecheckBatches\s*=\s*[1-9]\d*")
+        self.assertIn("make_cpu_reference(", code)
+        self.assertIn("validate_precheck(", code)
+        self.assertIn("validate_samples(", code)
+        self.assertIn("valu", wmma_text)
+        self.assertIn("wmma", wmma_text)
+        self.assertIn("experiment=matrix-path", wmma_text)
+        for token in (
+            "correct=OK", "correct=FAIL", "precheck=OK", "precheck=FAIL",
+            "postcheck=OK", "postcheck=FAIL", "postcheck=NA",
+        ):
+            self.assertIn(token, wmma_text)
+        self.assert_cli_contract(wmma_text)
+        self.assert_single_result_for_single_selection(
+            wmma_text, ("valu", "wmma")
+        )
+        self.assert_preallocated_timed_loop(wmma_text)
+        self.assert_validation_surrounds_timing(wmma_text)
+
     def test_branch_divergence_source_contract(self):
         self.assert_branch_source_contract(
             self.read_source("branch_divergence.hip")
@@ -414,6 +542,75 @@ class Chapter2HipSourceContractTest(unittest.TestCase):
         self.assert_global_memory_source_contract(
             self.read_source("global_memory_access.hip")
         )
+
+    def test_lds_bank_conflict_source_contract(self):
+        self.assert_lds_source_contract(
+            self.read_source("lds_bank_conflict.hip")
+        )
+
+    def test_rdna4_wmma_source_contract(self):
+        self.assert_wmma_source_contract(
+            self.read_source("rdna4_wmma.hip")
+        )
+
+    def test_lds_contract_rejects_inactive_decoys_and_corrupt_indexing(self):
+        source = self.read_source("lds_bank_conflict.hip")
+        required = (
+            "unsigned index = wave * kRegion + lane * Stride + "
+            "(iteration & 31);"
+        )
+        self.assertIn(required, self.compact(source))
+        corrupt = source.replace(
+            "lane * Stride +\n                                 "
+            "(iteration & 31)",
+            "lane +\n                                 (iteration & 31)",
+            1,
+        )
+        self.assertNotEqual(corrupt, source)
+        inactive = (
+            "/* Inactive LDS contract decoy:\n"
+            + source
+            + "\n*/\n"
+            + 'const char* string_decoy = "volatile __shared__ stride-32";\n'
+            + 'const char* raw_decoy = R"tag(stride-33 lds_kernel<)tag";\n'
+        )
+        flattened = self.clean_cpp(source).replace("\n", " ")
+        spliced = "// Inactive LDS source after line splice: \\\n" + flattened
+
+        for name, decoy in (("literal/comment", inactive), ("spliced", spliced)):
+            with self.subTest(name=name):
+                with self.assertRaises(AssertionError):
+                    self.assert_lds_source_contract(decoy + "\n" + corrupt)
+
+    def test_wmma_contract_rejects_inactive_decoys_and_gfx11_layout(self):
+        source = self.read_source("rdna4_wmma.hip")
+        required = (
+            "a_frag[ele] = matrix_a[16 * laneWrapped + "
+            "(ele + laneGroup * 8)];"
+        )
+        self.assertIn(required, self.compact(source))
+        corrupt = source.replace(
+            "16 * laneWrapped +\n"
+            "                                   (ele + laneGroup * 8)",
+            "16 * (ele + laneGroup * 8) +\n"
+            "                                   laneWrapped",
+            1,
+        )
+        self.assertNotEqual(corrupt, source)
+        inactive = (
+            "/* Inactive gfx12 WMMA contract decoy:\n"
+            + source
+            + "\n*/\n"
+            + 'const char* string_decoy = "matrix-path _gfx12";\n'
+            + 'const char* raw_decoy = R"tag(laneWrapped laneGroup)tag";\n'
+        )
+        flattened = self.clean_cpp(source).replace("\n", " ")
+        spliced = "// Inactive WMMA source after line splice: \\\n" + flattened
+
+        for name, decoy in (("literal/comment", inactive), ("spliced", spliced)):
+            with self.subTest(name=name):
+                with self.assertRaises(AssertionError):
+                    self.assert_wmma_source_contract(decoy + "\n" + corrupt)
 
     def test_branch_contract_rejects_commented_decoy_and_corrupt_kernel(self):
         source = self.read_source("branch_divergence.hip")
