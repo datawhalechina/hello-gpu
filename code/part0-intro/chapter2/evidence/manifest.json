@@ -1,0 +1,22 @@
+{
+  "process_count": 3,
+  "profile_config": {
+    "name": "profile_config.env",
+    "sha256": "0f0c349b5f70925468f24cc9aa3e8618c9308df6df06ade65325a5f4f819cd70"
+  },
+  "run_logs": [
+    {
+      "name": "chapter2-process-1-2107e8a.log",
+      "sha256": "890cedde249d6c641f1fbfa17ec6fbf54017612593b337d9ca4d1a8e07921bc0"
+    },
+    {
+      "name": "chapter2-process-2-2107e8a.log",
+      "sha256": "549b2d431abac44d70ebafa5ad5a2e65263dbc8125978929e7d00949e4089f7e"
+    },
+    {
+      "name": "chapter2-process-3-2107e8a.log",
+      "sha256": "a33c048331179091db2b3d6d932a9a867be54348fb951bef481dd6cb432969b1"
+    }
+  ],
+  "source_commit": "2107e8a171b9599063468854caccc04de4ea147e"
+}

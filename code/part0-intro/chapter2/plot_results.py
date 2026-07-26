@@ -148,8 +148,18 @@ def _relative_panel(
     extent = [value - error for value, error in zip(values, lower)] + [
         value + error for value, error in zip(values, upper)
     ]
-    margin = max(1.0, (max(extent) - min(extent)) * 0.15)
-    axis.set_ylim(min(min(extent), 0.0) - margin, max(max(extent), 0.0) + margin)
+    lower_bound = min(min(extent), 0.0)
+    upper_bound = max(max(extent), 0.0)
+    # A linear margin is nearly invisible after the symlog transform when one
+    # slowdown is hundreds of percent. Pad large magnitudes multiplicatively
+    # so the two-line value label remains inside the axes, below the subtitle.
+    padded_lower = (
+        lower_bound * 4.0 if lower_bound < -1.0 else lower_bound - 1.0
+    )
+    padded_upper = (
+        upper_bound * 4.0 if upper_bound > 1.0 else upper_bound + 1.0
+    )
+    axis.set_ylim(padded_lower, padded_upper)
     for position, value, label in zip(positions, values, labels):
         offset = 4 if value >= 0 else -20
         axis.annotate(label, (position, value), xytext=(0, offset),

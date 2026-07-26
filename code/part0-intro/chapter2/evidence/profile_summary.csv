@@ -1,0 +1,11 @@
+experiment,implementation,dispatch_count,unique_kernel_names
+branch-divergence,wave-divergent,5,"__amd_rocclr_copyBuffer;void (anonymous namespace)::branch_kernel<((anonymous namespace)::BranchMode)1>(float const*, float*, unsigned long)"
+branch-divergence,wave-uniform,5,"__amd_rocclr_copyBuffer;void (anonymous namespace)::branch_kernel<((anonymous namespace)::BranchMode)0>(float const*, float*, unsigned long)"
+global-memory,stride-1,3,"void (anonymous namespace)::gather_copy<1u>(float const*, float*, unsigned long)"
+global-memory,stride-17,3,"void (anonymous namespace)::gather_copy<17u>(float const*, float*, unsigned long)"
+global-memory,stride-257,3,"void (anonymous namespace)::gather_copy<257u>(float const*, float*, unsigned long)"
+lds-banks,stride-1,5,"__amd_rocclr_copyBuffer;void (anonymous namespace)::lds_kernel<1u>(float const*, float*, unsigned long)"
+lds-banks,stride-32,5,"__amd_rocclr_copyBuffer;void (anonymous namespace)::lds_kernel<32u>(float const*, float*, unsigned long)"
+lds-banks,stride-33,5,"__amd_rocclr_copyBuffer;void (anonymous namespace)::lds_kernel<33u>(float const*, float*, unsigned long)"
+matrix-path,valu,6,"(anonymous namespace)::valu_kernel(_Float16 const*, _Float16 const*, float*);__amd_rocclr_copyBuffer"
+matrix-path,wmma,6,"(anonymous namespace)::wmma_kernel(_Float16 const*, _Float16 const*, float*);__amd_rocclr_copyBuffer"
