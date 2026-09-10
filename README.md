@@ -48,8 +48,8 @@ https://datawhalechina.github.io/hello-gpu/
 | **第 0 篇：入门与硬件速通** | | |
 | [第 0 章 写给读者的话](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter0/index.md) | 教程定位、为什么选 9070XT、和市面教程差异、学习路线 | 🚧 |
 | [第 1 章 环境准备](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter1/index.md) | 9070XT + 原生 Ubuntu + ROCm 7.13 验证、Windows/WSL2 边界、uv 环境、最小 smoke test | 🚧 |
-| [第 2 章 GPU 体系结构（上）：编程模型与波前执行](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter2/index.md) | grid/workgroup/wavefront/lane 的工作划分，WGP/CU/SIMD 落点，EXEC 掩码与分支发散 | ✅ |
-| [第 3 章 GPU 体系结构（下）：片上资源与数据通路](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter3/index.md) | VGPR/SGPR/LDS 与占用率，从寄存器到 GDDR6 的内存层级，合并访存、LDS bank 与 WMMA 的概念 | ✅ |
+| [第 2 章 GPU 体系结构（上）：编程模型与 wavefront 执行](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter2/index.md) | 从数组加法出发，理解线程编号、工作分组、wavefront 执行与分支掩码 | ✅ |
+| [第 3 章 GPU 体系结构（下）：片上资源与数据通路](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter3/index.md) | 跟着一次加法认识寄存器、缓存与 LDS，再理解合并访存和延迟隐藏 | ✅ |
 | [第 4 章 第一个程序 + 性能分析](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter4/index.md) | vector add 跑通、baseline benchmark、CPU vs GPU 与带宽利用率分析 | 🚧 |
 | **第 1 篇：Profiling 实战** | | |
 | [第 5 章 benchmark 与可信计时](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part1-profiling/chapter5/index.md) | 热身、重复、GPU event、避免测量陷阱 | 🚧 |

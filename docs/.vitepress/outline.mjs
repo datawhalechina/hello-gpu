@@ -38,29 +38,32 @@ export const parts = [
         ]
       },
       {
-        title: 'GPU 体系结构（上）：编程模型与波前执行',
-        summary: 'grid/workgroup/wavefront/lane 的工作划分，WGP/CU/SIMD 落点，EXEC 掩码与分支发散',
+        title: 'GPU 体系结构（上）：编程模型与 wavefront 执行',
+        summary: '从数组加法出发，理解线程编号、工作分组、wavefront 执行与分支掩码',
         status: '✅',
-        lead: '本章跟着一次 kernel 提交走一遍，建立贯穿全书的两层视角：软件怎么划分（grid → workgroup → wavefront → lane），以及硬件怎么执行（落到 WGP/CU/SIMD，按波前步调一致地推进，遇到分支用 EXEC 掩码决定谁在干活）。这是后面一切算子优化的地基。',
+        lead: '从已经见过的数组加法出发，先看一个线程负责哪份工作，再用手算推导编号、放大 wavefront 的执行过程，最后用参与状态解释分支与 EXEC。读完后，你应该能算出线程下标，并区分软件分工与硬件执行。',
         sections: [
-          ['从 launch 到 workgroup', '从 grid、block 与全局下标建立工作划分，并区分软件 workgroup 与物理调度位置。'],
-          ['workgroup 怎样拆成 wavefront', '用 wave32/wave64 和 256-thread block 理解 lane 分组与波前粒度。'],
-          ['wavefront 怎样落到 WGP、CU 和 SIMD', '按 LLVM 的 CU/WGP execution mode 解释 placement，不把 WGP 固定泛化为特定 CU/SIMD 拓扑。'],
-          ['分支、EXEC 与有效 lane', '用 EXEC 的有效 lane 集合理解 divergent control flow，选做实验 quantifying 分支代价。']
+          ['从一份数组加法到多个线程', '用同下标相加建立一线程一元素的分工，解释 kernel 与启动。'],
+          ['线程怎样编号和分块', '先手算块编号与局部偏移，再回到索引公式和越界判断。'],
+          ['一个线程块怎样组成 wavefront', '区分块内线程编号与 wave 内 lane 编号，解释同指令与不同数据。'],
+          ['分支、EXEC 与有效 lane', '用固定 lane 的分镜理解参与状态，区分 wavefront 内部与 wavefront 之间的分支差异。'],
+          ['wavefront 在哪里执行：软件分工与硬件单元', '把逻辑工作放到硬件上理解，CU/WGP 模式与设备字段作为选读。'],
+          ['选做实验：比较两种分支排列', '保留已有受控对照、复跑命令与证据，不从示意图计算固定罚时。']
         ]
       },
       {
         title: 'GPU 体系结构（下）：片上资源与数据通路',
-        summary: 'VGPR/SGPR/LDS 与占用率，从寄存器到 GDDR6 的内存层级，合并访存、LDS bank 与 WMMA 的概念',
+        summary: '跟着一次加法认识寄存器、缓存与 LDS，再理解合并访存和延迟隐藏',
         status: '✅',
-        lead: '本章补上硬件心智模型的另一半：能同时塞下多少活儿（片上资源与占用率），以及数据从哪里取、怎么不浪费带宽（内存层级、合并访存、LDS bank），最后认识矩阵专用指令 WMMA。每一样都配选做实验，具体优化留到 Part 2 对应算子章。',
+        lead: '继续追踪数组加法的输入、临时值与结果，先解释数据存放在哪里，再比较地址排列、共享协作和等待时的执行机会。占用率在资源用途之后介绍，bank 冲突与 WMMA 留作选读。',
         sections: [
-          ['VGPR、SGPR、LDS 与占用率', '把寄存器、LDS、scratch 与 workgroup shape 放入 residency 和延迟隐藏的资源约束。'],
-          ['内存层级：从寄存器到 GDDR6', '区分 gfx1201 的缓存/显存规格、逻辑算法字节和需要计数器验证的物理流量，强调 LDS 不是 cache。'],
-          ['全局内存访问与合并访存', '用 lane 地址排列理解合并访存为什么快，逻辑带宽不等于物理流量。'],
-          ['LDS bank 冲突', '用同一 wave 的共享地址排布理解 bank 冲突的成因与缓解。'],
-          ['矩阵指令 WMMA', '比较 VALU 与 gfx12 WMMA 路径，理解 wave32 fragment layout 与证据边界。'],
-          ['写 Kernel 前的硬件决策清单', '沿工作划分、控制流、资源、地址、矩阵布局与可复跑证据逐项检查。']
+          ['跟着一个元素完成一次加法', '用读入、计算、写回建立数据过程和寄存器用途。'],
+          ['同样是存数据，谁在使用和管理', '区分 VGPR、SGPR、LDS、缓存与全局内存的职责和范围。'],
+          ['相邻线程怎样读取数据：合并访存', '展开 lane 到元素的映射，再读已有步长实验与逻辑有效带宽。'],
+          ['线程怎样通过 LDS 协作', '先讲显式写入、同步和读取，再回到现有源码中的协作片段。'],
+          ['等数据时做什么：延迟隐藏与占用率', '先区分驻留、就绪、执行，再讨论资源约束与性能权衡。'],
+          ['选读：LDS 里的 bank 冲突', '用服务入口理解不同地址的竞争，保留实测与机制证据的边界。'],
+          ['选读：认识矩阵专用指令 WMMA', '建立 wavefront 协作的矩阵块视角，具体接口和已有实验放入折叠区。']
         ]
       },
       {
