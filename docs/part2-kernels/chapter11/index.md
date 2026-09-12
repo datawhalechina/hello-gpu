@@ -1,466 +1,418 @@
 ---
 title: "第11章 GEMM-Like：矩阵乘类算子"
-description: "Hello GPU 第11章 · 以 Matmul 为例，学习分块、数据复用与寄存器累加"
+description: "Hello GPU 第11章 · 从小矩阵点积与复用动画出发，学习 HIP/Triton 分块、尾部和资源取舍"
 ---
+
+<script setup>
+import MatmulJourney from './matmul-journey.vue'
+import MatmulExecution from './matmul-execution.vue'
+</script>
 
 # 第11章 GEMM-Like：矩阵乘类算子
 
 ## 本章导读
 
-Vector Add 中，每个输入元素通常只服务一个输出位置；矩阵乘不同，同一个 `A[m, k]` 会参与一整行输出，同一个 `B[k, n]` 会参与一整列输出。GEMM 优化的起点，就是把这种**算法本来就存在的复用**变成 GPU 在片上存储中真正能利用的复用。
+在第 8 章的向量加法中，一个输入元素通常只参与一个输出。矩阵乘法却有一件很值得利用的事：**同一个输入会反复出现在不同输出的计算中。** 如果能把这些计算安排在一起，已经读进来的数据就有机会多用几次。
 
-本章只处理最小而完整的 FP32、row-major Matmul：
+本章用一个可以手算的小矩阵解释这种复用，再把它写成 HIP 和 Triton kernel。学完后，你应当能说明一个输出如何计算、一个输入如何被多个输出复用，以及为什么更大的分块未必更快。这里的 Matmul 是 GEMM 家族中的基本情形，只计算 `C = A @ B`，不含缩放、转置或额外的加法项。
 
-```text
-C[M, N] = A[M, K] @ B[K, N]
-```
+| 阅读路线 | 建议顺序 |
+| --- | --- |
+| 先理解算法 | [点积](#_11-1-从一个输出看矩阵乘) → [分块动画](#_11-2-把重复使用的数据放在一起) → [结果](#_11-5-实测支持了哪些判断) |
+| 动手写 HIP | 先看共同算法，再进入 [实现标签页](#_11-3-用两种方式表达分块) 的 HIP 路线 |
+| 动手写 Triton | 先看共同算法，再进入 [实现标签页](#_11-3-用两种方式表达分块) 的 Triton 路线；语法不熟可查 [附录 D](../../appendix/programming-models/index.md#triton-model) |
 
-我们实现并对照五个入口：
+本章代码对应 `code/part2-kernels/chapter11/`。已有性能记录来自 Radeon RX 9070 XT（gfx1201）、ROCm 7.13、原生 Ubuntu 24.04；先跟着小例子推导，到实验部分再看这些数字。
 
-| 名称 | 入口 | 第一版只改变什么 |
-| ---- | ---- | ---- |
-| `hip-naive` | HIP | 一个 thread 计算一个输出，直接读全局内存 |
-| `hip-tiled` | HIP | 16×16 block 协作把 A/B tile 放入 LDS |
-| `torch-mm` | PyTorch ROCm | 正确性参考，同时单独做 GPU event 计时 |
-| `triton-baseline` | Triton | 32×32×32 tile，`GROUP_M=1` |
-| `triton-grouped` | Triton | kernel 不变，只把 program 排序改为 `GROUP_M=8` |
+## 11.1 从一个输出看矩阵乘
 
-本章的 HIP/Triton 编译、边界正确性、3 个独立正式进程和逐实现 trace 已在 Radeon RX 9070 XT（gfx1201）+ ROCm 7.13 + 原生 Ubuntu 24.04 上完成。性能数字只描述 `512³` FP32 与当前实现。
+我们先算出一个输出，再用同样的规则得到整个矩阵。设输入为：
 
-读完后，你应该能回答：
+$$
+A=\begin{bmatrix}1&2&3\\4&5&6\end{bmatrix},\qquad
+B=\begin{bmatrix}1&0\\2&1\\0&2\end{bmatrix}.
+$$
 
-1. `C[row, col]` 对应哪一个点积，row-major 地址怎样计算；
-2. 朴素 kernel 为什么会从源码层面重复请求 A/B；
-3. 一个 tile 在 LDS 或 Triton program 内怎样被多个输出复用；
-4. 为什么尾块必须同时保护 M、N、K 三个方向；
-5. 怎样把“代码看起来更高级”改写成可验证的 benchmark 与 profiling 问题。
+`A` 有 2 行、3 列，`B` 有 3 行、2 列。取 A 的第 0 行和 B 的第 0 列，对应位置相乘后相加，就得到：
 
-## 11.1 从点积看矩阵乘
+$$
+C_{0,0}=1\times1+2\times2+3\times0=5.
+$$
 
-### 11.1.1 一个输出元素就是一次点积
+这就是**点积**。换一列 B，得到同一行的另一个输出；换一行 A，得到下一行的输出。按这个规则计算：
 
-设：
+$$
+C=AB=\begin{bmatrix}5&8\\14&17\end{bmatrix}.
+$$
 
-- `A` 的形状是 `M × K`；
-- `B` 的形状是 `K × N`；
-- `C` 的形状是 `M × N`。
+::: figure fig-matmul-dot
+<MatmulJourney mode="dot" />
 
-那么：
+固定输出 C[0,0]，沿着点积的 K 方向逐项累加。动画使用手算数据，播放速度不代表 GPU 执行时间。
+:::
 
-```text
-C[row, col]
-= A[row, 0] * B[0, col]
-+ A[row, 1] * B[1, col]
-+ ...
-+ A[row, K-1] * B[K-1, col]
-```
+先在 @fig-matmul-dot 中走到 `k=1`，检查部分和是否为 5；再走到 `k=2`。最后一个乘积为 0，所以部分和没有变。这能帮助我们区分“处理了一个输入”和“数值一定发生变化”。
 
-`M` 决定输出有多少行，`N` 决定输出有多少列，`K` 是每个点积的长度。每个输出包含 `K` 次乘法和约 `K` 次加法，常用 `2 × M × N × K` 作为 FLOP 口径；这是算法工作量，不是实际指令条数的硬件计数。
+推广到任意大小，用 `M` 表示 A 的行数、`N` 表示 B 的列数、`K` 表示点积长度：
 
-### 11.1.2 Row-major 地址
+$$
+A\in\mathbb{R}^{M\times K},\quad B\in\mathbb{R}^{K\times N},\quad
+C_{m,n}=\sum_{k=0}^{K-1}A_{m,k}B_{k,n}.
+$$
 
-本章三个矩阵都连续、row-major 存储。二维下标到一维地址的映射是：
+M、N 决定有多少个输出可以并行计算；K 决定每个输出要累加多少项。常用的算法工作量是 `2MNK` FLOP，把每次乘加记为两次浮点运算。它用于计算吞吐率，不是硬件指令条数。
 
-```text
-A[row, inner] -> A[row * K + inner]
-B[inner, col] -> B[inner * N + col]
-C[row, col]   -> C[row * N + col]
-```
+代码把矩阵连续存放在一维数组中，先存第 0 行，再存第 1 行，这叫行优先（row-major）布局。于是：
 
-容易写错的是 B：`inner` 是 B 的行，B 每行有 `N` 个元素，所以步长是 `N`，不是 `K`。
+| 数学位置 | 一维数组下标 | 一行的长度 |
+| --- | --- | --- |
+| `A[row, inner]` | `row * K + inner` | K |
+| `B[inner, column]` | `inner * N + column` | N |
+| `C[row, column]` | `row * N + column` | N |
 
-以 `M=2, N=3, K=4` 为例，`C[1, 2]` 是：
+例如本例 `C[1,1]` 使用 A 的下标 `3,4,5` 和 B 的下标 `1,3,5`。B 的行步长是 N，不能因为循环变量沿 K 移动就误写成 K。后面的代码用小写 `m/n/k` 保存这三个尺寸。
 
-```text
-A[1*4 + 0] * B[0*3 + 2]
-A[1*4 + 1] * B[1*3 + 2]
-A[1*4 + 2] * B[2*3 + 2]
-A[1*4 + 3] * B[3*3 + 2]
-```
+## 11.2 把重复使用的数据放在一起
 
-后面的 HIP 与 Triton 实现虽然线程/program 编号不同，最终都必须生成这组地址和同一个点积。
+现在从“一个输出怎么算”转向“几个输出怎样合作”。仍看同一组小矩阵：计算 `C[0,0]` 与 `C[0,1]`，都会使用 A 的第 0 行；计算 `C[0,0]` 与 `C[1,0]`，都会使用 B 的第 0 列。
 
-## 11.2 为什么朴素实现重复读取
+如果四个输出分别完成点积，源码一共请求 `4 × 3 × 2 = 24` 个输入值。我们也可以每次取 A 的一列和 B 的一行，同时更新四个输出：
 
-最短的 GPU Matmul 是让一个 thread 负责一个 `C[row, col]`：
+$$
+\begin{aligned}
+C^{(0)}&=\begin{bmatrix}0&0\\0&0\end{bmatrix},\\
+C^{(1)}&=C^{(0)}+\begin{bmatrix}1\\4\end{bmatrix}\begin{bmatrix}1&0\end{bmatrix}
+       =\begin{bmatrix}1&0\\4&0\end{bmatrix},\\
+C^{(2)}&=C^{(1)}+\begin{bmatrix}2\\5\end{bmatrix}\begin{bmatrix}2&1\end{bmatrix}
+       =\begin{bmatrix}5&2\\14&5\end{bmatrix},\\
+C^{(3)}&=C^{(2)}+\begin{bmatrix}3\\6\end{bmatrix}\begin{bmatrix}0&2\end{bmatrix}
+       =\begin{bmatrix}5&8\\14&17\end{bmatrix}.
+\end{aligned}
+$$
 
-```cpp
-float sum = 0.0f;
-for (size_t inner = 0; inner < K; ++inner) {
-    sum += A[row * K + inner] * B[inner * N + col];
-}
-C[row * N + col] = sum;
-```
+每轮读入 2 个 A 值和 2 个 B 值，共 3 轮，只需请求 12 个输入值。每个 A 值用于两列输出，每个 B 值用于两行输出。保存下来的四个部分和叫作**累加块**。
 
-这段代码正确，但相邻输出会请求很多重复数据：
+::: figure fig-matmul-tile
+<MatmulJourney mode="tile" />
 
-- `C[row, col]` 与 `C[row, col+1]` 都需要 A 的第 `row` 行；
-- `C[row, col]` 与 `C[row+1, col]` 都需要 B 的第 `col` 列。
+同一个 2×2 输出块始终保留部分和；每轮换入一列 A 和一行 B，四个输入共同更新四个输出。
+:::
 
-按源码逻辑，朴素版本计算全部输出会发出约 `2 × M × N × K` 次 float load 请求，再写 `M × N` 个 float。这里不能直接把请求数乘 4 Byte 当成物理 GDDR6 流量：L1/L2 可能命中，编译器也可能改变加载方式。正确表述是：**源码暴露了跨输出复用机会，但没有显式把这份复用组织在 block 内。**
+@fig-matmul-tile 为了看清乘加，把 K 方向的分块宽度设成 1。实际 kernel 一次处理更大的一片输入，这片小矩阵就叫 **tile**。HIP 实现把 A/B tile 放进 block 内共享的 LDS，Triton 则用张量块表达加载与乘法。两者都需要让累加块跨 K 方向的各轮计算继续存在，直到最后才写回 C。
 
-要判断真实瓶颈，需要组合三种证据：
+这里的“24 次变成 12 次”是手算出的源码请求数。它不等于显存流量必定减半：原先的重复读取可能命中缓存，显存也按事务传输数据。分块还会引入同步和资源开销。小例子给出了优化理由，后面的实验负责检验它是否带来收益。
 
-```text
-源码：哪些输出重复使用同一输入
-trace：grid、workgroup、LDS、VGPR 与 kernel 时间
-对照：只改变分块方式，保持 M/N/K、dtype、计时边界一致
-```
+## 11.3 用两种方式表达分块
 
-## 11.3 Tile 为什么能带来复用
+两条路线计算相同的矩阵乘。你可以先选熟悉的一条，另一条保留作对照；不必在两段长实现之间来回跳。HIP 的 thread/block 与 Triton 的 program/tile 若还不熟悉，可以先读 [附录 D：编程范式](../../appendix/programming-models/index.md)。
 
-### 11.3.1 手算一个 2×2 tile
+<ImplementationTabs id="ch11-implementations">
 
-先用 `M=N=K=4`、输出 tile 为 `2×2` 手算。为了得到左上角的四个输出：
+<template #hip>
 
-```text
-C[0:2, 0:2]
-```
+### 11.3.1 HIP：先让一个线程负责一个输出
 
-K 方向分两轮：
-
-```text
-第 0 轮：加载 A[0:2, 0:2] 和 B[0:2, 0:2]
-第 1 轮：加载 A[0:2, 2:4] 和 B[2:4, 0:2]
-```
-
-每轮加载 4 个 A 元素和 4 个 B 元素，随后这 8 个值共同更新 4 个输出 accumulator。两轮共请求 16 个输入 float；若四个输出各自独立完成长度为 4 的点积，则源码层面会请求 `4 输出 × 4 inner × 2 输入 = 32` 个 float。
-
-对完整 `4×4` 输出，四个输出 tile 一共请求 64 个输入 float，而朴素映射请求 128 个。这个手算说明的是**分块源码能表达的复用上限**，不是“显存流量一定减半”或“性能一定翻倍”。物理事务、cache、同步、占用率 和指令开销仍要实测。
-
-### 11.3.2 Block 级数据生命周期
-
-一个 HIP output tile 的生命周期是：
-
-```text
-选中 C 的 16×16 输出块
-→ 256 个 thread 协作加载 A/B 的 16×16 tile
-→ __syncthreads()
-→ 每个 thread 用 LDS 数据更新自己的 accumulator
-→ __syncthreads()
-→ 沿 K 方向移动到下一对 tile
-→ 写回 C
-```
-
-第一次同步保证计算前 tile 已全部装好；第二次同步保证任何 thread 都不会在其他 thread 尚未读完时覆盖 LDS。
-
-## 11.4 HIP v0：一线程一输出
-
-完整实现位于 `code/part2-kernels/chapter11/matmul_hip.hip`。naive kernel 的二维映射是：
+`matmul_hip.hip` 的 `matmul_naive` 直接把点积翻译成循环。二维 block 中，x 方向选择输出列，y 方向选择输出行：
 
 ```cpp
-size_t row = blockIdx.y * blockDim.y + threadIdx.y;
-size_t col = blockIdx.x * blockDim.x + threadIdx.x;
-
-if (row < M && col < N) {
-    float sum = 0.0f;
-    for (size_t inner = 0; inner < K; ++inner) {
-        sum += A[row * K + inner] * B[inner * N + col];
+__global__ void matmul_naive(const float* __restrict__ a,
+                             const float* __restrict__ b,
+                             float* __restrict__ c,
+                             std::size_t m,
+                             std::size_t n,
+                             std::size_t k) {
+    const std::size_t row =
+        static_cast<std::size_t>(blockIdx.y) * blockDim.y + threadIdx.y;
+    const std::size_t column =
+        static_cast<std::size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+    if (row >= m || column >= n) {
+        return;
     }
-    C[row * N + col] = sum;
+
+    float accumulator = 0.0F;
+    for (std::size_t inner = 0; inner < k; ++inner) {
+        accumulator += a[row * k + inner] * b[inner * n + column];
+    }
+    c[row * n + column] = accumulator;
 }
 ```
 
-block 固定为 `16×16`。grid 的 x 维覆盖 N，y 维覆盖 M：
+这段 kernel 有两个值得先核对的地方。`accumulator` 是当前线程负责的一个部分和；它必须在 K 循环外初始化。末尾 `c[row * n + column]` 使用 N 作为行步长，与数学中的输出位置对应。
 
-```text
-grid.x = ceil(N / 16)
-grid.y = ceil(M / 16)
-```
+Host 端固定 `kTile=16`，启动一个 `16×16` 的 block。grid 的 x 方向需要 `ceil(N/16)` 个 block，y 方向需要 `ceil(M/16)` 个 block，才能覆盖所有输出。朴素版本没有 block 内同步，因此越界线程可以直接返回。
 
-`row < M && col < N` 保护 M/N 尾块；K 循环只遍历 `0..K-1`，因此不存在 K 越界。
+### 11.3.2 HIP：把 A/B tile 放进 LDS
 
-Host 端会：
+第二个版本保持“一线程一输出”，只改变输入的组织方式。每个 block 协作加载两片 `16×16` 输入，随后每个线程从 LDS 取数，更新自己的 `accumulator`。
 
-1. 解析 `--m/--n/--k/--version/--warmup/--repeat/--seed`；
-2. 生成确定性的 FP32 输入；
-3. 用 CPU 三重循环构造 reference；
-4. 在正式计时前做完整输出校验；
-5. 用逐次 HIP event 记录 min/median/mean；
-6. 计时后再次校验，并输出最大绝对误差。
-
-CPU reference 使用 double accumulator 后转成 FP32；GPU 的加法顺序与融合方式可能不同，所以正确性使用绝对误差与相对误差组合阈值，不要求 bitwise 相等。
-
-## 11.5 HIP v1：LDS 分块
-
-### 11.5.1 协作加载
-
-tiled kernel 仍让一个 thread 负责一个输出，但 block 内 256 个 thread 先各自加载一个 A 元素和一个 B 元素：
+先看 `matmul_tiled` 每轮的加载部分：
 
 ```cpp
-__shared__ float tile_a[16][16];
-__shared__ float tile_b[16][16];
-
-size_t a_col = tile * 16 + threadIdx.x;
-size_t b_row = tile * 16 + threadIdx.y;
-
+const std::size_t a_column = tile * kTile + threadIdx.x;
+const std::size_t b_row = tile * kTile + threadIdx.y;
 tile_a[threadIdx.y][threadIdx.x] =
-    row < M && a_col < K ? A[row * K + a_col] : 0.0f;
+    row < m && a_column < k ? a[row * k + a_column] : 0.0F;
 tile_b[threadIdx.y][threadIdx.x] =
-    b_row < K && col < N ? B[b_row * N + col] : 0.0f;
+    b_row < k && column < n ? b[b_row * n + column] : 0.0F;
 __syncthreads();
 ```
 
-之后每个 thread 读取 LDS 中的一行 A 和一列 B：
+线程 `(threadIdx.y, threadIdx.x)` 各负责搬入一个 A 值和一个 B 值。越界位置写 0，保证后续读取 LDS 时每个位置都有定义。第一次 `__syncthreads()` 等待整个 block 完成装载，避免某个线程先读到尚未写好的值。
+
+同一对 tile 装好后，每个线程沿它的内部 K 方向累加：
 
 ```cpp
-for (int inner = 0; inner < 16; ++inner) {
-    sum += tile_a[threadIdx.y][inner]
-         * tile_b[inner][threadIdx.x];
+#pragma unroll
+        for (unsigned int inner = 0; inner < kTile; ++inner) {
+            accumulator +=
+                tile_a[threadIdx.y][inner] * tile_b[inner][threadIdx.x];
+        }
+        __syncthreads();
+```
+
+注意这里的两个下标：`tile_a[threadIdx.y][inner]` 在输出行上取值，`tile_b[inner][threadIdx.x]` 在输出列上取值。它仍然是 11.1 节的点积，只是输入来自 LDS。
+
+第二次同步同样不能省略。一个线程完成乘加后，不代表别的线程也读完了；只有大家都结束这一轮，才能用下一对 tile 覆盖这两块 LDS。
+
+<details>
+<summary>完整 kernel：matmul_tiled，对照两次同步与最后的写回</summary>
+
+```cpp
+__global__ void matmul_tiled(const float* __restrict__ a,
+                            const float* __restrict__ b,
+                            float* __restrict__ c,
+                            std::size_t m,
+                            std::size_t n,
+                            std::size_t k) {
+    __shared__ float tile_a[kTile][kTile];
+    __shared__ float tile_b[kTile][kTile];
+
+    const std::size_t row =
+        static_cast<std::size_t>(blockIdx.y) * kTile + threadIdx.y;
+    const std::size_t column =
+        static_cast<std::size_t>(blockIdx.x) * kTile + threadIdx.x;
+    const std::size_t tile_count = (k + kTile - 1) / kTile;
+    float accumulator = 0.0F;
+
+    for (std::size_t tile = 0; tile < tile_count; ++tile) {
+        const std::size_t a_column = tile * kTile + threadIdx.x;
+        const std::size_t b_row = tile * kTile + threadIdx.y;
+        tile_a[threadIdx.y][threadIdx.x] =
+            row < m && a_column < k ? a[row * k + a_column] : 0.0F;
+        tile_b[threadIdx.y][threadIdx.x] =
+            b_row < k && column < n ? b[b_row * n + column] : 0.0F;
+        __syncthreads();
+
+#pragma unroll
+        for (unsigned int inner = 0; inner < kTile; ++inner) {
+            accumulator +=
+                tile_a[threadIdx.y][inner] * tile_b[inner][threadIdx.x];
+        }
+        __syncthreads();
+    }
+
+    if (row < m && column < n) {
+        c[row * n + column] = accumulator;
+    }
 }
-__syncthreads();
 ```
 
-一块 `tile_a` 被 16 个输出列复用，一块 `tile_b` 被 16 个输出行复用。这是 v1 相比 v0 唯一需要验证的核心假设。
+</details>
 
-### 11.5.2 K 尾块为什么填零
+两个 `16×16` FP32 数组在源码中需要 `2 × 16 × 16 × 4 = 2048` Byte 的 LDS。这个数来自数组大小的计算；实际编译资源仍应读编译产物或 profiler。当前版本没有寄存器多输出分块、双缓冲或矩阵指令的手写实现，不把这些后续方向混进本轮收益。
 
-当 `K % 16 != 0`，最后一轮只有一部分输入有效。所有 thread 仍必须参加两次 `__syncthreads()`，所以不能让越界 thread 提前 return。实现采用：
+::: figure fig-matmul-tiled-lds
+<MatmulExecution scenario="tiled-lds" />
 
-```text
-有效 A/B 地址 -> 正常加载
-越过 M/N/K   -> 向 LDS 写 0
-全部 thread   -> 同步并完成 16 次乘加
-```
+matmul_tiled 一个 block 沿 K 循环推进的时间线：协作装载 tile_a/tile_b（越界填 0）→ 第一道 `__syncthreads()` → 各线程从 LDS 取数累加自己的 accumulator → 第二道 `__syncthreads()` → 下一对 tile 覆盖 LDS。图为 block=2×2 线程、kTile=2、K=5 的教学缩略（第三轮即尾块），可手算：C 块 = [[8,10],[11,12]]。
+:::
 
-填零让最后一轮仍能使用同一循环结构，同时不改变有效点积。M/N 尾块中的 thread 也继续参加同步，只在最终写回时用 `row < M && col < N` 关闭越界 store。
+如 @fig-matmul-tiled-lds 所示，两道同步像两根栅栏把每轮分成「装载」与「累加」两段：第一道保证没有人读到半成品 tile，第二道保证没有人被提前覆盖的 tile 污染。尾块那一轮同时展示了越界格填 `0`（单位元）——这正是 11.4 节「不能提前退出」的图形版。
 
-### 11.5.3 不能从 LDS 推导“更快”
+</template>
 
-LDS 版本减少源码层面的重复 global load，但同时增加：
+<template #triton>
 
-- 两组 LDS store 与 load；
-- 每个 K tile 的两次 block 同步；
-- 固定 tile 可能不适合目标 shape；
-- LDS、VGPR 和 block 大小共同影响 占用率。
+### 11.3.3 Triton：一个 program 保留一块输出
 
-因此本章只把 `hip-tiled` 称为“LDS 分块版”，不称为“优化成功版”。是否更快，要看同 shape 的 GPU event 和 `rocprofv3` 结果。
+`matmul_triton.py` 固定 `BLOCK_M=BLOCK_N=BLOCK_K=32`、`NUM_WARPS=4`。每个 program 负责 C 的一块 `32×32` 输出，沿 K 循环处理输入。这里的 32 是数据块尺寸，不能把它当成 thread 数。
 
-## 11.6 寄存器分块：为什么一个 thread 会计算多个输出
-
-当前第一版 HIP 代码只实现 v0/v1。寄存器分块是下一步实验设计，不是已经完成的性能结论。
-
-在 v1 中，一个 thread 只有一个 accumulator：
-
-```text
-thread -> C[row, col] -> 1 个 FP32 accumulator
-```
-
-一维寄存器分块可以让一个 thread 同时算同一行的多个列：
-
-```text
-thread -> C[row, col:col+R] -> R 个 accumulator
-```
-
-二维寄存器分块则让一个 thread 维护小块：
-
-```text
-thread -> C[row:row+RM, col:col+RN]
-       -> RM × RN 个 accumulator
-```
-
-这样一次从 LDS 读取的 A/B fragment 可以更新多个输出，减少每个输出对应的地址计算和指令开销；代价是 accumulator、临时 fragment 和索引都占 VGPR。寄存器分块不是越大越好，至少需要同时记录：
-
-| 证据 | 要回答的问题 |
-| ---- | ---- |
-| 正确性 | 每个 thread 覆盖的输出是否重叠或遗漏 |
-| VGPR | accumulator 增加后静态寄存器数怎样变化 |
-| Grid/Workgroup | thread 数和输出覆盖是否一起改变 |
-| kernel 时间 | 收益是否稳定超过运行波动 |
-
-在没有这些记录前，本章不添加一个名字叫 v2/v3、但只有假设没有证据的版本。
-
-## 11.7 HIP 进阶实验怎样保持单变量
-
-后续可以从三类机制中一次只选一个：
-
-1. **改变 K tile**：例如 8、16、32；保持 M/N tile、dtype、输入与计时不变，同时关注 LDS 和同步次数。
-2. **双缓冲**：在计算当前 LDS tile 时准备下一 tile；需要证明 overlap 确实发生，并计算额外 LDS 占用。
-3. **WMMA**：改变为矩阵指令支持的 dtype/tile；这会同时改变数值精度和计算路径，不能与 FP32 VALU 结果混成一个单变量实验。
-
-第一版代码选 `TILE=16` 只是为了让边界、协作加载和同步容易读懂，不代表它是 RX 9070 XT 的最佳配置。
-
-## 11.8 Triton t0：用 `tl.dot` 表达同一分块
-
-完整入口位于 `code/part2-kernels/chapter11/matmul_triton.py`。Triton program 一次负责一个 `32×32` 输出 tile，K 方向每次推进 32：
+先假设已经知道当前输出块的编号 `program_m/program_n`。下面的源码构造 A/B 地址，并给每个输出位置准备一个 FP32 部分和：
 
 ```python
-offsets_m = pid_m * BLOCK_M + tl.arange(0, BLOCK_M)
-offsets_n = pid_n * BLOCK_N + tl.arange(0, BLOCK_N)
-offsets_k = tl.arange(0, BLOCK_K)
+offsets_m = program_m * BLOCK_SIZE_M + tl.arange(0, BLOCK_SIZE_M)
+offsets_n = program_n * BLOCK_SIZE_N + tl.arange(0, BLOCK_SIZE_N)
+offsets_k = tl.arange(0, BLOCK_SIZE_K)
+a_pointers = a_ptr + offsets_m[:, None] * k + offsets_k[None, :]
+b_pointers = b_ptr + offsets_k[:, None] * n + offsets_n[None, :]
+accumulator = tl.zeros((BLOCK_SIZE_M, BLOCK_SIZE_N), dtype=tl.float32)
+```
 
-accumulator = tl.zeros((BLOCK_M, BLOCK_N), tl.float32)
-for k_block in range(0, tl.cdiv(K, BLOCK_K)):
-    a = tl.load(a_ptrs, mask=mask_a, other=0.0)
-    b = tl.load(b_ptrs, mask=mask_b, other=0.0)
+`offsets_m[:, None]` 变成一列行号，`offsets_k[None, :]` 变成一行 K 下标；广播后得到 A tile 的二维地址。B 的地址同理，但一行有 n 个元素，所以 K 方向步长是 n。
+
+沿 K 推进时，`tl.dot(a, b)` 完成两片输入的矩阵乘，结果继续加到同一个 `accumulator`：
+
+```python
+for k_block in range(0, tl.cdiv(k, BLOCK_SIZE_K)):
+    current_k = k_block * BLOCK_SIZE_K + offsets_k
+    a = tl.load(
+        a_pointers,
+        mask=(offsets_m[:, None] < m) & (current_k[None, :] < k),
+        other=0.0,
+    )
+    b = tl.load(
+        b_pointers,
+        mask=(current_k[:, None] < k) & (offsets_n[None, :] < n),
+        other=0.0,
+    )
     accumulator += tl.dot(a, b)
-    a_ptrs += BLOCK_K
-    b_ptrs += BLOCK_K * N
+    a_pointers += BLOCK_SIZE_K
+    b_pointers += BLOCK_SIZE_K * n
+
+output_offsets = offsets_m[:, None] * n + offsets_n[None, :]
+output_mask = (offsets_m[:, None] < m) & (offsets_n[None, :] < n)
+tl.store(c_ptr + output_offsets, accumulator, mask=output_mask)
 ```
 
-`tl.dot` 表达 tile 点积，但它不会替你决定所有事情。Host 仍要确定：
+`a_pointers` 每轮向右移动 32 个元素；`b_pointers` 每轮向下移动 32 行，即 `32*n` 个元素。加载时同时检查行、列和 K 的边界，最后只写有效输出。
 
-- `BLOCK_M/BLOCK_N/BLOCK_K`；
-- program grid；
-- program 排序；
-- `num_warps`；
-- M/N/K 尾部 mask；
-- 正确性阈值和计时边界。
+这里的输入、输出与累加器是 FP32。源码调用的是 `tl.dot(a, b)`，没有显式指定 `input_precision`；仅凭张量 dtype 不能认定各后端采用完全相同的乘法精度。迁移设备或比较精度时，应检查 [`tl.dot` 的精度选项](https://triton-lang.org/main/python-api/generated/triton.language.dot.html)，并重新校验误差。
 
-本章固定 `32×32×32`、`num_warps=4`。`triton-baseline` 使用 `GROUP_M=1`，相当于按单行 M tile 依次遍历 N tile。固定配置的目的，是先让 program 映射可解释，不在第一版把 autotune 搜索结果误当成原理。
+### 11.3.4 Triton：改变 program 编号与输出块的对应
 
-PyTorch ROCm 的 `torch.mm` 同时承担两个角色：
+一个 program 内的复用已经由 `tl.dot` 表达。相邻 program 之间还有另一种机会：它们如果在接近的时间访问同一片输入，这些数据可能仍在缓存中。
 
-1. 生成 Triton 输出的 GPU reference；
-2. 作为 `torch-mm` 独立入口，用相同 GPU event 方式计时。
-
-reference 的那次 `torch.mm` 不计入任何 Triton event 区间。
-
-## 11.9 Triton t1：Grouped ordering 改变什么
-
-矩阵较大时，多个输出 tile 可能复用相邻的 A 或 B 区域。Grouped ordering 不改变数学表达式和 tile 大小，只改变 program 的访问顺序：
+本章两版 Triton kernel 的数学和 tile 完全相同。`triton-baseline` 使用 `GROUP_M=1`，`triton-grouped` 使用 `GROUP_M=8`，只改变 program ID 到输出块的映射。下面是两版共同使用的编号代码：
 
 ```python
-programs_per_group = GROUP_M * programs_n
-group_id = program_id // programs_per_group
-first_program_m = group_id * GROUP_M
-group_m = min(programs_m - first_program_m, GROUP_M)
+program_id = tl.program_id(axis=0)
+programs_m = tl.cdiv(m, BLOCK_SIZE_M)
+programs_n = tl.cdiv(n, BLOCK_SIZE_N)
 
+programs_per_group = GROUP_SIZE_M * programs_n
+group_id = program_id // programs_per_group
+first_program_m = group_id * GROUP_SIZE_M
+group_m = tl.minimum(programs_m - first_program_m, GROUP_SIZE_M)
+program_in_group = program_id % programs_per_group
 program_m = first_program_m + program_in_group % group_m
 program_n = program_in_group // group_m
 ```
 
-本章对照为：
+以 4 行、3 列输出块为例，`GROUP_M=1` 的前几个编号对应 `(0,0)、(0,1)、(0,2)、(1,0)`；若用 `GROUP_M=2` 手算，则对应 `(0,0)、(1,0)、(0,1)、(1,1)`。后一种安排让两行输出块先围绕同一列 B 工作。
 
-| 版本 | tile | `num_warps` | `GROUP_M` |
-| ---- | ---- | ----: | ----: |
-| `triton-baseline` | 32×32×32 | 4 | 1 |
-| `triton-grouped` | 32×32×32 | 4 | 8 |
+这只是编号与数据位置的安排，并没有要求 GPU 严格按编号串行执行。缓存命中率是否改善、改善能否抵消其他开销，仍需观察实验；[Triton 官方矩阵乘教程](https://triton-lang.org/main/getting-started/tutorials/03-matrix-multiplication.html) 解释了这种安排的动机。
 
-两版唯一有意改变的是 program 排序。Grouped ordering 可能改善相邻 program 的 cache 局部性，也可能对当前 shape 没有稳定收益。必须先记录相同 M/N/K 下多次独立运行的范围，再决定是否保留。
+::: figure fig-matmul-group-order
+<MatmulExecution scenario="group-order" />
 
-本章不启用 autotune。等固定 baseline 在远端跑通后，可以只给出少量、可解释的 tile/group 组合，并把每次选中的配置、shape、ROCm/Triton 版本落盘；否则“最快配置”无法复现。
+`GROUP_M=1` 与 `GROUP_M=8` 的 program 编号顺序对照（3 行 × 4 列输出块）：左图按行走、右图同组行围绕同一列 B。编号点亮顺序即 program_id 顺序；结尾给出 9070 XT 两版实测。
+:::
 
-## 11.10 非方阵与三种尾块
+如 @fig-matmul-group-order 所示，`GROUP_M=8` 让相邻编号的 program 连续访问同一列 B——这是把「缓存里可能还有」变成现实的编号安排。
 
-只测 `512×512×512` 会遮住很多错误。本章把 M/N/K 分开暴露，并在 `run_all.sh` 中覆盖 `3×5×7`、`15×17×19`、`17×19×23`、`31×33×29` 等非方阵、非整除 shape。
+### 11.3.5 Triton：从 host 启动，并检查完整输出
 
-| 尾部 | HIP tiled | Triton |
-| ---- | ---- | ---- |
-| M 尾块 | 越界 thread 向 LDS 写 0，最终不写 C | `offsets_m < M` 关闭 A load 与 C store |
-| N 尾块 | B 越界列向 LDS 写 0，最终不写 C | `offsets_n < N` 关闭 B load 与 C store |
-| K 尾块 | 越界 A/B 输入向 LDS 写 0 | `current_k < K` mask 两个输入 tile |
+Host 的 `launch` 已经收到 GPU 上的 a、b 和预先分配的 output。两版 Triton 共用下面这段启动代码：
 
-Triton 的输出 mask 只能保护 store，不能代替 K 方向 load mask；HIP 中 M/N 越界 thread 也不能在第一次同步前提前 return。两条路线都必须先通过尾块正确性，再记录主 shape 性能。
-
-## 11.11 HIP 与 Triton 的分块层次对照
-
-| 问题 | HIP tiled | Triton `tl.dot` |
-| ---- | ---- | ---- |
-| 谁选择输出 tile | `blockIdx.x/y` | `program_id` 映射到 `pid_m/pid_n` |
-| tile 内并行实例 | 16×16 threads | 编译器映射一个 32×32 program |
-| 输入 tile | 显式 `__shared__` 数组 | `tl.load` 得到张量 tile |
-| K 方向累加 | thread 标量循环 | program 内 `tl.dot` |
-| 同步 | 显式 `__syncthreads()` | 由 program 内数据依赖与编译器处理 |
-| 尾块 | `if` + LDS 填零 | load/store mask + `other=0` |
-| 排序 | grid/block 形状与 launch 顺序 | `program_id` 到 M/N tile 的映射 |
-| 资源证据 | LDS/VGPR/SGPR/workgroup | VGPR/SGPR、program tile、生成 kernel |
-
-两种语言的抽象层不同，但优化问题相同：哪些输入由哪些输出复用、复用发生在哪一级存储、为复用付出了多少同步和资源成本。
-
-## 11.12 tile 形状怎么选
-
-前几节回答了「分块为什么快」，本节回答「分块怎么选」——BLOCK_M/BLOCK_N/BLOCK_K 和 num_warps 组合成什么形状最好。这是个工程问题，不是一个公式问题。下面的数据来自消费级 GPU 上的一组真实 tile 扫描实验（RDNA3/RDNA3.5/RDNA4 与 NVIDIA 对照，见延伸阅读），平台与书基线不同，但结论的方法可以照搬。
-
-### 11.12.1 为什么不能信任「默认配置」
-
-Triton 的 `autotune` 会在给定配置列表里暴力搜索最优组合。问题有两个：
-
-1. **搜索空间面向数据中心 GPU 设计**。默认配置列表（128×128×64、64×64×64 之类）是为 A100/H100 这类大 LDS、大 wavefront 的芯片调的；消费卡 RDNA3 的 LDS 只有 64KB，很多「默认好配置」直接超出 LDS 上限或占用率过低。
-2. **暴力搜索本身就慢**。每个 shape 都要把全部候选跑一遍（几十次编译 + 跑分），而 LLM 推理的 shape 是动态的（prefill/decode/expert 各不相同），每次都现场搜不现实。
-
-### 11.12.2 tile 敏感性：选错 tile 可能差一个数量级
-
-在 MoE 形状（16×8192×2048，一个小 M、大 N/K 的典型 decode/expert shape）上扫描全部合理 tile，性能差距：
-
-| 平台 | 最优/最差 tile 性能差（spread） |
-|---|---|
-| RX 7900 XTX（RDNA3） | **12.8x** |
-| Radeon 8060S（RDNA3.5） | 2.2x |
-| Radeon AI PRO R9700（RDNA4，≈书基线） | 3.4x |
-| RTX 5060 Ti（Blackwell） | 2.0x |
-| RTX 3080（Ampere） | 1.4x |
-
-两个要点：
-
-- **消费 AMD 卡上 tile 选错的代价比 NVIDIA 大得多**——RDNA3 上最差 tile（128×256×32）只有最优 tile（16×64×32）的 1/12.8 性能。这不是「差 20%」的小事，是「跑不动」和「跑得动」的区别。
-- **最优 tile 本身跨代稳定**：在 `16×8192×2048` 这个 MoE 形状上，`16×64×32` 是 RDNA3/RDNA3.5/RDNA4 三代共同的最优。所以「这个形状该用什么 tile」是有规律可循的，值得把它总结成规则而不是每次穷举（但注意第 11.12.4 节：BLOCK_K 的最优值会随 shape 和平台变，规则不能硬编码）。
-
-### 11.12.3 形状比面积重要
-
-扫描 128×14336×4096（prefill 形状）时的部分结果：
-
-| tile | 面积 (BM×BN) | TFLOPS | 相对最优 |
-|---|---|---|---|
-| **128×64×32 w4** | 8192 | 42.7 | 100% |
-| 128×128×32 w8 | 16384 | 37.5 | 88% |
-| 64×128×32 w4 | 8192 | 30.1 | 70% |
-| 64×64×32 w4 | 4096 | 25.9 | 61% |
-| 16×256×64 w4 | 4096 | 6.7 | 16% |
-
-对照 `128×64` 和 `64×128`：**面积完全相同（8192），性能差 1.42x**。原因在于 BLOCK_M 和实际 M 的关系——M=128 时 BLOCK_M=128 让每个 thread 的寄存器累加器正好吃满一行，而 BLOCK_M=64 需要两轮、每轮都要重新加载 A tile。`16×256` 面积最小却最差：BLOCK_M=16 太小，每 warp 只处理 16 行，访存合并度差。
-
-由此得到一个可操作的启发：**BLOCK_M 尽量对齐实际 M，不要用极端长宽比（aspect ratio > 8 要警惕）**。极端瘦高的 tile（16×256）几乎总是错的。
-
-### 11.12.4 BLOCK_K：跟着 LDS 容量走
-
-BLOCK_K 决定每个 K 步加载进 LDS 的 A/B 切片厚度。它的最优值高度依赖平台与 shape：
-
-| 平台 | LDS | 实测最优 BLOCK_K |
-|---|---|---|
-| RDNA3（7900XTX） | 64KB | 32（MoE 16×8192×2048） |
-| RDNA3.5（8060S） | 64KB | 32（MoE 16×8192×2048） |
-| RDNA4（R9700，gfx1201） | 128 KiB/WGP（单 workgroup 上限 64 KB） | 128（256×256×4096 shape 实测） |
-
-> LDS 容量按 ROCm gpu-specs 表：gfx1201 每 WGP 共 128 KiB，单个 workgroup 可分配的上限为 64 KB——所以「64 KB」和「128 KiB」说的是两件事，本表按每 WGP 容量列出。
-
-RDNA3 上 BLOCK_K=32 占优的原因是：32 是 `half` 类型 64KB LDS 能容纳的「整片 tile 不溢出」的甜点，且 32 的 K 步让加载与计算重叠更顺。RDNA4 在另一个 shape 上最优变成 128——**结论：BLOCK_K 没有全局最优，跟着 LDS 容量和 shape 实测**。早期「100KB smem 所以 BLOCK_K=128」的假设在 Blackwell 上也被实测推翻（8/8 MoE shape 最优仍是 32）。
-
-### 11.12.5 用算术强度分区先判断访存还是算力
-
-选 tile 之前，先算这道题的算术强度，决定优化目标：
-
-$$
-I = \frac{2MNK}{4(MK + NK + MN)}
-$$
-
-- **I < 10（访存受限）**：MoE、decode 这类小 M 形状。tile 的选择要强惩罚低占用率——访存受限的 kernel 需要大量在飞的 load 才能压满带宽。
-- **I ≥ 10（算力受限）**：大 prefill 形状。占用率惩罚降为零，专注 tile 的寄存器复用和 LDS 吞吐。
-
-这个分区直接解释了第 11.2 节的现象：为什么同一个 GEMM 在不同形状下瓶颈完全不同。它也是「硬件先验裁剪」的第一条规则——按算术强度把 shape 分成两类，每类用不同的 tile 选择标准，而不是一套规则打天下。
-
-### 11.12.6 把规则变成推荐器
-
-把这些观察固化下来，就得到一个可复用的 tile 推荐流程：
-
-```text
-输入：M, N, K, dtype, GPU 型号
-1. 硬件先验裁剪：按 tensor core 维度、LDS 容量、寄存器压力、对齐要求
-   剪掉不可行配置（通常能剪掉 95%+ 的搜索空间）
-2. 算术强度分区：I < 10 → 强占用率惩罚；I ≥ 10 → 零占用率惩罚
-3. shape 效率修正：BLOCK_M 贴近 M 加分；极端长宽比惩罚
-4. 输出 Top-K 配置（带预期性能排序）
+```python
+m, k = a.shape
+_, n = b.shape
+grid = (triton.cdiv(m, BLOCK_M) * triton.cdiv(n, BLOCK_N),)
+matmul_kernel[grid](
+    a,
+    b,
+    output,
+    m,
+    n,
+    k,
+    BLOCK_SIZE_M=BLOCK_M,
+    BLOCK_SIZE_N=BLOCK_N,
+    BLOCK_SIZE_K=BLOCK_K,
+    GROUP_SIZE_M=implementation.group_m,
+    num_warps=NUM_WARPS,
+)
 ```
 
-真实实验里这套规则选出的 Top-1 配置，prefill 达到 cuBLAS 的 93-100%，decode 达 100-121%，MoE expert 超 cuBLAS 105-106%；在 RDNA4 上超 Composable Kernel 27%（18.45 vs 14.52 TFLOPS）。它不保证最优——最优只能靠实测——但它能保证「第一轮就落在合理的配置附近」，把 12.8x 的踩坑空间压缩到一个很小的范围。
+`run_implementation` 在计时前后分别调用 `validate`，与 `torch.mm(a,b)` 的完整输出比较。benchmark 先预热，再用 GPU event 记录每次 launch；分配、CPU 到 GPU 复制、参考计算与正确性校验都放在计时区间外。第一次运行可能触发 JIT 编译，因此先预热再读延迟。
 
-这与第 15 章工具封装、第 16 章 Agent 循环的思路完全一致：**把领域知识固化进规则/工具，而不是每次现场搜索**。tile 推荐器就是这类领域工具里最重要的一件。
+</template>
 
-## 11.13 运行、输出与 Profiling
+</ImplementationTabs>
 
-### 11.13.1 环境与一键入口
+## 11.4 尾块和精度都属于正确性
 
-在 Radeon RX 9070 XT 实验机上：
+矩阵尺寸不一定是 tile 大小的整数倍。我们分别看 M、N、K，避免用一个输出 mask 掩盖三种不同边界。
+
+| 不整除的方向 | 需要保护什么 | HIP tiled | Triton |
+| --- | --- | --- | --- |
+| M | A 的尾行与 C 的尾行 | A 越界填 0，最终不写无效 C | A load 与 C store 检查行号 |
+| N | B 的尾列与 C 的尾列 | B 越界填 0，最终不写无效 C | B load 与 C store 检查列号 |
+| K | 最后一次点积的输入 | A/B 越界部分都填 0 | 两个 load 都检查 `current_k < k` |
+
+以 `M=N=16、K=17` 为例，HIP 需要两轮 K tile。第二轮只有 `inner=0` 有效，其余位置填 0。这个 0 不改变点积结果，却让所有线程可以走完同样的加载、同步和计算流程。**tiled kernel 中不能让 M/N 越界线程提前退出**，因为其余线程还要与它们协作加载并到达同步点。
+
+运行脚本已包含 `1×1×1`、`3×5×7`、`15×17×19`、`17×19×23`、`31×33×29`。它们比只跑一个整齐的方阵更容易暴露地址、尾块和未初始化输出问题。
+
+浮点加法还有另一个边界：改变求和顺序可能改变舍入结果。本章 HIP 使用 CPU double 累加再转 FP32 的参考值，绝对和相对阈值均为 `1e-3`；Triton 与 PyTorch `torch.mm` 比较，两个阈值均为 `1e-2`。因此 `correct=OK` 表示通过各自明确的误差标准，不表示逐位相等，也不证明任意输入都满足同样误差。
+
+两条语言路线也使用各自的确定性输入生成方法：HIP 是整数公式生成，Triton 是固定随机种子的 `torch.rand`。相同 seed 不代表它们生成同一组元素。下面的结果适合判断**同一路线内的改动**，跨路线数值只作这组实现的观察，不能写成严格同输入、同精度要求的语言排名。
+
+## 11.5 实测支持了哪些判断
+
+把算法解释和已有记录放在一起，我们可以检查两个具体假设：HIP 显式复用 LDS 是否有收益，Triton 改变 program 排序是否稳定有收益。
+
+实验在 Radeon RX 9070 XT（gfx1201）、ROCm 7.13、原生 Ubuntu 24.04 上完成，PyTorch 为 `2.11.0+rocm7.13.0`，Triton 为 `3.6.0`。以下记录来自 2026-07-19，形状是 `M=N=K=512`、FP32；每个实现跑 3 个独立进程，每进程预热 10 次、计时 50 次。
+
+| 实现 | 进程中位数的中心值（ms） | 3 个进程的中位数范围（ms） | 算法吞吐（TFLOP/s） |
+| --- | ---: | ---: | ---: |
+| `hip-naive` | 0.400 | 0.397–0.406 | 0.671 |
+| `hip-tiled` | 0.183 | 0.183–0.185 | 1.47 |
+| `torch-mm` | 0.131 | 0.0644–0.134 | 2.05 |
+| `triton-baseline` | 0.0987 | 0.0870–0.0990 | 2.72 |
+| `triton-grouped` | 0.0867 | 0.0851–0.119 | 3.10 |
+
+中心值取 3 个进程中位数的中位数，范围也来自这 3 个中位数，不是统计置信区间。`TFLOP/s` 用 `2MNK / 时间` 换算，所有边界与主 shape 记录均通过各自正确性检查。
+
+::: figure fig-matmul-performance
+![Radeon RX 9070 XT 上 512×512×512 FP32 Matmul 的延迟和进程范围](./images/matmul-performance.svg)
+
+已有 Matmul 实测。比较实现时同时观察中心值和进程范围；跨语言输入生成与误差阈值的差异见 11.4 节。
+:::
+
+@fig-matmul-performance 支持 HIP tiled 在这组测试中稳定优于 naive：两者的进程范围分离。这与“让输入在 block 内复用”的动机一致，但不能仅凭延迟就认定物理显存流量降低了多少。
+
+Triton grouped 的中心值更低，可它的范围与 baseline 重叠，最慢进程还超过 baseline 的范围。我们应保留这个负结果：**当前记录不足以说明 grouped ordering 稳定获胜**。`torch-mm` 的范围也较宽，不能取其中某个最低值作通用结论。
+
+正式记录位于 `code/part2-kernels/chapter11/EXPERIMENT.md`，汇总在同目录 `evidence/summary.csv`，环境和源码版本在 `evidence/manifest.json`。早期日志使用旧章节号 `chapter10`，对应的仍是这组 Matmul 实验。
+
+逐实现 trace 可以帮助核对 dispatch，但当前 `profile_summary.csv` 中多个 grid、LDS 和 VGPR 字段是 `unavailable`。它们表示未得到可用字段，不能当成 0，也不足以据此宣称更高占用率或更少 cache miss。Triton trace 中还有参考计算与校验 kernel，读取时间前要先筛选 `matmul_kernel`。
+
+## 11.6 选择 tile 时，先提出可验证的问题
+
+当前数据只比较 HIP 的两个固定实现，以及 Triton 的两种排序。它没有测出一套适用于所有 shape 或 GPU 的最佳 tile。扩大 tile 的理由与代价可以先从源码推导：
+
+| 改动 | 希望得到什么 | 需要同时检查什么 |
+| --- | --- | --- |
+| 增大输出块的 M/N 方向 | 同一输入服务更多输出 | 累加器变多、尾块浪费、可同时运行的块数 |
+| 增大 K 方向 tile | 减少 K 循环轮数 | 输入暂存空间、每轮工作量、K 尾部浪费 |
+| 一个 HIP 线程算多个输出 | 读入一个值后更新多个累加器 | VGPR 使用量、依赖链与执行时间 |
+| 改变 program 分组 | 让可能共享输入的 program 靠近 | 多进程时间范围，以及可用的缓存证据 |
+
+例如一个线程若同时计算相邻两列，就可以用同一个 A 值更新两个累加器。这是**寄存器分块**的起点。它增加了复用，也增加了每个线程要保留的状态；本章还没有相应实测版本，可以把它作为练习，不能预先填写加速比。
+
+还可以先算一个理想化的算术强度。假设 A、B 各从显存读一次，C 写一次，FP32 的算法字节数为 `4(MK+KN+MN)`：
+
+$$
+I_{\mathrm{ideal}}=\frac{2MNK}{4(MK+KN+MN)}\quad\text{FLOP/Byte}.
+$$
+
+这个理想模型忽略重复读入、缓存与其他流量，用来理解 shape 改变时复用潜力的变化。判断带宽还是计算吞吐更可能构成限制，需要把它与同设备、同精度口径下的 Roofline 转折点 `计算吞吐上限 / 带宽上限` 对照；不存在统一的 `I=10` 分界。即便落在理论计算侧，实际 kernel 仍可能受同步、指令依赖或资源限制。
+
+第一次改参数时，只保留少量能解释的候选。先检查输出，再记录选择了什么 tile、误差和进程时间范围。自动搜索只是在候选中找较好的配置，不会替我们决定误差要求，也不会证明一个配置适合其他 GPU。
+
+## 11.7 复跑与练习
+
+先按已有脚本重现基线，确认输入、校验和计时路径一致，再动参数。以下命令在配置好 Part 2 环境的 Radeon RX 9070 XT 实验机执行：
 
 ```bash
 cd code/part2-kernels
@@ -469,141 +421,45 @@ source ./activate-rocm.sh
 bash chapter11/run_all.sh
 ```
 
-`run_all.sh` 会：
-
-```text
-检查并激活 code/part2-kernels/.venv
-→ 用 hipcc --offload-arch=gfx1201 -O3 编译 HIP
-→ 对 HIP/PyTorch/Triton 跑非方阵与尾块 shape
-→ 对主 shape 跑 HIP naive/tiled
-→ 对主 shape 跑 torch/baseline/grouped
-→ 每个实现计时后再次校验
-```
-
-默认主 shape 是 `512×512×512`，可用环境变量覆盖：
+脚本会编译 HIP、运行边界 shape，然后计时主 shape 的 HIP、PyTorch 和 Triton 实现。默认 `warmup=5、repeat=20`，用于先跑通流程。复现表格所用的单个正式进程配置时，使用：
 
 ```bash
-M=1024 N=768 K=513 WARMUP=10 REPEAT=50 \
-    bash chapter11/run_all.sh
+RUN_EDGE_CASES=0 M=512 N=512 K=512 \
+WARMUP=10 REPEAT=50 SEED=20260719 bash chapter11/run_all.sh
 ```
 
-若只想先做快速正确性 smoke test：
+正式比较应分别运行 3 个独立进程并保留日志。输出里的 `precheck/postcheck` 先确认正确性；再看 `median_ms` 与各进程范围。`min_ms` 可以作为补充观察，不能替代稳定性判断。
+
+需要 profiler 时，单独运行 `chapter11/profile_all.sh`。该脚本要求 `SOURCE_COMMIT` 标识源码；将下面的占位内容替换为本地 Git 维护机提供、与传到实验机的源码对应的 SHA，实验机不执行 Git 操作：
 
 ```bash
-M=65 N=67 K=69 WARMUP=0 REPEAT=1 \
-    bash chapter11/run_all.sh
+SOURCE_COMMIT="<与实验源码对应的提交 SHA>" \
+PROFILE_WARMUP=0 PROFILE_REPEAT=5 bash chapter11/profile_all.sh
 ```
 
-输出统一使用单行 `RESULT key=value ...`。重点保留：
+profiler 的时间用于观察 dispatch 与资源，benchmark 的 GPU event 时间用于性能对照，两者分开记录。
 
-```text
-implementation / runtime
-m / n / k
-tile 或 block_m/block_n/block_k/group_m
-warmup / repeat
-correct / max_abs_error
-min_ms / median_ms / mean_ms / tflops
-```
+尝试下面几道练习；先写预测，再修改和验证：
 
-`tflops` 是按 `2MNK / median_time` 换算的算法性能，不等于硬件指令计数。
-
-### 11.13.2 单独运行 HIP 或 Triton
-
-```bash
-cd code/part2-kernels
-source ./activate-rocm.sh
-
-hipcc --offload-arch=gfx1201 -O3 -std=c++17 \
-    chapter11/matmul_hip.hip -o /tmp/matmul_hip
-
-/tmp/matmul_hip --version naive --m 257 --n 259 --k 263 \
-    --warmup 5 --repeat 20
-/tmp/matmul_hip --version tiled --m 257 --n 259 --k 263 \
-    --warmup 5 --repeat 20
-
-python chapter11/matmul_triton.py --version baseline \
-    --m 257 --n 259 --k 263 --warmup 5 --repeat 20
-python chapter11/matmul_triton.py --version grouped \
-    --m 257 --n 259 --k 263 --warmup 5 --repeat 20
-```
-
-### 11.13.3 用 `rocprofv3` 核对 dispatch 与资源
-
-profiler 要与 GPU event benchmark 分开跑。先编译并做一次正常预热，再采短 trace：
-
-```bash
-mkdir -p /tmp/hello-gpu-ch10-profile
-
-rocprofv3 --kernel-trace \
-    --output-directory /tmp/hello-gpu-ch10-profile \
-    --output-file hip-naive --output-format csv \
-    -- /tmp/matmul_hip --version naive --m 512 --n 512 --k 512 \
-       --warmup 0 --repeat 5
-
-rocprofv3 --kernel-trace \
-    --output-directory /tmp/hello-gpu-ch10-profile \
-    --output-file hip-tiled --output-format csv \
-    -- /tmp/matmul_hip --version tiled --m 512 --n 512 --k 512 \
-       --warmup 0 --repeat 5
-```
-
-Triton 第一次运行可能包含 JIT 编译，先在 profiler 外预热：
-
-```bash
-python chapter11/matmul_triton.py --version all \
-    --m 512 --n 512 --k 512 --warmup 1 --repeat 1
-
-rocprofv3 --kernel-trace \
-    --output-directory /tmp/hello-gpu-ch10-profile \
-    --output-file triton-grouped --output-format csv \
-    -- python chapter11/matmul_triton.py --version grouped \
-       --m 512 --n 512 --k 512 --warmup 0 --repeat 5
-```
-
-第一轮只读这些列：
-
-| 字段 | 用途 |
-| ---- | ---- |
-| `Kernel_Name` | 排除 reference、初始化或其他 kernel |
-| 时间戳/Duration | 和 GPU event 的量级互相核对 |
-| Grid/Workgroup Size | 确认二维输出覆盖和 program 数 |
-| LDS | 检查 HIP tiled 是否确实分配共享存储 |
-| VGPR/SGPR | 为后续寄存器分块建立 baseline |
-
-当前仓库已提交 curated summary、manifest、profile 索引和实验记录；原始三进程日志与完整 trace 保留在仓库外。没有这些证据时仍不能只抄一个毫秒数并写成“更快”。
-
-## 11.14 练习
-
-1. 手算 `M=3, N=5, K=7` 时 `C[2,4]` 访问的 A/B 一维下标，再和 CPU reference 循环对照。
-2. 把 `run_all.sh` 的边界 shape 改成 `M=16, N=16, K=17`，说明只有哪一个维度出现尾块，以及 HIP LDS 中哪些位置被填 0。
-3. 保持 `M/N/K` 不变，只把 HIP `kTile` 从 16 改成 8。记录 grid、workgroup、LDS、同步轮数和时间，不要只记录一个最终延迟。
-4. 设计一个 1×2 寄存器分块草图：列出 thread 需要的两个 accumulator、共享的 A 值和两个 B 值；先不写代码，估算 VGPR 增量。
-5. 把 Triton `GROUP_M` 改为 4，保持 tile 和 `num_warps` 不变。至少跑 3 个独立进程，比较运行范围是否重叠。
-6. 选择一个极瘦矩阵，如 `M=4096, N=8, K=1024`。先预测固定 `32×32` tile 会浪费哪些位置，再用正确性与 trace 验证。
-7. 为转置 B 设计新的 row-major 地址公式。先修改 CPU reference，再修改 HIP/Triton；若只改 kernel 而 reference 不变，测试应失败。
-
-## 正式实验结果
-
-![Chapter 11 Matmul 性能对比](./images/matmul-performance.png)
-
-主 shape 为 `512×512×512` FP32。HIP tiled 的 `0.183022 ms` 稳定优于 naive 的 `0.400323 ms`。Triton grouped 的中心值为 `0.086721 ms`，但三进程范围与 baseline 重叠；`torch-mm` 也出现较宽进程范围。因此这里保留范围，不把单次最低值写成稳定胜负。
-
-完整记录见 `code/part2-kernels/chapter11/EXPERIMENT.md`。
+1. 用 11.1 节的小矩阵手算 `C[1,1]` 的三个部分和。提示：依次应得到 `0、5、17`，同时核对 A/B 的一维下标。
+2. 对 `M=16、N=16、K=17`，画出 HIP 第二轮 A/B tile 哪些位置有效。提示：A 只有第 0 列有效，B 只有第 0 行有效；所有线程仍要到达两次同步。
+3. 保持问题不变，把 HIP `kTile` 从 16 改成 8。先预测 block 线程数、两块 LDS 的源码字节数和 K 循环轮数如何变化，再比较正确性与时间。不要把这些源码计算写成 profiler 测量值。
+4. 为一个 HIP 线程负责相邻两列画出累加关系。提示：需要两个累加器，每轮共享一个 A 值，读取两个 B 值；思考最后一列越界时怎么办。
+5. 将 Triton 分组参数改成 4，保持 tile 和 `num_warps` 不变。至少运行 3 个独立进程；如果范围重叠，说明这组结果还不足以支持什么结论。
 
 ## 本章小结
 
-- Matmul 的每个输出是长度 K 的点积；row-major 地址分别使用 K、N、N 作为行步长。
-- 朴素实现正确但没有显式组织跨输出复用；tile 让一块 A/B 数据共同更新多个输出。
-- HIP naive 与 LDS tiled 共享同一 CPU reference、边界 shape 和 GPU event 计时边界，便于做受控对照。
-- M/N 尾块保护输出覆盖，K 尾块保护点积输入；HIP 用 LDS 填零，Triton 用 mask 与 `other=0`。
-- 寄存器分块能增加 LDS fragment 的复用，也会提高 VGPR 压力；当前第一版只讲实验设计，不虚构 v2/v3 收益。
-- Triton baseline/grouped 使用相同 `tl.dot` tile，只改变 program 排序；更少 cache miss 是待验证假设，不是代码名称自带的结论。
-- 当前已完成源码、静态检查、边界正确性、3 个独立正式进程与逐实现 profiler 证据。
+- 矩阵乘的每个输出是一个点积，M/N 决定输出位置，K 决定累加范围。
+- 分块把多个输出共同需要的数据组织起来，累加块跨 K 轮次保留。HIP 显式管理 LDS 与同步，Triton 用张量块和 `tl.dot` 表达计算。
+- M/N 尾块保护输出覆盖，K 尾块保护点积输入；填零、mask 和同步必须共同保持正确性。
+- 当前 9070 XT 记录支持 HIP tiled 的稳定收益，没有证明 Triton grouped 稳定优于 baseline。输入、误差阈值和进程波动都要随结果一起读。
+- 更大的 tile、更多的线程内累加器都有代价，下一次优化应从一个具体、可检验的复用假设开始。
+
+到这里，我们已经学会让数据在一次矩阵乘内部多用几次。[下一章](../chapter12/index.md) 把矩阵乘与 Softmax 连起来，研究能否让它们之间的中间结果也少写回显存。
 
 ## 延伸阅读
 
-- [AMD HIP Programming Model](https://rocm.docs.amd.com/projects/HIP/en/latest/understand/programming_model.html)
-- [`rocprofv3` 使用文档](https://rocm.docs.amd.com/projects/rocprofiler-sdk/en/latest/how-to/using-rocprofv3.html)
-- [Triton Matrix Multiplication 教程](https://triton-lang.org/main/getting-started/tutorials/03-matrix-multiplication.html) 与 [`tl.dot` API](https://triton-lang.org/main/python-api/generated/triton.language.dot.html)
-- [PyTorch HIP 语义](https://docs.pytorch.org/docs/stable/notes/hip.html)
-- [tile-optimizer：消费卡 GEMM tile 优化实验](https://github.com/datawhalechina/hello-gpu) 附录数据 — 第 11.12 节 tile 扫描数据的来源（RDNA3/RDNA3.5/RDNA4 跨代对照、Triton vs Composable Kernel 对比）
+- [Triton Matrix Multiplication 教程](https://triton-lang.org/main/getting-started/tutorials/03-matrix-multiplication.html)：分块地址与 program 排序的进一步解释，示例 dtype 和配置与本章不同。
+- [`tl.dot` API](https://triton-lang.org/main/python-api/generated/triton.language.dot.html)：输入形状、累加器与乘法精度选项。
+- [AMD HIP Programming Model](https://rocm.docs.amd.com/projects/HIP/en/latest/understand/programming_model.html)：线程组织与协作模型。
+- [`rocprofv3` 使用文档](https://rocm.docs.amd.com/projects/rocprofiler-sdk/en/latest/how-to/using-rocprofv3.html)：trace 与性能计数器的采集方法。

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useData } from 'vitepress'
-import mermaid from 'mermaid'
 
 const props = defineProps<{
   code: string
@@ -22,10 +21,24 @@ async function renderDiagram() {
   }
   renderCount += 1
   error.value = ''
+  const { default: mermaid } = await import('mermaid')
   mermaid.initialize({
     startOnLoad: false,
     securityLevel: 'strict',
-    theme: isDark.value ? 'dark' : 'default',
+    theme: 'base',
+    themeVariables: {
+      darkMode: isDark.value,
+      fontFamily: 'Helvetica Neue, Arial, PingFang SC, Microsoft YaHei, sans-serif',
+      primaryColor: isDark.value ? '#172a29' : '#e7f0eb',
+      primaryTextColor: isDark.value ? '#edf4f2' : '#203532',
+      primaryBorderColor: isDark.value ? '#739c8d' : '#9ab8aa',
+      lineColor: isDark.value ? '#adbcbe' : '#536561',
+      secondaryColor: isDark.value ? '#172833' : '#e8f1f6',
+      tertiaryColor: isDark.value ? '#1c2526' : '#f0f4f2',
+      edgeLabelBackground: isDark.value ? '#111c1f' : '#f8faf9',
+      clusterBkg: isDark.value ? '#111c1f' : '#f0f4f2',
+      clusterBorder: isDark.value ? '#344c4c' : '#c8d7d0',
+    },
   })
 
   try {

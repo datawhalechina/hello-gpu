@@ -1,4 +1,4 @@
-# Chapter 12 RMSNorm — RX 9070 XT 实验记录
+# Chapter 13 RMSNorm — RX 9070 XT 实验记录
 
 ## 环境与口径
 
@@ -31,6 +31,6 @@ PROFILE_WARMUP=0 PROFILE_REPEAT=5 bash profile_all.sh
 
 ## 结论与限制
 
-按行单线程串行归约是稳定的负基线；HIP block 协作把时间降到约 `0.058 ms`。本 shape 上 Triton t1 的中心值略低于 t0，但范围接近，不能推导出 8 warps 在其他列数上一律更好。融合减少的是显式中间数组和 dispatch；真实物理显存（GDDR6）流量仍需专门计数器证明。
+按行单线程串行归约是稳定的负基线；HIP block 协作把时间降到约 `0.058 ms`。本 shape 上 Triton t1 的中心值略低于 t0，但范围接近，不能推导出 8 warps 在其他列数上一律更好。当前各版都已在单个 kernel 内完成主要数学步骤，serial/block 对照不测量减少 dispatch 的融合收益；真实物理显存（GDDR6）流量仍需专门计数器证明。
 
 证据入口：[`manifest.json`](evidence/manifest.json)、[`summary.csv`](evidence/summary.csv)、[`summary.json`](evidence/summary.json)。

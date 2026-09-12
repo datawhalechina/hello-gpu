@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="710" viewBox="0 0 1200 710" role="img" aria-labelledby="title desc">
+<title id="title">一个线程如何找到自己的数组元素</title>
+<desc id="desc">概念示意：n 等于 1048576，threads 等于 256，blocks 等于 4096。Grid 包含从 block 0 到 block 4095 的逻辑分组。放大 block 2，其中 thread 5 的全局下标为 2 乘 256 加 5，等于 517。该线程读取 a[517] 和 b[517]，写入 c[517]。分组不表示同时执行。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 Z" fill="#59646B"/></marker>
+<marker id="blue-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 1 L 9 5 L 0 9 Z" fill="#2F6E9E"/></marker>
+<marker id="orange-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 1 L 9 5 L 0 9 Z" fill="#AD651E"/></marker>
+<marker id="green-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 1 L 9 5 L 0 9 Z" fill="#377554"/></marker>
+</defs>
+<rect width="1200" height="710" fill="#FCFBF7"/>
+<g font-family="PingFang SC, Noto Sans CJK SC, Microsoft YaHei, sans-serif" fill="#27323A">
+<text x="48" y="57" font-size="34" fill="#27323A" text-anchor="start" font-weight="650">一个线程如何找到自己的数组元素</text>
+<text x="48" y="99" font-size="27" fill="#59646B" text-anchor="start" font-weight="400">n = 1,048,576　　threads = 256　　blocks = 4,096</text>
+<text x="48" y="142" font-size="26" fill="#27323A" text-anchor="start" font-weight="600">Grid：4,096 个 block；每个 block 有 256 个线程</text>
+<rect x="48" y="162" width="227" height="93" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="161.5" y="200" font-size="27" fill="#27323A" text-anchor="middle" font-weight="600">block 0</text>
+<text x="161.5" y="236" font-size="22" fill="#59646B" text-anchor="middle" font-weight="400">idx 0—255</text>
+<rect x="295" y="162" width="227" height="93" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="408.5" y="200" font-size="27" fill="#27323A" text-anchor="middle" font-weight="600">block 1</text>
+<text x="408.5" y="236" font-size="22" fill="#59646B" text-anchor="middle" font-weight="400">idx 256—511</text>
+<rect x="542" y="162" width="227" height="93" rx="8" fill="#EAF2F8" stroke="#2F6E9E" stroke-width="2"/>
+<text x="655.5" y="200" font-size="27" fill="#27323A" text-anchor="middle" font-weight="600">block 2</text>
+<text x="655.5" y="236" font-size="22" fill="#59646B" text-anchor="middle" font-weight="400">idx 512—767</text>
+<rect x="844" y="162" width="308" height="93" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="998.0" y="200" font-size="27" fill="#27323A" text-anchor="middle" font-weight="600">block 4095</text>
+<text x="998.0" y="236" font-size="22" fill="#59646B" text-anchor="middle" font-weight="400">idx 1,048,320—1,048,575</text>
+<text x="806" y="215" font-size="34" fill="#27323A" text-anchor="middle" font-weight="400">…</text>
+<path d="M 542 255 L 48 315" fill="none" stroke="#2F6E9E" stroke-width="2" stroke-linejoin="round" stroke-dasharray="6 6"/>
+<path d="M 769 255 L 1152 315" fill="none" stroke="#2F6E9E" stroke-width="2" stroke-linejoin="round" stroke-dasharray="6 6"/>
+<rect x="48" y="315" width="1104" height="138" rx="8" fill="#F4F7F9" stroke="#2F6E9E" stroke-width="2"/>
+<text x="76" y="348" font-size="25" fill="#27323A" text-anchor="start" font-weight="600">放大 block 2：threadIdx.x 是组内编号</text>
+<rect x="76" y="367" width="120" height="62" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="136" y="409" font-size="29" fill="#27323A" text-anchor="middle" font-weight="400">0</text>
+<rect x="208" y="367" width="120" height="62" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="268" y="409" font-size="29" fill="#27323A" text-anchor="middle" font-weight="400">1</text>
+<rect x="340" y="367" width="120" height="62" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="400" y="409" font-size="29" fill="#27323A" text-anchor="middle" font-weight="400">2</text>
+<rect x="472" y="367" width="120" height="62" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="532" y="409" font-size="29" fill="#27323A" text-anchor="middle" font-weight="400">3</text>
+<rect x="604" y="367" width="120" height="62" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="664" y="409" font-size="29" fill="#27323A" text-anchor="middle" font-weight="400">4</text>
+<rect x="736" y="367" width="120" height="62" rx="8" fill="#EAF2F8" stroke="#2F6E9E" stroke-width="2"/>
+<text x="796" y="409" font-size="29" fill="#2F6E9E" text-anchor="middle" font-weight="600">5</text>
+<rect x="868" y="367" width="120" height="62" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="928" y="409" font-size="29" fill="#27323A" text-anchor="middle" font-weight="400">…</text>
+<rect x="1000" y="367" width="120" height="62" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="1060" y="409" font-size="29" fill="#27323A" text-anchor="middle" font-weight="400">255</text>
+<text x="600" y="500" font-size="26" fill="#27323A" text-anchor="middle" font-weight="400">选中线程：blockIdx.x = 2，threadIdx.x = 5</text>
+<text x="600" y="548" font-size="36" fill="#27323A" text-anchor="middle" font-weight="650">idx = 2 × 256 + 5 = 517</text>
+<rect x="98" y="577" width="228" height="63" rx="8" fill="#EAF2F8" stroke="#2F6E9E" stroke-width="2"/>
+<text x="212" y="619" font-size="29" fill="#2F6E9E" text-anchor="middle" font-weight="600">a[517]</text>
+<rect x="486" y="577" width="228" height="63" rx="8" fill="#FCF0E3" stroke="#AD651E" stroke-width="2"/>
+<text x="600" y="619" font-size="29" fill="#AD651E" text-anchor="middle" font-weight="600">b[517]</text>
+<rect x="874" y="577" width="228" height="63" rx="8" fill="#EAF4EC" stroke="#377554" stroke-width="2"/>
+<text x="988" y="619" font-size="29" fill="#377554" text-anchor="middle" font-weight="600">c[517]</text>
+<text x="406" y="620" font-size="38" fill="#27323A" text-anchor="middle" font-weight="400">+</text>
+<path d="M 763 609 H 843" fill="none" stroke="#377554" stroke-width="3" stroke-linejoin="round" marker-end="url(#green-arrow)"/>
+<text x="803" y="583" font-size="22" fill="#59646B" text-anchor="middle" font-weight="400">写入</text>
+<text x="48" y="688" font-size="25" fill="#59646B" text-anchor="start" font-weight="400">概念示意。block 是逻辑分组，不表示这些 block 或线程会同时执行。</text>
+</g></svg>

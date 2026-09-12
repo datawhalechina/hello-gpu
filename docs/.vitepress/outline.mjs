@@ -68,16 +68,16 @@ export const parts = [
       },
       {
         title: '第一个程序 + 性能分析',
-        summary: 'vector add 跑通、baseline benchmark、CPU vs GPU 与带宽利用率分析',
-        status: '🚧',
-        lead: '本章在已经验证环境可用、且对硬件有基本心智模型的基础上，带你跑通第一个真正的 GPU 程序——vector add。重点不是算子本身，而是借此建立后续所有实验都会复用的计时习惯，并读懂量出来的数字：用算术强度和带宽利用率，建立「这个算子离硬件极限有多远」的直觉。本章的 vector add 会贯穿整个 Part 1 profiling 篇。',
+        summary: '从向量加法出发，编写 HIP 程序、验证结果并学习 GPU 计时',
+        status: '✅',
+        lead: '把数组加法写成完整 HIP 程序，逐步理解主机数据、设备存储、核函数启动与结果检查。再用 PyTorch 实现学习 GPU event 计时，明确测量范围，并从算法数据量解释有效带宽。',
         sections: [
-          ['从已经验证的环境开始', '复用第 1 章的环境验证结果，直接进入本章代码目录。'],
-          ['跑通 vector add', '编写、编译并运行一个最小 HIP kernel，确认结果正确。'],
-          ['建立 baseline benchmark', '用固定输入、热身、重复运行和 GPU event 建立可复查的计时 baseline。'],
-          ['性能分析：CPU vs GPU 与带宽利用率', '对比 CPU/GPU 实测耗时，算算术强度判断 memory-bound，再用实测带宽对标称带宽估算利用率。'],
-          ['dispatch 开销：launch 本身要多久', '从 HIP API 到 AQL packet 的 dispatch 链路、async/sync 实测对比，以及 launch 开销对短 kernel 的意义。'],
-          ['留下实验底稿', '说明源码、命令输出、benchmark 配置应该如何对应到一份可复查的实验记录。']
+          ['准备环境', '进入已经验证过的篇内环境，明确命令目录和本次实测配置。'],
+          ['从向量加法到 HIP 程序', '从固定输入逐步展开分配、复制、线程索引、启动、等待与校验。'],
+          ['测量 PyTorch 向量加法', '区分手写 HIP 与 PyTorch 实现，用预分配、预热、重复和 event 建立基准。'],
+          ['解释测量结果', '读清 CPU 与 GPU 计时范围，用中位数和算法字节数计算有效带宽。'],
+          ['从算子时间到程序时间', '区分设备 event、主机等待和包含数据拷贝的完整流程。'],
+          ['记录与练习', '比较三个实际输入规模，手算线程覆盖和有效带宽，并记录测量条件。']
         ]
       }
     ]
@@ -90,43 +90,45 @@ export const parts = [
     chapters: [
       {
         title: 'benchmark 与可信计时',
-        summary: '热身、重复、GPU event、避免测量陷阱',
-        status: '🚧',
-        lead: '本章继续用 vector add 做主线，但重点从「跑通」转向「量准」。读完后，你应该能解释为什么不能只跑一次就下结论，以及热身、重复、同步、日志记录这些「无聊」的细节如何决定数字是否可信。',
+        summary: '从两种 event 计时方式理解预热、统计和有效带宽',
+        status: '✅',
+        lead: '沿用向量加法并加入数组复制，从一次真实输出逐步解释计时范围、预热、样本统计与字节换算，建立可以重复比较的基准。',
         sections: [
-          ['为什么不能凭感觉优化', '用常见误区说明没有可信数据的优化为什么容易走偏。'],
-          ['热身与缓存效应', '理解第一次运行为什么总是慢，以及为什么要丢掉前几次计时。'],
-          ['重复运行与统计', '说明重复次数、取中位数还是最小值、如何报告方差。'],
-          ['GPU event 计时', '用 HIP event 而不是 CPU wall clock 测量 kernel 真实耗时。'],
-          ['避免测量陷阱', '识别数据拷贝遗漏、测量范围错误、缓存偶然命中导致的伪提升。'],
-          ['可信 benchmark 的检查清单', '形成一份每次实验都该过一遍的检查清单。']
+          ['先确定计时的起点和终点', '区分设备 event、批量时间和正确同步的端到端计时。'],
+          ['运行一次完整的基准测试', '进入篇内环境，运行已验证的脚本并读懂输出字段。'],
+          ['从准备数据到记录一个样本', '逐段解释预分配、预热、正确性检查与 event 采样。'],
+          ['单次样本与批量平均值', '用计时图区分 min、median 与批量平均值。'],
+          ['从时间算出有效带宽', '手算算法字节数与单位，说明有效带宽的证据边界。'],
+          ['复测、记录与练习', '改变测量设置、保留实验记录，用手算题检查理解。']
         ]
       },
       {
         title: '用 rocprof 找到慢在哪里',
-        summary: '对照两个 vector add，只看 kernel 时间、工作划分和 stride 趋势',
-        status: '🚧',
-        lead: '本章先用 benchmark 比较两个 vector add 配置，再用 rocprof 查看每次 kernel dispatch。随后我们会检查 stride 实际同时改变了哪些底层变量，避免把一个有混杂的对照实验写成过早的性能结论。',
+        summary: '运行向量加法、读懂 kernel trace，并设计公平对照',
+        status: '✅',
+        lead: '先运行两个向量加法并画出线程分工，再用 rocprofv3 采集 kernel trace，逐字段计算时间与线程数，结合源码提出下一步受控实验。',
         sections: [
-          ['先看懂两个实现', '看地址排布、每线程循环次数和 Grid Size 分别怎样变化。'],
-          ['先跑一遍，确认谁更慢', '固定输入和计时方法，只比较两个 kernel 的延迟与有效带宽。'],
-          ['用 rocprof 看每次 kernel dispatch', '第一次只看 kernel 名、起止时间、Grid Size 和寄存器用量。'],
-          ['先列出一起变化的东西', '区分地址排布、每线程工作量和并行规模。'],
-          ['看看静态资源有没有变', '比较同一个 kernel 在不同 stride 下的 VGPR、SGPR 和 LDS。'],
-          ['用 stride 扫描观察趋势', '观察组合效果，并说明下一组公平对照应固定什么。']
+          ['先运行两个向量加法', '解释编译、运行参数、计时口径和现有正确性抽查范围。'],
+          ['把线程分工画出来', '用 lane 与数组下标示意解释两个 kernel 的索引。'],
+          ['让 rocprofv3 记录 kernel 的执行', '从原命令逐步加入 profiler，并解释输出文件。'],
+          ['从 CSV 中读懂一次启动', '按名字筛选并排除预热，再计算时间和 block 数。'],
+          ['这些证据还不能说明什么', '区分静态资源、实际利用率和不可用的计数器。'],
+          ['用 stride 扫描提出下一步实验', '保留非单调结果，区分地址映射、线程工作量与 grid 的共同变化。'],
+          ['练习', '通过手算索引、读取 trace 和设计对照检查理解。']
         ]
       },
       {
         title: '读懂 Roofline 图',
-        summary: '看懂参考线、生成工作点并选择排查方向',
-        status: '🚧',
-        lead: '本章把前两章得到的时间和带宽放到 Roofline 图上，并说明绘图脚本使用了哪些实测数据。重点不是推公式，而是学会看工作点靠近哪条线、下一步该查访存还是计算。',
+        summary: '从一次加法计算工作点，理解带宽与算力参考线',
+        status: '✅',
+        lead: '先数清一次向量加法的运算与数据，再推导算术强度、屋顶形状和工作点。结合可追溯的历史实测，说明参考线的用途并提出可检验的假设。',
         sections: [
-          ['Roofline 只看三件事', '看横轴、纵轴和工作点离哪条上限更近。'],
-          ['把 vector add 放到图上', '说明数据来源和绘图命令，再用算术强度、实测时间和有效带宽画出工作点。'],
-          ['工作点离线很远怎么办', '从访存、计算和启动开销三个方向依次排查。'],
-          ['写一页性能记录', '只记录环境、命令、结果、判断和下一步。'],
-          ['Part 1 的四步闭环', '回顾「量准 → 找到慢点 → 解释 → 验证」并衔接 Part 2。']
+          ['一次加法包含多少工作', '从两个输入和一个输出推导计算量、数据量与算术强度。'],
+          ['为什么图上的线像屋顶', '分别推导带宽与计算约束，交代实测参考值和单位。'],
+          ['把一次测量变成一个点', '代入第 6 章的原始时间，算出工作点和有效带宽。'],
+          ['生成图，并沿着坐标读一遍', '运行绘图脚本，解释对数坐标、工作点与参考线。'],
+          ['从读图走到下一轮实验', '把图中观察变成受控实验，而不直接宣判瓶颈。'],
+          ['练习', '用输入规模、数据类型与 copy 示例检验公式及解释边界。']
         ]
       }
     ]
@@ -141,117 +143,95 @@ export const parts = [
     chapters: [
       {
         title: 'Element-Wise：逐元素算子',
-        summary: '以 Vector Add 为例，分别用 HIP 深入理解访存，用 Triton 快速掌握 tile 编程',
+        summary: '从数组加法和下标动画出发，理解连续访存、线程循环、向量化尾部与 Triton mask',
         status: '✅',
-        lead: '本章从最容易看懂的 Vector Add 开始，先认识“逐元素”到底是什么意思，再把同一个问题拆成两条可以独立选择的路线：HIP 篇带你看清线程、地址和显存访问，Triton 篇带你用较少代码表达一整块数据。两条路线最后回到同一组正确性与性能问题，让你知道工具不同，判断方法为什么仍然相通。',
+        lead: '先用数组加法认识输出依赖和访存成本，再选择 HIP 或 Triton 标签阅读实现。下标与尾部动画帮助连接源码和数据，公共实验解释当前测量支持了哪些判断。',
         sections: [
-          ['先认识 Element-Wise', '逐元素算子的形态与典型例子'],
-          ['固定数学语义与正确性标准', '先定义对/错再谈快慢：precheck/postcheck 口径'],
-          ['建立成本模型和瓶颈假设', '算术强度 1/12，访存受限的预期'],
-          ['HIP：从标量线程到受控访存实验', 'v0→v3 ladder：地址顺序、grid、向量化与尾部'],
-          ['Triton：从最小 Tile 到参数实验', 't0/t1：BLOCK_SIZE 与 num_warps 扫描'],
-          ['正确性、Benchmark 与 Profiling', '统一验收：正确性矩阵 + 可信计时 + trace'],
-          ['HIP 与 Triton 对照', '两条路线同一数学语义、不同抽象层次'],
-          ['负结果、适用边界与下一步', '哪些没优化成功、结论能迁移到什么范围'],
-          ['复跑、练习与验收', '复跑命令、练习与验收清单'],
+          ["先认识 Element-Wise", "先认识 Element-Wise。"],
+          ["固定数学语义与正确性标准", "固定数学语义与正确性标准。"],
+          ["建立成本模型和瓶颈假设", "建立成本模型和瓶颈假设。"],
+          ["实现向量加法", "实现向量加法。"],
+          ["正确性、Benchmark 与 Profiling", "正确性、Benchmark 与 Profiling。"],
+          ["HIP 与 Triton 对照", "HIP 与 Triton 对照。"],
+          ["负结果、适用边界与下一步", "负结果、适用边界与下一步。"],
+          ["复跑与练习", "复跑与练习。"],
         ]
       },
       {
         title: 'Reduction：归约算子',
-        summary: '以 Sum Reduction 为例，学习跨线程协作、LDS 与 Wave Shuffle',
+        summary: '用求和树与实际部分和理解 LDS 协作、全局竞争和多阶段归约',
         status: '✅',
-        lead: '本章撤掉 Element-Wise 中“每个输出彼此独立”的前提：很多输入要共同得到一个结果。公共部分先把串行求和画成并行树；HIP 篇深入 LDS、同步与 Wave Shuffle，Triton 篇用 program partial 和多阶段归约快速表达同一层次。',
+        lead: '先把八个数的顺序求和改写成求和树，再把层次映射到线程、block partial 和第二次归约。结合实际输入与计时差异理解证据的适用范围。',
         sections: [
-          ['从“每个输出独立”到“大家合成一个结果”', '归约的数学语义：多输入合成单输出'],
-          ['手算一棵归约树', '串行求和与并行树，树高与精度'],
-          ['先固定正确性和测量口径', '语义、误差与计时口径先行'],
-          ['HIP atomic baseline：先得到最短的正确版本', 'atomic 直接相加的最短正确实现'],
-          ['HIP LDS：把全局竞争缩小到每个 block 一次', 'LDS 块内归约，全局只剩一次竞争'],
-          ['HIP 局部累加、Wave Shuffle 与二阶段 partial', 'warp 内 shuffle 与二阶段 partial'],
-          ['Triton：program partial + second reduction', 'Triton 的 partial 与第二次归约'],
-          ['把 HIP 与 Triton 放回同一棵树', '两条路线对照同一棵归约树'],
-          ['一键运行与 `rocprofv3` Profiling', '复跑与 profiling 入口'],
-          ['练习与验收', '练习与验收清单'],
+          ["多个输入怎样合成一个输出 {#reduction-dependency}", "多个输入怎样合成一个输出 {#reduction-dependency}。"],
+          ["把串行依赖改成求和树 {#reduction-tree}", "把串行依赖改成求和树 {#reduction-tree}。"],
+          ["怎样确认答案和时间都可信 {#reduction-contract}", "怎样确认答案和时间都可信 {#reduction-contract}。"],
+          ["用 HIP 或 Triton 实现同一层次 {#reduction-implementation}", "用 HIP 或 Triton 实现同一层次 {#reduction-implementation}。"],
+          ["用实测结果检查归约层次 {#reduction-results}", "用实测结果检查归约层次 {#reduction-results}。"],
+          ["复跑时先检查结果，再读 trace {#reduction-rerun}", "复跑时先检查结果，再读 trace {#reduction-rerun}。"],
+          ["练习：改变一个条件再解释 {#reduction-exercises}", "练习：改变一个条件再解释 {#reduction-exercises}。"],
         ]
       },
       {
         title: 'Normalization：归一化算子',
-        summary: '以行级 Softmax 为例，学习数值稳定与逐元素/归约融合',
+        summary: '用一行大分数理解稳定 Softmax、行内归约与中间数据融合',
         status: '✅',
-        lead: '本章把 Element-Wise 与 Reduction 组合起来：Softmax 既要逐元素取指数，又要两次归约。公共部分先用大数反例理解“减最大值”；HIP 篇观察中间写回与数据驻留，Triton 篇学习一行对应一个 program 的融合表达。',
+        lead: '先把一行大分数变成稳定的概率，再观察整行数据怎样在归约与逐元素计算间流动。两条语言路线共用数值解释，历史结果与同步修正版验证分别记录。',
         sections: [
-          ['逐行 Softmax 到底算什么', 'softmax 的数学语义：按行归一化'],
-          ['为什么直接取指数会溢出', 'exp 溢出与数值稳定性的动机'],
-          ['拆成四种基本模式', '读整行、减 max、取指数、归一化四步'],
-          ['先固定正确性与计时口径', '语义、误差与计时口径先行'],
-          ['HIP baseline：把三次 dispatch 看清楚', 'max/sum/div 三次 kernel 的代价'],
-          ['HIP 行融合：一个 block 完成一行', 'LDS 行缓存与单 kernel 融合'],
-          ['wave32、LDS 与融合边界', 'wave32 与 LDS 容量决定的融合边界'],
-          ['Triton：一行对应一个 program', 'Triton 的行映射与在线归一化'],
-          ['稳定性与边界测试矩阵', '边界形状与数值稳定性测试'],
-          ['HIP 与 Triton 对照', '两条路线的层次对照'],
-          ['运行与读取结果', '运行输出与结果解读'],
-          ['用 rocprofv3 看融合发生在哪里', 'trace 验证 kernel 是否真的融合'],
-          ['练习', '练习与验收'],
+          ["从一行分数到一行概率 {#softmax-semantics}", "从一行分数到一行概率 {#softmax-semantics}。"],
+          ["平移输入，避免指数溢出 {#softmax-stability}", "平移输入，避免指数溢出 {#softmax-stability}。"],
+          ["中间结果需要放在哪里 {#softmax-dataflow}", "中间结果需要放在哪里 {#softmax-dataflow}。"],
+          ["固定正确性和完整计时 {#softmax-contract}", "固定正确性和完整计时 {#softmax-contract}。"],
+          ["用 HIP 或 Triton 完成整行 {#softmax-implementation}", "用 HIP 或 Triton 完成整行 {#softmax-implementation}。"],
+          ["先读测量，再解释融合收益 {#softmax-results}", "先读测量，再解释融合收益 {#softmax-results}。"],
+          ["运行、筛选 trace 与检查边界 {#softmax-rerun}", "运行、筛选 trace 与检查边界 {#softmax-rerun}。"],
+          ["练习：预测数值与成本 {#softmax-exercises}", "练习：预测数值与成本 {#softmax-exercises}。"],
         ]
       },
       {
         title: 'GEMM-Like：矩阵乘类算子',
-        summary: '以 Matmul 为例，学习分块、数据复用与寄存器累加',
+        summary: '从小矩阵点积与复用动画出发，学习 HIP/Triton 分块、尾部和资源取舍',
         status: '✅',
-        lead: '本章第一次让同一份输入被多个输出反复使用。公共部分从点积和小矩阵开始画 tile；HIP 篇显式管理 LDS 与线程 fragment，Triton 篇用 program/tile 表达同一复用，并把 autotune 限制为可解释的受控实验。',
+        lead: '沿用一个小矩阵解释点积、部分和与输入复用，再分别阅读 HIP LDS 和 Triton tile 实现。用尾块、精度与当前固定形状的结果约束参数选择。',
         sections: [
-          ['从点积看矩阵乘', '矩阵乘的数学语义与逐点积视角'],
-          ['为什么朴素实现重复读取', '朴素实现的访存放大'],
-          ['Tile 为什么能带来复用', '分块后的数据复用与算术强度'],
-          ['HIP v0：一线程一输出', '最短正确版本'],
-          ['HIP v1：LDS 分块', 'LDS 分块与协同加载'],
-          ['寄存器分块：为什么一个 thread 会计算多个输出', '寄存器分块与输出复用'],
-          ['HIP 进阶实验怎样保持单变量', '进阶实验的单变量控制'],
-          ['Triton t0：用 `tl.dot` 表达同一分块', 'Triton 的 tiled matmul'],
-          ['Triton t1：Grouped ordering 改变什么', 'program 排序对访存的影响'],
-          ['非方阵与三种尾块', '非方阵形状与尾块处理'],
-          ['HIP 与 Triton 的分块层次对照', '两条路线的分块层次对照'],
-          ['tile 形状怎么选', '访存受限 shape 的配置选择规则'],
-          ['运行、输出与 Profiling', '运行输出与 profiling 入口'],
-          ['练习', '练习与验收'],
+          ["从一个输出看矩阵乘", "从一个输出看矩阵乘。"],
+          ["把重复使用的数据放在一起", "把重复使用的数据放在一起。"],
+          ["用两种方式表达分块", "用两种方式表达分块。"],
+          ["尾块和精度都属于正确性", "尾块和精度都属于正确性。"],
+          ["实测支持了哪些判断", "实测支持了哪些判断。"],
+          ["选择 tile 时，先提出可验证的问题", "选择 tile 时，先提出可验证的问题。"],
+          ["复跑与练习", "复跑与练习。"],
         ]
       },
       {
         title: 'Fusion：融合算子',
-        summary: '用 FlashAttention-style 在线 Attention 学习减少中间写回与 IO-aware',
+        summary: '从 Attention 加权和推导在线 Softmax，用具体数值理解历史状态重缩放',
         status: '✅',
-        lead: '本章把前四章的模式组合起来：矩阵乘产生 Scores，Softmax 做归一化，再与 V 相乘。公共部分先比较物化与在线数据流；HIP/Triton 两条路线分别实现教学版前向 Attention，并已完成三进程正式测量与逐实现 trace。',
+        lead: '先计算一个 query 行的加权和，再逐个 key 更新最大值、指数和与加权累计。比较物化和在线数据流，区分少写中间量、实际分配容量与最终运行时间。',
         sections: [
-          ['先固定 Attention 的语义', 'attention 的数学语义与记号'],
-          ['物化版本的数据流', '物化中间矩阵的代价'],
-          ['在线 Softmax 的四个状态', 'running max/sum 的四个状态'],
-          ['HIP materialized：三段式基线', '物化三 kernel 基线'],
-          ['HIP online：一行一个 block', '在线融合的单 kernel 实现'],
-          ['Triton：一个 program 处理一行', 'Triton 的行映射实现'],
-          ['正确性矩阵', '正确性验证矩阵'],
-          ['计时和 Profiling 看什么', '计时口径与 profiling 信号'],
-          ['HIP 与 Triton 的层次对照', '两条路线的对照'],
-          ['练习：逐步接近真实 Attention', '练习与延伸方向'],
+          ["一行 Attention 输出依赖什么", "一行 Attention 输出依赖什么。"],
+          ["把中间结果存下来会发生什么", "把中间结果存下来会发生什么。"],
+          ["边读 key，边更新 Softmax", "边读 key，边更新 Softmax。"],
+          ["用 HIP 或 Triton 表达这段数据流", "用 HIP 或 Triton 表达这段数据流。"],
+          ["怎样检查结果和计时", "怎样检查结果和计时。"],
+          ["少写回，为什么仍可能更慢", "少写回，为什么仍可能更慢。"],
+          ["复跑并提出下一轮问题", "复跑并提出下一轮问题。"],
+          ["练习：先预测，再改变一个条件", "练习：先预测，再改变一个条件。"],
         ]
       },
       {
         title: '综合实战：Fused RMSNorm',
-        summary: '综合逐元素、归约与融合，独立完成一次可复现的 Kernel 优化闭环',
+        summary: '从平方和、行尺度与广播出发，综合归约、融合和可解释的参数实验',
         status: '✅',
-        lead: '本章是 Part 2 的综合终章：不再引入新的优化名词，而是用 Fused RMSNorm 把逐元素、归约、融合、正确性、benchmark 与 profiling 串成一次独立完成的优化记录。HIP/Triton、边界正确性、三进程测量与逐实现 trace 已完成。',
+        lead: '先为一行输入求均方根尺度，再广播回各位置并乘权重。把逐元素、归约和融合连起来，比较行内协作与配置，并用现有证据练习提出下一轮问题。',
         sections: [
-          ['从 LayerNorm 到 RMSNorm', 'RMSNorm 的数学语义与为什么省略均值'],
-          ['先锁定实验契约', '固定语义、误差与目标 shape'],
-          ['HIP serial：最短正确基线', '最短正确基线'],
-          ['HIP block：协作归约并融合写回', '块内协作归约与融合写回'],
-          ['Triton：一行一个 program', 'Triton 的行映射实现'],
-          ['融合到底省掉了什么', '融合省掉的 dispatch 与中间读写'],
-          ['一次完整的运行与检查', '完整运行与 evidence 检查'],
-          ['Profiling 与单变量实验', 'profiling 信号与单变量实验'],
-          ['HIP 与 Triton 对照', '两条路线的对照'],
-          ['独立优化记录模板', '可复用的优化记录模板'],
-          ['迁移到新题目', '从 RMSNorm 迁移到新题目的方法'],
+          ["先为一行数据算出尺度", "先为一行数据算出尺度。"],
+          ["找到归约与融合的边界", "找到归约与融合的边界。"],
+          ["选择 HIP 或 Triton 实现", "选择 HIP 或 Triton 实现。"],
+          ["用边界输入检验公式与下标", "用边界输入检验公式与下标。"],
+          ["从实测看行内协作", "从实测看行内协作。"],
+          ["运行后，先筛选目标 kernel", "运行后，先筛选目标 kernel。"],
+          ["把这一章变成自己的实验", "把这一章变成自己的实验。"],
         ]
       }
     ]
@@ -409,7 +389,16 @@ export const appendices = [
     dir: 'appendix-c-kfd-bare-metal',
     path: '/appendix/appendix-c-kfd-bare-metal/',
     source: 'docs/appendix/appendix-c-kfd-bare-metal/index.md',
-  },
+  },,
+  {
+    title: '附录 D · HIP 与 Triton 的编程范式',
+    summary: '用同一个向量加法理解 thread、block、program、tile 与 mask',
+    lead: '从一个带尾部的小数组出发，对应主机启动、设备工作和边界处理，作为第 8–13 章的可选入门。',
+    slug: 'appendix-d',
+    dir: 'programming-models',
+    path: '/appendix/programming-models/',
+    source: 'docs/appendix/programming-models/index.md',
+  }
 ]
 
 export const chapters = numberedChapters()
@@ -417,8 +406,8 @@ export const chapterCount = chapters.length
 export const appendixCount = appendices.length
 
 export const navItems = [
-  { text: '首页', link: '/' },
-  { text: '全书目录', link: '/part0-intro/chapter0/' },
+  { text: '全书目录', link: '/curriculum/' },
+  { text: 'GPU 图谱', link: '/atlas/', activeMatch: '^/atlas/' },
   { text: '实验环境', link: '/part0-intro/chapter1/' },
   { text: 'AMD 云算力', link: '/cloud/' },
   { text: 'GitHub', link: 'https://github.com/datawhalechina/hello-gpu' },
@@ -428,7 +417,7 @@ export const sidebar = [
   ...parts.map((part) => ({
     text: part.readmeTitle,
     ...(part.landing ? { link: part.landing } : {}),
-    collapsed: false,
+    collapsed: true,
     items: chapters
       .filter((chapter) => chapter.part.prefix === part.prefix)
       .map((chapter) => ({
@@ -440,7 +429,7 @@ export const sidebar = [
     ? [
         {
           text: '附录',
-          collapsed: false,
+          collapsed: true,
           items: appendices.map((a) => ({
             text: a.title,
             link: a.path,
@@ -451,7 +440,7 @@ export const sidebar = [
   {
     text: 'AMD 云算力资源',
     link: '/cloud/',
-    collapsed: false,
+    collapsed: true,
     items: [
       { text: 'AMD Radeon Cloud', link: '/cloud/amd-radeon-cloud/' },
       { text: 'AUP Learning Cloud', link: '/cloud/aup-learning-cloud/' },

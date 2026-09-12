@@ -1,0 +1,83 @@
+[
+  {
+    "file": "rtx5090-official-hero.jpg",
+    "url": "https://www.nvidia.com/content/dam/en-zz/Solutions/geforce/graphic-cards/50-series/rtx-5090/geforce-rtx-5090-bm-xl770-d@2x.jpg",
+    "creator": "NVIDIA Corporation",
+    "source_page": "https://www.nvidia.com/en-us/geforce/graphics-cards/50-series/rtx-5090/",
+    "license": "NVIDIA copyright, official product media for attributed educational/reference use; not a CC-licensed asset."
+  },
+  {
+    "file": "rtx5090-official-front.jpg",
+    "url": "https://www.nvidia.com/content/dam/en-zz/Solutions/geforce/graphic-cards/50-series/rtx-5090/geforce-rtx-5090-gallery-shot-1-ari.jpg",
+    "creator": "NVIDIA Corporation",
+    "source_page": "https://www.nvidia.com/en-us/geforce/graphics-cards/50-series/rtx-5090/",
+    "license": "NVIDIA copyright, official product media for attributed educational/reference use; not a CC-licensed asset."
+  },
+  {
+    "file": "rtx5090-official-back.jpg",
+    "url": "https://www.nvidia.com/content/dam/en-zz/Solutions/geforce/graphic-cards/50-series/rtx-5090/geforce-rtx-5090-gallery-shot-2-ari.jpg",
+    "creator": "NVIDIA Corporation",
+    "source_page": "https://www.nvidia.com/en-us/geforce/graphics-cards/50-series/rtx-5090/",
+    "license": "NVIDIA copyright, official product media for attributed educational/reference use; not a CC-licensed asset."
+  },
+  {
+    "file": "rtx5090-official-side.jpg",
+    "url": "https://www.nvidia.com/content/dam/en-zz/Solutions/geforce/graphic-cards/50-series/rtx-5090/geforce-rtx-5090-gallery-shot-3-ari.jpg",
+    "creator": "NVIDIA Corporation",
+    "source_page": "https://www.nvidia.com/en-us/geforce/graphics-cards/50-series/rtx-5090/",
+    "license": "NVIDIA copyright, official product media for attributed educational/reference use; not a CC-licensed asset."
+  },
+  {
+    "file": "rtx5090-official-exploded.jpg",
+    "url": "https://www.nvidia.com/content/dam/en-zz/Solutions/geforce/graphic-cards/50-series/rtx-5090/geforce-rtx-50-series-exploded-view-video-ari.jpg",
+    "creator": "NVIDIA Corporation",
+    "source_page": "https://www.nvidia.com/en-us/geforce/graphics-cards/50-series/rtx-5090/",
+    "license": "NVIDIA copyright, official product media for attributed educational/reference use; not a CC-licensed asset."
+  },
+  {
+    "file": "blackwell-official-architecture.jpg",
+    "url": "https://www.nvidia.com/content/dam/en-zz/Solutions/geforce/graphic-cards/50-series/rtx-5090/geforce-rtx-50-series-architecture-ari.jpg",
+    "creator": "NVIDIA Corporation",
+    "source_page": "https://www.nvidia.com/en-us/geforce/graphics-cards/50-series/rtx-5090/",
+    "license": "NVIDIA copyright, official product media for attributed educational/reference use; not a CC-licensed asset."
+  },
+  {
+    "file": "rtx5090-official-full.jpg",
+    "url": "https://iprsoftwaremedia.com/219/files/20250/geforce-rtx-5090.jpg",
+    "creator": "NVIDIA Corporation",
+    "source_page": "https://nvidianews.nvidia.com/news/nvidia-blackwell-geforce-rtx-50-series-opens-new-world-of-ai-computer-graphics",
+    "license": "NVIDIA copyrighted press asset. Used with attribution in personal educational prototype.",
+    "modifications": "None"
+  },
+  {
+    "file": "rtx5090-official-cutout.png",
+    "url": "https://iprsoftwaremedia.com/219/files/20250/geforce-rtx-5090.jpg",
+    "creator": "NVIDIA Corporation",
+    "source_page": "https://nvidianews.nvidia.com/news/nvidia-blackwell-geforce-rtx-50-series-opens-new-world-of-ai-computer-graphics",
+    "license": "NVIDIA copyrighted press asset. Used with attribution in personal educational prototype.",
+    "modifications": "Manual background removal and crop"
+  },
+  {
+    "file": "rtx5090-official-cutout.webp",
+    "url": "https://iprsoftwaremedia.com/219/files/20250/geforce-rtx-5090.jpg",
+    "creator": "NVIDIA Corporation",
+    "source_page": "https://nvidianews.nvidia.com/news/nvidia-blackwell-geforce-rtx-50-series-opens-new-world-of-ai-computer-graphics",
+    "license": "NVIDIA copyrighted press asset. Used with attribution in personal educational prototype.",
+    "modifications": "Manual background removal and crop"
+  },
+  {
+    "file": "blackwell-official-package.webp",
+    "url": "https://www.nvidia.com/content/dam/en-zz/Solutions/geforce/graphic-cards/50-series/rtx-5090/geforce-rtx-50-series-architecture-ari.jpg",
+    "creator": "NVIDIA Corporation",
+    "license": "NVIDIA copyrighted official rendering",
+    "modifications": "Outer background removed"
+  },
+  {
+    "file": "blackwell-official-die-texture.webp",
+    "url": "https://www.nvidia.com/content/dam/en-zz/Solutions/geforce/graphic-cards/50-series/rtx-5090/geforce-rtx-50-series-architecture-ari.jpg",
+    "creator": "NVIDIA Corporation",
+    "source_page": "https://www.nvidia.com/en-us/geforce/graphics-cards/50-series/rtx-5090/",
+    "license": "NVIDIA copyrighted official marketing illustration. Not a physical die photograph or CC-licensed asset.",
+    "modifications": "Perspective-corrected crop of the illustrated silicon surface."
+  }
+]

@@ -1,427 +1,292 @@
 ---
 title: "第5章 benchmark 与可信计时"
-description: "Hello GPU 第5章 · 热身、重复、GPU event、避免测量陷阱"
+description: "Hello GPU 第5章 · 从两种 event 计时方式理解预热、统计和有效带宽"
 ---
 
 # 第5章 benchmark 与可信计时
 
 ## 本章导读
 
-> 前面几章我们把环境、GPU 体系结构和第一个 vector add 程序串了起来，[第 4 章](../../part0-intro/chapter4/index.md)还用一次 baseline benchmark 建立了「算子离 Roofline 上限有多远」的直觉。从这一篇（Part 1 profiling 篇）开始，问题变成：怎么知道量出来的数字准不准、可不可信、会不会骗人？
+> [第 4 章](../../part0-intro/chapter4/index.md)中，我们已经运行了向量加法，并用 GPU event 测出了时间。如果再改一次程序，时间变短了，怎样判断它确实更快？这一章沿用向量加法，再加上一个简单的数组复制实验，逐步建立可以重复比较的基准测试（benchmark）。
 >
-> 本章先把镜头对准「量准」这件事本身。Latency、Throughput、Bandwidth、FLOPS 这些指标，访存受限 / 算力受限（memory-bound / compute-bound）这套判断语言，以及 Roofline 心智模型，[第 2–3 章](../../part0-intro/chapter2/index.md)和[第 4 章](../../part0-intro/chapter4/index.md)已经建立，本章不再重复——而是把它们底下那层更基础的东西讲清楚：一次 benchmark 怎样才算可信。读完后你应该能：解释为什么不能只跑一次就下结论；说明 warmup、repeat、synchronize 这些「无聊」的细节如何决定数字是否可信；用 GPU event 而不是 CPU wall clock 量出 kernel 的真实耗时；用一份检查清单避免常见的伪优化。
+> 你将看到两种计时方式，亲手把毫秒换算成有效带宽，并学会区分测量结果与对结果的解释。只需要理解数组、循环，以及上一章的 GPU event；Triton 代码可以先当作“把数组复制一遍”的函数来读。
 
-[第 4 章](../../part0-intro/chapter4/index.md)你已经写过一个小 benchmark（`benchmark_vector_add.py`），里面用了 warmup、repeat 和 GPU event——但当时只是照着做。本章把每个步骤背后的「为什么」讲清楚。
+## 5.1 先确定计时的起点和终点
 
-## 5.1 为什么不能凭感觉优化
+这一节先回答：我们所说的“一次向量加法耗时”，究竟包括哪些工作？
 
-这一节先讲一个容易踩的坑：性能优化最怕的不是「没优化成功」，而是你以为自己优化成功了，其实只是测错了。
+假设两个数组已经在 GPU 上，我们要计算 `z = x + y`。从用户启动程序到看到结果，中间还有创建数组、传输数据、提交计算、检查答案等步骤。如果把全部步骤都计入，得到的是这段程序的总耗时；如果只计入数据准备好后的加法，得到的是另一个范围的耗时。这两个数字都可以有用，比较前必须先说明范围。
 
-日常写业务代码时，凭感觉改一改有时还能工作；但 GPU 性能优化不太一样。GPU 程序通常是异步执行的，第一次运行可能包含初始化或编译开销，同一个输入规模下也可能因为后台负载、缓存状态、调度方式而波动。只看一次运行时间，很容易把偶然现象当成规律。
+本章测量**输入和输出已分配在 GPU 上时，重复执行算子的 event 时间**。数组分配、输入初始化、预热和结果检查都在计时区间外。这样做是为了比较计算过程，而不是把每次创建数组的成本也混进去。
 
-很多刚开始做性能优化的同学，会直接问：「怎么把 GPU 跑满？」这个问题听上去很工程，但还不够具体。GPU 没跑满可能是数据没送到，可能是任务太碎，可能是测量本身不可靠，也可能它**确实**已经撞上了硬件天花板——只是你还不知道天花板在哪里。
+这里还要处理 GPU 的异步执行。CPU 提交一次加法后，通常可以继续执行后面的 Python 语句，此时 GPU 不一定已经算完。如果只在 Python 调用前后读时钟，期间又没有等待 GPU 完成，就可能主要量到提交任务的时间。[PyTorch 的异步执行说明](https://docs.pytorch.org/docs/2.11/notes/cuda.html#asynchronous-execution)解释了这个区别。
 
-所以 Part 1 的第一步不是「马上优化」，而是先学会问更好的问题：我到底在测什么？这个数字可信吗？它说明瓶颈在哪一层？下一步应该收集什么证据？
+上一章用过的 **event** 可以理解为排入 GPU 执行流的时间标记。**执行流（stream）**是一条按顺序执行任务的队列：我们在同一条流上依次放入起点、加法、终点，等待终点完成后，再读两点之间的时间。ROCm 版 PyTorch 也沿用 `torch.cuda.Event` 和 `device="cuda"` 这些接口名称，它们在本机实际调用 AMD GPU。[HIP 语义说明](https://docs.pytorch.org/docs/2.11/notes/hip.html)
 
-下面这张表列出几种常见的「直觉判断」与它们更值得追问的问题：
-
-| 直觉判断 | 可能的问题 | 更好的追问 |
+| 想回答的问题 | 合适的计时范围 | 本章是否测量 |
 | ---- | ---- | ---- |
-| GPU 利用率低，所以 kernel 写得差 | 可能是 CPU 调度慢、输入太小、数据搬运多，或者 GPU 一直在等任务 | GPU 到底在等什么？任务有没有持续送进去？ |
-| 改完代码以后快了一点 | 可能只是 warmup、缓存、后台负载或随机波动 | 重复测了吗？统计口径一样吗？ |
-| 单个算子快了，端到端就会快 | 这个算子可能只占总时间的一小部分 | 它在整条链路里占多少比例？ |
-| 平均时间下降了 | 可能尾延迟变差，或者波动变大 | median、min、p95、p99 有没有一起看？ |
-| GPU 时间很短，说明程序很快 | 可能只量到了 CPU 提交任务的时间，没有等 GPU 真正算完 | 计时前后有没有 synchronize？ |
-| fp16 比 fp32 快两倍 | 也许只是计算路径变了，访存没变 | 是真省了带宽，还是只在算力侧变快？ |
+| 准备好数据后，一次算子执行用了多久？ | 同一执行流上的起止 event | 是 |
+| 连续执行多次，平均每次用了多久？ | 一批调用外的起止 event，总时间除以次数 | 是 |
+| 包含数据准备和传输，用户一共等了多久？ | 明确包含这些步骤的主机时钟，并在必要位置等待 GPU | 否 |
 
-这里先记住一句话：**没有稳定测量，就没有可靠优化。**
+event 也不是只记录计算指令的“过滤器”。如果 GPU 已经执行到起点，而 CPU 还没有提交后续工作，中间的空隙也会进入 event 时间。因此，对很短的算子，启动和提交节奏仍可能影响结果。下一章会借助 profiler，进一步查看每次 kernel 自身的起止时间。
 
-如 @fig-measure-loop 所示，把「凭感觉改」换成「先测后改」的最小闭环，至少要包含五步：
+## 5.2 运行一次完整的基准测试
 
-::: figure fig-measure-loop
-```mermaid
-flowchart LR
-    A[感觉它很慢] --> B[定义要优化的指标]
-    B --> C[设计可信 benchmark]
-    C --> D[收集 profiling 证据]
-    D --> E[提出优化假设]
-    E --> F[只改一个变量]
-    F --> C
-    F --> G[结论可复查]
+这一节先跑通实验，再逐段阅读它的实现。
+
+配套脚本是 [`code/part1-profiling/chapter5/bench_ch4.py`](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part1-profiling/chapter5/bench_ch4.py)。文件名保留了旧章号，当前对应第 5 章。它完成两件事：对 `4096 × 4096` 个元素做加法；复制一个 FP32 数组，分别测试单个数组为 8、64、256 MiB 的情况。
+
+在完成[第 1 章环境准备](../../part0-intro/chapter1/index.md)的实验机上，从项目根目录进入本篇环境：
+
+```bash
+cd code/part1-profiling
+source ./activate-rocm.sh
+python chapter5/bench_ch4.py
 ```
 
-从「感觉慢」到「可验证优化」的最小闭环
-:::
-
-如 @fig-measure-loop 所示，优化不是从改代码开始，而是从定义问题和设计测量开始。否则你很容易进入一种状态：代码改了很多，数字也变了，但没人知道到底是哪一步起作用。
-
-这也是为什么本书反复强调一条工作节奏：先理解硬件和系统，再量准时间，再找到慢点，最后只改一个变量做验证。Part 1（profiling 篇）就是在练习这条路线。本章先把「怎么量准」讲清楚，[下一章](../chapter6/index.md) 会用两个 vector add 版本，把 benchmark 和 `rocprofv3` 接起来。
-
-## 5.2 热身与缓存效应
-
-这一节解释 benchmark 里最常见的一个现象：**第一次总是特别慢**，以及为什么正式计时前要先丢掉前几次。
-
-GPU 程序的「首轮开销」通常来自三件事：
-
-1. **编译 / JIT**：第一次启动某个 kernel 时，驱动或框架可能还要做最终编译、链接、内核选择（Triton autotune、rocBLAS 的 kernel 选择都在这一步发生）；
-2. **缓存准备**：第一次访存时 L2、页表、TLB 都是冷的，数据要真正从显存搬进来；
-3. **时钟爬升**：GPU 的实际工作频率可能从空闲状态逐步爬升到标称频率，前几次还没爬满。
-
-如果直接拿第一次的时间当成绩，你量到的多半是这些一次性开销，而不是 kernel 真正的稳态性能。这就是为什么检查清单里有一条「区分初始化和正式计时」：**首轮要单独记录，不要混进统计**。
-
-更隐蔽的是缓存带来的「伪提升」：第二次运行同一个输入往往比第一次快很多，原因只是数据已经被 L2 / GDDR6 预热，而不是你的代码变好了。这会制造一种很强的错觉——「我什么都没改，它就快了」。
-
-::: figure fig-warmup-cache
-```mermaid
-flowchart LR
-    A[第 1 次<br/>编译 + 冷缓存 + 爬频] --> B[第 2-3 次<br/>缓存渐热]
-    B --> C[warmup 后<br/>稳态]
-    C -.正式计时从这开始.-> D[repeat N 次]
-```
-
-首轮的一次性开销会在 warmup 后消失，正式计时只看稳态段
-:::
-
-应对方法很直接：
-
-- **warmup**：正式计时前先空跑若干次（经验上至少 5~20 次），让 JIT、cache、时钟进入稳定状态；
-- **按工作集大小分级测试**：当输入 footprint 接近 L2 容量时，缓存命中会让数字异常好看——这时要换多个 footprint 看趋势，而不是只跑一个 size；
-- **首轮单独留档**：如果首轮特别慢，把它作为「初始化成本」单独记下来，正式统计前扔掉。
-
-> 一个常被忽略的细节：warmup 之后**也要 synchronize**，否则 warmup 的任务可能还没真正在 GPU 上跑完，计时起点就被污染了。
-
-## 5.3 重复运行与统计
-
-这一节讲为什么「跑一次」永远不够，以及拿到一组时间后该怎么汇总。
-
-单次结果可能只是偶然：一次后台任务、一次调度抖动、一次缓存命中，都足以让数字漂移。所以可信 benchmark 的第二个支柱是 **repeat（重复多次）**，并对这组时间做统计汇总，而不是只挑一个数字报告。
-
-一个最小 benchmark 的流程可以写成：
-
-```text
-准备固定输入
-记录硬件、软件版本和参数
-运行若干次 warmup
-等待设备完成
-重复计时多次
-每次计时都确保测量范围一致
-汇总 mean / median / min / 波动
-保存原始输出和结论
-```
-
-`mean`、`median`、`min` 这几个统计量各有用处：
-
-- **mean**：平均值，容易受异常慢的一次影响；
-- **median**：中位数，更能代表多数情况下的表现；
-- **min**：最好的一次，常用来观察较少受外部干扰时的能力（估算带宽 / 算力上限时常以 min 为分母）；
-- **波动范围 / std / p95 / p99**：告诉你这个 benchmark 是否稳定，以及尾延迟有多差。
-
-不要只相信一个数字。**一个 benchmark 如果波动很大，你应该先修测量方法，而不是急着优化代码。** 具体来说，看到「改完只快了一点点」时，先问：repeat 够吗？median 和 std 怎么变？是不是落在了正常波动范围内？
-
-[第 4 章](../../part0-intro/chapter4/index.md)的 `benchmark_vector_add.py` 里 `repeat=30` 就是为了让你拿到一串时间、再看 median / min 而不是单次值——本章只是把那个做法背后的道理讲清楚。
-
-## 5.4 GPU event 计时
-
-这一节讲本章最关键的技术细节：**为什么不能用 `time.time()` / wall clock 量 kernel，而要用 GPU event**。
-
-GPU 任务通常是**异步提交**的：你在 host 端调用 `torch.softmax(x)` 或 `kernel<<<...>>>()` 时，CPU 只是把命令塞进队列就立刻返回了，kernel 真正执行完可能还要等一会儿。如果你用 `time.time()` 在调用前后取差，量到的多半是「CPU 把命令塞进队列花了多久」，而不是「GPU 算了多久」——这就是直觉表里「GPU 时间很短，说明程序很快」那条坑的来源。
-
-正确的做法是用 GPU 自己的计时机制，在设备时间线上打两个事件，再算它们之间的间隔。下面三段骨架分别对应 PyTorch、Triton、HIP 三种最常见的入口，演示的就是这套「warmup → record event → repeat → synchronize → elapsed」的最小流程。脚本与日志会落在 `code/part1-profiling/chapter5/`。
-
-### 骨架 A：PyTorch 端到端 op 计时
-
-最常见的入口：你想知道 `torch.nn.functional.softmax(x)` 在某个 shape 上有多快。
+下面是 **2026-09-11 在 Radeon RX 9070 XT（gfx1201）+ ROCm 7.13.99004 + 原生 Ubuntu 24.04.4** 上的一次完整运行。PyTorch 为 `2.11.0+rocm7.13.0`，Triton 为 `3.6.0`，Python 为 `3.12.3`。默认预热 20 次，正式执行 200 次。设备未锁频，采样前可见少量后台 GPU 活动，因此这些数值用于学习方法，不代表独占设备的最佳成绩。
 
 <details>
-<summary>代码骨架：bench_torch_op.py</summary>
+<summary>实测输出：向量加法与数组复制 @ RX 9070 XT / ROCm 7.13 / 原生 Ubuntu</summary>
 
-```python
-# code/part1-profiling/chapter5/bench_torch_op.py
-# 用法：python bench_torch_op.py --shape 4096,4096 --dtype fp16 --repeats 200
-# 目标：演示一个可信的 PyTorch 算子 benchmark（示例算子可换成任意 op）
-# 硬件上下文：Radeon RX 9070 XT + ROCm 7.13（实测见下方 §5.4 结果表）
-import argparse
-import statistics
-import torch
+```text
+GPU: AMD Radeon RX 9070 XT
+torch: 2.11.0+rocm7.13.0; HIP: 7.13.99004
+Python: 3.12.3; Triton: 3.6.0
+warmup: 20; repeats: 200; seed: 0
 
+--- A: PyTorch vector add (4096 x 4096, preallocated output) ---
+dtype | min_ms | median_ms | GB/s_at_median | validation
+fp32 | 0.336605 | 0.338365 | 594.998 | PASS
+fp16 | 0.172483 | 0.173443 | 580.383 | PASS
 
-def bench(shape, dtype, repeats=200, warmup=20):
-    x = torch.randn(*shape, dtype=dtype, device="cuda")
-
-    # warmup：让 JIT、cache、clock 进入稳定状态
-    for _ in range(warmup):
-        torch.softmax(x, dim=-1)
-    torch.cuda.synchronize()
-
-    # 用 GPU event 计时，不要用 time.time()
-    start = [torch.cuda.Event(enable_timing=True) for _ in range(repeats)]
-    end   = [torch.cuda.Event(enable_timing=True) for _ in range(repeats)]
-    for i in range(repeats):
-        start[i].record()
-        torch.softmax(x, dim=-1)
-        end[i].record()
-    torch.cuda.synchronize()
-
-    times_ms = [s.elapsed_time(e) for s, e in zip(start, end)]
-    return {
-        "mean":   statistics.mean(times_ms),
-        "median": statistics.median(times_ms),
-        "min":    min(times_ms),
-        "p95":    sorted(times_ms)[int(len(times_ms) * 0.95)],
-        "std":    statistics.pstdev(times_ms),
-    }
-
-
-if __name__ == "__main__":
-    p = argparse.ArgumentParser()
-    p.add_argument("--shape", default="4096,4096")
-    p.add_argument("--dtype", default="fp16", choices=["fp16", "bf16", "fp32"])
-    p.add_argument("--repeats", type=int, default=200)
-    args = p.parse_args()
-
-    shape = tuple(int(x) for x in args.shape.split(","))
-    dtype = {"fp16": torch.float16, "bf16": torch.bfloat16, "fp32": torch.float32}[args.dtype]
-
-    stats = bench(shape, dtype, args.repeats)
-    print(f"shape={shape} dtype={args.dtype} stats={stats}")
+--- B: Triton vector copy (FP32, BLOCK=1024) ---
+array_MiB | pair_MiB | batch_avg_ms | GB/s_at_batch_avg | validation
+8 | 16 | 0.016711 | 1003.972 | PASS
+64 | 128 | 0.223374 | 600.864 | PASS
+256 | 512 | 0.901349 | 595.630 | PASS
 ```
 
 </details>
 
-要点：
+先读第一行加法结果：FP32 的一次 event 时间中位数约为 **0.338 ms**，有效带宽约为 **595 GB/s**。`PASS` 表示脚本检查了整个输出数组，所有元素都有限且等于预期的 3。复制实验则逐元素检查结果与输入完全一致，并拒绝 NaN 和无穷值。校验发生在计时区间外，所以不会把检查答案的时间算进成绩。
 
-- 用 `torch.cuda.Event` 而不是 `time.time()`——前者计的是 GPU 时间，后者会被异步 launch 误导；
-- warmup 至少 20 次，并在 warmup 后 `synchronize`；
-- 同时输出 mean / median / min / p95 / std，单一数字不够。
+两个表的时间列不同：加法报告 `min_ms` 和 `median_ms`，复制报告 `batch_avg_ms`。我们接下来从代码中找到原因。
 
-### 骨架 B：Triton kernel 计时与有效带宽
+## 5.3 从准备数据到记录一个样本
 
-针对单个 kernel 的 micro-benchmark，重点是**用 bytes / ops 估算反推有效带宽或算力**，再和硬件峰值比较，判断「离极限多远」。
+这一节把加法实验拆开，说明每一步如何影响测量。以下 Python 片段均摘自配套脚本，省略函数外层的缩进。
 
-<details>
-<summary>代码骨架：bench_triton_copy.py</summary>
+### 5.3.1 固定输入，提前准备输出
+
+首先创建输入与输出。`shape` 决定元素个数，`dtype` 决定每个元素占用的字节数。
 
 ```python
-# code/part1-profiling/chapter5/bench_triton_copy.py
-# 用法：python bench_triton_copy.py --n 16777216 --repeats 200
-# 目标：用最简单的 copy kernel 验证 benchmark 流程，并估算有效带宽
-# 硬件上下文：Radeon RX 9070 XT + ROCm 7.13（实测见下方 §5.4 结果表）
-import argparse
-import torch
-import triton
-import triton.language as tl
+x = torch.ones(shape, dtype=dtype, device="cuda")
+y = torch.full_like(x, 2.0)
+z = torch.empty_like(x)
+```
 
+这里选择 1 和 2，是为了让预期答案明确：每个输出都应该是 3。`empty_like` 只分配存储，不负责初始化；后续加法必须写入整个 `z`。正式运行使用 `torch.add(x, y, out=z)`，把结果写进预先分配的数组，从而保持每次调用的输出存储一致。
 
+我们比较 FP32 与 FP16 时，数组形状保持不变。FP32 每个元素占 4 字节，FP16 占 2 字节；变化的是每个元素的存储大小，元素数量没有变化。
+
+### 5.3.2 预热：先执行，再开始收集样本
+
+接下来先运行几次相同的操作：
+
+```python
+for _ in range(warmup):
+    torch.add(x, y, out=z)
+torch.cuda.synchronize()
+check_add(z)
+```
+
+**预热（warmup）**是正式计时前的运行。第一次调用可能触发运行时初始化、代码加载或编译，设备频率和缓存状态也可能与持续运行时不同。我们希望测量重复使用算子时的表现，因此把这部分与正式样本分开。若关心首次调用成本，就应另外测量和报告首次调用。
+
+`torch.cuda.synchronize()` 等待设备上的工作完成；随后检查答案，确认接下来计时的是一个结果正确的程序。20 次是本实验的默认参数，并不保证所有程序在第 21 次都进入某种固定状态。输入形状、数据类型或实现改变后，应重新预热；结果仍明显波动时，还要检查设备负载与频率。
+
+这里的循环会反复使用同一组数组。**复用输入本身就是实验条件的一部分**：它可能利用缓存，不等价于每轮都处理从未访问过的新数据。预热也不会自动把一个算子变成“纯显存带宽测试”。
+
+### 5.3.3 用一对 event 收集多次时间
+
+脚本先创建两个 event，并各记录一次，让它们的底层资源完成初始化。正式计时的循环如下：
+
+```python
+times = []
+for _ in range(repeats):
+    start.record()
+    torch.add(x, y, out=z)
+    end.record()
+    end.synchronize()
+    times.append(start.elapsed_time(end))
+check_add(z)
+```
+
+按顺序读这六行：记录起点，执行加法，记录终点，等待终点完成，把经过的毫秒数放进列表。上一轮已经完成，所以可以在下一轮复用这对 event。循环结束后再检查一次结果。
+
+这里得到的是 **200 个单次时间样本**。同步发生在终点之后，它等待的主机时间没有额外加到 `elapsed_time` 的结果里，但每轮同步会改变调用之间的节奏。因此，把这段循环改成连续提交 200 次，再一次性等待，测量条件也随之改变。
+
+## 5.4 单次样本与批量平均值
+
+这一节比较两种重复方式，并说明它们分别支持哪些结论。
+
+@fig-event-sampling 用三次调用示意脚本中的两种方式。实际实验运行 200 次，图中的方块宽度没有使用实测比例。
+
+::: figure fig-event-sampling
+![逐次 event 计时得到多个样本，整批 event 计时得到总时间](./images/event-sampling.svg)
+
+逐次计时保留每次调用的信息；整批计时包含起止标记之间的调用与空隙，只得到一个批量平均值。
+:::
+
+对于加法的时间列表，脚本计算：
+
+```python
+min_ms = min(times)
+median_ms = statistics.median(times)
+```
+
+**最小值（min）**是这批样本中最快的一次，可以保留作参考；它不能代表每次都能达到的速度。**中位数（median）**把样本从小到大排列后取中间位置，能减少少数特别慢的样本对结果的影响。本章用中位数计算加法的有效带宽，并同时报告最小值，让统计口径可以复查。
+
+复制实验采用另一种方式：
+
+```python
+start.record()
+for _ in range(repeats):
+    copy_kernel[grid](x, y, n, BLOCK=block)
+end.record()
+end.synchronize()
+batch_avg_ms = start.elapsed_time(end) / repeats
+```
+
+两个 event 包住整批调用，得到总时间 $T$，再除以次数 $R$，即 $T/R$。这样减少了插入 event 和逐次同步的次数，但不能从一个总时间恢复每次调用用了多久。**批量平均值既不是最小值，也不是中位数**；如果想知道不同批次的波动，需要再运行多个批次并分别保留结果。
+
+这里的 `copy_kernel` 用 Triton 编写。Triton 是一种用 Python 语法描述 GPU 计算的工具，它会编译核函数；本章只借它提供一个独立的复制实现。函数完成 `y[i] = x[i]`，每个 program 负责一组最多 1024 个元素，越过数组末尾的位置由 `mask` 排除。完整实现不到十行，可以稍后展开阅读。
+
+<details>
+<summary>代码：Triton 数组复制核函数</summary>
+
+```python
 @triton.jit
 def copy_kernel(x_ptr, y_ptr, n, BLOCK: tl.constexpr):
     pid = tl.program_id(0)
     offs = pid * BLOCK + tl.arange(0, BLOCK)
     mask = offs < n
     tl.store(y_ptr + offs, tl.load(x_ptr + offs, mask=mask), mask=mask)
-
-
-def bench(n, repeats=200, warmup=20, block=1024):
-    x = torch.empty(n, dtype=torch.float32, device="cuda")
-    y = torch.empty_like(x)
-    grid = ((n + block - 1) // block,)
-
-    for _ in range(warmup):
-        copy_kernel[grid](x, y, n, BLOCK=block)
-    torch.cuda.synchronize()
-
-    s = torch.cuda.Event(enable_timing=True)
-    e = torch.cuda.Event(enable_timing=True)
-    s.record()
-    for _ in range(repeats):
-        copy_kernel[grid](x, y, n, BLOCK=block)
-    e.record()
-    torch.cuda.synchronize()
-    ms = s.elapsed_time(e)
-
-    # 每次迭代搬运 2 * n * 4 字节（一读一写 fp32）
-    total_bytes = 2 * n * 4 * repeats
-    eff_bw = total_bytes / (ms * 1e-3) / 1e9   # GB/s
-    return ms, eff_bw
-
-
-if __name__ == "__main__":
-    p = argparse.ArgumentParser()
-    p.add_argument("--n", type=int, default=1 << 24)
-    p.add_argument("--repeats", type=int, default=200)
-    args = p.parse_args()
-    ms, gbps = bench(args.n, args.repeats)
-    print(f"n={args.n} time={ms:.3f} ms eff_bw={gbps:.2f} GB/s")
 ```
 
 </details>
 
-要点：
+加法和复制的数学操作、实现方式、计时方法都不同。把它们放在同一章，是为了学习测量方法；这组实验不能用来比较 PyTorch 与 Triton 哪个整体更快。要比较两种实现，应先让它们完成同一任务，再统一输入和计时方式。
 
-- **用一个公式把时间换算成 BW（或 TFLOPS）**——单看时间没法判断「离峰值多远」；
-- 当 `n` 远大于 L2 容量时，eff_bw 应该逼近 GDDR6 实测带宽，否则 benchmark 流程本身有问题；
-- 同样的骨架可以替换 kernel 来测 GEMM、softmax 等，只要把「搬运 bytes / 计算 ops」的公式换掉。
+## 5.5 从时间算出有效带宽
 
-### 骨架 C：HIP event 计时
+这一节用实测数字走一遍单位换算，理解结果中的 `GB/s`。
 
-有时你需要绕过 Python 直接量 HIP kernel——它对应的最小 benchmark 骨架是这样的：
+### 5.5.1 向量加法要读写多少数据
+
+设数组有 $N$ 个元素，每个元素占 $s$ 字节。一次加法读 `x`、读 `y`、写 `z`，算法要求的数据量为：
+
+$$
+B = 3Ns.
+$$
+
+FP32 实验中，$N=4096^2=16\,777\,216$，$s=4$，所以 $B=201\,326\,592$ 字节，也就是 192 MiB。**有效带宽**用这个算法数据量除以耗时：
+
+$$
+\mathrm{BW}_{\mathrm{eff}}=\frac{B}{t}.
+$$
+
+$t$ 要换成秒，字节换成十进制 GB。代入本次记录的中位数，得到：
+
+$$
+\mathrm{BW}_{\mathrm{eff}}
+=\frac{201\,326\,592}{0.338365\times10^{-3}}\div10^9
+\approx595\ \mathrm{GB/s}.
+$$
+
+源码让张量自己提供元素数和每个元素的字节数，避免切换数据类型后忘记更新公式：
+
+```python
+bytes_moved = 3 * x.numel() * x.element_size()
+gbs = bytes_moved / (median_ms * 1e-3) / 1e9
+```
+
+同一次 RX 9070 XT / ROCm 7.13 / 原生 Ubuntu 实验中，FP16 中位数约为 0.173 ms，有效带宽约为 580 GB/s。它处理的元素数相同，算法字节数减半，时间也接近减半。这个结果与“数据量对耗时影响较大”的判断相符；单凭两个点，还不能证明某个具体硬件部件已经达到上限。
+
+### 5.5.2 复制时，单个数组和读写总量不同
+
+复制一次需要读 `x`、写 `y`，因此 $B=2Ns$。本章的 `array_MiB` 指**单个数组的大小**，`pair_MiB` 指两个数组合计的存储大小，在这里也恰好等于算法的一读一写数据量。
+
+| 单个数组 | 两个数组合计 | 一次复制的算法数据量 |
+| ----: | ----: | ----: |
+| 8 MiB | 16 MiB | $16\times2^{20}$ 字节 |
+| 64 MiB | 128 MiB | $128\times2^{20}$ 字节 |
+| 256 MiB | 512 MiB | $512\times2^{20}$ 字节 |
+
+MiB 是二进制单位，$1\ \mathrm{MiB}=2^{20}$ 字节；GB 是十进制单位，$1\ \mathrm{GB}=10^9$ 字节。不能直接把“MiB 除以 ms”标成 GB/s。脚本先得到准确的字节数，再统一换算：
+
+```python
+bytes_moved = 2 * x.numel() * x.element_size()
+gbs = bytes_moved / (batch_avg_ms * 1e-3) / 1e9
+```
+
+### 5.5.3 有效带宽不等于显存总线的实测流量
+
+本次复制实验中，8 MiB 数组对应的有效带宽约为 $1.00\times10^3$ GB/s，而 64、256 MiB 数组约为 601、596 GB/s。这说明测量结果随工作集大小变化；**工作集**就是这段程序反复访问的数据，本例中包括输入和输出。
+
+为什么小数组的数值更高？缓存复用是值得验证的解释：如果部分数据来自片上缓存，算法仍把它算作一次读取，但这些字节不一定都经过 GDDR6 显存总线。与此同时，输入规模、调用间隙和计时开销也会影响结果。这里的 `GB/s` 来自算法字节数与 event 时间，没有测量真实显存事务，不能据此断言“小数组全部命中 L2”或“大数组就是 GPU 的带宽极限”。
+
+这一章先保留可靠的观察：**相同计时方法下，复制不同大小的数组得到不同的有效带宽。** 下一章会学习怎样增加证据，第 7 章再把明确了口径的数据放到 Roofline 图上。
+
+## 5.6 复测、记录与练习
+
+这一节把前面的步骤收束成一次可以复查的实验。
+
+重新启动脚本会得到另一组样本，不必要求最后几位小数一致。先确认操作、输入规模、数据类型、预热次数、正式次数和统计方式一致，再观察差异。如果两个版本只差一点，应交替重复运行它们，保留每轮结果；单个进程里的 200 次采样不能替代所有独立复测。
+
+脚本也允许改变预热和正式次数。下面的命令已在相同实验机上运行通过，五组输出的正确性检查均为 `PASS`：
+
+```bash
+python chapter5/bench_ch4.py --warmup 40 --repeats 100
+```
+
+它用来观察测量设置的影响。由于同时改变了两个参数，不应据此把结果变化归因于某一个参数；做对照实验时，再分别改变预热次数或正式次数。
+
+一份记录只需要先写清五件事：运行环境与日期，完整命令，输入与校验方式，计时范围与统计量，观察及待验证的解释。本章本地实验底稿保存在 `code/part1-profiling/chapter5/EXPERIMENT.md`，原始输出保存在该目录的 `logs/bench-native-2026-09-11.log`。早期 WSL2 记录与本次原生 Ubuntu 记录分开保留，正文采用本次修正后脚本的结果。
+
+你可以用以下问题检查自己是否理解了测量过程：
+
+1. FP16 向量加法的算法数据量是多少字节？代入 0.173443 ms，能否算出输出中的有效带宽？
+2. 假如只保留一批 200 次调用的总时间，还能求出单次调用的中位数吗？缺少了什么信息？
+3. 把输出数组分配移到每次加法内部，会改变哪些条件？此时应怎样重新描述计时范围？
+4. 对 8 MiB 的复制数组，一次算法读写总量是多少？如果误把 `8` 当作两个数组的总大小，带宽会相差多少？
+5. 小数组的有效带宽更高，你能写出一条已观察到的事实和一条尚未验证的解释，并把它们分开吗？
 
 <details>
-<summary>代码骨架：bench_hip.cpp</summary>
+<summary>自检提示：单位、统计量与结论边界</summary>
 
-```cpp
-// code/part1-profiling/chapter5/bench_hip.cpp
-// 用法：hipcc -O3 bench_hip.cpp -o bench_hip && ./bench_hip
-// 目标：HIP event 最小计时模板
-// 硬件上下文：Radeon RX 9070 XT + ROCm 7.13（实测见下方 §5.4 结果表）
-#include <hip/hip_runtime.h>
-#include <cstdio>
-
-__global__ void my_kernel(float* x, int n) {
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i < n) x[i] = x[i] * 2.0f + 1.0f;
-}
-
-int main() {
-    const int n = 1 << 24;
-    const int warmup = 20, repeats = 200;
-    float* d;
-    hipMalloc(&d, n * sizeof(float));
-
-    int block = 256;
-    int grid  = (n + block - 1) / block;
-
-    for (int i = 0; i < warmup; ++i)
-        my_kernel<<<grid, block>>>(d, n);
-    hipDeviceSynchronize();
-
-    hipEvent_t s, e;
-    hipEventCreate(&s); hipEventCreate(&e);
-    hipEventRecord(s);
-    for (int i = 0; i < repeats; ++i)
-        my_kernel<<<grid, block>>>(d, n);
-    hipEventRecord(e);
-    hipEventSynchronize(e);
-
-    float ms = 0.f;
-    hipEventElapsedTime(&ms, s, e);
-    printf("avg per launch = %.4f ms\n", ms / repeats);
-
-    hipFree(d);
-    return 0;
-}
-```
+1. $3\times4096^2\times2=100\,663\,296$ 字节，即 96 MiB。除以对应的秒数再除以 $10^9$，约为 580 GB/s。
+2. 不能。总时间没有保留每次调用的时间分布，也可能包括调用间隙。
+3. 每轮多了分配或分配器复用的工作，主机提交节奏也可能变化；这与本章的预分配版本不同。
+4. 16 MiB。只计 8 MiB 会把有效带宽算成正确值的一半。
+5. “本次小数组的有效带宽更高”是观察；“原因是缓存复用”是需要进一步验证的解释。
 
 </details>
-
-要点：
-
-- `hipEvent_t` 的精度足够量到 μs 级 kernel；
-- 一定要 `hipEventSynchronize` 之后再读 elapsed time，否则 host 还在拿着 stale 值；
-- [第 6 章](../chapter6/index.md) 会沿用这个计时骨架，再用 `rocprofv3` 核对 kernel 时间。
-
-### 实测数字（Radeon RX 9070 XT + ROCm 7.13）
-
-下面这张表是用 [`bench_ch4.py`](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part1-profiling/chapter5/bench_ch4.py)（综合了上面骨架 A / B 两段流程）在 RX 9070 XT（gfx1201 / ROCm 7.13 / 原生 Ubuntu 24.04）上跑出来的实测值：
-
-<details>
-<summary>实测输出：Ch4 benchmark @ RX 9070 XT + ROCm 7.13（原生 Ubuntu 24.04）</summary>
-
-下表是用 `bench_ch4.py` 在 RX 9070 XT（gfx1201 / ROCm 7.13 / 原生 Ubuntu 24.04）上的实测值：
-
-| 实验 | 算子 / 公式 | shape / dtype | 延迟（median / min） | 有效带宽 | 算术强度 |
-| ---- | ---- | ---- | ----: | ----: | ----: |
-| 骨架 A — PyTorch vector add | `c = a + b` | 4096² / fp32 | 0.337 / 0.335 ms | 600.8 GB/s | ~0.083 FLOP/B |
-| 骨架 A — PyTorch vector add | `c = a + b` | 4096² / fp16 | 0.173 / 0.171 ms | 587.3 GB/s | ~0.17 FLOP/B |
-| 骨架 B — Triton vector copy | `y = x` | 8 MiB（pair） | 0.020 ms（min） | 785.1 GB/s | — |
-| 骨架 B — Triton vector copy | `y = x` | 64 MiB（pair） | 0.223 ms（min） | 572.8 GB/s | — |
-| 骨架 B — Triton vector copy | `y = x` | 256 MiB（pair） | 0.900 ms（min） | 568.6 GB/s | — |
-
-```text
-GPU: AMD Radeon RX 9070 XT
-torch: 2.11.0+rocm7.13.0
-hipcc: 7.13.99004 / arch gfx1201 / 原生 Ubuntu 24.04 (6.17.0-35-generic)
-
---- 骨架 A：PyTorch vector add (4096×4096) ---
- dtype |    min_ms |  median_ms |     GB/s
-  fp32 |   0.335 ms |    0.337 ms |   600.8
-  fp16 |   0.171 ms |    0.173 ms |   587.3
-
---- 骨架 B：Triton vector copy (float32) ---
-   footprint |    min_ms |     GB/s
-        8 MiB |   0.020 ms |   785.1
-       64 MiB |   0.223 ms |   572.8
-      256 MiB |   0.900 ms |   568.6
-```
-
-> 延迟口径：vector add 用 GPU event 逐次计时，同时报告 min 与 median；vector copy 用「一段 event 覆盖 200 次连续 launch 后求平均」，列出的就是单次平均（≈ min）。原始日志见 `code/part1-profiling/chapter5/logs/`。有效带宽的口径：vector add 按 `3 × elems × dtype` 字节（两读一写），vector copy 按 `2 × footprint` 字节（一读一写）。
-
-</details>
-
-读这张表的关键点：
-
-- **访存受限算子的「快」上限就是带宽**：vector add 在 fp32 / fp16 下有效带宽几乎一致（600.8 vs 587.3 GB/s），但 fp16 的时间只有 fp32 的约一半（0.171 vs 0.335 ms）——这正是直觉表里「改 dtype 之后吞吐翻倍 ≠ 真省了带宽」那条的实测印证。fp16 真省到的是 byte 数，算术强度（FLOP/B）跟着翻倍。
-- **vector copy 的 footprint 扫描能画出 cache 层级**：8 MiB 时有效带宽冲到 785.1 GB/s（落在 L2 命中区，数据基本没往返 GDDR6），64 MiB 以后跌到 ~570 GB/s 并稳定下来——这就是踩进 GDDR6 平台后的真实带宽。这条曲线就是后面所有 访存受限算子要参照的带宽线。
-
-> 太小的输入（几 MiB 以下）测出来的不是带宽峰值，是 launch overhead——每次 copy 真正干活只有几 μs，被启动开销稀释。太大的输入又只能看到 GDDR6 平台。要看 cache 层级必须跑 footprint 扫描，而不是只跑一个 size。
-
-> 三段骨架本身只是流程模板；实测数字请按[第 4 章 4.6 节](../../part0-intro/chapter4/index.md)的实验底稿习惯，落到 `code/part1-profiling/chapter5/` 下的记录里，写清楚硬件、命令、原始输出和结论，几天后回来才复现得了。
-
-## 5.5 避免测量陷阱
-
-这一节专门讲「看起来变快了，但其实不一定」的情况——也就是常说的**伪优化**。伪优化最麻烦的地方在于，它会给你一种很强的成就感：数字变好了，代码也改了，好像问题解决了。但如果测量方式不可靠，后面换输入、换机器、换版本时，结果很可能消失。
-
-下面这张表把常见伪优化来源和应对方式整理在一起：
-
-| 现象 | 可能原因 | 应对方式 |
-| ---- | ---- | ---- |
-| 第一次很慢，后面明显变快 | 首轮包含初始化、编译、缓存准备 | 单独记录首轮，正式统计前 warmup |
-| 改完只快了一点 | 可能是正常波动 | 增加 repeat，看 median 和 std |
-| GPU 计时几乎为零 | 没有等待 GPU 完成 | 使用 GPU event 或显式 synchronize |
-| 小输入特别快 | 可能主要测到 launch overhead 或缓存效果 | 用多个输入规模观察趋势 |
-| 单个 kernel 快了，但端到端没变化 | 瓶颈不在这个 kernel | 先看它在总耗时中占比 |
-| 前后版本差异很大 | 同时改了多个变量 | 一次只改一个变量，保留对照组 |
-| 带宽或 FLOPS 看起来异常高 | 数据量模型或计时范围不一致 | 重新核对 bytes / ops 的估算口径 |
-| 改 dtype 之后吞吐翻倍 | 可能只是 Tensor 数量变了一半 | 把 byte 数和 ops 数都重新算 |
-| 关掉某个 print / log 后变慢 | 可能 print 把 host 卡住，意外起到了同步效果 | 计时范围要明确包含或排除日志 |
-| 第二次运行就一直很快 | 数据已被 L2 / GDDR6 预热 | 在 footprint 接近 cache 容量时，按工作集大小分级测试 |
-
-避免伪优化的核心方法也很简单：**让实验可复查。**
-
-一次好的性能实验，至少应该留下：输入规模、数据类型、硬件和软件版本、运行命令、原始输出、统计方式、结论。这样几天以后你再回来，或者别人帮你 review 时，才知道这个数字到底从哪里来——这正是[第 4 章 4.6 节](../../part0-intro/chapter4/index.md)强调的实验底稿习惯。
-
-如果你现在只记住一条，那就是：**优化前先建立可信 baseline。** 没有 baseline，后面所有「更快了」都没有参照物。
-
-## 5.6 可信 benchmark 的检查清单
-
-这一节把前面几节的要点收成一份清单——每次开一组实验前过一遍，能挡掉大部分伪优化。
-
-| 检查项 | 为什么重要 | 常见错误 |
-| ---- | ---- | ---- |
-| 固定输入规模 | 输入变了，时间自然会变 | 前后对比时 shape 不一致 |
-| 固定数据类型 | fp32、fp16、bf16 的计算路径不同 | 只说「快了」，不说 dtype |
-| 区分初始化和正式计时 | 第一次运行可能包含加载、编译、缓存准备 | 把首轮初始化当成稳定性能 |
-| warmup | 让缓存、JIT、设备状态进入稳定状态 | 第一轮特别慢，直接拿来平均 |
-| repeat | 单次结果可能只是偶然 | 只跑一次就下结论 |
-| synchronize | GPU 任务常常异步提交 | 只量到 CPU 提交时间 |
-| 计时器选择 | wall clock vs GPU event 精度差异大 | 用 `time.time()` 量微秒级 kernel |
-| 锁定时钟 / 后台干扰 | 频率波动会污染数据 | 后台跑着别的 GPU 任务 |
-| 记录环境 | 后续复查需要硬件、驱动、框架版本 | 只有一个数字，没有上下文 |
-| 只改一个变量 | 才知道是谁带来变化 | 同时改 shape、dtype、实现和参数 |
-
-把这张表和 4.4 的三段骨架配合起来用：骨架管「怎么测」，清单管「测得对不对」。两者都到位，一次 benchmark 才值得相信。
 
 ## 本章小结
 
-- 性能优化不是从改代码开始，而是从定义问题和设计测量开始；**没有稳定测量，就没有可靠优化**。
-- 首轮的一次性开销（编译、冷缓存、爬频）要在 warmup 里消掉；正式统计只看稳态段，warmup 之后记得 synchronize。
-- 单次结果不可信，要 repeat 多次并汇总 mean / median / min / p95 / std；波动大时先修测量方法，而不是急着优化代码。
-- GPU 任务是异步提交的，必须用 GPU event（`torch.cuda.Event` / `hipEvent_t`）而不是 `time.time()` 量 kernel 真实耗时；本章给出 PyTorch / Triton / HIP 三段最小骨架。
-- 伪优化有很多伪装（缓存命中、launch overhead、改 dtype 只省了 byte、print 意外同步……），核心对策是「让实验可复查」和「先建立可信 baseline」。
-- [下一章](../chapter6/index.md) 会用两个 vector add 版本，把本章的 benchmark 流程和 `rocprofv3` 串成「量准 → 找到慢点 → 验证」的完整路线。
+- 先定义计时范围，再选择计时方法。GPU event 测量执行流中两个标记之间的时间；正确同步的主机时钟也可以用于明确范围的总耗时测量。
+- 分配、初始化、预热和结果检查放在本章的计时区间外。重复使用输入、每轮同步等设置也属于实验条件。
+- 逐次计时得到多个样本，可以报告最小值和中位数；整批计时得到总时间除以次数的平均值，两者不能混称。
+- 有效带宽需要同时写清算法字节数、时间统计量和单位。它不会自动告诉我们字节经过了哪一级存储。
+
+[第 6 章](../chapter6/index.md)继续使用向量加法，借助 `rocprofv3` 从“这个版本更慢”走到“它怎样执行，以及下一步该检查什么”。
 
 ## 延伸阅读
 
-- [HIP Performance Guidelines](https://rocm.docs.amd.com/projects/HIP/en/latest/how-to/performance_guidelines.html)
-- [HIP Programming Guide](https://rocm.docs.amd.com/projects/HIP/en/latest/) — HIP 编程模型与计时 API 入口
-- [PyTorch Profiler 文档](https://docs.pytorch.org/docs/stable/profiler.html)
-- [ROCm Documentation](https://rocm.docs.amd.com/)
+- [《动手学深度学习》：异步计算](https://zh.d2l.ai/chapter_computational-performance/async-computation.html) — 从程序执行顺序理解异步与同步。
+- [PyTorch：异步执行与计时](https://docs.pytorch.org/docs/2.11/notes/cuda.html#asynchronous-execution) — 解释主机调用和设备执行的关系。
+- [PyTorch：Event](https://docs.pytorch.org/docs/2.11/generated/torch.cuda.Event.html) — event 的记录、等待与时间单位。
+- [HIP Performance Guidelines](https://rocm.docs.amd.com/projects/HIP/en/latest/how-to/performance_guidelines.html) — 进一步了解性能测量与优化。

@@ -50,18 +50,18 @@ https://datawhalechina.github.io/hello-gpu/
 | [第 1 章 环境准备](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter1/index.md) | 9070XT + 原生 Ubuntu + ROCm 7.13 验证、Windows/WSL2 边界、uv 环境、最小 smoke test | 🚧 |
 | [第 2 章 GPU 体系结构（上）：编程模型与 wavefront 执行](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter2/index.md) | 从数组加法出发，理解线程编号、工作分组、wavefront 执行与分支掩码 | ✅ |
 | [第 3 章 GPU 体系结构（下）：片上资源与数据通路](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter3/index.md) | 跟着一次加法认识寄存器、缓存与 LDS，再理解合并访存和延迟隐藏 | ✅ |
-| [第 4 章 第一个程序 + 性能分析](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter4/index.md) | vector add 跑通、baseline benchmark、CPU vs GPU 与带宽利用率分析 | 🚧 |
+| [第 4 章 第一个程序 + 性能分析](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter4/index.md) | 从向量加法出发，编写 HIP 程序、验证结果并学习 GPU 计时 | ✅ |
 | **第 1 篇：Profiling 实战** | | |
-| [第 5 章 benchmark 与可信计时](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part1-profiling/chapter5/index.md) | 热身、重复、GPU event、避免测量陷阱 | 🚧 |
-| [第 6 章 用 rocprof 找到慢在哪里](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part1-profiling/chapter6/index.md) | 对照两个 vector add，只看 kernel 时间、工作划分和 stride 趋势 | 🚧 |
-| [第 7 章 读懂 Roofline 图](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part1-profiling/chapter7/index.md) | 看懂参考线、生成工作点并选择排查方向 | 🚧 |
+| [第 5 章 benchmark 与可信计时](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part1-profiling/chapter5/index.md) | 从两种 event 计时方式理解预热、统计和有效带宽 | ✅ |
+| [第 6 章 用 rocprof 找到慢在哪里](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part1-profiling/chapter6/index.md) | 运行向量加法、读懂 kernel trace，并设计公平对照 | ✅ |
+| [第 7 章 读懂 Roofline 图](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part1-profiling/chapter7/index.md) | 从一次加法计算工作点，理解带宽与算力参考线 | ✅ |
 | **[第 2 篇：经典算子与 Kernel 实战](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/index.md)** | | |
-| [第 8 章 Element-Wise：逐元素算子](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter8/index.md) | 以 Vector Add 为例，分别用 HIP 深入理解访存，用 Triton 快速掌握 tile 编程 | ✅ |
-| [第 9 章 Reduction：归约算子](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter9/index.md) | 以 Sum Reduction 为例，学习跨线程协作、LDS 与 Wave Shuffle | ✅ |
-| [第 10 章 Normalization：归一化算子](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter10/index.md) | 以行级 Softmax 为例，学习数值稳定与逐元素/归约融合 | ✅ |
-| [第 11 章 GEMM-Like：矩阵乘类算子](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter11/index.md) | 以 Matmul 为例，学习分块、数据复用与寄存器累加 | ✅ |
-| [第 12 章 Fusion：融合算子](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter12/index.md) | 用 FlashAttention-style 在线 Attention 学习减少中间写回与 IO-aware | ✅ |
-| [第 13 章 综合实战：Fused RMSNorm](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter13/index.md) | 综合逐元素、归约与融合，独立完成一次可复现的 Kernel 优化闭环 | ✅ |
+| [第 8 章 Element-Wise：逐元素算子](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter8/index.md) | 从数组加法和下标动画出发，理解连续访存、线程循环、向量化尾部与 Triton mask | ✅ |
+| [第 9 章 Reduction：归约算子](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter9/index.md) | 用求和树与实际部分和理解 LDS 协作、全局竞争和多阶段归约 | ✅ |
+| [第 10 章 Normalization：归一化算子](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter10/index.md) | 用一行大分数理解稳定 Softmax、行内归约与中间数据融合 | ✅ |
+| [第 11 章 GEMM-Like：矩阵乘类算子](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter11/index.md) | 从小矩阵点积与复用动画出发，学习 HIP/Triton 分块、尾部和资源取舍 | ✅ |
+| [第 12 章 Fusion：融合算子](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter12/index.md) | 从 Attention 加权和推导在线 Softmax，用具体数值理解历史状态重缩放 | ✅ |
+| [第 13 章 综合实战：Fused RMSNorm](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter13/index.md) | 从平方和、行尺度与广播出发，综合归约、融合和可解释的参数实验 | ✅ |
 | **第 3 篇：Agent（算子层）** | | |
 | [第 14 章 Agent 入门](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part3-agent/chapter14/index.md) | 参考 hello-agents、LLM Agent 基本范式、工具调用 | ✅ |
 | [第 15 章 工具封装](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part3-agent/chapter15/index.md) | compile/bench/profile 三件套 + accept_candidate | ✅ |

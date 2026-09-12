@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="780" viewBox="0 0 1200 780" role="img" aria-labelledby="title desc">
+<title id="title">一次 Vector Add 的数据往返</title>
+<desc id="desc">概念示意：CPU 主机内存中的 h_a、h_b 通过 H2D 拷贝成为 GPU 显存中的 d_a、d_b。CPU 发起显存分配和 kernel 启动，GPU 计算 d_c，随后 D2H 拷回 h_c，由 CPU 校验。实线表示数据移动，虚线表示控制动作。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 Z" fill="#59646B"/></marker>
+<marker id="blue-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 1 L 9 5 L 0 9 Z" fill="#2F6E9E"/></marker>
+<marker id="orange-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 1 L 9 5 L 0 9 Z" fill="#AD651E"/></marker>
+<marker id="green-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 1 L 9 5 L 0 9 Z" fill="#377554"/></marker>
+</defs>
+<rect width="1200" height="780" fill="#FCFBF7"/>
+<g font-family="PingFang SC, Noto Sans CJK SC, Microsoft YaHei, sans-serif" fill="#27323A">
+<text x="48" y="57" font-size="34" fill="#27323A" text-anchor="start" font-weight="650">一次 Vector Add 的数据往返</text>
+<text x="48" y="98" font-size="25" fill="#59646B" text-anchor="start" font-weight="400">本章的最小 HIP 程序：准备输入 → 在 GPU 上相加 → 取回结果</text>
+<rect x="48" y="132" width="358" height="525" rx="8" fill="#F6F5F0" stroke="#CBD1D3" stroke-width="2"/>
+<rect x="728" y="132" width="424" height="525" rx="8" fill="#F3F6F6" stroke="#CBD1D3" stroke-width="2"/>
+<text x="76" y="176" font-size="29" fill="#27323A" text-anchor="start" font-weight="650">CPU · 主机内存</text>
+<text x="756" y="176" font-size="29" fill="#27323A" text-anchor="start" font-weight="650">GPU · 显存与计算</text>
+<text x="76" y="213" font-size="24" fill="#59646B" text-anchor="start" font-weight="400">① 准备输入</text>
+<text x="756" y="213" font-size="24" fill="#59646B" text-anchor="start" font-weight="400">显存保存输入与输出数组</text>
+<rect x="80" y="246" width="294" height="62" rx="8" fill="#EAF2F8" stroke="#2F6E9E" stroke-width="2"/>
+<text x="227" y="287" font-size="29" fill="#2F6E9E" text-anchor="middle" font-weight="600">h_a</text>
+<rect x="80" y="338" width="294" height="62" rx="8" fill="#FCF0E3" stroke="#AD651E" stroke-width="2"/>
+<text x="227" y="379" font-size="29" fill="#AD651E" text-anchor="middle" font-weight="600">h_b</text>
+<rect x="776" y="246" width="328" height="62" rx="8" fill="#EAF2F8" stroke="#2F6E9E" stroke-width="2"/>
+<text x="940" y="287" font-size="29" fill="#2F6E9E" text-anchor="middle" font-weight="600">d_a</text>
+<rect x="776" y="338" width="328" height="62" rx="8" fill="#FCF0E3" stroke="#AD651E" stroke-width="2"/>
+<text x="940" y="379" font-size="29" fill="#AD651E" text-anchor="middle" font-weight="600">d_b</text>
+<path d="M 374 277 H 775" fill="none" stroke="#2F6E9E" stroke-width="3" stroke-linejoin="round" marker-end="url(#blue-arrow)"/>
+<path d="M 374 369 H 775" fill="none" stroke="#AD651E" stroke-width="3" stroke-linejoin="round" marker-end="url(#orange-arrow)"/>
+<text x="568" y="253" font-size="25" fill="#27323A" text-anchor="middle" font-weight="600">③ H2D 拷贝</text>
+<text x="568" y="339" font-size="24" fill="#59646B" text-anchor="middle" font-weight="400">hipMemcpy</text>
+<rect x="80" y="432" width="294" height="94" rx="8" fill="#FCFBF7" stroke="#59646B" stroke-width="2" stroke-dasharray="8 6"/>
+<text x="227" y="468" font-size="24" fill="#27323A" text-anchor="middle" font-weight="400">② hipMalloc 分配</text>
+<text x="227" y="503" font-size="24" fill="#27323A" text-anchor="middle" font-weight="400">④ launch 启动计算</text>
+<path d="M 374 473 H 775" fill="none" stroke="#59646B" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="8 6"/>
+<text x="568" y="453" font-size="24" fill="#59646B" text-anchor="middle" font-weight="400">CPU 发起控制动作</text>
+<rect x="776" y="437" width="328" height="80" rx="8" fill="#FFFFFF" stroke="#27323A" stroke-width="2"/>
+<text x="940" y="467" font-size="24" fill="#27323A" text-anchor="middle" font-weight="650">GPU kernel</text>
+<text x="940" y="499" font-size="24" fill="#27323A" text-anchor="middle" font-weight="400">d_c[i] = d_a[i] + d_b[i]</text>
+<path d="M 1104 277 H 1140 V 456 H 1106" fill="none" stroke="#2F6E9E" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#blue-arrow)"/>
+<path d="M 1104 369 H 1120 V 496 H 1106" fill="none" stroke="#AD651E" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#orange-arrow)"/>
+<path d="M 940 517 V 567" fill="none" stroke="#377554" stroke-width="3" stroke-linejoin="round" marker-end="url(#green-arrow)"/>
+<rect x="776" y="569" width="328" height="62" rx="8" fill="#EAF4EC" stroke="#377554" stroke-width="2"/>
+<text x="940" y="610" font-size="29" fill="#377554" text-anchor="middle" font-weight="600">d_c</text>
+<rect x="80" y="569" width="294" height="62" rx="8" fill="#EAF4EC" stroke="#377554" stroke-width="2"/>
+<text x="227" y="610" font-size="29" fill="#377554" text-anchor="middle" font-weight="600">h_c</text>
+<path d="M 776 600 H 375" fill="none" stroke="#377554" stroke-width="3" stroke-linejoin="round" marker-end="url(#green-arrow)"/>
+<text x="568" y="576" font-size="25" fill="#27323A" text-anchor="middle" font-weight="600">⑤ D2H 拷回</text>
+<text x="80" y="556" font-size="24" fill="#59646B" text-anchor="start" font-weight="400">⑥ 校验结果</text>
+<path d="M 52 694 H 113" fill="none" stroke="#59646B" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="127" y="702" font-size="23" fill="#59646B" text-anchor="start" font-weight="400">数据移动</text>
+<path d="M 296 694 H 359" fill="none" stroke="#59646B" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="8 6"/>
+<text x="373" y="702" font-size="23" fill="#59646B" text-anchor="start" font-weight="400">控制动作</text>
+<text x="48" y="750" font-size="25" fill="#59646B" text-anchor="start" font-weight="400">概念示意。实际程序可以让数据留在 GPU 上，连续执行多个 kernel 后再取回。</text>
+</g></svg>

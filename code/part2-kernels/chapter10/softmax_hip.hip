@@ -112,6 +112,8 @@ __global__ void softmax_fused_lds(const float* __restrict__ input,
         __syncthreads();
     }
     const float maximum = shared[0];
+    // Every thread must read the maximum before LDS is reused for the sum.
+    __syncthreads();
 
     float local_sum = 0.0F;
     for (std::size_t column = lane; column < columns; column += blockDim.x) {
