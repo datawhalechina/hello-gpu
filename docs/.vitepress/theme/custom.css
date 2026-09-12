@@ -145,11 +145,26 @@ a, button {
   max-width: 1680px !important;
 }
 
-.VPNavBar.has-sidebar .title {
+.VPNavBar > .wrapper > .container > .title {
+  flex-shrink: 0;
+  min-width: 0;
+  max-width: none;
+}
+
+.VPNavBar.has-sidebar > .wrapper > .container > .title {
   position: relative !important;
   width: auto !important;
   left: auto !important;
   padding: 0 !important;
+}
+
+/* The brand and tagline share a link, so neither should inherit the sidebar's width cap. */
+.VPNavBar .VPNavBarTitle.has-sidebar {
+  max-width: none;
+}
+
+.VPNavBarTitle .title > span {
+  flex-shrink: 0;
 }
 
 .VPNavBar.has-sidebar .content {
