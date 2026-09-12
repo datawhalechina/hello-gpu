@@ -1,0 +1,103 @@
+/* The imported exhibition keeps its original dark palette in CSS fallbacks.
+   These semantic tokens cover its fixed-color UI when the tutorial is light;
+   hardware textures and model material colors are intentionally not recolored. */
+:root[data-theme='light'] {
+  --bg: #ffffff;
+  --panel: #f6f8f7;
+  --panel-2: #edf3ef;
+  --text: #20362e;
+  --muted: #526b60;
+  --subtle: #61786e;
+  --line: #dce6df;
+  --green: #376850;
+  --green-ink: #ffffff;
+  --button: #eaf1ed;
+  --atlas-day-surface: #ffffff;
+  --atlas-day-panel: #f5f8f6;
+  --atlas-day-selected: #e0ebe4;
+  --atlas-day-ink: #20362e;
+  --atlas-day-muted: #526b60;
+  --atlas-day-accent: #3e7359;
+  --atlas-day-line: rgba(51, 88, 68, .18);
+  --atlas-day-wash: rgba(59, 95, 74, .035);
+  --atlas-day-shadow: rgba(29, 61, 45, .07);
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* Navigation stays within this deployment's base path. */
+.cinematic-app .header-actions { gap: 20px; }
+.tutorial-return { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); min-height: 44px; white-space: nowrap; }
+.tutorial-return:hover { color: var(--text); }
+.atlas-theme-toggle { display: inline-grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 1px solid var(--line); border-radius: 50%; color: var(--text); flex-shrink: 0; }
+.atlas-theme-toggle:hover { background: var(--button); }
+.cinematic-app .brand small { letter-spacing: 1.5px; }
+
+:root[data-theme='light'] .cinematic-app .header,
+:root[data-theme='light'] .site-generation-rail { background: rgba(255,255,255,.94); color: var(--text); border-color: var(--line); }
+:root[data-theme='light'] .cinematic-app,
+:root[data-theme='light'] .cinematic-story,
+:root[data-theme='light'] .cinema-pin,
+:root[data-theme='light'] .cinema-atmosphere,
+:root[data-theme='light'] .cinematic-app .archive-landing,
+:root[data-theme='light'] .cinematic-app .topology-page,
+:root[data-theme='light'] .cinematic-app .performance-page,
+:root[data-theme='light'] .cinematic-app .performance-footer,
+:root[data-theme='light'] .performance-page .performance-milestones { background: #fff; color: var(--text); }
+:root[data-theme='light'] .cinema-copy-0 h1 { background: none; color: var(--text); -webkit-text-fill-color: var(--text); }
+:root[data-theme='light'] .cinema-grain,
+:root[data-theme='light'] .cinema-light-beam { opacity: .04; }
+:root[data-theme='light'] .label-copy,
+:root[data-theme='light'] .label-right .label-copy { background: rgba(255,255,255,.92); text-shadow: none; border-radius: 5px; padding-inline: 5px; }
+:root[data-theme='light'] .site-generation-rail .generation-choice.selected:before { background: #47775e; box-shadow: none; }
+:root[data-theme='light'] .site-generation-rail .generation-choice.selected:after { background: #47775e; box-shadow: none; }
+:root[data-theme='light'] .cinema-chapters>button.active,
+:root[data-theme='light'] .performance-page .pt-metrics button.is-active,
+:root[data-theme='light'] .topology-page .ap-tabs button.active { background: #dceae0; color: #203b2c; }
+:root[data-theme='light'] .cinema-chapters,
+:root[data-theme='light'] .cinema-tools-menu,
+:root[data-theme='light'] .cinema-tools-trigger,
+:root[data-theme='light'] .cinema-inspect-status { background: rgba(246,249,247,.97); }
+:root[data-theme='light'] .micro-workbench,
+:root[data-theme='light'] .micro-workbench-body,
+:root[data-theme='light'] .micro-workbench::backdrop { background: #fff; color-scheme: light; }
+:root[data-theme='light'] .micro-inspector,
+:root[data-theme='light'] .micro-workbench-header,
+:root[data-theme='light'] .micro-generation-timeline,
+:root[data-theme='light'] .micro-view-dock,
+:root[data-theme='light'] .micro-zoom { background: rgba(248,250,249,.97); }
+:root[data-theme='light'] .micro-stage-bottom>span,
+:root[data-theme='light'] .performance-page .pf-product-value>strong { text-shadow: none; }
+/* Diagram internals sit on the dark green die; external labels sit on white. */
+:root[data-theme='light'] .topology-diagram .td-port-label { fill: #365547; }
+:root[data-theme='light'] .cinematic-app .sources-dialog { background: #fff; }
+:root[data-theme='dark'] .cinematic-app .sources-dialog {
+  background: #111b1a; color: #e5eeea; color-scheme: dark;
+  --text: #e5eeea; --muted: #acbdb4; --subtle: #96aaa0;
+  --line: #2b4036; --panel: #182820; --green: #c8dbd0; --green-ink: #19251f;
+}
+@media (max-width: 1100px) {
+  .cinematic-app .header nav { gap: 20px; }
+  .cinematic-app .brand small, .cinematic-app .brand-divider { display: none; }
+}
+@media (max-width: 900px) {
+  .cinematic-app .header nav { display: none; }
+}
+@media (max-width: 600px) {
+  .cinematic-app .header { padding-inline: 16px; }
+  .cinematic-app .header-actions { gap: 12px; }
+  .tutorial-return { font-size: 10px; gap: 4px; }
+  .cinematic-app .brand { gap: 7px; }
+  .cinematic-app .brand strong { font-size: 15px; }
+  .cinematic-app .library-button { font-size: 10px; gap: 4px; }
+  .atlas-theme-toggle { width: 34px; height: 34px; }
+}
+@media (max-width: 360px) {
+  .cinematic-app .header { padding-inline: 12px; }
+  .cinematic-app .header-actions { gap: 8px; }
+  .cinematic-app .brand-symbol { display: none; }
+  .tutorial-return svg { display: none; }
+}
+/* Keep the decorative horizon quiet on white and keyboard focus high contrast. */
+:root[data-theme='light'] .milestone-chapter .mc-horizon { opacity: .08; }
+:root[data-theme='light'] :is(button, a, select, [tabindex]):focus-visible { outline-color: #306847; }

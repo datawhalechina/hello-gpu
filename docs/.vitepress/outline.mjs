@@ -407,6 +407,7 @@ export const appendixCount = appendices.length
 
 export const navItems = [
   { text: '全书目录', link: '/curriculum/' },
+  { text: 'GPU 图谱', link: '/atlas/', activeMatch: '^/atlas/' },
   { text: '实验环境', link: '/part0-intro/chapter1/' },
   { text: 'AMD 云算力', link: '/cloud/' },
   { text: 'GitHub', link: 'https://github.com/datawhalechina/hello-gpu' },

@@ -7,7 +7,12 @@ reference_repositories/
 __pycache__/
 .env
 package-lock.json
+!apps/gpu-atlas/nvidia/package-lock.json
 .superpowers/
+
+# GPU Atlas 子应用在教程构建前生成；只提交源代码与锁文件。
+apps/gpu-atlas/*/dist/
+docs/public/atlas/nvidia/
 
 # uv
 .venv/

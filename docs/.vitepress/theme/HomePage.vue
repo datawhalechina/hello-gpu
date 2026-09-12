@@ -5,6 +5,7 @@ import UiIcon from './UiIcon.vue'
 import LearningPath from './LearningPath.vue'
 import ScrollStory from './ScrollStory.vue'
 import Contributors from './Contributors.vue'
+import AtlasPreview from './AtlasPreview.vue'
 </script>
 
 <template>
@@ -38,6 +39,7 @@ import Contributors from './Contributors.vue'
       <span class="hg-route-more">探索完整路线 <UiIcon name="arrow" /></span>
     </a>
     <LearningPath embedded />
+    <AtlasPreview />
     <Contributors />
   </div>
 </template>
