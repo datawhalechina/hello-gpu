@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="840" viewBox="0 0 1200 840" role="img" aria-labelledby="title desc">
+<title id="title">GPU Event 记录哪一段时间</title>
+<desc id="desc">概念示意：准备数据、预分配输出并创建 Event，预热五次后同步。正式采样三十轮，每轮 CPU 依次提交 start.record、torch.add(a,b,out=c)、end.record，然后通过 end.synchronize 等待 GPU 执行到终止事件。GPU 在同一 stream 上记录起点时间戳、执行加法、记录终点时间戳。同步返回后使用 elapsed_time 读取两次 GPU 时间戳的间隔。结果校验在正式计时之外。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 Z" fill="#59646B"/></marker>
+<marker id="blue-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 1 L 9 5 L 0 9 Z" fill="#2F6E9E"/></marker>
+<marker id="orange-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 1 L 9 5 L 0 9 Z" fill="#AD651E"/></marker>
+<marker id="green-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 1 L 9 5 L 0 9 Z" fill="#377554"/></marker>
+</defs>
+<rect width="1200" height="840" fill="#FCFBF7"/>
+<g font-family="PingFang SC, Noto Sans CJK SC, Microsoft YaHei, sans-serif" fill="#27323A">
+<text x="48" y="57" font-size="34" fill="#27323A" text-anchor="start" font-weight="650">GPU Event 记录哪一段时间</text>
+<text x="48" y="98" font-size="26" fill="#59646B" text-anchor="start" font-weight="400">先记录事件，再等待完成，最后读取两次 GPU 时间戳的间隔。</text>
+<rect x="48" y="127" width="377" height="90" rx="8" fill="#F6F5F0" stroke="#CBD1D3" stroke-width="2"/>
+<text x="236.5" y="164" font-size="26" fill="#27323A" text-anchor="middle" font-weight="600">计时外准备</text>
+<text x="236.5" y="199" font-size="24" fill="#59646B" text-anchor="middle" font-weight="400">输入、输出 c 与 Event</text>
+<rect x="461" y="127" width="292" height="90" rx="8" fill="#F6F5F0" stroke="#CBD1D3" stroke-width="2"/>
+<text x="607.0" y="164" font-size="26" fill="#27323A" text-anchor="middle" font-weight="600">warmup × 5</text>
+<text x="607.0" y="199" font-size="24" fill="#59646B" text-anchor="middle" font-weight="400">不计入正式样本</text>
+<rect x="790" y="127" width="362" height="90" rx="8" fill="#F6F5F0" stroke="#CBD1D3" stroke-width="2"/>
+<text x="971.0" y="164" font-size="26" fill="#27323A" text-anchor="middle" font-weight="600">等待预热完成</text>
+<text x="971.0" y="199" font-size="24" fill="#59646B" text-anchor="middle" font-weight="400">再开始正式采样</text>
+<path d="M 425 172 H 458" fill="none" stroke="#59646B" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M 753 172 H 787" fill="none" stroke="#59646B" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="48" y="252" width="1104" height="423" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="76" y="292" font-size="27" fill="#27323A" text-anchor="start" font-weight="600">正式采样 × 30：每轮重复以下过程</text>
+<text x="73" y="365" font-size="24" fill="#59646B" text-anchor="start" font-weight="400">CPU</text>
+<rect x="146" y="327" width="191" height="60" rx="8" fill="#F6F5F0" stroke="#CBD1D3" stroke-width="2"/>
+<text x="241.5" y="365" font-size="23" fill="#27323A" text-anchor="middle" font-weight="400">start.record()</text>
+<rect x="368" y="327" width="272" height="60" rx="8" fill="#F6F5F0" stroke="#CBD1D3" stroke-width="2"/>
+<text x="504.0" y="365" font-size="23" fill="#27323A" text-anchor="middle" font-weight="400">torch.add(a,b,out=c)</text>
+<rect x="671" y="327" width="174" height="60" rx="8" fill="#F6F5F0" stroke="#CBD1D3" stroke-width="2"/>
+<text x="758.0" y="365" font-size="23" fill="#27323A" text-anchor="middle" font-weight="400">end.record()</text>
+<rect x="876" y="327" width="247" height="60" rx="8" fill="#F6F5F0" stroke="#CBD1D3" stroke-width="2"/>
+<text x="999.5" y="365" font-size="23" fill="#27323A" text-anchor="middle" font-weight="400">end.synchronize()</text>
+<path d="M 337 357 H 365" fill="none" stroke="#59646B" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M 640 357 H 668" fill="none" stroke="#59646B" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M 845 357 H 873" fill="none" stroke="#59646B" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="73" y="467" font-size="24" fill="#59646B" text-anchor="start" font-weight="400">GPU</text>
+<text x="73" y="498" font-size="21" fill="#59646B" text-anchor="start" font-weight="400">同一 stream</text>
+<rect x="241" y="433" width="517" height="115" rx="8" fill="#EAF4EC" stroke="#EAF4EC" stroke-width="2"/>
+<path d="M 182 480 H 824" fill="none" stroke="#59646B" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M 242 387 V 460" fill="none" stroke="#59646B" stroke-width="2" stroke-linejoin="round" stroke-dasharray="6 6"/>
+<path d="M 504 387 V 448" fill="none" stroke="#59646B" stroke-width="2" stroke-linejoin="round" stroke-dasharray="6 6"/>
+<path d="M 758 387 V 460" fill="none" stroke="#59646B" stroke-width="2" stroke-linejoin="round" stroke-dasharray="6 6"/>
+<circle cx="242" cy="480" r="8" fill="#377554"/>
+<circle cx="758" cy="480" r="8" fill="#377554"/>
+<text x="242" y="420" font-size="23" fill="#377554" text-anchor="middle" font-weight="400">起点时间戳</text>
+<text x="758" y="420" font-size="23" fill="#377554" text-anchor="middle" font-weight="400">终点时间戳</text>
+<rect x="365" y="453" width="278" height="55" rx="8" fill="#FFFFFF" stroke="#377554" stroke-width="2"/>
+<text x="504" y="490" font-size="25" fill="#27323A" text-anchor="middle" font-weight="600">GPU 执行加法</text>
+<text x="500" y="535" font-size="24" fill="#377554" text-anchor="middle" font-weight="600">本轮计时区间</text>
+<path d="M 758 481 H 858 V 433 H 999 V 389" fill="none" stroke="#59646B" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="6 6"/>
+<text x="999" y="478" font-size="24" fill="#59646B" text-anchor="middle" font-weight="400">等待 GPU</text>
+<text x="999" y="513" font-size="24" fill="#59646B" text-anchor="middle" font-weight="400">执行到 end</text>
+<path d="M 1123 358 H 1134 V 608 H 956" fill="none" stroke="#59646B" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="260" y="579" width="695" height="63" rx="8" fill="#F6F5F0" stroke="#CBD1D3" stroke-width="2"/>
+<text x="607" y="619" font-size="25" fill="#27323A" text-anchor="middle" font-weight="600">同步返回后：start.elapsed_time(end)</text>
+<path d="M 600 675 V 705" fill="none" stroke="#59646B" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="278" y="707" width="644" height="61" rx="8" fill="#EAF4EC" stroke="#377554" stroke-width="2"/>
+<text x="600" y="747" font-size="26" fill="#27323A" text-anchor="middle" font-weight="600">计时外：校验 c，并汇总 30 个样本</text>
+<text x="48" y="812" font-size="25" fill="#59646B" text-anchor="start" font-weight="400">概念示意，长度不代表实际耗时；计时区间不包含数据准备与结果校验。</text>
+</g></svg>

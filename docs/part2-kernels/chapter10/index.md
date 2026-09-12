@@ -1,249 +1,183 @@
 ---
 title: "第10章 Normalization：归一化算子"
-description: "Hello GPU 第10章 · 以行级 Softmax 为例，学习数值稳定与逐元素/归约融合"
+description: "Hello GPU 第10章 · 用一行大分数理解稳定 Softmax、行内归约与中间数据融合"
 ---
+
+<script setup>
+import SoftmaxJourney from './softmax-journey.vue'
+import SoftmaxExecution from './softmax-execution.vue'
+</script>
 
 # 第10章 Normalization：归一化算子
 
-## 本章目标、前置知识与产物
+## 本章导读
 
-> Softmax 看起来只是“取指数再除以总和”，实际却把逐元素计算、两种归约和数值稳定性放进了同一行数据里。它非常适合用来学习融合：究竟少了哪次 launch、哪块中间内存，又付出了什么同步与资源代价？
+第 9 章把多个输入合成一个和。现在，我们希望把一行分数变成一行非负的权重，并让这些权重加起来等于 `1`。Softmax 会先取指数，再除以整行指数的和，因此每个位置都需要知道其他位置贡献了多少。
 
-第 8 章的 Vector Add 中，每个输出只依赖同位置输入；第 9 章开始讨论多个输入共同得到一个结果。Softmax 把两者接起来：一行先求最大值，再逐元素取指数，再求和，最后逐元素归一化。
+这把前两章的基本操作连了起来：逐元素计算、最大值归约、求和归约。我们用 `[1000, 1001, 1002]` 跟踪中间值，先理解如何避免数值溢出，再看这些步骤怎样在 GPU 上协作，以及中间结果是否需要写回全局内存。
 
-学完本章，你应该能够：
+可以选择一条阅读路线：
 
-- 从二维张量上准确写出“逐行 Softmax”的语义；
-- 用手算解释为什么必须先减去行最大值；
-- 把 Softmax 拆成 `max → exp → sum → normalize` 四个基本模式；
-- 读懂 HIP 三 kernel baseline 与 block+LDS 融合版的数据流；
-- 读懂 Triton“一行一个 program”、mask、`BLOCK_SIZE` 与 `num_warps`；
-- 用正确性、GPU event 和 kernel trace 区分事实、假设与待验证结论。
+- **先理解算法**：从[三个数的例子](#softmax-semantics)读到[融合的数据流](#softmax-dataflow)，再看[实测对照](#softmax-results)。
+- **动手写 HIP**：公共部分之后进入 [HIP 实现](#ch10-hip)，从三个 kernel 读到一行一个 block。
+- **动手写 Triton**：公共部分之后进入 [Triton 实现](#ch10-triton)，把一整行表示为逻辑向量，观察 mask 与两次归约。
 
-本章配套代码位于：
+配套代码位于 `code/part2-kernels/chapter10/`。本章使用 FP32 输入输出，已有性能证据对应 Radeon RX 9070 XT、ROCm 7.13、原生 Ubuntu 24.04；只对 `4096×1024` 和已检查的边界输入作结论。启动与计时基础沿用[第 8 章](../chapter8/index.md)和[第 5 章](../../part1-profiling/chapter5/index.md)。
 
-```text
-code/part2-kernels/chapter10/
-├── run_all.sh
-├── softmax_hip.hip
-└── softmax_triton.py
-```
+## 10.1 从一行分数到一行概率 {#softmax-semantics}
 
-::: warning 首版实验状态
-本章已经在 Radeon RX 9070 XT、ROCm 7.13、原生 Ubuntu 24.04 上完成边界正确性、3 个独立正式进程和逐实现 profiling。下文的性能结论只对应 `4096×1024` FP32 与已提交 evidence，不外推到其他列数或 dtype。
+本节用一行三个数明确 Softmax 的输入、输出和共享依赖。
+
+假设输入是一行 `[2, 1, 0]`。先逐位置取自然指数，再除以这些指数的总和：
+
+| 输入 `x` | `exp(x)`，约值 | 除以总和 `11.1074` 后，约值 |
+| ---: | ---: | ---: |
+| 2 | 7.3891 | 0.6652 |
+| 1 | 2.7183 | 0.2447 |
+| 0 | 1.0000 | 0.0900 |
+
+分数越大，得到的权重越大。未舍入输出的和是 `1`，所以我们可以将它们解释为一组概率。表中四位小数的和为 `0.9999`，只是显示舍入。
+
+对形状为 `R×C` 的矩阵 `X`，本章**沿每一行的列维度**计算：
+
+$$
+Y_{r,c}=\frac{e^{X_{r,c}}}{\sum_{j=0}^{C-1}e^{X_{r,j}}},
+\qquad 0\le r<R,\ 0\le c<C.
+$$
+
+`r` 是行号，`c` 是列号。一个输出 `Y[r,c]` 的分子来自当前位置，分母却来自整行。因此同行的列需要协作；不同行互不依赖，可以并行处理。我们不会对整个矩阵只求一个共同分母。
+
+## 10.2 平移输入，避免指数溢出 {#softmax-stability}
+
+本节保持同一个计算目标，解决直接取指数的范围问题。
+
+把输入改成 `[1000, 1001, 1002]`。FP32 最大有限值约为 `3.4×10³⁸`，而 `exp(1000)` 远远超过这个范围。若直接取指数，最后会落到 `inf/inf`，结果不是有效概率。负方向也有问题：`[-1002,-1001,-1000]` 的指数可能全部下溢为 `0`，分母也变成 `0`。
+
+解决方法来自一个等式。整行共同减去常数 `a`，分子与分母会同时乘上 `e^{-a}`，比例保持不变：
+
+$$
+\frac{e^{x_c-a}}{\sum_j e^{x_j-a}}
+=\frac{e^{-a}e^{x_c}}{e^{-a}\sum_j e^{x_j}}
+=\frac{e^{x_c}}{\sum_j e^{x_j}}.
+$$
+
+选择 `a=max(x)`，最大的指数自变量变成 `0`。对于 `[1000,1001,1002]`，我们得到：
+
+| 步骤 | 手算结果 |
+| --- | --- |
+| 最大值 `m` | `1002` |
+| 平移 `x−m` | `[-2, -1, 0]` |
+| 指数 `p=exp(x−m)` | 约 `[0.1353, 0.3679, 1.0000]` |
+| 分母 `s=sum(p)` | 约 `1.5032` |
+| 输出 `y=p/s` | 约 `[0.0900, 0.2447, 0.6652]` |
+
+::: figure fig-softmax-values
+<SoftmaxJourney />
+
+跟踪同一行三个数的最大值、稳定指数、分母和输出。每一步只依赖此前已经产生的值；图中的时间轴是教学步骤，数值保留四位小数。
 :::
 
-## 10.1 逐行 Softmax 到底算什么
+在 @fig-softmax-values 中，最大值和分母都只有一个，但要供三个位置共同使用。这正是两次归约的作用。数学上平移后指数属于 `(0,1]`；FP32 中很小的项仍可能下溢为 `0`，因此实现中的范围是 `[0,1]`。至少一个最大值对应的指数为 `1`，分母不会因为全部指数下溢而变成 `0`。
 
-### 10.1.1 先固定轴与形状
-
-设输入 `X` 是一个 `R × C` 的 FP32 矩阵。对每一行 `r`，Softmax 沿列维度独立计算：
+由此得到本章所有实现共同采用的稳定形式：
 
 $$
-Y_{r,c} = \frac{e^{X_{r,c}}}{\sum_{j=0}^{C-1}e^{X_{r,j}}},
-\qquad 0 \le r < R,\ 0 \le c < C
+m_r=\max_jX_{r,j},\qquad
+p_{r,c}=e^{X_{r,c}-m_r},\qquad
+s_r=\sum_jp_{r,j},\qquad
+Y_{r,c}=p_{r,c}/s_r.
 $$
 
-“逐行”有两个重要含义：
+本章输入约定为有限 FP32 值。如果输入本身含 `NaN` 或无穷，需要另行定义传播行为；减最大值不负责修复这样的输入。对极端正负有限值，浮点减法也可能溢出为负无穷，使很小的概率被舍为 `0`，不能据此宣称消除了全部数值误差。
 
-1. 同一行的所有输出共享同一个分母，所以列之间不是独立的；
-2. 不同行之间互不依赖，所以行可以并行。
+## 10.3 中间结果需要放在哪里 {#softmax-dataflow}
 
-每行输出还有两个可检查的不变量：
+本节把数学步骤连成数据通路，建立融合要解决的问题。
 
-$$
-Y_{r,c} \ge 0, \qquad \sum_{c=0}^{C-1}Y_{r,c} \approx 1
-$$
+稳定 Softmax 由四个逻辑操作组成：
 
-这里写“约等于”是因为 FP32 加法顺序会影响最后几个比特。实现不能只检查逐元素误差，还应该检查每行和是否接近 1。
+| 操作 | 已学过的模式 | 产生什么 |
+| --- | --- | --- |
+| `max(x)` | Reduction | 整行共享的一个最大值 |
+| `exp(x−m)` | Element-Wise | 每列一个指数 |
+| `sum(p)` | Reduction | 整行共享的一个分母 |
+| `p/s` | Element-Wise | 每列一个输出 |
 
-### 10.1.2 用三个数手算
+四个操作不要求启动四个 kernel。我们可以把中间值写到全局数组，由后一个 kernel 接着计算；也可以让一组线程完成整行，在组内交换共享值。
 
-取一行 logits：
-
-```text
-X = [2, 1, 0]
+::: figure fig-softmax-fusion-path
+```mermaid
+flowchart TB
+  subgraph materialized[HIP 三 kernel baseline]
+    direction LR
+    A[输入 X] --> M[求行最大值]
+    M --> GM[全局 row_max]
+    A --> E[指数与行和]
+    GM --> E
+    E --> GP[全局 exp_tmp 和 row_sum]
+    GP --> N[归一化]
+    N --> O[输出 Y]
+  end
+  subgraph fused[行融合的目标]
+    direction LR
+    FX[输入 X] --> ROW[一组内完成 max → exp → sum → normalize]
+    ROW --> FY[输出 Y]
+  end
 ```
 
-先取指数：
-
-```text
-exp(X) ≈ [7.3891, 2.7183, 1.0000]
-sum    ≈ 11.1074
-```
-
-再除以总和：
-
-```text
-softmax(X) ≈ [0.6652, 0.2447, 0.0900]
-```
-
-三个输出都非负，和约等于 1。最大的 logit 得到最大概率，但 Softmax 没有把其他位置直接变成 0。
-
-### 10.1.3 加同一个常数，结果不变
-
-对一行所有元素同时减去常数 `a`：
-
-$$
-\frac{e^{X_c-a}}{\sum_j e^{X_j-a}}
-= \frac{e^{X_c}/e^a}{\sum_j e^{X_j}/e^a}
-= \frac{e^{X_c}}{\sum_j e^{X_j}}
-$$
-
-这条“平移不变性”是稳定 Softmax 的依据。我们可以选择最有利的 `a`，而不改变数学结果。
-
-## 10.2 为什么直接取指数会溢出
-
-### 10.2.1 大正数：`inf / inf` 不是概率
-
-考虑：
-
-```text
-X = [1000, 1001, 1002]
-```
-
-FP32 最大有限值约为 `3.4 × 10^38`，其自然对数约为 `88.7`。`exp(1000)` 远远超过这个范围。直接计算时，三个指数都会溢出成 `inf`：
-
-```text
-exp(X) = [inf, inf, inf]
-sum    = inf
-output = [inf/inf, inf/inf, inf/inf] = [NaN, NaN, NaN]
-```
-
-这不是“小误差”，而是结果完全失效。
-
-### 10.2.2 减最大值后手算一次
-
-选择 `a = max(X) = 1002`：
-
-```text
-X - max(X)       = [-2, -1, 0]
-exp(X - max(X))  ≈ [0.1353, 0.3679, 1.0000]
-sum              ≈ 1.5032
-output           ≈ [0.0900, 0.2447, 0.6652]
-```
-
-减最大值以后，最大的指数一定是 `exp(0)=1`，其余指数落在 `(0, 1]`。这消除了大正数指数溢出；分母至少包含一个 1，也不会因为所有项都下溢为 0 而变成 0。
-
-### 10.2.3 大负数同样需要稳定公式
-
-对 `[-1002, -1001, -1000]` 直接取指数，三个值都可能下溢为 0，最后得到 `0/0`。减去最大值 `-1000` 后仍然得到 `[-2,-1,0]`，所以结果与上一例相同。
-
-因此，本章所有实现都固定使用：
-
-$$
-m_r = \max_j X_{r,j}
-$$
-
-$$
-s_r = \sum_j e^{X_{r,j}-m_r}
-$$
-
-$$
-Y_{r,c} = \frac{e^{X_{r,c}-m_r}}{s_r}
-$$
-
-::: tip 稳定公式解决什么，不解决什么
-减最大值解决的是有限输入下的指数范围问题。若输入本身已经含有 `NaN` 或正负无穷，需要单独定义传播策略；本章程序的输入契约是“有限 FP32 logits”。
+上方通过全局中间数组连接三次 dispatch；下方把整行交给同一组执行单元。实际 HIP 融合版仍会重复读取输入，Triton 则在 program 内保留逻辑中间值。
 :::
 
-## 10.3 拆成四种基本模式
+主 shape 是 `4096×1024`，仅 `exp_tmp` 就需要 `4096×1024×4 Byte=16 MiB`。省掉它的一次完整写入和随后读取，按数组元素计算少了 `32 MiB` 的中间数据访问；这不等于 profiler 已测到相同数量的 GDDR6 流量，缓存和编译器还会影响实际访问。
 
-把稳定 Softmax 拆开，数据依赖会更清楚：
+融合还会改变行内并行方式、同步与寄存器需求。因此我们要同时问：少写了哪些数组，多做了哪些计算，又让多少线程参与同一行？
 
-| 阶段 | 数学操作 | 模式 | 每行输出规模 |
-| ---- | ---- | ---- | ----: |
-| 1. max | `m = max(x)` | Reduction | 1 |
-| 2. exp | `p[c] = exp(x[c] - m)` | Element-Wise | `C` |
-| 3. sum | `s = sum(p)` | Reduction | 1 |
-| 4. normalize | `y[c] = p[c] / s` | Element-Wise | `C` |
+## 10.4 固定正确性和完整计时 {#softmax-contract}
 
-这四步带来两个共享值：行最大值 `m` 与行和 `s`。不同实现的核心差别不是公式，而是：
+本节说明后面的版本怎样使用同一份输入与检查标准。
 
-- `m`、`s` 与中间指数 `p` 放在全局内存、寄存器还是 LDS；
-- 一行由一个线程、一个 block，还是一个 Triton program 负责；
-- 四个逻辑阶段要启动几次 kernel；
-- 两次归约如何让多个线程协作。
-
-### 10.3.1 一个直观但昂贵的多 kernel 数据流
-
-```text
-input[R,C]
-   │
-   ├─ kernel 1: row max ───────────────> row_max[R]
-   │
-   ├─ kernel 2: exp + row sum ─────────> exp_tmp[R,C] + row_sum[R]
-   │
-   └─ kernel 3: normalize(exp_tmp/sum) ─> output[R,C]
-```
-
-这个布局容易检查：每个阶段都有可见中间结果。但它需要多次 launch，并把 `exp_tmp` 完整写入再读回全局内存。
-
-### 10.3.2 融合不等于“所有东西都只读一次”
-
-本章 HIP 融合版用一个 block 完成一行：
-
-```text
-一行 input
-  → 每线程局部 max → LDS 归约 max
-  → 每线程局部 exp sum → LDS 归约 sum
-  → 写 output
-```
-
-它不分配 `exp_tmp`，也只 launch 一次。不过教学实现为了避免把任意长的一行全部放进 LDS，会在三个阶段重新读取输入并重新计算最后一次 `exp`。所以准确结论是：**它消除了全局中间指数写回和两次 launch，而不是保证输入只读一次。**
-
-## 10.4 先固定正确性与计时口径
-
-### 10.4.1 同一份裁判规则
-
-HIP 与 Triton 程序采用相同的实验契约：
-
-| 项目 | 规则 |
-| ---- | ---- |
-| 语义 | 二维 FP32 输入，沿最后一维逐行 Softmax |
+| 项目 | 实验约定 |
+| --- | --- |
+| 输入输出 | 连续的 `R×C` FP32 矩阵，沿最后一维计算 |
+| 输入构造 | 确定性有限值，按行叠加 `+1000`、`−1000`、`0` |
 | 参考 | HIP 使用 CPU 稳定 Softmax；Triton 使用 CPU `torch.softmax(..., dim=1)` |
-| 输入 | 确定性有限值，并按行叠加 `+1000`、`-1000`、`0` 测试平移稳定性 |
-| 元素误差 | `max_abs_error <= 2e-5` |
-| 行和误差 | `max(abs(sum(row)-1)) <= 2e-5` |
-| 检查时机 | 正式计时前一次，计时后一次 |
-| 计时范围 | 只包围候选 kernel dispatch，不含分配、CPU reference 和拷贝 |
-| 输出 | 与第 8 章一致的 `ENV` 与 `RESULT key=value` 行 |
+| 元素误差 | 最大绝对误差不超过 `2e-5`，所有输出必须有限 |
+| 行和误差 | 每行和与 `1` 的差不超过 `2e-5` |
+| 检查时机 | 计时前检查一次；计时后检查最后一次输出 |
+| event 区间 | baseline 包含全部 3 次 dispatch；融合版包含完整 1 次 dispatch |
+| 区间之外 | 内存分配、CPU reference、拷贝、Triton 首次 JIT |
 
-不同归约树会改变 FP32 加法顺序，因此 fused 版不应要求逐比特等于串行 CPU 参考。容差是正确性门槛，不是“误差越接近门槛越好”的性能指标。
+两个 CPU reference 的累加路径不同，行和检查也分别使用 CPU FP64 累加与 PyTorch FP32 求和。它们使用相同容差，足以检查本章案例，但不是逐比特相同的裁判实现。
 
-### 10.4.2 为什么要测非二次幂列数
+输入中的大正负平移覆盖了指数范围压力；不同的行还带有不同基础数值，因此现有脚本**并未直接构造一对 `x` 与 `x+1000` 来比较平移不变性**。这个单独的关系测试放在练习里。
 
-真实列数不总是 `32`、`256` 或 `1024`。本章脚本覆盖：
+脚本包含 `1×1、2×31、3×32、4×33、2×255、3×257` 六组边界。列数决定循环和 mask 是否越界，行数决定 grid 是否遗漏输出。通过这些案例不代表任意长行、其他 dtype 或所有输入分布都已验证。
 
-```text
-1, 31, 32, 33, 255, 257 columns
-```
+## 10.5 用 HIP 或 Triton 完成整行 {#softmax-implementation}
 
-这些 shape 分别触发单元素行、wavefront 边缘、跨 wavefront、block 边缘和非二次幂尾部。HIP 用 `column < columns` 的循环条件保护尾部；Triton 用 mask 把补齐位置排除在 load/store 之外。
+本节分别观察显式线程协作与逻辑向量表达。公式和裁判保持一致，详细实现通过标签切换。
 
-## 10.5 HIP baseline：把三次 dispatch 看清楚
+<ImplementationTabs id="ch10-implementation">
+<template #hip>
 
-配套文件 `softmax_hip.hip` 中的 `hip-baseline-3kernel` 是稳定的多 kernel baseline。它不是性能模板，而是让阶段边界清晰可见的正确性起点。
+### 10.5.1 HIP：三个 kernel 串起稳定公式 {#ch10-hip}
 
-### 10.5.1 Kernel 1：每个线程串行求一行最大值
+`softmax_hip.hip` 中的 `hip-baseline-3kernel` 把中间步骤展开，适合先读清楚每个数组的用途。
+
+第一个 kernel 中，一个 thread 负责一行，循环得到行最大值：
 
 ```cpp
-const std::size_t row =
-    static_cast<std::size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
-if (row >= rows) return;
-
-float maximum = negative_infinity;
+float maximum = kDeviceNegativeInfinity;
+const std::size_t base = row * columns;
 for (std::size_t column = 0; column < columns; ++column) {
-    maximum = fmaxf(maximum, input[row * columns + column]);
+    maximum = fmaxf(maximum, input[base + column]);
 }
 row_max[row] = maximum;
 ```
 
-一个 thread 负责一整行，因此不需要线程间同步。这种映射非常直白，但长行只有一个 thread 工作，不能利用行内并行。
+`base` 是当前行首下标。源码中的 `kDeviceNegativeInfinity` 实际取接近最小有限 FP32 的值，用于本章有限输入的最大值初值；名称并不表示它真是 IEEE 负无穷。
 
-### 10.5.2 Kernel 2：计算指数并串行累加
-
-第二个 kernel 读取 `row_max[row]`，把稳定指数写入 `exp_tmp[R,C]`，同时得到 `row_sum[row]`：
+第二个 kernel 读取行最大值，逐列保存指数，同时累加分母：
 
 ```cpp
 float sum = 0.0F;
@@ -255,44 +189,40 @@ for (std::size_t column = 0; column < columns; ++column) {
 row_sum[row] = sum;
 ```
 
-`exp_tmp` 是 baseline 最显眼的全局中间张量。它让第三阶段简单，也让 profiler 能分别看到各阶段；代价等待实测量化。
-
-### 10.5.3 Kernel 3：逐元素归一化
-
-最后一个 kernel 回到常见的一线程一元素映射：
+第三个 kernel 回到一线程一元素，使用 `index / columns` 找到当前元素所属的行：
 
 ```cpp
-if (index < rows * columns) {
+if (index < elements) {
     output[index] = exponentials[index] / row_sum[index / columns];
 }
 ```
 
-这里的 `index / columns` 把扁平元素下标映射回行号。由于总元素数可能不是 block size 的整数倍，`index < elements` 仍然不能省略。
+前两个阶段都让一个线程串行处理整行。在同一轮循环中，相邻线程处理相邻行，读取地址相隔 `columns` 个元素；这也与一组线程读取相邻列的映射不同。因此后面 baseline 与融合版的比较同时改变了 dispatch、中间数组和线程映射。
 
-### 10.5.4 baseline 的价值与局限
+::: figure fig-softmax-three-kernel
+<SoftmaxExecution scenario="three-kernel" />
 
-它准确表达了稳定公式，并提供可观察的中间边界；同时存在明显的待验证成本：
+baseline 三个 kernel 用全局中间数组串接的数据流：dispatch 1 写 row_max，dispatch 2 物化 exp_tmp（16 MiB）与 row_sum，dispatch 3 归一化写回。图为 3 行 × 3 列教学缩略，逻辑访问量按「写一次、读一次」计算，不是硬件事务计数。
+:::
 
-- 三次 kernel launch；
-- 一次完整 `exp_tmp` 写入和读回；
-- 两个归约阶段由单线程串行完成；
-- 行很少时，并行度可能不足。
+如 @fig-softmax-three-kernel 所示，三个 dispatch 之间传递的是全局数组：指数被完整写进 `exp_tmp` 再整读一遍。把这张图与 @fig-softmax-fusion-path 的下方路线对照，就能看到融合要省掉的是哪一段往返。
 
-这些是由源码可以确认的结构事实。它们是否主导总时间、各自占多少比例，必须等 kernel trace 和实测数据回答。
+已准备 Part 2 环境后，可以单独运行两版 HIP：
 
-## 10.6 HIP 行融合：一个 block 完成一行
-
-`hip-fused-block-lds` 把一行分给一个 HIP block。假设 `block=256`，线程 `t` 访问：
-
-```text
-column = t, t + 256, t + 512, ...
+```bash
+cd code/part2-kernels
+source ./activate-rocm.sh
+hipcc --offload-arch=gfx1201 -O3 -std=c++17 \
+  chapter10/softmax_hip.hip -o /tmp/softmax_hip
+/tmp/softmax_hip --version all --rows 4096 --cols 1024 \
+  --block 256 --warmup 10 --repeat 50
 ```
 
-因此相邻线程在每一轮访问相邻列；`columns` 不是 256 的整数倍时，最后一轮自然由循环条件裁掉。
+### 10.5.2 一个 block 合作处理一行
 
-### 10.6.1 第一次归约：局部 max → LDS max
+`hip-fused-block-lds` 使用 `blockIdx.x` 作为行号。若 `block=256`，线程 `t` 读取列 `t、t+256、t+512……`。每一轮中，相邻线程访问相邻列。
 
-每个线程先在寄存器中得到自己的 `local_maximum`，再把它写到动态 LDS：
+每个线程先求自己的局部最大值，再借用第 9 章的 LDS 树合并：
 
 ```cpp
 shared[lane] = local_maximum;
@@ -306,60 +236,49 @@ for (unsigned int stride = blockDim.x / 2; stride > 0; stride /= 2) {
 }
 ```
 
-每轮活动线程减半，最终 `shared[0]` 是行最大值。`__syncthreads()` 保护的是整个 block：下一轮不能在上一轮所有写入完成前开始。
+本文件把 `threadIdx.x` 命名为 `lane`，这里它是 **block 内线程编号**，不是 wavefront 内的 lane 编号。这个区别在 `block=256` 包含多个 wavefront 时很重要。
 
-### 10.6.2 第二次归约：局部 sum → LDS sum
+得到行最大值后，各线程重新遍历自己的列，累加稳定指数，再复用 LDS 求整行分母。先看最大值读出后的一道屏障：
 
-拿到最大值后，每个线程沿自己的列序列计算稳定指数并累加到 `local_sum`。同一块 LDS 被复用，再执行一次加法树归约，得到分母。
+```cpp
+const float maximum = shared[0];
+// Every thread must read the maximum before LDS is reused for the sum.
+__syncthreads();
+```
 
-### 10.6.3 最后写回
+最后一次 max 树归约屏障保证最大值已经写好；上面这道屏障还要保证**所有线程都读完最大值**，其他线程才能把 LDS 改作 sum 的空间。如果一个 wavefront 先覆盖 `shared[0]`，另一个尚未读取最大值的 wavefront 就可能拿错数据。复用共享存储需要同时照顾写者和读者。
 
-每个线程再次沿相同列序列计算：
+最后再遍历一次输入并写回：
 
 ```cpp
 output[base + column] =
     expf(input[base + column] - maximum) / denominator;
 ```
 
-这里重新计算 `exp` 是有意的空间—计算权衡：它避免分配 `R×C` 的全局 `exp_tmp`，也不要求一整行都能塞入 LDS。重算是否值得，要由目标 shape 上的实测决定。
+当前实现没有保存整行指数，因此源码中扫描输入三次，并在求和与输出阶段分别计算指数。它省去了全局 `exp_tmp` 和两次 launch，也付出了重复读取和重算的成本；不能描述为“输入只读一次”。
 
-## 10.7 wave32、LDS 与融合边界
+::: figure fig-softmax-fused-timeline
+<SoftmaxExecution scenario="fused-row" />
 
-### 10.7.1 当前版本没有使用 wavefront shuffle
+hip-fused-block-lds 一个 block 处理一行的时间线：跨步局部 max → LDS max 树 → 读者屏障 → 复用 LDS 求 sum 树 → 重算指数写回。图为 block=4 线程、3 列的教学缩略（无有效列的线程演示单位元），行数据为正文手算值。
+:::
 
-目标 GPU 以 wave32 执行线程，但当前融合 kernel 使用的是**整个 block 的 LDS 树归约**。即使一个 block 包含多个 wavefront，`__syncthreads()` 也会让它们在每一轮正确会合。
+如 @fig-softmax-fused-timeline 所示，LDS 在一次 kernel 里先后扮演两个角色：先当 max 树的空间，再当 sum 树的空间。中间那道**读者屏障**是关键——所有线程都读完 `shared[0]` 里的最大值之后，其他线程才能把它覆盖掉。
 
-这意味着不能把当前版本描述成“wavefront-level Softmax”。后续可以先在每个 wavefront 内用 shuffle 归约，再让少量 wavefront partial 进入 LDS；那是新的受控实验，不属于本章首版代码。
+### 10.5.3 当前实现的范围
 
-### 10.7.2 为什么 block 必须是二次幂
+当前 HIP 实现使用整个 block 的 LDS 树，尚未实现 wavefront shuffle 收尾。硬件以 wave32 执行线程，并不自动把 LDS 算法变成 shuffle 算法。
 
-当前循环从 `blockDim.x / 2` 逐轮减半，并配对 `lane` 与 `lane + stride`。为使所有槽位都被归约，CLI 明确要求：
+树从 `blockDim.x/2` 逐轮减半，因此命令行要求 block 为 `1–1024` 之间的 2 的幂。列数没有这个要求；没有有效列的线程给 max 贡献最低初值，给 sum 贡献 `0`。
 
-```text
-block ∈ {1, 2, 4, ..., 1024}
-```
+`block=256` 时源码申请 `256×4=1024 Byte` 动态 LDS。这个申请量可以手算，但实际占用率和寄存器成本不能只看数组大小。如果保存指数来减少重算，需要同时确定每个线程要保存多少值、支持多长的行，以及资源增加后的性能。
 
-列数本身不需要是二次幂。没有真实列可读的线程把 max 初值贡献为负无穷，把 sum 初值贡献为 0，所以 `C=33` 配 `block=256` 仍然正确。
+</template>
+<template #triton>
 
-### 10.7.3 LDS 容量不是唯一边界
+### 10.5.4 Triton：把一整行看成逻辑向量 {#ch10-triton}
 
-当前 kernel 只申请 `block × sizeof(float)` 的动态 LDS；`block=256` 时逻辑申请量是 1024 Byte。这个数能从源码计算，但 占用率、VGPR、scratch 和实际驻留 block 数不能只靠源码断言，需读取编译/profile 结果。
-
-不同 shape 还会碰到不同边界：
-
-| Shape 特征 | 当前映射可能出现什么 | 应观察什么 |
-| ---- | ---- | ---- |
-| `C << block` | 很多线程只贡献归约单位元 | 有效 lane 比例、launch/同步占比 |
-| `C ≈ block` | 每线程约处理一个元素 | LDS 归约成本与访存 |
-| `C >> block` | 每线程循环多次 | `exp` 吞吐、寄存器与循环成本 |
-| `R` 很小 | 可启动的 block 很少 | GPU 是否吃满、短任务延迟 |
-| `R` 很大 | 行级 block 数充足 | 总吞吐与内存访问 |
-
-“融合更多”不自动等于“更快”。融合可能减少全局中间写回与 launch，也可能增加单 kernel 的同步、寄存器压力或重复计算。
-
-## 10.8 Triton：一行对应一个 program
-
-Triton 版本把 HIP 中“一个 block 协作完成一行”的意图写成“一行一个 program”：
+`softmax_triton.py` 的 kernel 直接表达稳定公式。下列片段来自 `softmax_row_kernel`：
 
 ```python
 row = tl.program_id(axis=0)
@@ -375,100 +294,100 @@ maximum = tl.max(logits, axis=0)
 numerator = tl.exp(logits - maximum)
 denominator = tl.sum(numerator, axis=0)
 probabilities = numerator / denominator
-tl.store(output_ptr + row * output_row_stride + offsets,
-         probabilities, mask=valid)
+tl.store(
+    output_ptr + row * output_row_stride + offsets,
+    probabilities,
+    mask=valid,
+)
 ```
 
-### 10.8.1 program 不等于硬件线程
+把 @fig-softmax-values 对照过来：`maximum` 是 `1002`，`numerator` 对应三个稳定指数，`denominator` 对应 `1.5032`。`tl.max` 和 `tl.sum` 沿逻辑向量的第 0 维归约；program 中只有这一行，因此它们不会把其他行一起算进去。
 
-grid 是 `(rows,)`，所以每行启动一个 program instance。这个 program 在源码里操作一个长度为 `BLOCK_SIZE` 的向量；向量怎样映射到底层线程与指令，由 Triton 编译器完成。
+Host 的 grid 是 `(rows,)`，每行启动一个 program。program 操作的 `BLOCK_SIZE` 个逻辑位置由编译器分配给硬件线程；`BLOCK_SIZE=1024` 不表示启动 1024 个显式线程。
 
-因此下面两句话不能混用：
+### 10.5.5 mask 同时影响边界和数学
+
+若 `columns=3`，紧凑配置选择 `BLOCK_SIZE=4`。前三个位置是输入，最后一个位置用负无穷补齐：
 
 ```text
-HIP:    一个 block 有 blockDim.x 个显式线程
-Triton: 一个 program 有 BLOCK_SIZE 个逻辑位置
+逻辑输入：[1000, 1001, 1002, −∞]
+减最大值：[  −2,   −1,    0, −∞]
+指数约值：[0.1353, 0.3679, 1, 0]
 ```
 
-### 10.8.2 为什么补到下一个二次幂
+补齐位置不会改变 max，取指数后又给 sum 贡献 `0`。最终 store 的 mask 防止写到行外。若 load 时用 `0` 补齐，这个无效位置的指数也会参与分母；全负输入还会把最大值错误地改变成 `0`。即使 store 不写第四格，它已经污染了归约，所以 mask 的默认值必须与数学配套。
 
-若 `columns=257`，t0 选择 `BLOCK_SIZE=512`。逻辑下标 `0–256` 有效，`257–511` 是填充位置。load 时用 `-inf` 填充：
+这里的指数由 `tl.exp` 计算，与 CPU `exp` 的近似路径可能不同；结合归约顺序，输出采用容差比较而非逐比特一致。
 
-- `max(real values, -inf)` 不改变最大值；
-- `exp(-inf - maximum)=0`，不改变分母；
-- store mask 防止向行尾之外写入。
+### 10.5.6 Host 和两个配置
 
-这就是 Triton 对非二次幂列数的边界处理。mask 不只是防越界，它还为归约提供了正确的单位元。
+Host 先分配输出，调用 `softmax_row_kernel[(rows,)]`，传入输入输出的行跨度、逻辑块宽度与 `num_warps`。程序先检查完整输出，再预热和计时，每轮 event 完成后读取该轮时间，最终再做一次输出检查。
 
-### 10.8.3 t0 与 t1 的受控参数实验
+| 配置 | 主 shape 下的 `BLOCK_SIZE` | `num_warps` | 变化 |
+| --- | ---: | ---: | --- |
+| `triton-t0-compact` | 1024 | 4 | 覆盖一行的最小 2 的幂 |
+| `triton-t1-wide` | 2048 | 8 | 同时扩大逻辑宽度和参与的 warps 数 |
 
-脚本至少运行两种配置：
+默认 t1 取 t0 宽度的两倍，最高 `65536`。它是一组参数对照，并非已知优化；因为同时改了两个参数，也不能从结果独立推断每个参数的贡献。
 
-| 版本 | 默认 `BLOCK_SIZE` | 默认 `num_warps` | 想比较什么 |
-| ---- | ---- | ----: | ---- |
-| `triton-t0-compact` | `next_power_of_2(cols)` | 4 | 覆盖一行所需的最小逻辑块 |
-| `triton-t1-wide` | 可行时为 t0 的 2 倍，最大 65536 | 8 | 更多填充位置与更多 warps 的组合 |
-
-这是一个配置对照，不是“t1 一定更优”。更大的 block 可能改变生成代码、寄存器使用和调度，也会让更多无效位置参与逻辑计算；更多 warps 可能提高并行性，也可能增加资源压力。
-
-若想单独控制 t1：
+单独运行 Triton：
 
 ```bash
-python chapter10/softmax_triton.py \
-  --version t1 --rows 4096 --cols 1024 \
-  --t1-block 2048 --t1-warps 8 --warmup 10 --repeat 50
+cd code/part2-kernels
+source ./activate-rocm.sh
+python chapter10/softmax_triton.py --version all \
+  --rows 4096 --cols 1024 --warmup 10 --repeat 50
 ```
 
-当前单 program 实现要求 `cols <= 65536`。更长的行需要分块/在线 Softmax 或多阶段算法，不能简单继续扩大 `BLOCK_SIZE`。
+脚本允许列数不超过 `65536`，这个 CLI 限制不是“所有这类长行已经实测通过”的承诺。更长行或资源不足时，需要重新设计分块与归约，而不是继续无限扩大逻辑向量。
 
-## 10.9 稳定性与边界测试矩阵
+</template>
+</ImplementationTabs>
 
-不要只拿随机小数跑一次。下面的矩阵分别针对数学稳定性、mask 和并行边界：
+## 10.6 先读测量，再解释融合收益 {#softmax-results}
 
-| 输入或 shape | 不稳定公式的风险 | 稳定实现应满足什么 | 当前脚本 |
-| ---- | ---- | ---- | ---- |
-| `[1000,1001,1002]` | `exp` 溢出，出现 NaN | 有限，且等价于 `[-2,-1,0]` | 用 `+1000` 行覆盖 |
-| `[-1002,-1001,-1000]` | 全部下溢为 0，出现 `0/0` | 有限，且等价于 `[-2,-1,0]` | 用 `-1000` 行覆盖 |
-| `x` 与 `x+常数` | 实现若不稳定会分叉 | 两行结果在容差内一致 | 三种行偏移可扩展检查 |
-| `C=1` | 分母与分子相同 | 输出严格接近 1 | 自动覆盖 |
-| `C=31/32/33` | wavefront 边缘与 mask 错误 | 无越界，行和接近 1 | 自动覆盖 |
-| `C=255/257` | block/二次幂尾部错误 | 所有列与参考一致 | 自动覆盖 |
-| `C=4097` | 更长的线程循环/逻辑块 | 正确；性能结论待测 | 建议练习 |
-| 相同最大值出现多次 | max 归约次序变化 | 概率相等且有限 | 建议练习 |
+本节把不同实现放回共同的输入与计时区间，保留没有提速的配置。
 
-当前程序只实现 FP32。FP16/BF16 练习必须明确“输入/输出 dtype”和“max、sum 的累加 dtype”；不能只把指针类型替换后沿用 FP32 误差阈值。
+下面保留 2026-07-19 的历史观察值。本轮代码检查发现 HIP 融合版在复用 LDS 前缺少一道读者屏障，当前源码已经补上；旧测试虽然通过，仍不能证明该同步缺口安全。**表中 HIP 融合时间对应修复前源码，不能直接用作修复后的性能结论。**
 
-## 10.10 HIP 与 Triton 对照
+归档实验条件为：**RX 9070 XT（gfx1201）、原生 Ubuntu 24.04.4、ROCm 7.13、PyTorch 2.11、Triton 3.6；`4096×1024` FP32，warmup 10 次、repeat 50 次、3 个独立进程**。表中时间是三个进程各自 median 的中位数。
 
-| 问题 | HIP 三 kernel baseline | HIP block+LDS fused | Triton 一行一 program |
-| ---- | ---- | ---- | ---- |
-| 行的分工 | 一个 thread 串行处理一行归约 | 一个 block 协作处理一行 | 一个 program 描述一行逻辑向量 |
-| dispatch | 3 | 1 | 1 |
-| 中间指数 | 全局 `exp_tmp[R,C]` | 不保存，最后重算 | program 内逻辑值 |
-| 行 max/sum | 全局 `row_max/row_sum` | LDS 中归约并复用 | `tl.max` / `tl.sum` |
-| 尾部 | 标量循环/元素 `if` | 线程跨步循环条件 | load/store mask |
-| block 限制 | block 控制行线程或元素线程 | 当前树归约要求二次幂 | `BLOCK_SIZE` 覆盖整行且为二次幂 |
-| 显式控制 | grid、thread、LDS、同步 | 同左，且控制归约树 | program、逻辑 block、warps；底层映射由编译器生成 |
-| 适合作为 | 阶段清晰的正确性起点 | 学习融合与协作归约 | 快速表达整行融合与参数实验 |
+| 实现 | 完整 Softmax median（ms） | 三进程 median 范围（ms） |
+| --- | ---: | ---: |
+| `hip-baseline-3kernel` | 0.744228 | 0.743547–0.746188 |
+| `hip-fused-block-lds` | 0.115781 | 0.114701–0.116281 |
+| `triton-t0-compact` | 0.038361 | 0.037941–0.038841 |
+| `triton-t1-wide` | 0.060801 | 0.060581–0.060841 |
 
-两条路线最终必须回答同一组问题：
+::: figure fig-softmax-performance
+![RX 9070 XT 上四种行级 Softmax 实现的完整 GPU event 时间对比](./images/softmax-performance.png)
 
-```text
-一行交给谁？
-最大值在哪里产生？
-分母在哪里产生？
-中间指数有没有写入全局内存？
-尾部如何排除？
-完整路径怎样计时和验证？
-```
+比较时从输入与实现范围出发。扩大逻辑块并增加 warps 的 t1-wide 在当前 shape 上更慢，这个负结果与较快版本一起保留。
+:::
 
-源码更短不等于运行成本更低，控制更显式也不等于自动更快。目标机器上的 `RESULT` 与 trace 才能决定当前 shape 的结论。
+HIP 融合版的历史时间约为 baseline 的六分之一。但它同时减少了 launch、去掉了全局中间数组，并把单线程串行读行改成 block 协作；不能把全部收益归给“少两次 launch”。
 
-## 10.11 运行与读取结果
+Triton wide 版比 compact 版慢。两者数学相同，却分别使用 `1024/4` 与 `2048/8` 的逻辑块和 warps 配置。更多参与资源未必弥补额外逻辑工作与协作成本。现有 profile 中，两版的 VGPR 字段都是 `40`，所以也不能未经进一步证据就写成“wide 版因为寄存器数更高而变慢”。
 
-### 10.11.1 一次运行全部边界与主 shape
+把实现放在一起，可以明确它们各自承担的工作：
 
-在项目根目录执行：
+| 问题 | HIP baseline | HIP LDS 融合 | Triton |
+| --- | --- | --- | --- |
+| 行内分工 | 归约阶段一线程一行 | 一 block 一行 | 一 program 一行 |
+| 每次调用的主体 kernel 数 | 3 | 1 | 1 |
+| 指数中间结果 | 写入全局数组 | 不保存，输出时重算 | program 内逻辑值 |
+| max、sum 协作 | 线程串行循环 | block 的 LDS 树 | `tl.max`、`tl.sum` |
+| 输入读取（源码层面） | max 和 exp 阶段读取 | max、sum、输出阶段读取 | 一次逻辑 load |
+
+program 内的逻辑值不等于每种配置都能完全驻留在寄存器。源码能告诉我们没有显式全局中间数组，实际是否发生溢出存储仍应检查生成代码与资源信息。
+
+证据入口是 `code/part2-kernels/chapter10/evidence/manifest.json`、`summary.csv`、`profile_summary.csv`，对应源码 `ef1722a6743bc0a9d6528d1fa938ad64976f0c05`。其中 `chapter9-process-*` 是章节重排前的命名。历史记录保留原数值；代码修复后的结果需要另外实测，不能自动沿用这张表。
+
+2026-09-11 补上 LDS 复用屏障后，两个 HIP 实现在 8 组边界形状和主形状 `4096×1024` 的 3 个独立进程中，计时前后校验均通过。该次运行的融合版三进程 median 为 `0.113042 ms`，范围为 `0.101562–0.118622 ms`；它属于单独的修正验证，未重跑 Triton 或采集新 trace，不能与上面的历史表拼成新排名。详细参数、源码哈希和逐条结果见[同步修正记录](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part2-kernels/chapter10/EXPERIMENT.md)。
+
+## 10.7 运行、筛选 trace 与检查边界 {#softmax-rerun}
+
+本节把一次完整复跑和逐条解释记录连起来。Part 2 环境准备好后，在项目根目录执行：
 
 ```bash
 cd code/part2-kernels
@@ -476,158 +395,50 @@ uv sync
 bash chapter10/run_all.sh
 ```
 
-`activate-rocm.sh` 会激活 `code/part2-kernels/.venv` 并暴露其中的 ROCm SDK。`run_all.sh` 随后：
+脚本先编译 HIP，依次运行六组边界 shape 的四种实现，再运行默认 `4096×1024`、warmup 10 次、repeat 50 次。先确认 `correct=OK precheck=OK postcheck=OK`，再比较相同 shape 的 `median_ms`。
 
-1. 用 `hipcc` 编译 HIP 程序到临时目录；
-2. 对六组边界 shape 运行 HIP 与 Triton 的全部版本；
-3. 对默认 `4096×1024` 主 shape 预热 10 次、计时 50 次；
-4. 每个版本在计时前后检查参考结果；
-5. 退出时删除临时 HIP 二进制。
+`run_all.sh` 负责正确性和计时，独立的 `chapter10/profile_all.sh` 负责采集四种实现的 trace。原先的 `RUN_PROFILE=1` 不在运行脚本中读取，设置它不会开启 profiling。使用独立脚本时要提供所测源码的 `SOURCE_COMMIT`；版本在本地确定，实验机只运行已传入的代码。
 
-覆盖默认参数：
+历史 profile 使用 warmup 0 次、repeat 5 次。加上预检一次，共 6 次逻辑调用，因此四种实现的主体 dispatch 数对应 `18、6、6、6`。后检只检查最后一次输出，不额外运行一次 Softmax。
 
-```bash
-ROWS=8192 COLS=257 HIP_BLOCK=128 WARMUP=5 REPEAT=20 \
-  bash chapter10/run_all.sh
-```
+读 trace 时可以先定位 kernel 名称：
 
-若只想快速检查主 shape：
+- baseline：`row_max_serial`、`row_exp_sum_serial`、`normalize_rows`；
+- HIP 融合：`softmax_fused_lds`；
+- Triton 两种配置：`softmax_row_kernel`。
 
-```bash
-RUN_EDGE_CASES=0 WARMUP=2 REPEAT=5 bash chapter10/run_all.sh
-```
+现有汇总的 `grid_size_x` 数值对应 trace 中的总工作项范围。例如 HIP 融合记录为 `1,048,576`，除以 workgroup `256`，才得到 `4096` 个 block。不能直接将其解释为百万个 block。LDS 汇总为 `0` 也不能据此否定动态 LDS；使用某个资源字段前，要先确认它真正表示什么。
 
-### 10.11.2 分别运行 HIP 与 Triton
+尚需扩展的测试包括：严格成对的平移输入、相同最大值、多种长行和其他 dtype。特别是 `C=4097`、FP16/BF16，只是后续实验方向，不能写成已经通过。
 
-```bash
-cd code/part2-kernels
-source activate-rocm.sh
+## 10.8 练习：预测数值与成本 {#softmax-exercises}
 
-hipcc --offload-arch=gfx1201 -O3 -std=c++17 \
-  chapter10/softmax_hip.hip -o /tmp/softmax_hip
+1. 将动画输入改成 `[0,0,0]`，再改成 `[1000,1000,1000]`。先写下两个结果与中间最大值，再解释哪些量变了、哪些没变。
+2. 用逻辑宽度 4 处理三个负数 `[-1002,-1001,-1000]`。分别用 `0` 和负无穷填充第四格，追踪 max、指数与分母，说明错误填充可能怎样影响数值稳定性。
+3. 显式构造相同基础行的 `x`、`x+1000`、`x−1000`，比较稳定公式与直接指数公式。记录非有限结果，而不只是最终误差。
+4. 固定逻辑宽度，只改变 Triton `num_warps`；再固定 `num_warps`，只改变逻辑宽度。与同时改变两个参数相比，现在能更清楚地区分什么？
+5. 保持一 block 一行与相同列映射，为 HIP 增加 shuffle 收尾或局部指数保存中的一种改动。先补边界检查，再报告资源、完整时间和不适用的行长。
 
-/tmp/softmax_hip --version all --rows 4096 --cols 1024 \
-  --block 256 --warmup 10 --repeat 50
+<details>
+<summary>自检提示：相同概率不代表相同中间值</summary>
 
-python chapter10/softmax_triton.py --version all \
-  --rows 4096 --cols 1024 --warmup 10 --repeat 50
-```
+两组三个相同输入都得到 `[1/3,1/3,1/3]`。行最大值不同，但减最大值之后都变成 `[0,0,0]`。
 
-输出不会内置任何预期毫秒数。应先确认：
+全负输入若用 `0` 填充，max 会被无效位置改成 `0`，这个补齐位置还会给分母贡献 `exp(0)=1`。即使最终不写第四格，它也已经参与了中间计算；真实三项的指数还可能全部下溢。用负无穷填充，真实最大值仍是 `−1000`，补齐位置的指数为 `0`。
 
-```text
-correct=OK precheck=OK postcheck=OK
-```
-
-然后才比较同一 shape、同一 warmup/repeat 下的 `median_ms`。关键字段包括：
-
-| 字段 | 含义 |
-| ---- | ---- |
-| `implementation` | 具体 baseline/fused 或 t0/t1 |
-| `shape` | `rows×cols`，比较时必须相同 |
-| `launches` | HIP 单次逻辑调用的 kernel 数 |
-| `block` / `num_warps` | 当前启动配置 |
-| `timing=gpu-event` | kernel 区间由 GPU event 测量 |
-| `max_abs_error` | 相对参考结果的最大绝对误差 |
-| `max_row_sum_error` | 所有行中最大的归一化和误差 |
-
-## 10.12 用 rocprofv3 看融合发生在哪里
-
-直接运行脚本的可选 profile 路径：
-
-```bash
-cd code/part2-kernels
-RUN_PROFILE=1 WARMUP=2 REPEAT=10 bash chapter10/run_all.sh
-```
-
-它会在 `chapter10/profiles/` 写 HIP 与 Triton 的 kernel trace CSV。也可以对单版本手动采集：
-
-```bash
-rocprofv3 \
-  --kernel-trace \
-  --output-directory chapter10/profiles \
-  --output-file softmax-hip-fused \
-  --output-format csv \
-  -- /tmp/softmax_hip --version fused --rows 4096 --cols 1024 \
-     --block 256 --warmup 0 --repeat 5
-```
-
-第一次看 trace，先回答下面四个问题：
-
-1. baseline 的 `row_max_serial`、`row_exp_sum_serial`、`normalize_rows` 是否分别出现？
-2. fused 的一次逻辑调用是否只出现 `softmax_fused_lds`？
-3. 同一版本的单次 dispatch 时间分布是否稳定，是否有明显首次编译/冷启动影响？
-4. profiler 可用字段中，workgroup、LDS、VGPR、scratch 是否与假设一致？不可用字段要明确记为不可用。
-
-::: warning 不要把 trace 中的总 dispatch 数误读成算法阶段数
-程序在预检、warmup 和正式 repeat 中会启动 kernel；后检只拷贝并检查最后一次计时结果，不额外启动 Softmax kernel。baseline 每次逻辑调用有 3 个 dispatch，fused 有 1 个；解读总数前先对照 CLI 的 `warmup`、`repeat` 和程序流程。
-:::
-
-首轮远端实验建议保存：环境版本、完整命令、原始 `RESULT`、trace 路径和源代码 commit。没有这些信息，单独抄一个毫秒数无法复现。
-
-## 10.13 练习
-
-### 练习 1：验证平移不变性
-
-在 CPU 参考中构造 `x`、`x+1000` 与 `x-1000` 三行，逐元素比较输出。然后故意换成直接 `exp(x)/sum(exp(x))`，记录哪一行首先出现非有限值。
-
-**成功标准：**稳定版本三行在容差内一致；不稳定版本明确暴露 `inf`、0 或 NaN，而不是静默通过。
-
-### 练习 2：记录 shape 扫描，不挑赢家
-
-固定 `rows=4096`，扫描：
-
-```text
-cols = 31, 32, 33, 255, 256, 257, 1024, 4097
-```
-
-记录四个实现的正确性与 median，不删掉“参数变大反而变慢”的结果。
-
-**成功标准：**每条记录都有 shape、实现名、参数、GPU event 时间和校验字段；若某配置编译失败，也原样记录错误与限制。
-
-### 练习 3：只替换 HIP 归约收尾
-
-保持“一 block 一行”和线程访问映射不变，把 LDS 全树归约改为：wavefront 内 shuffle 得 partial，再用 LDS 合并各 wavefront partial。
-
-**成功标准：**先证明边界 shape 正确，再用 trace 比较同步、LDS 与资源字段；不能同时改 block、输入或计时次数。
-
-### 练习 4：比较重算与保存指数
-
-为中等列数实现一个保存局部指数的版本。先计算它实际需要的寄存器/LDS 空间，再决定支持的最大 `cols`。
-
-**成功标准：**文档明确写出空间上限和溢出时的处理，不允许越过 LDS 或数组边界。
-
-### 练习 5：扩展到混合精度
-
-输入输出改为 FP16 或 BF16，但 max 与 sum 保留 FP32 累加，并与 PyTorch 参考比较。
-
-**成功标准：**分别报告输入/输出 dtype、累加 dtype、误差阈值与失败 shape；不要沿用本章 FP32 阈值却不解释。
-
-## 正式实验结果
-
-![Chapter 10 Row Softmax 性能对比](./images/softmax-performance.png)
-
-主 shape 为 `4096×1024` FP32。HIP 三 kernel baseline 为 `0.744228 ms`，融合 LDS 版为 `0.115781 ms`；Triton compact/wide 分别为 `0.038361/0.060801 ms`。当前 shape 上 `t1-wide` 反而慢于 `t0-compact`，因此“更宽 block/更多 warps”被记录为负结果，而不是默认优化。
-
-完整记录见 `code/part2-kernels/chapter10/EXPERIMENT.md`。
+</details>
 
 ## 本章小结
 
-- 逐行 Softmax 的列之间共享最大值和分母，行之间可以并行。
-- 直接计算指数会在大正数上溢出、在大负数上下溢；减去行最大值利用平移不变性得到稳定公式。
-- Softmax 可以拆成 `max reduction → exp → sum reduction → normalize`。
-- HIP 三 kernel baseline 把阶段和全局中间张量显式展开；融合版用一个 block、两次 LDS 归约完成一行，并通过重算指数避免 `exp_tmp`。
-- wave32 是硬件执行背景，但当前 HIP 首版是 block 级 LDS 算法，不应误称为 wavefront shuffle 优化。
-- Triton 用一个 program 描述一整行，`BLOCK_SIZE` 与 mask 负责逻辑覆盖，`num_warps` 是需要实测的编译/调度参数。
-- 非二次幂列、极大正负平移、单元素行、长行和 dtype 都属于正确性矩阵，而不是附加项。
-- 本章已完成实现、边界检查、3 个独立正式进程、逐实现 profile 与 curated evidence。
+Softmax 的一行共享最大值和分母，两个归约之间穿插逐元素计算。减去行最大值保持数学比例，并让至少一个稳定指数为 `1`，避免直接指数的主要范围问题。
+
+融合可以减少全局中间数组和 dispatch，但不同实现也会改变线程分工、同步、重算和资源需求。判断收益时，要把这些变化分别说清楚；本章 wide 配置变慢的结果提醒我们，参数变大不是优化方向本身。
+
+下一章讨论[矩阵乘](../chapter11/index.md)。那时我们仍然关心数据能否留在片上，但复用会从“同一行的多个阶段”扩展到“多个输出共同使用同一块输入”。
 
 ## 延伸阅读
 
-- [Triton Fused Softmax 教程](https://triton-lang.org/main/getting-started/tutorials/02-fused-softmax.html)：官方的一行一个 program 教学实现；本章的 program 映射只描述当前实现，不代表所有 Softmax kernel。
-- [Triton `tl.max` API](https://triton-lang.org/main/python-api/generated/triton.language.max.html) 与 [`tl.sum` API](https://triton-lang.org/main/python-api/generated/triton.language.sum.html)：两次归约的语言语义。
-- [AMD HIP Kernel Language](https://rocm.docs.amd.com/projects/HIP/en/latest/reference/kernel_language.html)：LDS、同步和 kernel 内建变量。
-- [`rocprofv3` 使用文档](https://rocm.docs.amd.com/projects/rocprofiler-sdk/en/latest/how-to/using-rocprofv3.html)：kernel trace 的官方命令说明。
-- [第 8 章 Element-Wise：逐元素算子](../chapter8/index.md)
-- [第 9 章 Reduction：归约算子](../chapter9/index.md)
-- [第 6 章 用 rocprof 找到慢点](../../part1-profiling/chapter6/index.md)
+- [Triton Fused Softmax 教程](https://triton-lang.org/main/getting-started/tutorials/02-fused-softmax.html)：稳定公式、mask 与行融合。官方当前示例还包含 program 跨行循环等机制，本章采用更直接的一行一 program。
+- [HIP Kernel Language](https://rocm.docs.amd.com/projects/HIP/en/latest/reference/kernel_language.html)：共享存储和 block 同步。
+- [第 9 章：Reduction](../chapter9/index.md)：树形归约、单位元和阶段边界。
+- [第 6 章：用 rocprof 找到慢点](../../part1-profiling/chapter6/index.md)：先筛选算法记录，再解释字段。

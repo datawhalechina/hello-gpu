@@ -103,6 +103,7 @@
 .vp-doc .figure {
   margin: 24px auto;
   text-align: center;
+  scroll-margin-top: calc(var(--vp-layout-top-height, 0px) + var(--vp-nav-height, 64px) + 64px);
 }
 
 .vp-doc .figure > p {

@@ -4,6 +4,7 @@ import type { Theme } from 'vitepress'
 import { h } from 'vue'
 import MermaidDiagram from './MermaidDiagram.vue'
 import SidebarToggle from './SidebarToggle.vue'
+import ImplementationTabs from '../../components/ImplementationTabs.vue'
 
 const Announcement = () => h('div', {
   class: 'announcement-banner',
@@ -13,6 +14,7 @@ export default {
   extends: DefaultTheme,
   enhanceApp({ app }) {
     app.component('MermaidDiagram', MermaidDiagram)
+    app.component('ImplementationTabs', ImplementationTabs)
   },
   Layout() {
     return h(DefaultTheme.Layout, null, {

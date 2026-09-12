@@ -27,6 +27,14 @@ export default defineConfig({
 
   cleanUrls: true,
 
+  transformPageData(pageData) {
+    // Keep the shared algorithm and experiment sections in the outline;
+    // language-specific subheadings live inside implementation tabs.
+    if (pageData.relativePath.startsWith('part2-kernels/')) {
+      pageData.frontmatter.outline = [2, 2]
+    }
+  },
+
   vue: {
     template: {
       compilerOptions: {

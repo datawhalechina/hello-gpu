@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="540" viewBox="0 0 1200 540" role="img" aria-labelledby="title desc">
+<title id="title">先选记录，再统计时间</title>
+<desc id="desc">本章两个 kernel trace 均有 16 条记录。前 5 条是目标 kernel 的预热；第 6 至第 15 条是目标 kernel 的正式启动；第 16 条是运行时 copyBuffer。先按 Kernel_Name 筛选，再排除目标 kernel 的前 5 次启动，只对余下 10 次记录求统计量。方块宽度不表示耗时。</desc>
+<rect width="1200" height="540" fill="#FCFBF7"/>
+<g font-family="PingFang SC, Noto Sans CJK SC, Microsoft YaHei, sans-serif" fill="#27323A">
+<text x="48" y="57" font-size="34" fill="#27323A" text-anchor="start" font-weight="650">先选记录，再统计时间</text>
+<text x="48" y="99" font-size="25" fill="#59646B" text-anchor="start" font-weight="400">一次 dispatch 对应一条记录；这次 CSV 共记录了 16 次启动。</text>
+<text x="48" y="154" font-size="25" fill="#59646B" text-anchor="start" font-weight="400">目标 kernel：5 次预热</text>
+<text x="410" y="154" font-size="25" fill="#2F6E9E" text-anchor="start" font-weight="400">目标 kernel：10 次正式启动</text>
+<text x="992" y="154" font-size="25" fill="#AD651E" text-anchor="start" font-weight="400">运行时拷贝</text>
+<rect x="48" y="180" width="57" height="65" rx="8" fill="#F0F1EF" stroke="#59646B" stroke-width="2"/>
+<text x="76.5" y="222" font-size="25" fill="#59646B" text-anchor="middle" font-weight="600">1</text>
+<rect x="116" y="180" width="57" height="65" rx="8" fill="#F0F1EF" stroke="#59646B" stroke-width="2"/>
+<text x="144.5" y="222" font-size="25" fill="#59646B" text-anchor="middle" font-weight="600">2</text>
+<rect x="184" y="180" width="57" height="65" rx="8" fill="#F0F1EF" stroke="#59646B" stroke-width="2"/>
+<text x="212.5" y="222" font-size="25" fill="#59646B" text-anchor="middle" font-weight="600">3</text>
+<rect x="252" y="180" width="57" height="65" rx="8" fill="#F0F1EF" stroke="#59646B" stroke-width="2"/>
+<text x="280.5" y="222" font-size="25" fill="#59646B" text-anchor="middle" font-weight="600">4</text>
+<rect x="320" y="180" width="57" height="65" rx="8" fill="#F0F1EF" stroke="#59646B" stroke-width="2"/>
+<text x="348.5" y="222" font-size="25" fill="#59646B" text-anchor="middle" font-weight="600">5</text>
+<rect x="388" y="180" width="57" height="65" rx="8" fill="#EAF2F8" stroke="#2F6E9E" stroke-width="2"/>
+<text x="416.5" y="222" font-size="25" fill="#2F6E9E" text-anchor="middle" font-weight="600">6</text>
+<rect x="456" y="180" width="57" height="65" rx="8" fill="#EAF2F8" stroke="#2F6E9E" stroke-width="2"/>
+<text x="484.5" y="222" font-size="25" fill="#2F6E9E" text-anchor="middle" font-weight="600">7</text>
+<rect x="524" y="180" width="57" height="65" rx="8" fill="#EAF2F8" stroke="#2F6E9E" stroke-width="2"/>
+<text x="552.5" y="222" font-size="25" fill="#2F6E9E" text-anchor="middle" font-weight="600">8</text>
+<rect x="592" y="180" width="57" height="65" rx="8" fill="#EAF2F8" stroke="#2F6E9E" stroke-width="2"/>
+<text x="620.5" y="222" font-size="25" fill="#2F6E9E" text-anchor="middle" font-weight="600">9</text>
+<rect x="660" y="180" width="57" height="65" rx="8" fill="#EAF2F8" stroke="#2F6E9E" stroke-width="2"/>
+<text x="688.5" y="222" font-size="25" fill="#2F6E9E" text-anchor="middle" font-weight="600">10</text>
+<rect x="728" y="180" width="57" height="65" rx="8" fill="#EAF2F8" stroke="#2F6E9E" stroke-width="2"/>
+<text x="756.5" y="222" font-size="25" fill="#2F6E9E" text-anchor="middle" font-weight="600">11</text>
+<rect x="796" y="180" width="57" height="65" rx="8" fill="#EAF2F8" stroke="#2F6E9E" stroke-width="2"/>
+<text x="824.5" y="222" font-size="25" fill="#2F6E9E" text-anchor="middle" font-weight="600">12</text>
+<rect x="864" y="180" width="57" height="65" rx="8" fill="#EAF2F8" stroke="#2F6E9E" stroke-width="2"/>
+<text x="892.5" y="222" font-size="25" fill="#2F6E9E" text-anchor="middle" font-weight="600">13</text>
+<rect x="932" y="180" width="57" height="65" rx="8" fill="#EAF2F8" stroke="#2F6E9E" stroke-width="2"/>
+<text x="960.5" y="222" font-size="25" fill="#2F6E9E" text-anchor="middle" font-weight="600">14</text>
+<rect x="1000" y="180" width="57" height="65" rx="8" fill="#EAF2F8" stroke="#2F6E9E" stroke-width="2"/>
+<text x="1028.5" y="222" font-size="25" fill="#2F6E9E" text-anchor="middle" font-weight="600">15</text>
+<rect x="1068" y="180" width="57" height="65" rx="8" fill="#FCF0E3" stroke="#AD651E" stroke-width="2"/>
+<text x="1096.5" y="222" font-size="25" fill="#AD651E" text-anchor="middle" font-weight="600">16</text>
+<text x="48" y="281" font-size="23" fill="#59646B" text-anchor="start" font-weight="400">Dispatch_Id</text>
+<rect x="48" y="315" width="327" height="117" rx="8" fill="#F6F5F0" stroke="#CBD1D3" stroke-width="2"/>
+<text x="72" y="356" font-size="26" fill="#27323A" text-anchor="start" font-weight="600">① 按函数名称筛选</text>
+<text x="72" y="398" font-size="23" fill="#59646B" text-anchor="start" font-weight="400">排除 copyBuffer 等记录</text>
+<rect x="402" y="315" width="334" height="117" rx="8" fill="#F6F5F0" stroke="#CBD1D3" stroke-width="2"/>
+<text x="426" y="356" font-size="26" fill="#27323A" text-anchor="start" font-weight="600">② 排除目标函数预热</text>
+<text x="426" y="398" font-size="23" fill="#59646B" text-anchor="start" font-weight="400">本次跳过前 5 次启动</text>
+<rect x="762" y="315" width="390" height="117" rx="8" fill="#EAF2F8" stroke="#2F6E9E" stroke-width="2"/>
+<text x="786" y="356" font-size="26" fill="#2F6E9E" text-anchor="start" font-weight="600">③ 统计余下 10 次启动</text>
+<text x="786" y="398" font-size="23" fill="#59646B" text-anchor="start" font-weight="400">对每条记录计算 End − Start</text>
+<text x="48" y="485" font-size="24" fill="#59646B" text-anchor="start" font-weight="400">本图按这次 CSV 的记录顺序示意，方块宽度不表示执行时间。</text>
+<text x="48" y="520" font-size="24" fill="#59646B" text-anchor="start" font-weight="400">其他程序可能在中间插入别的 kernel，因此要先核对名称。</text>
+</g></svg>

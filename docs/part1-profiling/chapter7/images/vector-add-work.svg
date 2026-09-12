@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="350" viewBox="0 0 1000 350" role="img" aria-labelledby="title desc">
+  <title id="title">一个 FP32 Vector Add 输出需要多少计算和数据</title>
+  <desc id="desc">读取 a[i] 和 b[i] 各 4 Byte，完成一次加法，然后写出 c[i] 的 4 Byte。按算法口径共 1 FLOP 和 12 Byte，因此算术强度为 1/12 FLOP 每 Byte。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0L9 4.5L0 9" fill="none" stroke="#64748b" stroke-width="1.5"/></marker>
+  </defs>
+  <rect x="1" y="1" width="998" height="348" rx="16" fill="#fff" stroke="#dbe3ec"/>
+  <g font-family="system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif" fill="#0f172a">
+    <text x="38" y="44" font-size="23" font-weight="650">先只看一个输出：c[i] = a[i] + b[i]</text>
+    <text x="38" y="75" font-size="16" fill="#64748b">FP32 每个元素占 4 Byte；这里统计完成算法所需的有效字节。</text>
+    <rect x="40" y="110" width="195" height="100" rx="10" fill="#eff6ff" stroke="#93c5fd"/>
+    <text x="137" y="148" font-size="24" text-anchor="middle" font-weight="600">a[i]</text>
+    <text x="137" y="181" font-size="18" text-anchor="middle" fill="#2563eb">读取 4 Byte</text>
+    <rect x="270" y="110" width="195" height="100" rx="10" fill="#f0fdfa" stroke="#5eead4"/>
+    <text x="367" y="148" font-size="24" text-anchor="middle" font-weight="600">b[i]</text>
+    <text x="367" y="181" font-size="18" text-anchor="middle" fill="#0f766e">读取 4 Byte</text>
+    <path d="M235 130H250V98H565V127" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+    <path d="M465 160H526" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+    <circle cx="565" cy="160" r="32" fill="#f1f5f9" stroke="#94a3b8"/>
+    <text x="565" y="169" font-size="29" text-anchor="middle">+</text>
+    <text x="565" y="221" font-size="18" text-anchor="middle" fill="#475569">1 FLOP</text>
+    <path d="M598 160H735" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="746" y="110" width="212" height="100" rx="10" fill="#fff7ed" stroke="#fdba74"/>
+    <text x="852" y="148" font-size="24" text-anchor="middle" font-weight="600">c[i]</text>
+    <text x="852" y="181" font-size="18" text-anchor="middle" fill="#c2410c">写出 4 Byte</text>
+    <path d="M40 247H958" stroke="#e2e8f0"/>
+    <text x="40" y="284" font-size="20">计算量：1 FLOP</text>
+    <text x="284" y="284" font-size="20">有效数据量：4 + 4 + 4 = 12 Byte</text>
+    <text x="40" y="321" font-size="20" font-weight="600">算术强度 AI = 1 / 12 ≈ 0.0833 FLOP/Byte</text>
+    <text x="617" y="321" font-size="16" fill="#64748b">物理显存流量需要另行测量。</text>
+  </g>
+</svg>

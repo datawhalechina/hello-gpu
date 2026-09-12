@@ -47,6 +47,8 @@ __global__ void softmax_rows_kernel(const float* scores, float* probabilities,
         __syncthreads();
     }
     float row_max = shared[0];
+    // Finish every read of the maximum before reusing LDS for local sums.
+    __syncthreads();
     float local_sum = 0.0f;
     for (int col = tid; col < seq; col += blockDim.x) {
         local_sum += expf(scores[row * seq + col] - row_max);

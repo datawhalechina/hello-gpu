@@ -39,3 +39,4 @@ code/part3-agent 2/
 # 内部 Agent 计划，勿提交
 docs/superpowers/
 .local-keep/
+.zcode

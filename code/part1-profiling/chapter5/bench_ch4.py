@@ -1,14 +1,15 @@
-"""Ch4 §4.4 benchmark 骨架实测：PyTorch vector add + Triton vector copy。
+"""第 5 章：PyTorch 向量加法与 Triton 复制的计时实验。
 
-跑两组：
-  A. PyTorch vector add（4096² fp32 / fp16）— 测延迟和有效带宽
-  B. Triton vector copy（8 / 64 / 256 MiB pair）— 测不同 footprint 的带宽
-
-硬件上下文：Radeon RX 9070 XT（gfx1201）+ ROCm 7.13（原生 Ubuntu 24.04）
-用法：python bench_ch4.py
+保留历史文件名 bench_ch4.py，便于已有入口继续调用。
+A. 4096 × 4096 FP32 / FP16 向量加法：逐次计时，报告 min / median。
+B. 单个数组 8 / 64 / 256 MiB 的 FP32 复制：整批计时，报告每次平均值。
+默认预热 20 次、正式运行 200 次；分配、初始化、校验均在计时区间外。
+运行：python chapter5/bench_ch4.py（先激活 part1-profiling 环境）
 """
-import statistics
+import argparse
 import os
+import platform
+import statistics
 import sys
 import sysconfig
 
@@ -17,29 +18,40 @@ import triton
 import triton.language as tl
 
 
-# ---------- 骨架 A：PyTorch vector add ----------
 def bench_torch_vector_add(shape, dtype, repeats=200, warmup=20):
-    x = torch.randn(*shape, dtype=dtype, device="cuda")
-    y = torch.randn(*shape, dtype=dtype, device="cuda")
+    x = torch.ones(shape, dtype=dtype, device="cuda")
+    y = torch.full_like(x, 2.0)
+    z = torch.empty_like(x)
     for _ in range(warmup):
-        z = x + y
+        torch.add(x, y, out=z)
     torch.cuda.synchronize()
-    starts = [torch.cuda.Event(enable_timing=True) for _ in range(repeats)]
-    ends = [torch.cuda.Event(enable_timing=True) for _ in range(repeats)]
-    for i in range(repeats):
-        starts[i].record()
-        z = x + y
-        ends[i].record()
-    torch.cuda.synchronize()
-    times = [s.elapsed_time(e) for s, e in zip(starts, ends)]
+    check_add(z)
+
+    start = torch.cuda.Event(enable_timing=True)
+    end = torch.cuda.Event(enable_timing=True)
+    # Event 底层资源延迟创建；先记录一次，排除首次创建的影响。
+    start.record()
+    end.record()
+    end.synchronize()
+    times = []
+    for _ in range(repeats):
+        start.record()
+        torch.add(x, y, out=z)
+        end.record()
+        end.synchronize()
+        times.append(start.elapsed_time(end))
+    check_add(z)
+
     min_ms = min(times)
     median_ms = statistics.median(times)
-    # vector add: 读 x + 读 y + 写 z = 3 * elements * dtype_size
-    elem = shape[0] * shape[1]
-    dt_bytes = 2 if dtype == torch.float16 else 4
-    bytes_moved = 3 * elem * dt_bytes
-    gbs = bytes_moved / (min_ms / 1e3) / 1e9
+    bytes_moved = 3 * x.numel() * x.element_size()
+    gbs = bytes_moved / (median_ms * 1e-3) / 1e9
     return min_ms, median_ms, gbs
+
+
+def check_add(z):
+    if not torch.all(torch.isfinite(z) & (z == 3.0)).item():
+        raise RuntimeError("vector add validation failed: expected finite values equal to 3")
 
 
 def python_header_path():
@@ -51,7 +63,6 @@ def ensure_triton_jit_build_env():
     header = python_header_path()
     if header and os.path.exists(header):
         return True
-
     py_minor = f"{sys.version_info.major}.{sys.version_info.minor}"
     print("Triton JIT blocked before measurement:")
     print(f"missing Python.h for Python {py_minor}")
@@ -63,7 +74,6 @@ def ensure_triton_jit_build_env():
     return False
 
 
-# ---------- 骨架 B：Triton vector copy ----------
 @triton.jit
 def copy_kernel(x_ptr, y_ptr, n, BLOCK: tl.constexpr):
     pid = tl.program_id(0)
@@ -73,48 +83,65 @@ def copy_kernel(x_ptr, y_ptr, n, BLOCK: tl.constexpr):
 
 
 def bench_triton_copy(mib, repeats=200, warmup=20, block=1024):
-    n = mib * 1024 * 1024 // 4  # float32
-    x = torch.empty(n, dtype=torch.float32, device="cuda")
-    y = torch.empty_like(x)
+    n = mib * 1024 * 1024 // 4  # 单个 FP32 数组的元素数
+    x = torch.randn(n, dtype=torch.float32, device="cuda")
+    y = torch.full_like(x, float("nan"))
     grid = ((n + block - 1) // block,)
     for _ in range(warmup):
         copy_kernel[grid](x, y, n, BLOCK=block)
     torch.cuda.synchronize()
-    s = torch.cuda.Event(enable_timing=True)
-    e = torch.cuda.Event(enable_timing=True)
-    s.record()
+    check_copy(x, y)
+
+    start = torch.cuda.Event(enable_timing=True)
+    end = torch.cuda.Event(enable_timing=True)
+    start.record()
+    end.record()
+    end.synchronize()
+    start.record()
     for _ in range(repeats):
         copy_kernel[grid](x, y, n, BLOCK=block)
-    e.record()
-    torch.cuda.synchronize()
-    ms = s.elapsed_time(e) / repeats
-    # copy: 读 x + 写 y = 2 * mib MiB
-    gbs = (2 * mib) / ms  # MiB/ms ≈ GB/s
-    return ms, gbs
+    end.record()
+    end.synchronize()
+    batch_avg_ms = start.elapsed_time(end) / repeats
+    check_copy(x, y)
+    bytes_moved = 2 * x.numel() * x.element_size()
+    gbs = bytes_moved / (batch_avg_ms * 1e-3) / 1e9
+    return batch_avg_ms, gbs
+
+
+def check_copy(x, y):
+    if not torch.isfinite(y).all().item() or not torch.equal(x, y):
+        raise RuntimeError("copy validation failed: expected an exact finite copy")
 
 
 def main():
-    print("=" * 60)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--warmup", type=int, default=20)
+    parser.add_argument("--repeats", type=int, default=200)
+    args = parser.parse_args()
+    if args.warmup < 1 or args.repeats < 1:
+        parser.error("--warmup and --repeats must both be positive")
+    torch.manual_seed(0)
     print(f"GPU: {torch.cuda.get_device_name(0)}")
-    print(f"torch: {torch.__version__}")
-    print("=" * 60)
+    print(f"torch: {torch.__version__}; HIP: {torch.version.hip}")
+    print(f"Python: {platform.python_version()}; Triton: {triton.__version__}")
+    print(f"warmup: {args.warmup}; repeats: {args.repeats}; seed: 0")
 
-    print("\n--- 骨架 A：PyTorch vector add (4096×4096) ---")
-    print(f"{'dtype':>6} | {'min_ms':>9} | {'median_ms':>10} | {'GB/s':>8}")
-    print("-" * 44)
-    for dt in [torch.float32, torch.float16]:
-        name = {torch.float32: "fp32", torch.float16: "fp16"}[dt]
-        min_ms, med_ms, gbs = bench_torch_vector_add((4096, 4096), dt)
-        print(f"{name:>6} | {min_ms:>7.3f} ms | {med_ms:>8.3f} ms | {gbs:>7.1f}")
+    print("\n--- A: PyTorch vector add (4096 x 4096, preallocated output) ---")
+    print("dtype | min_ms | median_ms | GB/s_at_median | validation")
+    for dtype, name in [(torch.float32, "fp32"), (torch.float16, "fp16")]:
+        min_ms, median_ms, gbs = bench_torch_vector_add(
+            (4096, 4096), dtype, args.repeats, args.warmup
+        )
+        print(f"{name} | {min_ms:.6f} | {median_ms:.6f} | {gbs:.3f} | PASS")
 
-    print("\n--- 骨架 B：Triton vector copy (float32) ---")
-    print(f"{'footprint':>12} | {'min_ms':>9} | {'GB/s':>8}")
-    print("-" * 36)
+    print("\n--- B: Triton vector copy (FP32, BLOCK=1024) ---")
+    print("array_MiB | pair_MiB | batch_avg_ms | GB/s_at_batch_avg | validation")
     if not ensure_triton_jit_build_env():
         raise SystemExit(2)
     for mib in [8, 64, 256]:
-        ms, gbs = bench_triton_copy(mib)
-        print(f"{mib:>9} MiB | {ms:>7.3f} ms | {gbs:>7.1f}")
+        ms, gbs = bench_triton_copy(mib, args.repeats, args.warmup)
+        print(f"{mib} | {2 * mib} | {ms:.6f} | {gbs:.3f} | PASS")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="730" viewBox="0 0 1200 730" role="img" aria-labelledby="title desc">
+<title id="title">同样的加法，线程怎样分工</title>
+<desc id="desc">概念示意：只展示第一个 wavefront 的 lane 0 至 3。连续版一行下标为 0、1、2、3。linecross stride 等于 4 的四行下标依次为 0、4、8、12；1、5、9、13；2、6、10、14；3、7、11、15。同一行表示同一循环轮次，同一列表示同一 lane。</desc>
+<rect width="1200" height="730" fill="#FCFBF7"/>
+<g font-family="PingFang SC, Noto Sans CJK SC, Microsoft YaHei, sans-serif" fill="#27323A">
+<text x="48" y="57" font-size="34" fill="#27323A" text-anchor="start" font-weight="650">同样的加法，线程怎样分工</text>
+<text x="48" y="99" font-size="25" fill="#59646B" text-anchor="start" font-weight="400">第一个 wavefront · 只展示 lane 0–3 · 格内数字是数组下标</text>
+<rect x="48" y="132" width="1104" height="157" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="72" y="174" font-size="27" fill="#2F6E9E" text-anchor="start" font-weight="600">coalesced</text>
+<text x="72" y="209" font-size="23" fill="#59646B" text-anchor="start" font-weight="400">每线程 1 个元素</text>
+<text x="425" y="167" font-size="24" fill="#59646B" text-anchor="middle" font-weight="400">lane 0</text>
+<rect x="351" y="190" width="148" height="64" rx="8" fill="#EAF2F8" stroke="#2F6E9E" stroke-width="2"/>
+<text x="425" y="233" font-size="30" fill="#2F6E9E" text-anchor="middle" font-weight="600">0</text>
+<text x="610" y="167" font-size="24" fill="#59646B" text-anchor="middle" font-weight="400">lane 1</text>
+<rect x="536" y="190" width="148" height="64" rx="8" fill="#EAF2F8" stroke="#2F6E9E" stroke-width="2"/>
+<text x="610" y="233" font-size="30" fill="#2F6E9E" text-anchor="middle" font-weight="600">1</text>
+<text x="795" y="167" font-size="24" fill="#59646B" text-anchor="middle" font-weight="400">lane 2</text>
+<rect x="721" y="190" width="148" height="64" rx="8" fill="#EAF2F8" stroke="#2F6E9E" stroke-width="2"/>
+<text x="795" y="233" font-size="30" fill="#2F6E9E" text-anchor="middle" font-weight="600">2</text>
+<text x="980" y="167" font-size="24" fill="#59646B" text-anchor="middle" font-weight="400">lane 3</text>
+<rect x="906" y="190" width="148" height="64" rx="8" fill="#EAF2F8" stroke="#2F6E9E" stroke-width="2"/>
+<text x="980" y="233" font-size="30" fill="#2F6E9E" text-anchor="middle" font-weight="600">3</text>
+<rect x="48" y="315" width="1104" height="348" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="72" y="355" font-size="27" fill="#AD651E" text-anchor="start" font-weight="600">linecross</text>
+<text x="72" y="391" font-size="25" fill="#AD651E" text-anchor="start" font-weight="400">stride = 4</text>
+<text x="72" y="430" font-size="23" fill="#59646B" text-anchor="start" font-weight="400">每线程 4 个元素</text>
+<text x="72" y="480" font-size="23" fill="#59646B" text-anchor="start" font-weight="400">横向看：同一轮</text>
+<text x="72" y="516" font-size="23" fill="#59646B" text-anchor="start" font-weight="400">纵向看：同一 lane</text>
+<text x="425" y="354" font-size="24" fill="#59646B" text-anchor="middle" font-weight="400">lane 0</text>
+<text x="610" y="354" font-size="24" fill="#59646B" text-anchor="middle" font-weight="400">lane 1</text>
+<text x="795" y="354" font-size="24" fill="#59646B" text-anchor="middle" font-weight="400">lane 2</text>
+<text x="980" y="354" font-size="24" fill="#59646B" text-anchor="middle" font-weight="400">lane 3</text>
+<text x="312" y="416" font-size="23" fill="#59646B" text-anchor="end" font-weight="400">j=0</text>
+<rect x="351" y="375" width="148" height="54" rx="8" fill="#FCF0E3" stroke="#AD651E" stroke-width="2"/>
+<text x="425" y="412" font-size="29" fill="#AD651E" text-anchor="middle" font-weight="600">0</text>
+<rect x="536" y="375" width="148" height="54" rx="8" fill="#FCF0E3" stroke="#AD651E" stroke-width="2"/>
+<text x="610" y="412" font-size="29" fill="#AD651E" text-anchor="middle" font-weight="600">4</text>
+<rect x="721" y="375" width="148" height="54" rx="8" fill="#FCF0E3" stroke="#AD651E" stroke-width="2"/>
+<text x="795" y="412" font-size="29" fill="#AD651E" text-anchor="middle" font-weight="600">8</text>
+<rect x="906" y="375" width="148" height="54" rx="8" fill="#FCF0E3" stroke="#AD651E" stroke-width="2"/>
+<text x="980" y="412" font-size="29" fill="#AD651E" text-anchor="middle" font-weight="600">12</text>
+<text x="312" y="482" font-size="23" fill="#59646B" text-anchor="end" font-weight="400">j=1</text>
+<rect x="351" y="441" width="148" height="54" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="425" y="478" font-size="29" fill="#27323A" text-anchor="middle" font-weight="400">1</text>
+<rect x="536" y="441" width="148" height="54" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="610" y="478" font-size="29" fill="#27323A" text-anchor="middle" font-weight="400">5</text>
+<rect x="721" y="441" width="148" height="54" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="795" y="478" font-size="29" fill="#27323A" text-anchor="middle" font-weight="400">9</text>
+<rect x="906" y="441" width="148" height="54" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="980" y="478" font-size="29" fill="#27323A" text-anchor="middle" font-weight="400">13</text>
+<text x="312" y="548" font-size="23" fill="#59646B" text-anchor="end" font-weight="400">j=2</text>
+<rect x="351" y="507" width="148" height="54" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="425" y="544" font-size="29" fill="#27323A" text-anchor="middle" font-weight="400">2</text>
+<rect x="536" y="507" width="148" height="54" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="610" y="544" font-size="29" fill="#27323A" text-anchor="middle" font-weight="400">6</text>
+<rect x="721" y="507" width="148" height="54" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="795" y="544" font-size="29" fill="#27323A" text-anchor="middle" font-weight="400">10</text>
+<rect x="906" y="507" width="148" height="54" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="980" y="544" font-size="29" fill="#27323A" text-anchor="middle" font-weight="400">14</text>
+<text x="312" y="614" font-size="23" fill="#59646B" text-anchor="end" font-weight="400">j=3</text>
+<rect x="351" y="573" width="148" height="54" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="425" y="610" font-size="29" fill="#27323A" text-anchor="middle" font-weight="400">3</text>
+<rect x="536" y="573" width="148" height="54" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="610" y="610" font-size="29" fill="#27323A" text-anchor="middle" font-weight="400">7</text>
+<rect x="721" y="573" width="148" height="54" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="795" y="610" font-size="29" fill="#27323A" text-anchor="middle" font-weight="400">11</text>
+<rect x="906" y="573" width="148" height="54" rx="8" fill="#FFFFFF" stroke="#CBD1D3" stroke-width="2"/>
+<text x="980" y="610" font-size="29" fill="#27323A" text-anchor="middle" font-weight="400">15</text>
+<text x="48" y="706" font-size="24" fill="#59646B" text-anchor="start" font-weight="400">概念示意：真实 wavefront 有 32 个 lane；本图不表示显存事务或执行耗时。</text>
+</g></svg>

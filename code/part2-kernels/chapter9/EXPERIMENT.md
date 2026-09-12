@@ -1,4 +1,4 @@
-# Chapter 8 Sum Reduction — RX 9070 XT 实验记录
+# Chapter 9 Sum Reduction — RX 9070 XT 实验记录
 
 ## 环境与口径
 

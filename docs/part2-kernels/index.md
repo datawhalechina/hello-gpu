@@ -1,112 +1,55 @@
 ---
 title: "第 2 篇：经典算子与 Kernel 实战"
-description: "从 Element-Wise 到 Fused RMSNorm，用 HIP 与 Triton 完成可复现的 Kernel 优化闭环"
+description: "从数组加法到 Attention，用小例子、算法动画和 HIP/Triton 实现理解 GPU 算子"
 ---
 
 # 第 2 篇：经典算子与 Kernel 实战
 
-Part 1 已经教你量准时间、找到慢点并用 Roofline 选择排查方向。Part 2 开始把这些方法真正用在算子上：先固定数学语义和正确性，再提出瓶颈假设，分别沿 HIP 与 Triton 迭代，最后用同一份证据回答“改动有没有用”。
+假设我们已经能测准一段 GPU 程序的时间，也能从 trace 里找到最慢的 kernel。接下来怎样改它？从这一篇开始，我们拿六种具体算子做实验：先算清输出依赖哪些输入，再决定如何分工，最后用测量检查这个决定。
 
-第 8–13 章的正文、HIP/Triton 教学代码、边界正确性、3 个独立正式进程、逐实现 `rocprofv3` trace、curated evidence 与实验记录均已完成。所有性能结论都绑定 RX 9070 XT 上的固定 shape 和源码提交，不把教学结果外推为硬件通用结论。
+六章会逐步增加问题的难度。数组加法的每个输出彼此独立；求和需要让线程合作；矩阵乘还要让多个输出复用输入。学会这些基本模式后，我们再把它们组合成 Attention 和 RMSNorm。
 
-## 这篇解决什么问题
+## 怎样阅读这一篇
 
-读一个 kernel，不能只停在“代码能跑”。你需要把下面几件事连起来：
+每章先用一个能手算的小输入解释算法，配有可播放、可单步查看的动画。画面默认静止，先看清当前步骤再前进即可；动画里的时间只用来展示计算关系，不表示真实 GPU 耗时。
 
-- 输出为什么可以这样拆给 GPU；
-- 数据读写与计算量怎样形成成本模型；
-- HIP 的 thread/block 和 Triton 的 program/tile 怎样表达同一语义；
-- 正确性、benchmark 与 profiling 分别回答什么；
-- 某次改动为什么变快、没变，甚至变慢；
-- 结论在哪些 shape、dtype、硬件和软件版本下才成立。
+理解算法后，在 **HIP / Triton 标签页**中选择一条实现路线。第一次阅读只学一种语言也可以，页面会在本次浏览中记住选择。两种实现共用前面的数学解释和后面的实验结果，想对照时再切换标签。
 
-Part 2 不把“优化技巧”整理成孤立清单，而是让六章依次引入新的依赖、复用与融合问题。读完时，你应该能独立完成一次有参考实现、有测量口径、有负结果、也能复跑的 kernel 优化记录。
-
-## 开始前你需要会什么
-
-开始前，建议先完成下面四个前置检查：
-
-1. 能运行第 4 章的 Vector Add，并看懂 `blockIdx.x * blockDim.x + threadIdx.x` 如何得到全局下标。
-2. 能按第 5 章的方法做 warmup、repeat、GPU event 计时，并明确 kernel-only 与端到端计时的边界。
-3. 能按第 6 章用 kernel trace 找到目标 dispatch，读取 grid、workgroup 与资源字段。
-4. 能按第 7 章从逻辑 FLOP、逻辑字节和实测时间建立成本模型；知道逻辑有效带宽不等于物理显存流量。
-
-如果其中一项还不熟，先回到对应章节复跑最小实验。Part 2 不重复安装环境、可信计时和完整 Roofline 入门，只在每章给出与当前算子直接相关的口径。
+如果还不熟悉 thread、block、program 或 tile，可以先读[附录 D：HIP 与 Triton 的编程范式](../appendix/programming-models/index.md)。附录用同一个数组加法解释两种写法，第 8 章也会在需要时给出入口。
 
 ## 六章怎样递进
 
-学习顺序固定为 **Element-Wise → Reduction → Softmax → GEMM → Attention/Fusion → Fused RMSNorm**。每一章都复用前面已经验证的模式，再只增加一种新的难点。
+| 章节 | 先回答的问题 | 动画帮助你看清什么 |
+| --- | --- | --- |
+| [第 8 章：逐元素算子](./chapter8/index.md) | 每个输出互不依赖，怎样分配下标？ | 线程与元素的对应、访问顺序、向量化尾部、Triton mask |
+| [第 9 章：归约算子](./chapter9/index.md) | 多个输入怎样合成一个输出？ | 求和树的中间值、block partial 与第二次归约 |
+| [第 10 章：归一化算子](./chapter10/index.md) | 怎样把分数稳定地变成概率？ | 减最大值、取指数、求和与归一化 |
+| [第 11 章：矩阵乘类算子](./chapter11/index.md) | 一份输入怎样为多个输出服务？ | 点积、分块加载与累加结果 |
+| [第 12 章：融合算子](./chapter12/index.md) | 能否边读边算，少存中间矩阵？ | Attention 的物化数据流与在线状态更新 |
+| [第 13 章：Fused RMSNorm](./chapter13/index.md) | 怎样把逐元素、归约和融合组合起来？ | 平方、求均值、广播尺度与乘权重 |
 
-| 顺序 | 章节 | 新增的核心问题 | 当前范围 |
-| ----: | ---- | ---- | ---- |
-| 1 | [第 8 章 Element-Wise：逐元素算子](./chapter8/index.md) | 输出彼此独立时，怎样划分下标、保持连续访问并处理尾部 | 完整正文与 curated evidence |
-| 2 | [第 9 章 Reduction：归约算子](./chapter9/index.md) | 多个输入共同生成较少输出时，怎样做跨线程协作 | 正文 + HIP/Triton + evidence |
-| 3 | [第 10 章 Normalization：归一化算子](./chapter10/index.md) | 怎样把数值稳定的归约与逐元素计算组合起来 | 正文 + HIP/Triton + evidence |
-| 4 | [第 11 章 GEMM-Like：矩阵乘类算子](./chapter11/index.md) | 怎样用 tile、数据复用和寄存器累加提高算术强度 | 正文 + HIP/Triton + evidence |
-| 5 | [第 12 章 Fusion：融合算子](./chapter12/index.md) | 怎样在线计算并减少中间结果的全局写回 | 教学前向 + HIP/Triton + evidence |
-| 6 | [第 13 章 综合实战：Fused RMSNorm](./chapter13/index.md) | 怎样综合逐元素、归约与融合，独立完成完整优化闭环 | 正文 + HIP/Triton + evidence |
+## 开始前需要会什么
 
-第 13 章不是突然出现的新技巧，而是一次结业题：数学语义来自 RMSNorm，数据依赖复用 Reduction，融合边界复用 Softmax 与 Attention/Fusion，实验记录则沿用前五章的统一契约。
+这一篇会继续使用前几章的方法：
 
-## HIP 与 Triton 两条路线
+- [第 4 章](../part0-intro/chapter4/index.md)：启动一个 HIP kernel，并理解全局下标。
+- [第 5 章](../part1-profiling/chapter5/index.md)：预热、重复、GPU event 计时，区分 kernel 时间与端到端时间。
+- [第 6 章](../part1-profiling/chapter6/index.md)：从 trace 中筛选目标 kernel，读懂工作规模和资源字段。
+- [第 7 章](../part1-profiling/chapter7/index.md)：数清算法所需的计算与数据量，用 Roofline 提出下一步实验。
 
-两条路线面对的是同一道题，不是两套互不相干的课程。
+不必一次记住所有工具选项。读代码时先问“谁负责这个输出”，读结果时再问“这次时间包含什么”。
 
-| 路线 | 源码首先看见什么 | 适合重点观察什么 | 阅读方式 |
-| ---- | ---- | ---- | ---- |
-| HIP | thread、block、标量下标、显式加载类型 | 地址排列、wavefront/LDS、资源用量与底层控制 | 想理解硬件映射时优先 |
-| Triton | program、tile offsets、mask、meta-parameter | 快速表达分块、参数实验与编译器生成映射 | 想快速验证算子设计时优先 |
+## 从实现走到实验
 
-可以只先走一条路线，但不要跳过公共部分：数学语义、正确性矩阵、计时范围与证据口径必须相同。做对照时也不预设谁是赢家；同一实现换一个 shape、dtype、编译器版本或系统状态，结论都可能变化。
+每章的源码在 `code/part2-kernels/chapterN/`。HIP 和 Triton 实现、运行入口、实验记录放在一起；正文摘录关键片段，完整输入生成、校验和计时仍以源文件为准。
 
-## 每章统一实验闭环
+| 入口 | 用途 |
+| --- | --- |
+| `run_all.sh` | 运行本章实现与正确性检查 |
+| `profile_all.sh` | 按实现分别采集 trace；参数以各章说明为准 |
+| `EXPERIMENT.md` | 记录环境、命令、源码身份和结果边界 |
+| `evidence/` | 保存正文历史表格所依据的可追溯汇总 |
 
-六章统一采用下面的读者模板。它既是阅读顺序，也是你写实验记录时可以复用的检查表：
+本书的实验平台是 **Radeon RX 9070 XT（gfx1201）+ ROCm 7.13 + 原生 Ubuntu 24.04**。每组数字只描述相应输入、源码和测量协议。第 10、12 章在本次审查中修正了 LDS 复用同步问题，修正后的验证单独记录；旧性能图仍标明属于修正前的历史实验，不与新计时混为一组。
 
-1. **白话动机**：先说这个算子解决什么问题，以及输出依赖关系怎样变化。
-2. **数学与参考实现**：固定公式、dtype、shape、误差标准和裁判实现。
-3. **成本模型与瓶颈假设**：数清逻辑 FLOP、逻辑字节、dispatch 和中间结果，提出可证伪假设。
-4. **HIP ladder**：从最短正确 baseline 开始，每一版只引入一个主要机制。
-5. **Triton ladder**：从最小 program/tile 开始，用受控参数实验扩展。
-6. **正确性矩阵**：覆盖典型 shape、尾部、非整除长度、dtype 与必要的数值压力输入。
-7. **Benchmark 与 Profiling**：先用统一口径计时，再用 trace 或计数器解释资源与执行变化。
-8. **HIP/Triton 对照**：对齐数学语义、输入、计时边界和证据字段后再比较。
-9. **负结果与适用边界**：保留没有提速、退化或证据不足的尝试，说明结论不能外推到哪里。
-10. **复跑与练习**：给出从环境激活到证据产物的入口，再把模式迁移到一个小变体。
-
-## 什么算完成
-
-完成一章，不是“看懂最后一版代码”或“跑出一个更小的时间”。至少应留下：
-
-- 参考实现与覆盖边界输入的正确性结果；
-- 明确的硬件、软件、shape、dtype、warmup、repeat 和计时范围；
-- baseline、每轮单变量改动及其假设；
-- 能追溯到源文件的 benchmark/profile 证据；
-- 至少一个负结果或适用边界；
-- 可以由另一位读者执行的复跑命令与完成信号。
-
-完成第 13 章后，可以把同一闭环迁移到陌生题目。LeetGPU 与其他平台只作为拓展练习入口：平台的题目约束、运行环境和排行榜口径需要单独核对，平台成绩不能替代本书实验机上的本地证据。
-
-## 运行环境与证据入口
-
-Part 2 当前发布证据的实验基线是 **Radeon RX 9070 XT（gfx1201）+ ROCm 7.13 + 原生 Ubuntu 24.04**。换硬件或软件版本时，可以复用方法，但必须重新采集结果，不能直接沿用正文数字。
-
-当前可复跑入口集中在：
-
-```text
-code/part2-kernels/
-├── activate-rocm.sh
-├── chapter8/
-│   ├── EXPERIMENT.md
-│   ├── run_all.sh
-│   ├── profile_all.sh
-│   └── evidence/
-├── chapter9/   # Reduction：HIP / Triton / run_all.sh
-├── chapter10/   # Softmax：HIP / Triton / run_all.sh
-├── chapter11/  # GEMM：HIP / Triton / run_all.sh
-├── chapter12/  # Attention：HIP / Triton / run_all.sh
-├── chapter13/  # RMSNorm：HIP / Triton / run_all.sh
-└── tests/
-```
-
-第 8–13 章的发布表格都只读取各章 `evidence/` 中的 curated evidence；实验环境、参数、源码身份、三进程范围、负结果和复跑流程记录在各章 `EXPERIMENT.md`。原始日志与完整 trace 不进入 Git，正文中的排名只描述对应固定 shape。
+做完一次练习，留下输入、参考答案、测量范围和观察就已经很有价值。某个版本变慢同样值得记录：它提醒我们，减少一次写回、增加一个 tile 或少启动一个 kernel，都需要放回完整程序中验证。

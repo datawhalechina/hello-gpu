@@ -1,115 +1,132 @@
-"""Ch6 Roofline：把 Ch5 的 coalesced / linecross 两个实测点画到 9070XT Roofline 上。
+"""Chapter 7: plot Chapter 6 vector-add results against measured references.
 
-对比 Ch3 的版本，本章多画一个 linecross（跨 cache line）点，直观展示
-"地址分散后，工作点离带宽斜线有多远"——这是 Part 1 profiling
-闭环的最终交付图。
+The historical filename is kept so existing links continue to work.
+No GPU benchmark is run by this script.
 
-实测数据来源（均在 9070XT + ROCm 7.13 + 原生 Ubuntu 24.04 测得）：
-  - 大数组 copy 的 GDDR6 稳态带宽：~510 GB/s
-  - coalesced vector add 有效带宽：603 GB/s（Ch5 §5.2）
-  - linecross stride=32 有效带宽：89.7 GB/s（Ch5 §5.2）
-  - fp32 算力：~10.6 TFLOPS（Ch2 实测 torch.matmul）
+Recorded on Radeon RX 9070 XT / gfx1201, ROCm 7.13, native Ubuntu 24.04:
+- Vector add: Chapter 6 logs/ch5_native_ubuntu_profiling.md, 2026-07-06.
+  n=16777216, FP32, block=256, warmup=20, repeat=100; minimum HIP event time.
+- Copy and matmul: Chapter 2 logs/micro_bench-native-ubuntu-2026-07-08.log.
+  Copy uses 2048 MiB PER buffer and the average of 50 batched launches.
+  Matmul is 4096 x 4096, FP32, average of 30 batched launches.
 
-两个工作点按算法口径计算出的算术强度相同（都处理 n 个元素、做 1 次加法、
-搬 3n×4 字节，AI=1/12≈0.083）。linecross 同时改变地址排布和工作划分，
-它的实测性能点（P = AI × B_ach）比 coalesced 低 6.7×；图只描述结果，不归因。
+The old copy log labeled MiB/ms as GB/s. Recompute decimal GB/s from the
+recorded 8.032 ms instead of reusing the incorrect 510.0 label. The figures
+below are derived from rounded historical times, not new GPU measurements.
+Neither reference is a specification peak or a universal performance bound.
+Algorithmic bytes do not measure physical DRAM traffic or cache hits.
 
-标签全用英文，避免中文字体缺失乱码；中文解读放正文图注。
-
-用法：
-    python plot_roofline_ch6.py            # 弹窗显示
-    python plot_roofline_ch6.py --save      # 存 PNG 到同目录
+Usage:
+    python plot_roofline_ch6.py --save
 """
 import argparse
-import os
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-# ---- 实测硬件参数 ----
-BW_GDDR6 = 510            # GB/s, ≥1 GiB copy 实测稳态带宽
-P_FP32 = 10.6             # TFLOPS, torch.matmul fp32 实测
+# Historical measurements and their workload definitions.
+COPY_BUFFER_MIB = 2048
+COPY_BATCH_AVG_MS = 8.032
+MATMUL_SIZE = 4096
+MATMUL_BATCH_AVG_MS = 12.944
+N = 16_777_216
+COALESCED_MIN_MS = 0.3338
+LINECROSS_MIN_MS = 2.2456
 
-# ---- 两个工作点实测（Ch5 §5.2）----
-AI_VADD = 1.0 / 12        # ≈ 0.083 FLOP/Byte，两版相同
-BW_COALESCED = 603        # GB/s, coalesced 有效带宽
-BW_LINECROSS = 89.7       # GB/s, linecross stride=32 有效带宽
-P_COALESCED = AI_VADD * BW_COALESCED / 1e3   # TFLOPS ≈ 0.050
-P_LINECROSS = AI_VADD * BW_LINECROSS / 1e3   # TFLOPS ≈ 0.0075
+# Unit conversions: MiB = 2**20 Byte; GB = 10**9 Byte; TFLOP = 10**12 FLOP.
+BW_REFERENCE = 2 * COPY_BUFFER_MIB * 2**20 / (COPY_BATCH_AVG_MS * 1e-3) / 1e9
+P_REFERENCE = 2 * MATMUL_SIZE**3 / (MATMUL_BATCH_AVG_MS * 1e-3) / 1e12
+F = N
+Q = 3 * N * 4
+AI_VADD = F / Q
+P_COALESCED = F / (COALESCED_MIN_MS * 1e-3) / 1e12
+P_LINECROSS = F / (LINECROSS_MIN_MS * 1e-3) / 1e12
+BW_COALESCED = Q / (COALESCED_MIN_MS * 1e-3) / 1e9
+BW_LINECROSS = Q / (LINECROSS_MIN_MS * 1e-3) / 1e9
+KNEE = P_REFERENCE * 1e3 / BW_REFERENCE
 
 
 def plot(save_path=None):
-    fig, ax = plt.subplots(figsize=(9, 5.5), dpi=140)
+    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 10})
+    fig, ax = plt.subplots(figsize=(10.2, 6.6), dpi=180)
+    fig.patch.set_facecolor("#ffffff")
+    ax.set_facecolor("#ffffff")
 
-    ai = np.logspace(-2, 3.2, 500)
+    # Draw the actual minimum of the two constraints; the sloped branch stops
+    # at the knee instead of continuing above the horizontal branch.
+    ai = np.unique(np.append(np.logspace(-2, 3, 600), KNEE))
+    reference = np.minimum(BW_REFERENCE * ai / 1e3, P_REFERENCE)
+    left = ai <= KNEE
+    right = ai >= KNEE
+    ax.plot(ai[left], reference[left], color="#2563eb", lw=2.5,
+            label=f"Copy reference: {BW_REFERENCE:.0f} GB/s")
+    ax.plot(ai[right], reference[right], color="#b45309", lw=2.5,
+            label=f"FP32 matmul reference: {P_REFERENCE:.1f} TFLOPS")
+    ax.scatter([KNEE], [P_REFERENCE], s=36, color="#334155", zorder=5)
+    ax.axvline(KNEE, color="#94a3b8", lw=1, ls="--", alpha=0.8)
+    ax.annotate(f"Knee: {KNEE:.1f} FLOP/Byte", (KNEE, P_REFERENCE),
+                xytext=(8, -25), textcoords="offset points", fontsize=9,
+                color="#475569")
 
-    # Roofline 使用独立于工作点的大数组 copy 稳态带宽。
-    ax.plot(ai, (BW_GDDR6 / 1e3) * ai, "-", color="#2563eb", lw=1.8,
-            label=f"GDDR6 reference = {BW_GDDR6} GB/s (measured)")
+    ax.scatter([AI_VADD], [P_COALESCED], s=100, marker="o", zorder=6,
+               color="#059669", edgecolor="white", linewidth=1)
+    ax.annotate(f"coalesced\n{P_COALESCED:.4f} TFLOPS | {BW_COALESCED:.0f} GB/s",
+                (AI_VADD, P_COALESCED), xytext=(0.22, 0.042),
+                textcoords="data", fontsize=10, color="#047857",
+                arrowprops=dict(arrowstyle="-", color="#059669", lw=1))
+    ax.scatter([AI_VADD], [P_LINECROSS], s=100, marker="X", zorder=6,
+               color="#7c3aed", edgecolor="white", linewidth=1)
+    ax.annotate(f"linecross, stride=32\n{P_LINECROSS:.5f} TFLOPS | {BW_LINECROSS:.1f} GB/s",
+                (AI_VADD, P_LINECROSS), xytext=(0.19, 0.005),
+                textcoords="data", fontsize=10, color="#6d28d9",
+                arrowprops=dict(arrowstyle="-", color="#7c3aed", lw=1))
+    ax.plot([AI_VADD, AI_VADD], [P_LINECROSS, P_COALESCED],
+            ls=":", color="#94a3b8", lw=1, zorder=2)
+    ax.text(0.013, 0.028, "Same AI\n1/12 FLOP/Byte",
+            fontsize=9, color="#475569")
 
-    # 算力水平线
-    ax.axhline(P_FP32, color="#dc2626", lw=1.8, ls="--",
-               label=f"FP32 compute reference = {P_FP32} TFLOPS (measured)")
-
-    # coalesced 实测点（算法有效带宽可能高于独立 copy 参考线）
-    ax.scatter([AI_VADD], [P_COALESCED], color="#ea580c", zorder=6, s=95,
-               marker="*", edgecolors="black", linewidths=0.6)
-    ax.annotate("coalesced (measured)\n"
-                f"AI={AI_VADD:.3f}, P={P_COALESCED:.3f} TFLOPS\n"
-                f"BW={BW_COALESCED} GB/s",
-                (AI_VADD, P_COALESCED), textcoords="offset points",
-                xytext=(20, 22), fontsize=8.5, color="#ea580c",
-                arrowprops=dict(arrowstyle="->", color="#ea580c", lw=1.2))
-
-    # linecross 实测点（从斜线跌下来）
-    ax.scatter([AI_VADD], [P_LINECROSS], color="#7c3aed", zorder=6, s=95,
-               marker="X", edgecolors="black", linewidths=0.6)
-    ax.annotate("linecross s=32 (measured)\n"
-                f"AI={AI_VADD:.3f}, P={P_LINECROSS:.4f} TFLOPS\n"
-                f"BW={BW_LINECROSS} GB/s  (6.7x slower)",
-                (AI_VADD, P_LINECROSS), textcoords="offset points",
-                xytext=(20, -32), fontsize=8.5, color="#7c3aed",
-                arrowprops=dict(arrowstyle="->", color="#7c3aed", lw=1.2))
-
-    # 两点之间的退化箭头
-    ax.annotate("", (AI_VADD, P_LINECROSS), (AI_VADD, P_COALESCED),
-                arrowprops=dict(arrowstyle="->", color="#94a3b8", lw=1.5,
-                                connectionstyle="arc3,rad=0.3"))
-    ax.text(AI_VADD * 1.15, (P_COALESCED + P_LINECROSS) / 2,
-            "coalesced -> linecross\n(configuration change)", fontsize=8,
-            color="#64748b", va="center")
-
-    # 区域标注
-    ax.text(0.03, 0.66, "memory-bound\n(slope side)", transform=ax.transAxes,
-            fontsize=10, color="#2563eb", alpha=0.55, va="center")
-    ax.text(0.80, 0.5, "compute-bound\n(ceiling side)", transform=ax.transAxes,
-            fontsize=10, color="#dc2626", alpha=0.55, va="center")
-
+    ax.text(0.8, 0.55, "Bandwidth side", color="#2563eb", fontsize=11,
+            rotation=27)
+    ax.text(50, 15, "Compute side", color="#b45309", fontsize=11)
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.set_xlabel("Arithmetic Intensity (FLOP / Byte)", fontsize=11)
-    ax.set_ylabel("Performance (TFLOPS)", fontsize=11)
-    ax.set_title("Roofline: Radeon RX 9070 XT vector add",
-                 fontsize=12)
-    ax.grid(True, which="both", ls=":", alpha=0.35)
-    ax.legend(loc="upper left", fontsize=8, framealpha=0.92)
     ax.set_xlim(1e-2, 1e3)
-    ax.set_ylim(1e-3, 40)
-
-    fig.tight_layout()
+    ax.set_ylim(2e-3, 30)
+    ax.set_xlabel("Arithmetic intensity: F / Q  (FLOP/Byte)", labelpad=10)
+    ax.set_ylabel("Performance: F / t  (TFLOPS)", labelpad=8)
+    ax.set_title("Vector add on Radeon RX 9070 XT", loc="left", pad=17,
+                 fontsize=15, weight="bold")
+    ax.grid(True, which="major", color="#cbd5e1", alpha=0.6, lw=0.6)
+    ax.grid(True, which="minor", color="#e2e8f0", alpha=0.6, lw=0.4)
+    for spine in ax.spines.values():
+        spine.set_color("#cbd5e1")
+    ax.legend(loc="upper left", frameon=False, fontsize=9,
+              title="Measured workload references, not hardware peaks",
+              title_fontsize=9)
+    fig.subplots_adjust(left=0.105, right=0.98, top=0.89, bottom=0.24)
+    fig.text(0.105, 0.07,
+             "ROCm 7.13 | native Ubuntu 24.04 | FP32 | historical measurements, July 2026\n"
+             "Q = algorithmic bytes. A point above the copy reference does not prove a cache hit.",
+             fontsize=9, color="#475569", linespacing=1.6)
     if save_path:
-        fig.savefig(save_path, bbox_inches="tight")
+        fig.savefig(save_path, facecolor="white", bbox_inches="tight")
         print(f"saved: {save_path}")
     else:
         plt.show()
+    plt.close(fig)
 
 
 def main():
-    p = argparse.ArgumentParser(description=__doc__)
-    here = os.path.dirname(os.path.abspath(__file__))
-    p.add_argument("--save", action="store_true")
-    p.add_argument("--out", default=os.path.join(here, "roofline-ch6.png"))
-    args = p.parse_args()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--save", action="store_true")
+    parser.add_argument("--out", default=str(Path(__file__).with_name("roofline-ch6.png")))
+    args = parser.parse_args()
+    print(f"copy_reference_gbs={BW_REFERENCE:.6f}")
+    print(f"fp32_reference_tflops={P_REFERENCE:.6f}")
+    print(f"knee_flop_per_byte={KNEE:.6f}")
+    print(f"coalesced_tflops={P_COALESCED:.8f}")
+    print(f"linecross_tflops={P_LINECROSS:.8f}")
     plot(args.out if args.save else None)
 
 
