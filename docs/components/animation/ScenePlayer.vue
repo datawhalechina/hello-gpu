@@ -111,13 +111,16 @@ onUnmounted(() => {
       </span>
     </header>
 
-    <div class="ej-stage">
-      <svg :viewBox="meta.viewBox" role="img" :aria-label="stageLabel">
+    <div class="ej-stage" :class="{ 'has-mobile-scene': meta.mobileViewBox }">
+      <svg class="ej-desktop-scene" :viewBox="meta.viewBox" role="img" :aria-label="stageLabel">
+        <slot name="stage" :step="clock.stepIndex.value" :local="clock.stepLocal.value" />
+      </svg>
+      <svg v-if="meta.mobileViewBox" class="ej-mobile-scene" :viewBox="meta.mobileViewBox" role="img" :aria-label="stageLabel">
         <slot name="stage" :step="clock.stepIndex.value" :local="clock.stepLocal.value" />
       </svg>
     </div>
 
-    <p class="ej-scroll-hint">左右滑动画布，查看完整过程</p>
+    <p v-if="!meta.mobileViewBox" class="ej-scroll-hint">左右滑动画布，查看完整过程</p>
 
     <div class="ej-narration-space">
       <!-- 同一网格内的隐藏说明按当前宽度自然换行，为最长一步预留空间。 -->
@@ -140,7 +143,8 @@ onUnmounted(() => {
           aria-label="上一步"
           @click="manualStep(-1)"
         >
-          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 3 5.5 8l5 5" /></svg>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8H3m4-4L3 8l4 4" /></svg>
+          <span>上一步</span>
         </button>
         <button
           type="button"
@@ -152,6 +156,7 @@ onUnmounted(() => {
             <path d="M5.5 3.5v9M10.5 3.5v9" />
           </svg>
           <svg v-else viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.2v9.6L12.4 8Z" /></svg>
+          <span>{{ clock.playing.value ? '暂停' : '播放' }}</span>
         </button>
         <button
           type="button"
@@ -160,9 +165,11 @@ onUnmounted(() => {
           aria-label="下一步"
           @click="manualStep(1)"
         >
-          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m5.5 3 5 5-5 5" /></svg>
+          <span>下一步</span>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10m-4-4 4 4-4 4" /></svg>
         </button>
       </div>
+      <div class="ej-timeline">
       <input
         class="ej-range"
         type="range"
@@ -176,89 +183,94 @@ onUnmounted(() => {
         @pointerdown="onScrubStart"
         @input="onScrub"
       />
+        <div class="ej-chips" aria-label="跳转到指定步骤">
+          <button
+            v-for="(step, index) in meta.steps"
+            :key="step.label"
+            type="button"
+            class="ej-chip"
+            :class="{ 'is-active': index === clock.stepIndex.value, 'is-done': index < clock.stepIndex.value }"
+            :aria-current="index === clock.stepIndex.value ? 'step' : undefined"
+            :title="step.label"
+            @click="manualGo(index)"
+          >
+            <i aria-hidden="true">{{ index + 1 }}</i><span>{{ step.label }}</span>
+          </button>
+        </div>
+      </div>
+      <div class="ej-progress" aria-hidden="true">
+        <span>步骤 {{ clock.stepIndex.value + 1 }} / {{ clock.stepCount.value }}</span>
+        <strong>{{ currentStep.label }}</strong>
+      </div>
     </div>
 
     <p class="ej-note">算法过程示意 · 可单步查看、拖动进度或播放；动画速度不代表 GPU 耗时。</p>
-
-    <div class="ej-chips">
-      <button
-        v-for="(step, index) in meta.steps"
-        :key="step.label"
-        type="button"
-        class="ej-chip"
-        :class="{ 'is-active': index === clock.stepIndex.value }"
-        @click="manualGo(index)"
-      >
-        <i aria-hidden="true">{{ index + 1 }}</i>{{ step.label }}
-      </button>
-    </div>
   </section>
 </template>
 
 <style scoped>
 .ej {
-  /* 视觉 token：全书统一的语义配色（输入 A=青、输入 B=琥珀、输出 C=玫红，
-     活动=靛蓝、禁用/越界=中性灰），明暗主题各一份，场景内 SVG 只引用变量。 */
-  --ej-bg: #ffffff;
-  --ej-surface: #f8fafc;
-  --ej-panel: #f1f5f9;
-  --ej-line: #e2e8f0;
-  --ej-line-strong: #cbd5e1;
-  --ej-ink: #0f172a;
-  --ej-ink-soft: #64748b;
-  --ej-ink-faint: #94a3b8;
-  --ej-a: #0891b2;
-  --ej-a-soft: rgba(8, 145, 178, 0.13);
-  --ej-b: #d97706;
-  --ej-b-soft: rgba(217, 119, 6, 0.15);
-  --ej-c: #db2777;
-  --ej-c-soft: rgba(219, 39, 119, 0.12);
-  --ej-active: #4f46e5;
-  --ej-active-soft: rgba(79, 70, 229, 0.1);
-  --ej-bad: #94a3b8;
-  --ej-bad-soft: rgba(148, 163, 184, 0.16);
-  --ej-shadow: rgba(15, 23, 42, 0.08);
-
+  /* 全书统一语义色：A 蓝、B 橙、C 绿；活动状态用鼠尾草绿。 */
+  --ej-bg: #f8faf9;
+  --ej-surface: #f1f5f3;
+  --ej-panel: #e8efec;
+  --ej-line: #d7e0dc;
+  --ej-line-strong: #becdc6;
+  --ej-ink: #203532;
+  --ej-ink-soft: #61736c;
+  --ej-ink-faint: #82938b;
+  --ej-a: #347baa;
+  --ej-a-soft: rgba(52, 123, 170, .15);
+  --ej-b: #b96b32;
+  --ej-b-soft: rgba(185, 107, 50, .16);
+  --ej-c: #3b8c60;
+  --ej-c-soft: rgba(59, 140, 96, .15);
+  --ej-active: #306753;
+  --ej-active-soft: rgba(48, 103, 83, .10);
+  --ej-on-active: #f5faf7;
+  --ej-bad: #82938b;
+  --ej-bad-soft: rgba(130, 147, 139, .16);
+  --ej-shadow: rgba(17, 34, 27, .05);
   scroll-margin-top: calc(var(--vp-layout-top-height, 0px) + var(--vp-nav-height, 64px) + 64px);
   border: 1px solid var(--ej-line);
-  border-radius: 12px;
+  border-radius: 8px;
   background: var(--ej-bg);
-  padding: 14px 16px 12px;
-  box-shadow: 0 1px 3px var(--ej-shadow);
+  padding: 22px 22px 15px;
+  color: var(--ej-ink);
+  text-align: left;
 }
-
-.ej-note { font-size: 12px; line-height: 1.5; color: var(--ej-ink-soft); margin: 10px 0 0; }
 
 .ej:focus-visible {
   outline: 2px solid var(--ej-active);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
 .ej-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
+  gap: 20px;
+  margin-bottom: 18px;
 }
 
 .ej-headings {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 5px;
   min-width: 0;
 }
 
 .ej-eyebrow {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  color: var(--ej-active);
+  font-size: 10px;
+  font-weight: 550;
+  letter-spacing: .08em;
+  color: var(--ej-ink-soft);
 }
 
 .ej-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
+  line-height: 1.5;
   color: var(--ej-ink);
 }
 
@@ -270,20 +282,21 @@ onUnmounted(() => {
 }
 
 .ej-count b {
-  color: var(--ej-ink);
-  font-size: 15px;
+  color: var(--ej-active);
+  font-size: 16px;
+  font-weight: 550;
 }
 
 .ej-count i {
   font-style: normal;
-  margin: 0 2px;
+  margin: 0 5px;
 }
 
 .ej-stage {
   border: 1px solid var(--ej-line);
-  border-radius: 10px;
+  border-radius: 5px;
   background: var(--ej-surface);
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .ej-stage svg {
@@ -293,11 +306,14 @@ onUnmounted(() => {
   min-width: 560px;
 }
 
-.ej-stage { overflow-x: auto; }
+.ej-scroll-hint {
+  display: none;
+}
 
-.ej-scroll-hint { display: none; }
-
-.ej-narration-space { display: grid; }
+.ej-narration-space {
+  display: grid;
+  margin-top: 15px;
+}
 
 .ej-narration-measure {
   visibility: hidden;
@@ -308,28 +324,30 @@ onUnmounted(() => {
 .ej-narration {
   grid-area: 1 / 1;
   min-width: 0;
-  margin: 10px 2px 0;
-  font-size: 13.5px;
-  line-height: 1.65;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.85;
   color: var(--ej-ink-soft);
 }
 
 .ej-narration strong {
   color: var(--ej-ink);
-  font-weight: 600;
+  font-weight: 550;
   margin-right: 8px;
 }
 
 .ej-controls {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 10px;
+  gap: 24px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--ej-line);
 }
 
 .ej-buttons {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex: none;
 }
 
@@ -337,14 +355,17 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+  gap: 8px;
+  min-height: 38px;
+  border-radius: 5px;
   border: 1px solid var(--ej-line-strong);
-  background: var(--ej-bg);
+  background: transparent;
   color: var(--ej-ink-soft);
   cursor: pointer;
-  padding: 0;
+  padding: 8px 12px;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
 }
 
 .ej-btn svg {
@@ -352,23 +373,24 @@ onUnmounted(() => {
   height: 15px;
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.8;
+  stroke-width: 1.6;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .ej-btn:disabled {
-  opacity: 0.35;
+  opacity: .35;
   cursor: default;
 }
 
 .ej-btn.is-primary {
+  order: -1;
+  padding-inline: 15px;
+  border-radius: 22px;
   background: var(--ej-active);
   border-color: var(--ej-active);
-  color: #ffffff;
+  color: var(--ej-on-active);
 }
-
-.ej-btn.is-primary svg { fill: none; stroke: currentColor; }
 
 .ej-btn:not(:disabled):hover {
   border-color: var(--ej-active);
@@ -376,21 +398,29 @@ onUnmounted(() => {
 }
 
 .ej-btn.is-primary:not(:disabled):hover {
-  color: #ffffff;
-  filter: brightness(1.08);
+  color: var(--ej-on-active);
+  filter: brightness(1.06);
+}
+
+.ej-btn:focus-visible, .ej-chip:focus-visible, .ej-range:focus-visible {
+  outline: 2px solid var(--ej-active);
+  outline-offset: 3px;
+}
+
+.ej-timeline {
+  flex: 1;
+  min-width: 90px;
+  padding-top: 9px;
 }
 
 .ej-range {
-  flex: 1;
+  display: block;
+  width: 100%;
   appearance: none;
   -webkit-appearance: none;
-  height: 6px;
-  border-radius: 999px;
-  background: linear-gradient(
-    to right,
-    var(--ej-active) var(--ej-pct),
-    var(--ej-line-strong) var(--ej-pct)
-  );
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--ej-active) var(--ej-pct), var(--ej-line-strong) var(--ej-pct));
   cursor: pointer;
   margin: 0;
 }
@@ -398,125 +428,212 @@ onUnmounted(() => {
 .ej-range::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 16px;
-  height: 16px;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
-  background: var(--ej-bg);
-  border: 2.5px solid var(--ej-active);
-  box-shadow: 0 1px 4px var(--ej-shadow);
+  background: var(--ej-active);
+  border: 2px solid var(--ej-bg);
+  box-shadow: 0 0 0 1px var(--ej-active);
 }
 
 .ej-range::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  background: var(--ej-bg);
-  border: 2.5px solid var(--ej-active);
-  box-shadow: 0 1px 4px var(--ej-shadow);
+  background: var(--ej-active);
+  border: 2px solid var(--ej-bg);
+  box-shadow: 0 0 0 1px var(--ej-active);
 }
 
 .ej-chips {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
+  justify-content: space-between;
+  gap: 0;
+  margin-top: 4px;
 }
 
 .ej-chip {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 10px 3px 5px;
-  border-radius: 999px;
-  border: 1px solid var(--ej-line-strong);
+  justify-content: center;
+  min-width: 18px;
+  padding: 4px 1px;
+  border: 0;
   background: transparent;
-  color: var(--ej-ink-soft);
-  font-size: 12px;
+  color: var(--ej-ink-faint);
+  font-size: 10px;
   cursor: pointer;
 }
 
 .ej-chip i {
   font-style: normal;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--ej-panel);
-  color: var(--ej-ink-faint);
-  font-size: 10px;
   font-variant-numeric: tabular-nums;
 }
 
-.ej-chip.is-active {
-  border-color: var(--ej-active);
-  background: var(--ej-active-soft);
-  color: var(--ej-ink);
-  font-weight: 600;
+.ej-chip span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
-.ej-chip.is-active i {
-  background: var(--ej-active);
-  color: #ffffff;
+.ej-chip:hover, .ej-chip.is-done {
+  color: var(--ej-ink-soft);
+}
+
+.ej-chip.is-active {
+  color: var(--ej-active);
+  font-weight: 700;
+}
+
+.ej-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: none;
+  min-width: 56px;
+  max-width: 110px;
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--ej-ink-soft);
+}
+
+.ej-progress strong {
+  font-size: 11px;
+  color: var(--ej-ink);
+  font-weight: 500;
+}
+
+.ej-note {
+  margin: 12px 0 0;
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--ej-ink-faint);
+  text-align: right;
+}
+
+@media (max-width: 1100px) {
+  .ej-controls {
+    flex-wrap: wrap;
+    gap: 12px 18px;
+  }
+  .ej-progress {
+    margin-left: auto;
+  }
 }
 
 @media (max-width: 640px) {
+  .ej {
+    padding: 16px 12px 12px;
+  }
+  .ej-head {
+    margin-bottom: 13px;
+    gap: 12px;
+  }
+  .ej-title {
+    font-size: 14px;
+  }
+  .ej-eyebrow {
+    font-size: 9px;
+  }
   .ej-scroll-hint {
     display: block;
-    margin: 6px 2px 0;
-    font-size: 11px;
+    margin: 6px 0 0;
+    font-size: 10px;
     line-height: 1.5;
-    color: var(--ej-ink-soft);
+    color: var(--ej-ink-faint);
   }
-
-  .ej {
-    padding: 12px 12px 10px;
+  .ej-narration-space {
+    margin-top: 12px;
   }
-
+  .ej-narration {
+    font-size: 11px;
+  }
+  .ej-narration strong {
+    display: block;
+    margin: 0 0 2px;
+  }
   .ej-controls {
-    flex-direction: column;
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    gap: 15px;
+    margin-top: 14px;
+    padding-top: 14px;
   }
-
   .ej-buttons {
+    grid-column: 1 / -1;
     justify-content: center;
   }
-
-  .ej-chips {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 4px;
+  .ej-btn {
+    min-height: 40px;
+    padding: 8px 14px;
+    font-size: 12px;
   }
+  .ej-timeline {
+    min-width: 0;
+  }
+  .ej-progress {
+    max-width: 82px;
+  }
+  .ej-note {
+    text-align: left;
+    font-size: 9px;
+  }
+}
 
-  .ej-chip {
-    flex: none;
+@media print {
+  .ej-controls, .ej-scroll-hint {
+    display: none;
+  }
+  .ej-stage {
+    overflow: visible;
+  }
+  .ej-stage svg {
+    min-width: 0;
+  }
+}
+
+.ej-stage .ej-mobile-scene {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .ej-stage.has-mobile-scene .ej-desktop-scene {
+    display: none;
+  }
+  .ej-stage.has-mobile-scene .ej-mobile-scene {
+    display: block;
+    min-width: 0;
   }
 }
 </style>
 
 <style>
-/* 暗色主题 token：独立非 scoped 块，确保 html.dark 选择器原样输出。
-   .ej 类名为本组件独有，全局声明安全。 */
+/* SVG 场景继承这些变量；输入与输出在明暗主题中始终保持相同语义。 */
+
 html.dark .ej {
-  --ej-bg: #101828;
-  --ej-surface: #0c1424;
-  --ej-panel: #17223a;
-  --ej-line: #263450;
-  --ej-line-strong: #3b4d6d;
-  --ej-ink: #e6edf7;
-  --ej-ink-soft: #9aa8bf;
-  --ej-ink-faint: #64748b;
-  --ej-a: #22d3ee;
-  --ej-a-soft: rgba(34, 211, 238, 0.14);
-  --ej-b: #fbbf24;
-  --ej-b-soft: rgba(251, 191, 36, 0.15);
-  --ej-c: #f472b6;
-  --ej-c-soft: rgba(244, 114, 182, 0.15);
-  --ej-active: #818cf8;
-  --ej-active-soft: rgba(129, 140, 248, 0.14);
-  --ej-bad: #64748b;
-  --ej-bad-soft: rgba(100, 116, 139, 0.22);
-  --ej-shadow: rgba(0, 0, 0, 0.32);
+  --ej-bg: #0c1416;
+  --ej-surface: #101b1e;
+  --ej-panel: #172528;
+  --ej-line: #293b3e;
+  --ej-line-strong: #40565a;
+  --ej-ink: #edf4f2;
+  --ej-ink-soft: #a7b8b5;
+  --ej-ink-faint: #718782;
+  --ej-a: #65afdc;
+  --ej-a-soft: rgba(74, 155, 205, .20);
+  --ej-b: #e69b5d;
+  --ej-b-soft: rgba(221, 137, 67, .20);
+  --ej-c: #79cda0;
+  --ej-c-soft: rgba(94, 188, 139, .20);
+  --ej-active: #c7e4d7;
+  --ej-active-soft: rgba(199, 228, 215, .10);
+  --ej-on-active: #19372e;
+  --ej-bad: #6f8580;
+  --ej-bad-soft: rgba(111, 133, 128, .18);
+  --ej-shadow: rgba(0, 0, 0, .16);
 }
 </style>

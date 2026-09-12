@@ -39,6 +39,7 @@ export const sceneRegistry: Record<Scenario, RegisteredScene> = {
       eyebrow: '8.1 语义层 · Element-Wise',
       title: '位置 i 独立计算 C[i] = A[i] + B[i]',
       viewBox: '0 0 720 330',
+      mobileViewBox: '0 0 484 448',
       steps: dependencySteps
     }
   },

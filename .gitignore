@@ -32,6 +32,9 @@ bak/
 
 # WebP 由 scripts/png-to-webp.mjs 在构建时自动生成，不进仓库
 docs/**/images/**/*.webp
+# UI 主视觉直接以 WebP 入仓库，不由教程 PNG 构建生成
+!docs/public/images/ui/*.webp
+!docs/public/images/contributors/*.webp
 
 # 杂散的重复目录，不进仓库
 code/part3-agent 2/

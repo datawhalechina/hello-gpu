@@ -179,7 +179,7 @@ onUnmounted(() => {
 <style scoped>
 .implementation-tabs {
   --implementation-sticky-top: calc(var(--vp-layout-top-height, 0px) + var(--vp-nav-height, 64px));
-  margin: 24px 0 32px;
+  margin: 30px 0 36px;
   min-width: 0;
   overflow-anchor: none;
   scroll-margin-top: var(--implementation-sticky-top);
@@ -188,69 +188,68 @@ onUnmounted(() => {
   position: sticky;
   top: var(--implementation-sticky-top);
   z-index: 4;
-  padding: 10px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 64px;
+  padding: 8px 0 0;
   background: var(--vp-c-bg);
   border-bottom: 1px solid var(--vp-c-divider);
 }
 .implementation-tabbar {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 96px 96px;
   position: relative;
-  isolation: isolate;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 10px;
-  padding: 4px;
-  background: var(--vp-c-bg-soft);
+  flex: none;
 }
 .implementation-indicator {
   position: absolute;
-  inset: 4px auto 4px 4px;
-  width: calc((100% - 8px) / 2);
-  border-radius: 7px;
-  background: var(--vp-c-bg);
-  box-shadow: 0 1px 4px rgb(0 0 0 / 8%), inset 0 0 0 1px var(--vp-c-divider);
+  inset: auto auto -1px 0;
+  width: 96px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--vp-c-brand-1);
   transition: transform 180ms cubic-bezier(.2,.7,.2,1);
   pointer-events: none;
-  z-index: -1;
 }
 .implementation-tabbar[data-selected='triton'] .implementation-indicator { transform: translateX(100%); }
 .implementation-tabbar > button {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  min-height: 48px;
-  padding: 10px 12px;
+  min-height: 54px;
+  padding: 12px 18px;
   border: 0;
-  border-radius: 7px;
   background: transparent;
   color: var(--vp-c-text-2);
   cursor: pointer;
-  transition: color 160ms ease, background-color 160ms ease;
+  transition: color 160ms ease;
 }
-.implementation-tabbar > button:hover { color: var(--vp-c-brand-1); background: var(--vp-c-brand-soft); }
+.implementation-tabbar > button:hover { color: var(--vp-c-text-1); }
 .implementation-tabbar > button[aria-selected='true'] { color: var(--vp-c-brand-1); }
-.implementation-language { font-size: 15px; font-weight: 650; }
-.implementation-caption { font-size: 13px; }
-.implementation-context { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 37px; color: var(--vp-c-text-2); font-size: 12px; }
-.implementation-start { display: inline-flex; align-items: center; gap: 4px; padding: 7px 0 7px 8px; white-space: nowrap; color: var(--vp-c-text-2); cursor: pointer; }
+.implementation-language { font-size: 16px; font-weight: 650; letter-spacing: -.01em; }
+.implementation-caption { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.implementation-context { display: flex; align-items: center; justify-content: flex-end; gap: 20px; color: var(--vp-c-text-3); font-size: 11px; line-height: 1.5; }
+.implementation-start { display: inline-flex; align-items: center; gap: 6px; padding: 8px 0; white-space: nowrap; color: var(--vp-c-text-2); cursor: pointer; font-size: 12px; }
 .implementation-start:hover { color: var(--vp-c-brand-1); }
 .implementation-start svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-.implementation-tabbar button:focus-visible, .implementation-start:focus-visible { outline: 2px solid var(--vp-c-brand-1); outline-offset: -2px; }
-.implementation-panel { padding: 4px 0 12px; min-width: 0; scroll-margin-top: calc(var(--implementation-sticky-top) + 120px); }
+.implementation-tabbar button:focus-visible, .implementation-start:focus-visible { outline: 2px solid var(--vp-c-brand-1); outline-offset: -3px; border-radius: 3px; }
+.implementation-panel { padding: 10px 0 12px; min-width: 0; scroll-margin-top: calc(var(--implementation-sticky-top) + 88px); }
 .implementation-panel :deep(h3), .implementation-panel :deep(h4),
-.implementation-panel :deep(.figure), .implementation-panel :deep(.ej) { scroll-margin-top: calc(var(--implementation-sticky-top) + 120px); }
+.implementation-panel :deep(.figure), .implementation-panel :deep(.ej) { scroll-margin-top: calc(var(--implementation-sticky-top) + 88px); }
 .implementation-panel:focus-visible { outline: 2px solid var(--vp-c-brand-1); outline-offset: 4px; }
 .implementation-announcement { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 @media (min-width: 960px) and (max-width: 1279px) { .implementation-tabs { --implementation-sticky-top: calc(var(--vp-layout-top-height, 0px) + var(--vp-nav-height, 64px) + 48px); } }
-@media (max-width: 959px) { .implementation-tabs { --implementation-sticky-top: calc(var(--vp-layout-top-height, 0px) + 48px); } }
+@media (max-width: 959px) { .implementation-tabs { --implementation-sticky-top: calc(var(--vp-layout-top-height, 0px) + 58px); } }
 @media (max-width: 640px) {
-  .implementation-tabbar > button { flex-direction: column; gap: 1px; min-height: 58px; padding: 6px; }
-  .implementation-language { font-size: 14px; }
-  .implementation-caption { font-size: 11px; }
-  .implementation-context { font-size: 11px; }
-  .implementation-panel, .implementation-panel :deep(h3), .implementation-panel :deep(h4),
-  .implementation-panel :deep(.figure), .implementation-panel :deep(.ej) { scroll-margin-top: calc(var(--implementation-sticky-top) + 130px); }
+  .implementation-toolbar { gap: 12px; min-height: 58px; padding-top: 4px; }
+  .implementation-tabbar { grid-template-columns: 76px 76px; }
+  .implementation-indicator { width: 76px; }
+  .implementation-tabbar > button { min-height: 52px; padding: 12px; }
+  .implementation-language { font-size: 15px; }
+  .implementation-context > span { display: none; }
+  .implementation-start { font-size: 11px; }
 }
 @media (prefers-reduced-motion: reduce) { .implementation-indicator, .implementation-tabbar > button { transition: none; } }
 @media print {
