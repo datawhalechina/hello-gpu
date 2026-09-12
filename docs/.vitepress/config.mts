@@ -20,6 +20,7 @@ function prepareMathSvgTemplate(value: string) {
 
 const isEdgeOne = process.env.EDGEONE === '1'
 const baseConfig = isEdgeOne ? '/' : '/hello-gpu/'
+const configuredMarkdownRenderers = new WeakSet<object>()
 
 export default defineConfig({
   lang: 'zh-CN',
@@ -54,6 +55,11 @@ export default defineConfig({
   markdown: {
     math: true,
     config(md) {
+      // Client/server builds can initialize the same renderer concurrently.
+      // Register plugins and renderer wrappers only once on each instance.
+      if (configuredMarkdownRenderers.has(md)) return
+      configuredMarkdownRenderers.add(md)
+
       md.use(footnote)
       md.use(figurePlugin)
       md.use(editorialPlugin)

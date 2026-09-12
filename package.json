@@ -3,10 +3,11 @@
   "scripts": {
     "docs:sync-outline": "node docs/.vitepress/sync-outline.mjs",
     "docs:check-outline": "node docs/.vitepress/sync-outline.mjs --check",
+    "docs:check-chapter-ui": "node scripts/check-chapter-ui.mjs",
     "docs:build-images": "node scripts/png-to-webp.mjs",
     "docs:build-atlas": "node scripts/build-atlas.mjs",
     "docs:dev": "npm run docs:sync-outline && npm run docs:build-images && npm run docs:build-atlas && vitepress dev docs",
-    "docs:build": "npm run docs:sync-outline && npm run docs:build-images && npm run docs:build-atlas && vitepress build docs",
+    "docs:build": "npm run docs:sync-outline && npm run docs:build-images && npm run docs:build-atlas && vitepress build docs && npm run docs:check-chapter-ui",
     "docs:preview": "vitepress preview docs"
   },
   "dependencies": {
@@ -14,7 +15,7 @@
     "markdown-it-footnote": "^4.0.0",
     "markdown-it-mathjax3": "^4.3.2",
     "mermaid": "^11.14.0",
-    "vitepress": "^2.0.0-alpha.16",
+    "vitepress": "2.0.0-alpha.18",
     "vue": "^3.5.0"
   },
   "devDependencies": {
