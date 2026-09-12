@@ -406,8 +406,8 @@ export const chapterCount = chapters.length
 export const appendixCount = appendices.length
 
 export const navItems = [
-  { text: '首页', link: '/' },
-  { text: '全书目录', link: '/part0-intro/chapter0/' },
+  { text: '全书目录', link: '/curriculum/' },
+  { text: 'GPU 图谱', link: '/atlas/', activeMatch: '^/atlas/' },
   { text: '实验环境', link: '/part0-intro/chapter1/' },
   { text: 'AMD 云算力', link: '/cloud/' },
   { text: 'GitHub', link: 'https://github.com/datawhalechina/hello-gpu' },
@@ -417,7 +417,7 @@ export const sidebar = [
   ...parts.map((part) => ({
     text: part.readmeTitle,
     ...(part.landing ? { link: part.landing } : {}),
-    collapsed: false,
+    collapsed: true,
     items: chapters
       .filter((chapter) => chapter.part.prefix === part.prefix)
       .map((chapter) => ({
@@ -429,7 +429,7 @@ export const sidebar = [
     ? [
         {
           text: '附录',
-          collapsed: false,
+          collapsed: true,
           items: appendices.map((a) => ({
             text: a.title,
             link: a.path,
@@ -440,7 +440,7 @@ export const sidebar = [
   {
     text: 'AMD 云算力资源',
     link: '/cloud/',
-    collapsed: false,
+    collapsed: true,
     items: [
       { text: 'AMD Radeon Cloud', link: '/cloud/amd-radeon-cloud/' },
       { text: 'AUP Learning Cloud', link: '/cloud/aup-learning-cloud/' },

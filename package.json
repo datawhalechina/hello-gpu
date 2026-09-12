@@ -4,8 +4,9 @@
     "docs:sync-outline": "node docs/.vitepress/sync-outline.mjs",
     "docs:check-outline": "node docs/.vitepress/sync-outline.mjs --check",
     "docs:build-images": "node scripts/png-to-webp.mjs",
-    "docs:dev": "npm run docs:sync-outline && npm run docs:build-images && vitepress dev docs",
-    "docs:build": "npm run docs:sync-outline && npm run docs:build-images && vitepress build docs",
+    "docs:build-atlas": "node scripts/build-atlas.mjs",
+    "docs:dev": "npm run docs:sync-outline && npm run docs:build-images && npm run docs:build-atlas && vitepress dev docs",
+    "docs:build": "npm run docs:sync-outline && npm run docs:build-images && npm run docs:build-atlas && vitepress build docs",
     "docs:preview": "vitepress preview docs"
   },
   "dependencies": {
@@ -20,6 +21,6 @@
     "sharp": "^0.33.5"
   },
   "engines": {
-    "node": ">= 18.0.0"
+    "node": "^20.19.0 || >=22.12.0"
   }
 }

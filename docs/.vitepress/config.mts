@@ -1,6 +1,8 @@
 import { defineConfig } from 'vitepress'
+import { existsSync } from 'node:fs'
 import footnote from 'markdown-it-footnote'
 import figurePlugin from './markdown-figures.mjs'
+import editorialPlugin from './markdown-editorial.mjs'
 import { navItems, sidebar } from './outline.mjs'
 
 function encodeMermaid(value: string) {
@@ -26,12 +28,18 @@ export default defineConfig({
   base: baseConfig,
 
   cleanUrls: true,
+  appearance: 'dark',
 
   transformPageData(pageData) {
     // Keep the shared algorithm and experiment sections in the outline;
     // language-specific subheadings live inside implementation tabs.
     if (pageData.relativePath.startsWith('part2-kernels/')) {
       pageData.frontmatter.outline = [2, 2]
+    }
+    if (/^part\d[^/]*\/chapter\d+\//.test(pageData.relativePath)) {
+      pageData.frontmatter.pageClass = 'hg-chapter'
+      const codePath = pageData.relativePath.replace(/\/index\.md$/, '/')
+      pageData.frontmatter.hasChapterCode = existsSync(new URL(`../../code/${codePath}`, import.meta.url))
     }
   },
 
@@ -48,6 +56,7 @@ export default defineConfig({
     config(md) {
       md.use(footnote)
       md.use(figurePlugin)
+      md.use(editorialPlugin)
 
       // VitePress 2 alpha lowercases MathJax's static SVG viewBox while
       // compiling Markdown. Bind it explicitly so Vue preserves the
@@ -110,13 +119,18 @@ export default defineConfig({
 
   themeConfig: {
     nav: navItems,
+    sidebarMenuLabel: '全书目录',
+    returnToTopLabel: '返回顶部',
+    darkModeSwitchLabel: '外观',
+    lightModeSwitchTitle: '切换至浅色',
+    darkModeSwitchTitle: '切换至深色',
 
     search: {
       provider: 'local',
       options: {
         translations: {
           button: {
-            buttonText: '搜索文档',
+            buttonText: '搜索章节、算子关键词…',
             buttonAriaLabel: '搜索文档',
           },
           modal: {
@@ -133,9 +147,6 @@ export default defineConfig({
 
     sidebar,
 
-    socialLinks: [
-      { icon: 'github', link: 'https://github.com/datawhalechina/hello-gpu' },
-    ],
 
     editLink: {
       pattern: 'https://github.com/datawhalechina/hello-gpu/blob/dev/docs/:path',
@@ -144,7 +155,7 @@ export default defineConfig({
 
     outline: {
       level: [1, 3],
-      label: '本章目录',
+      label: '本页目录',
     },
 
     footer: {

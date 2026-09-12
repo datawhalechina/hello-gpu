@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><meta name="theme-color" content="#0c0f10"/><meta name="description" content="从 Tesla 到 Blackwell：探索 NVIDIA GPU 的演进、性能与微观架构。交互式 3D 显卡与芯片架构图谱。"/><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%23101211%27/%3E%3Crect x=%278%27 y=%278%27 width=%2716%27 height=%2716%27 fill=%27%23a3e635%27/%3E%3Crect x=%2712%27 y=%2712%27 width=%278%27 height=%278%27 fill=%27%23101211%27/%3E%3C/svg%3E"/><title>NVIDIA GPU 图谱 | Hello GPU</title><script>
+// Run before styles and React so a saved day theme never flashes dark.
+(() => {
+  let preference = 'dark';
+  try { preference = localStorage.getItem('vitepress-theme-appearance') || 'dark'; } catch {}
+  const dark = preference === 'dark' || (preference === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches) || !['light', 'dark', 'auto'].includes(preference);
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  document.documentElement.classList.toggle('dark', dark);
+  document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+  document.documentElement.style.backgroundColor = dark ? '#101213' : '#ffffff';
+  document.querySelector('meta[name="theme-color"]').content = dark ? '#101213' : '#ffffff';
+})();
+</script></head><body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body></html>

@@ -1,0 +1,59 @@
+.archive-preview-art {
+  position: relative;
+  display: block;
+  isolation: isolate;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  aspect-ratio: 31 / 11;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 54% 97%, rgb(42 74 76 / 23%), transparent 69%),
+    linear-gradient(135deg, var(--atlas-day-surface, #0b1519), var(--atlas-day-surface, #071014) 78%);
+}
+
+.archive-preview-art > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: "IBM Plex Mono", monospace;
+}
+
+.archive-preview-art--topology {
+  background:
+    radial-gradient(ellipse at 45% 91%, var(--atlas-day-surface, #152b2c) 0, transparent 67%),
+    linear-gradient(125deg, var(--atlas-day-surface, #0b171b), var(--atlas-day-surface, #080f12));
+}
+
+.archive-preview-art--compute {
+  background:
+    radial-gradient(ellipse at 50% 100%, var(--atlas-day-surface, #17332e), transparent 65%),
+    var(--atlas-day-surface, #071014);
+}
+
+.archive-preview-art--performance {
+  background:
+    radial-gradient(ellipse at 79% 44%, rgb(37 66 65 / 28%), transparent 58%),
+    linear-gradient(140deg, var(--atlas-day-surface, #0c181c), var(--atlas-day-surface, #081114));
+}
+
+.archive-preview-art--documents {
+  background:
+    radial-gradient(ellipse at 64% 91%, var(--atlas-day-surface, #172a2c), transparent 68%),
+    var(--atlas-day-surface, #070f13);
+}
+
+.archive-preview-art--documents text {
+  font-family: Arial, sans-serif;
+}
+
+.archive-preview-art__shade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(0deg, rgb(4 11 14 / 27%), transparent 32%, transparent 85%, rgb(4 11 14 / 12%)),
+    linear-gradient(90deg, rgb(4 11 14 / 22%), transparent 12%, transparent 92%, rgb(4 11 14 / 21%));
+}

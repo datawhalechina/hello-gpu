@@ -1,0 +1,32 @@
+{
+  "name": "nvidia-architecture-atlas",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test:semantics": "node tests/sm-semantics.mjs",
+    "test:layout": "node tests/open-canvas.mjs",
+    "test:dark-entry": "node tests/dark-entry.mjs",
+    "test:topology": "node tests/topology-page.mjs",
+    "test:performance": "node tests/performance-page.mjs",
+    "test:milestones": "node tests/milestones-page.mjs"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "three": "^0.180.0",
+    "motion": "^12.23.0",
+    "@phosphor-icons/react": "^2.1.10",
+    "@fontsource-variable/space-grotesk": "^5.2.8",
+    "@fontsource/ibm-plex-mono": "^5.2.7"
+  },
+  "devDependencies": {
+    "vite": "^7.1.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "vite-plugin-singlefile": "^2.3.0",
+    "@playwright/test": "^1.55.0"
+  }
+}

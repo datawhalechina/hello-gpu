@@ -1,0 +1,59 @@
+.topology-diagram {
+  display: block;
+  overflow: visible;
+  font-family: 'IBM Plex Mono', 'SFMono-Regular', Consolas, 'PingFang SC', sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+  shape-rendering: geometricPrecision;
+  text-rendering: optimizeLegibility;
+}
+.topology-diagram text { pointer-events: none; }
+.topology-diagram .td-control { cursor: pointer; outline: none; -webkit-tap-highlight-color: transparent; }
+.topology-diagram .td-module-outline { transition: stroke .16s ease, stroke-width .16s ease, filter .16s ease; }
+.topology-diagram .td-control:hover > .td-module-outline,
+.topology-diagram .td-control:hover > g > .td-module-outline { stroke: #a3c992; stroke-width: 1.35px; }
+.topology-diagram .td-control.is-selected > .td-module-outline,
+.topology-diagram .td-control.is-selected > g > .td-module-outline { stroke: #b5e774; stroke-width: 1.4px; }
+.topology-diagram .td-control:focus-visible > .td-module-outline,
+.topology-diagram .td-control:focus-visible > g > .td-module-outline {
+  stroke: #e1ffb6;
+  stroke-width: 2.3px;
+  filter: drop-shadow(0 0 3px #b8ec7180);
+}
+.topology-diagram .td-cluster.is-selected > .td-module-outline { filter: drop-shadow(0 0 2px #a8d86d44); }
+.topology-diagram .td-metal-corners { fill: none; stroke: #79946b; stroke-width: .8px; opacity: .65; }
+.topology-diagram .td-chip-name { fill: #f1f6ef; font-family: 'Space Grotesk Variable', 'Space Grotesk', Arial, sans-serif; font-size: 27px; font-weight: 650; letter-spacing: -.75px; }
+.topology-diagram .td-header-architecture { fill: #becdc6; font-size: 11px; letter-spacing: .6px; }
+.topology-diagram .td-header-facts { fill: #d3ddd6; font-size: 11px; letter-spacing: -.15px; }
+.topology-diagram .td-cluster-name { fill: #edf3e8; font-size: 11.5px; letter-spacing: .35px; }
+.topology-diagram .td-cluster-count { fill: #d1decb; font-size: 11px; letter-spacing: .25px; }
+.topology-diagram .td-cluster.is-selected .td-cluster-count { fill: #e3f0d3; }
+.topology-diagram .td-port-label { fill: #a7b8b5; font-size: 11px; letter-spacing: .2px; }
+.topology-diagram .td-port.is-selected .td-port-label { fill: #c5e7aa; }
+.topology-diagram .td-cache-label { fill: #e3ede1; font-size: 12.5px; letter-spacing: .1px; }
+.topology-diagram .td-memory-label { fill: #c0d1c9; font-size: 11px; letter-spacing: .05px; }
+.topology-diagram .td-sm-wiring path { fill: none; stroke: #527850; stroke-width: .75px; stroke-opacity: .56; }
+.topology-diagram .td-scheduler-title { fill: #d8e8d0; font-size: 11px; letter-spacing: -.2px; }
+.topology-diagram .td-scheduler-detail { fill: #9bbd8e; font-size: 11px; letter-spacing: .4px; }
+.topology-diagram .td-storage-label { fill: #d0dfce; font-size: 11px; letter-spacing: .15px; }
+.topology-diagram .td-register-count { fill: #cedfc7; font-size: 12px; }
+.topology-diagram .td-partition-label { fill: #cfdfc7; font-size: 11px; letter-spacing: .2px; }
+.topology-diagram .td-core-value { fill: #d5e9c8; font-family: 'Space Grotesk Variable', 'Space Grotesk', Arial, sans-serif; font-weight: 650; font-size: 25px; }
+.topology-diagram .td-core-label { fill: #d9ead0; font-size: 11px; font-weight: 500; letter-spacing: -.15px; }
+.topology-diagram .td-core-detail { fill: #d9ead0; font-size: 11px; }
+.topology-diagram .td-core-value.is-lit,
+.topology-diagram .td-core-label.is-lit,
+.topology-diagram .td-core-detail.is-lit { fill: #1b3215; }
+.topology-diagram .td-integer-label { fill: #b9d1ab; font-size: 11.5px; letter-spacing: .1px; }
+.topology-diagram .td-resource-label { fill: #c7d9bf; font-size: 11px; letter-spacing: .35px; }
+.topology-diagram .td-resource-value { fill: #e1eed8; font-family: 'Space Grotesk Variable', 'Space Grotesk', 'PingFang SC', sans-serif; font-size: 22px; font-weight: 550; }
+.topology-diagram .td-resource-value-small { font-size: 16px; }
+.topology-diagram .td-resource-caption { fill: #96b58d; font-size: 11px; }
+.topology-diagram .td-resource.is-selected .td-resource-value { fill: #c4ed90; }
+.topology-diagram .td-shared-capacity { fill: #dae9d2; font-size: 12px; }
+.topology-diagram .td-shared-detail { fill: #b4ccab; font-size: 11px; }
+.topology-diagram .td-load-store { fill: #aec8a5; font-size: 11px; }
+.topology-diagram.td-hide-labels .td-label { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .topology-diagram .td-module-outline { transition: none; }
+}

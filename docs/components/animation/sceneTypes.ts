@@ -24,5 +24,7 @@ export interface SceneMeta {
   title: string
   /** 舞台 viewBox，如 '0 0 720 400' */
   viewBox: string
+  /** Optional stacked composition for narrow screens. */
+  mobileViewBox?: string
   steps: SceneStep[]
 }

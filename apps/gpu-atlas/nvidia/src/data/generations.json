@@ -1,0 +1,802 @@
+[
+  {
+    "id": "tesla",
+    "name": "Tesla",
+    "year": 2006,
+    "productYear": 2006,
+    "product": "GeForce 8800 GTX",
+    "card": "GeForce 8800 GTX",
+    "chip": "G80",
+    "category": "消费级",
+    "process": "90 nm",
+    "transistors": 0.681,
+    "cores": 128,
+    "memory": "768 MB",
+    "memoryType": "GDDR3",
+    "bandwidth": 86.4,
+    "fp32": null,
+    "power": null,
+    "sm": 16,
+    "smLabel": "SM",
+    "gpc": null,
+    "fullSm": 16,
+    "fullGpc": null,
+    "tagline": "统一着色，计算觉醒",
+    "description": "顶点与像素处理汇入同一套可编程流处理器。G80 把显卡从固定图形流水线带向通用并行计算，成为 CUDA 时代的起点。",
+    "architecture": "G80 采用 8 个 TPC，每个 TPC 组织 2 个 SM，共 16 个 SM 和 128 个流处理器。每 SM 有 8 个 SP、2 个 SFU、32 KB 寄存器和 16 KB 共享存储。G80 没有后来 Fermi 引入的通用 L1 / 统一 L2；纹理与常量缓存仍然存在。",
+    "innovations": [
+      "统一着色架构",
+      "CUDA 通用计算",
+      "DirectX 10 几何着色"
+    ],
+    "smParts": [
+      {
+        "name": "流处理器",
+        "detail": "每个 SM 含 8 个标量流处理器，执行统一着色程序。"
+      },
+      {
+        "name": "线程调度",
+        "detail": "大量线程交替执行，以其他线程的计算隐藏访存等待。"
+      },
+      {
+        "name": "共享存储",
+        "detail": "线程可借助片上共享数据协作，奠定 CUDA 编程模型。"
+      },
+      {
+        "name": "纹理与显存",
+        "detail": "纹理缓存和六组显存分区服务图形流水线与数据读取。"
+      }
+    ],
+    "sources": [
+      {
+        "title": "NVIDIA GeForce 8800 架构技术简报",
+        "url": "https://www.nvidia.com/content/PDF/Geforce_8800/GeForce_8800_GPU_Architecture_Technical_Brief.pdf"
+      },
+      {
+        "title": "NVIDIA NVISION 2008 向量计算演讲",
+        "url": "https://www.nvidia.com/content/nvision2008/tech_presentations/NVIDIA_Research_Summit/NVISION08-Rise_of_the_Commodity_Vectors.pdf"
+      },
+      {
+        "title": "NVIDIA Fermi 白皮书：G80 对照表",
+        "url": "https://www.nvidia.com/content/pdf/fermi_white_papers/nvidia_fermi_compute_architecture_whitepaper.pdf"
+      }
+    ],
+    "note": "Tesla 此处指 G80 架构谱系，不是后来的 Tesla 加速卡品牌。早期 518 GFLOPS 包含特殊指令吞吐口径，本展馆不将其作为 FP32 对比值；功耗缺少本次可访问的官方原始规格，因此暂不列数值。",
+    "diagramNote": "依据 NVIDIA 公开框图重建逻辑层级与单元数量；模块面积、位置、布线与封装细节不代表实测物理版图。",
+    "coreLabel": "流处理器",
+    "transistorsUnit": "B",
+    "bandwidthUnit": "GB/s",
+    "tensorGeneration": 0,
+    "rtGeneration": 0,
+    "fullChipSm": 16,
+    "fullClusters": 8,
+    "clusterLabel": "TPC"
+  },
+  {
+    "id": "fermi",
+    "name": "Fermi",
+    "year": 2009,
+    "productYear": 2010,
+    "product": "GeForce GTX 480",
+    "card": "GeForce GTX 480",
+    "chip": "GF100",
+    "category": "消费级",
+    "process": "TSMC 40 nm",
+    "transistors": 3,
+    "cores": 480,
+    "memory": "1.5 GB",
+    "memoryType": "GDDR5",
+    "bandwidth": 177.4,
+    "fp32": 1.344,
+    "power": 250,
+    "sm": 15,
+    "smLabel": "SM",
+    "gpc": 4,
+    "fullSm": 16,
+    "fullGpc": 4,
+    "tagline": "为通用计算重构 GPU",
+    "description": "Fermi 把缓存、线程协作与更完整的浮点计算带入核心设计。图形端通过并行几何处理提升细分能力，计算端向 HPC 迈进。",
+    "architecture": "完整 GF100 以 4 个 GPC 组织 16 个 SM，每个 SM 配置 32 个 CUDA 核心；GTX 480 启用其中 15 个 SM。统一 L2 与可配置 L1／共享存储支持更复杂的数据访问。图示不代表物理版图。",
+    "innovations": [
+      "分层缓存体系",
+      "并行几何细分",
+      "计算与图形协同"
+    ],
+    "smParts": [
+      {
+        "name": "CUDA 核心",
+        "detail": "每 SM 32 个 CUDA 核心，每核包含 FP 与 INT 运算资源；支持 FP64，不另画成独立的 16 核阵列。"
+      },
+      {
+        "name": "双 Warp 调度器",
+        "detail": "2 个 Warp 调度器与 2 个 dispatch；共享 128 KB 寄存器文件，不是 Maxwell 式独立四分区。"
+      },
+      {
+        "name": "共享存储 / L1",
+        "detail": "每 SM 的 64 KB 片上空间可在共享存储与 L1 间配置。"
+      },
+      {
+        "name": "PolyMorph 引擎",
+        "detail": "每个 SM 关联几何处理单元，支持硬件曲面细分。"
+      }
+    ],
+    "sources": [
+      {
+        "title": "NVIDIA GTX 400 架构介绍",
+        "url": "https://www.nvidia.com/en-us/drivers/GTX-400-architecture/"
+      },
+      {
+        "title": "NVIDIA GTX 400 产品资料",
+        "url": "https://www.nvidia.com/docs/IO/90025/GTX_480-470_Web_Datasheet.Final3.pdf"
+      },
+      {
+        "title": "NVIDIA Fermi 计算架构白皮书",
+        "url": "https://www.nvidia.com/content/pdf/fermi_white_papers/nvidia_fermi_compute_architecture_whitepaper.pdf"
+      },
+      {
+        "title": "NVIDIA 2009 年新闻存档：Fermi 发布",
+        "url": "https://www.nvidia.com/en-us/drivers/pg-57689/"
+      }
+    ],
+    "note": "Fermi 于 2009 年公布，GTX 480 于 2010 年推出。FP32 按 480 核心 × 1.4 GHz 着色时钟 × 2 计算。旧型号部分规格的官方网页已失效，177.4 GB/s 与 250 W 待原始规格表进一步复核。",
+    "diagramNote": "依据 NVIDIA 公开框图重建逻辑层级与单元数量；模块面积、位置、布线与封装细节不代表实测物理版图。",
+    "coreLabel": "CUDA 核心",
+    "transistorsUnit": "B",
+    "bandwidthUnit": "GB/s",
+    "tensorGeneration": 0,
+    "rtGeneration": 0,
+    "fullChipSm": 16
+  },
+  {
+    "id": "kepler",
+    "name": "Kepler",
+    "year": 2012,
+    "productYear": 2012,
+    "product": "GeForce GTX 680",
+    "card": "GeForce GTX 680",
+    "chip": "GK104",
+    "category": "消费级",
+    "process": "28 nm",
+    "transistors": 3.54,
+    "cores": 1536,
+    "memory": "2 GB",
+    "memoryType": "GDDR5",
+    "bandwidth": 192.26,
+    "fp32": 3.09,
+    "power": 195,
+    "sm": 8,
+    "smLabel": "SMX",
+    "gpc": 4,
+    "fullSm": 8,
+    "fullGpc": 4,
+    "tagline": "更多并行，更高能效",
+    "description": "Kepler 将 SM 扩展为 192 核心的 SMX，取消独立的高频着色时钟。更多计算单元在更节能的节奏中运行，GPU Boost 开始动态释放性能。",
+    "architecture": "GK104 由 4 个 GPC 构成，每组包含 2 个 SMX，共 8 个 SMX、1,536 个 CUDA 核心。四组 64-bit 显存控制器连接 512 KB L2。SMX 的大规模执行阵列依靠四个 Warp 调度器供给。",
+    "innovations": [
+      "192 核心 SMX",
+      "GPU Boost 动态频率",
+      "能效优先的执行设计"
+    ],
+    "smParts": [
+      {
+        "name": "CUDA 阵列",
+        "detail": "每 SMX 192 个 CUDA 核心；共享 256 KB 寄存器文件，执行资源不是六套独立调度分区。"
+      },
+      {
+        "name": "Warp 调度器",
+        "detail": "4 个 Warp 调度器、8 个 dispatch，并有 32 个 LD/ST 与 32 个 SFU。GK104 保留低吞吐 FP64 支持。"
+      },
+      {
+        "name": "共享存储 / L1",
+        "detail": "64 KB 片上存储支持不同共享存储与缓存配置。"
+      },
+      {
+        "name": "纹理单元",
+        "detail": "每 SMX 含 16 个纹理单元，与计算资源共同组成图形工作块。"
+      }
+    ],
+    "sources": [
+      {
+        "title": "NVIDIA GTX 680 Kepler 白皮书",
+        "url": "https://www.nvidia.com/content/pdf/product-specifications/geforce_gtx_680_whitepaper_final.pdf"
+      },
+      {
+        "title": "NVIDIA Kepler 首发公告",
+        "url": "https://nvidianews.nvidia.com/news/nvidia-launches-first-geforce-gpus-based-on-next-generation-kepler-architecture-6622805"
+      }
+    ],
+    "note": "采用参考 GTX 680 参数；3.09 TFLOPS 使用基础时钟 1,006 MHz，Boost 状态理论值更高。SMX 与后续 SM 的结构及每核性能不能只按核心数直接比较。",
+    "diagramNote": "依据 NVIDIA 公开框图重建逻辑层级与单元数量；模块面积、位置、布线与封装细节不代表实测物理版图。",
+    "coreLabel": "CUDA 核心",
+    "transistorsUnit": "B",
+    "bandwidthUnit": "GB/s",
+    "tensorGeneration": 0,
+    "rtGeneration": 0,
+    "fullChipSm": 8
+  },
+  {
+    "id": "maxwell",
+    "name": "Maxwell",
+    "year": 2014,
+    "productYear": 2014,
+    "product": "GeForce GTX 980",
+    "card": "GeForce GTX 980",
+    "chip": "GM204",
+    "category": "消费级",
+    "process": "28 nm",
+    "transistors": 5.2,
+    "cores": 2048,
+    "memory": "4 GB",
+    "memoryType": "GDDR5",
+    "bandwidth": 224.3,
+    "fp32": 4.612,
+    "power": 165,
+    "sm": 16,
+    "smLabel": "SMM",
+    "gpc": 4,
+    "fullSm": 16,
+    "fullGpc": 4,
+    "tagline": "把效率刻进每个分区",
+    "description": "Maxwell 将大型 SMX 拆分成更紧凑的 SMM。四个独立调度分区减少执行资源争用，用更精细的控制和更大的缓存提升能效。",
+    "architecture": "GM204 包含 4 个 GPC、16 个 SMM，每个 SMM 分成四组 32 核心的执行分区。芯片配置 2 MB L2，并为每 SMM 提供 96 KB 专用共享存储。分区设计提升每个核心的有效利用率。",
+    "innovations": [
+      "四分区 SMM",
+      "更大 L2 与共享存储",
+      "颜色压缩降低流量"
+    ],
+    "smParts": [
+      {
+        "name": "四组执行分区",
+        "detail": "每 SM 128 个 FP32 CUDA 核心，另有 4 个低吞吐 FP64 单元；整数与浮点共享 CUDA 执行通路。"
+      },
+      {
+        "name": "独立调度",
+        "detail": "4 个 Warp 调度器、8 个 dispatch；四分区各配 32 个 CUDA 核心与 64 KB 寄存器。"
+      },
+      {
+        "name": "专用共享存储",
+        "detail": "每 SMM 96 KB 共享存储，支持更灵活的线程块协作。"
+      },
+      {
+        "name": "纹理与缓存",
+        "detail": "纹理和 L1 组织配合更大的全芯片 L2，减少外部显存访问。"
+      }
+    ],
+    "sources": [
+      {
+        "title": "NVIDIA Maxwell 微架构深入介绍",
+        "url": "https://developer.nvidia.com/blog/maxwell-most-advanced-cuda-gpu-ever-made/"
+      },
+      {
+        "title": "NVIDIA GTX 1080 / GTX 980 官方参数对照",
+        "url": "https://www.nvidia.com/en-us/geforce/news/geforce-gtx-1080-gaming-perfected/"
+      }
+    ],
+    "note": "代表第二代 Maxwell 的 GM204；首代 GM107 同样发布于 2014 年。4.612 TFLOPS 为基础时钟峰值，165 W 为参考设计 TDP。",
+    "diagramNote": "依据 NVIDIA 公开框图重建逻辑层级与单元数量；模块面积、位置、布线与封装细节不代表实测物理版图。",
+    "coreLabel": "CUDA 核心",
+    "transistorsUnit": "B",
+    "bandwidthUnit": "GB/s",
+    "tensorGeneration": 0,
+    "rtGeneration": 0,
+    "fullChipSm": 16
+  },
+  {
+    "id": "pascal",
+    "name": "Pascal",
+    "year": 2016,
+    "productYear": 2017,
+    "product": "GeForce GTX 1080 Ti",
+    "card": "GeForce GTX 1080 Ti",
+    "chip": "GP102",
+    "category": "消费级",
+    "process": "TSMC 16 nm FinFET",
+    "transistors": 12,
+    "cores": 3584,
+    "memory": "11 GB",
+    "memoryType": "GDDR5X",
+    "bandwidth": 484,
+    "fp32": 11.3,
+    "power": 250,
+    "sm": 28,
+    "smLabel": "SM",
+    "gpc": 6,
+    "fullSm": 30,
+    "fullGpc": 6,
+    "tagline": "FinFET 点燃性能跃迁",
+    "description": "Pascal 跨入 FinFET 工艺时代，提升核心规模与频率。GTX 1080 Ti 将大芯片、GDDR5X 和更高效的内存压缩组合，面向高分辨率图形。",
+    "architecture": "完整 GP102 具有 6 个 GPC、30 个 SM；GTX 1080 Ti 启用 28 个 SM，共 3,584 个 CUDA 核心。每 SM 128 核心，显存接口为 352-bit。消费级 GP102 的结构不同于计算型 GP100。",
+    "innovations": [
+      "16 nm FinFET",
+      "11 Gbps GDDR5X",
+      "同时多重投影"
+    ],
+    "smParts": [
+      {
+        "name": "CUDA 核心",
+        "detail": "每 SM 128 个 FP32 CUDA 核心，另有 4 个低吞吐 FP64 单元；整数与浮点共享 CUDA 执行通路。"
+      },
+      {
+        "name": "Warp 调度",
+        "detail": "4 个 Warp 调度器、8 个 dispatch；四分区各配 32 个 CUDA 核心与 64 KB 寄存器。"
+      },
+      {
+        "name": "共享存储",
+        "detail": "每 SM 96 KB 专用共享存储；纹理 / L1 缓存单独组织。"
+      },
+      {
+        "name": "几何与纹理",
+        "detail": "PolyMorph 引擎支持同时多重投影，服务多屏与 VR 视角。"
+      }
+    ],
+    "sources": [
+      {
+        "title": "NVIDIA GTX 1080 Ti 首发公告",
+        "url": "https://nvidianews.nvidia.com/news/nvidia-introduces-the-beastly-geforce-gtx-1080-ti-fastest-gaming-gpu-ever"
+      },
+      {
+        "title": "NVIDIA Pascal GP102 / Turing TU102 架构对照",
+        "url": "https://developer.nvidia.com/blog/?p=11872"
+      },
+      {
+        "title": "NVIDIA Pascal GTX 1080 官方技术介绍",
+        "url": "https://www.nvidia.com/en-us/geforce/news/geforce-gtx-1080-gaming-perfected/"
+      }
+    ],
+    "note": "Pascal 架构首发于 2016 年；本页代表卡 GTX 1080 Ti 为 2017 年产品。11.3 TFLOPS 按官方 Boost 口径；HBM2 与 NVLink 属于该代的计算产品，不能套用于 GP102。",
+    "diagramNote": "依据 NVIDIA 公开框图重建逻辑层级与单元数量；模块面积、位置、布线与封装细节不代表实测物理版图。",
+    "coreLabel": "CUDA 核心",
+    "transistorsUnit": "B",
+    "bandwidthUnit": "GB/s",
+    "tensorGeneration": 0,
+    "rtGeneration": 0,
+    "fullChipSm": 30
+  },
+  {
+    "id": "volta",
+    "name": "Volta",
+    "year": 2017,
+    "productYear": 2017,
+    "product": "Tesla V100 PCIe 16GB",
+    "card": "Tesla V100 PCIe 16GB",
+    "chip": "GV100",
+    "category": "数据中心",
+    "process": "TSMC 12 nm FFN",
+    "transistors": 21.1,
+    "cores": 5120,
+    "memory": "16 GB",
+    "memoryType": "HBM2",
+    "bandwidth": 900,
+    "fp32": 14,
+    "power": 250,
+    "sm": 80,
+    "smLabel": "SM",
+    "gpc": 6,
+    "fullSm": 84,
+    "fullGpc": 6,
+    "tagline": "Tensor Core，AI 的新引擎",
+    "description": "Volta 在 SM 内引入专门的 Tensor Core，将矩阵乘加交给专用硬件。独立线程调度和整数、浮点并行通路让 GPU 更适合复杂计算。",
+    "architecture": "完整 GV100 配置 84 个 SM，V100 PCIe 启用 80 个。每 SM 包含 64 个 FP32 核心、64 个 INT32 核心、32 个 FP64 核心及 8 个 Tensor Core。HBM2 通过封装内宽接口供数，PCIe 3.0 x16 连接主机。",
+    "innovations": [
+      "第一代 Tensor Core",
+      "独立线程调度",
+      "浮点整数并行通路"
+    ],
+    "smParts": [
+      {
+        "name": "FP32 / INT32",
+        "detail": "独立执行通路可同时处理浮点计算与整数地址运算。"
+      },
+      {
+        "name": "Tensor Core",
+        "detail": "每 SM 8 个 Tensor Core，执行 FP16 输入、FP32 累加矩阵运算。"
+      },
+      {
+        "name": "调度与寄存器",
+        "detail": "四个处理分区配合独立线程调度，更灵活地处理同步和分歧。"
+      },
+      {
+        "name": "L1 / 共享存储",
+        "detail": "每 SM 128 KB 联合数据缓存与共享存储空间。"
+      }
+    ],
+    "sources": [
+      {
+        "title": "NVIDIA Tesla V100 PCIe 产品简报",
+        "url": "https://images.nvidia.com/content/tesla/pdf/Tesla-V100-PCIe-Product-Brief.pdf"
+      },
+      {
+        "title": "NVIDIA Volta 架构白皮书",
+        "url": "https://www.nvidia.com/content/dam/en-zz/Solutions/Data-Center/tesla-product-literature/volta-architecture-whitepaper.pdf"
+      },
+      {
+        "title": "NVIDIA V100 产品数据表",
+        "url": "https://images.nvidia.com/content/technologies/volta/pdf/volta-v100-datasheet-update-us-1165301-r5.pdf?ncid=no-ncid"
+      }
+    ],
+    "note": "参数对应 Tesla V100 PCIe 16GB：14 TFLOPS FP32、900 GB/s、250 W；不混用 SXM2 的 15.7 TFLOPS 与 300 W，也不混用 V100S 或 32GB 型号。该 PCIe 版本没有 NVLink 桥接口。",
+    "diagramNote": "依据 NVIDIA 公开框图重建逻辑层级与单元数量；模块面积、位置、布线与封装细节不代表实测物理版图。",
+    "coreLabel": "CUDA 核心",
+    "transistorsUnit": "B",
+    "bandwidthUnit": "GB/s",
+    "tensorGeneration": 1,
+    "rtGeneration": 0,
+    "fullChipSm": 84,
+    "formFactor": "PCIe"
+  },
+  {
+    "id": "turing",
+    "name": "Turing",
+    "year": 2018,
+    "productYear": 2018,
+    "product": "GeForce RTX 2080 Ti FE",
+    "card": "GeForce RTX 2080 Ti FE",
+    "chip": "TU102",
+    "category": "消费级",
+    "process": "TSMC 12 nm FFN",
+    "transistors": 18.6,
+    "cores": 4352,
+    "memory": "11 GB",
+    "memoryType": "GDDR6",
+    "bandwidth": 616,
+    "fp32": 14.2,
+    "power": 260,
+    "sm": 68,
+    "smLabel": "SM",
+    "gpc": 6,
+    "fullSm": 72,
+    "fullGpc": 6,
+    "tagline": "实时光追，进入 RTX 时代",
+    "description": "Turing 将 RT Core 与 Tensor Core 带到游戏显卡，形成着色、光线追踪与 AI 协同渲染。GPU 从单一着色吞吐走向多种专用引擎配合。",
+    "architecture": "完整 TU102 为 6 个 GPC、72 个 SM；RTX 2080 Ti 启用 68 个 SM。每 SM 集成 64 个 FP32 核心、64 个 INT32 核心、8 个 Tensor Core 与 1 个 RT Core。显存为 352-bit GDDR6。",
+    "innovations": [
+      "第一代 RT Core",
+      "AI 辅助渲染",
+      "浮点与整数并发"
+    ],
+    "smParts": [
+      {
+        "name": "CUDA 通路",
+        "detail": "64 FP32 与 64 INT32 为独立并发通路；另有 2 个低吞吐 FP64 核心，不因主框图省略而记为零。"
+      },
+      {
+        "name": "Tensor Core",
+        "detail": "每 SM 8 个第二代 Tensor Core，支持 AI 推理与低精度矩阵计算。"
+      },
+      {
+        "name": "RT Core",
+        "detail": "每 SM 1 个 RT Core，加速 BVH 遍历与光线三角形求交。"
+      },
+      {
+        "name": "L1 / 共享存储",
+        "detail": "每 SM 96 KB 统一空间，在缓存与线程协作之间分配。"
+      }
+    ],
+    "sources": [
+      {
+        "title": "NVIDIA Turing 架构白皮书",
+        "url": "https://images.nvidia.com/aem-dam/Solutions/design-visualization/technologies/turing-architecture/NVIDIA-Turing-Architecture-Whitepaper.pdf"
+      },
+      {
+        "title": "NVIDIA RTX 2080 Ti 官方规格",
+        "url": "https://www.nvidia.com/content/nvidiaGDC/zz/en_ZZ/geforce/graphics-cards/rtx-2080-ti.html"
+      }
+    ],
+    "note": "采用 Founders Edition 的 14.2 TFLOPS 与 260 W 口径；参考非 FE 型号为约 13.4 TFLOPS、250 W。RTX-OPS、光追性能及 Tensor FLOPS 不混入 FP32 指标。",
+    "diagramNote": "依据 NVIDIA 公开框图重建逻辑层级与单元数量；模块面积、位置、布线与封装细节不代表实测物理版图。",
+    "coreLabel": "CUDA 核心",
+    "transistorsUnit": "B",
+    "bandwidthUnit": "GB/s",
+    "tensorGeneration": 2,
+    "rtGeneration": 1,
+    "fullChipSm": 72
+  },
+  {
+    "id": "ampere",
+    "name": "Ampere",
+    "year": 2020,
+    "productYear": 2021,
+    "product": "A100 PCIe 80GB",
+    "card": "A100 PCIe 80GB",
+    "chip": "GA100",
+    "category": "数据中心",
+    "process": "TSMC 7 nm N7",
+    "transistors": 54.2,
+    "cores": 6912,
+    "memory": "80 GB",
+    "memoryType": "HBM2e",
+    "bandwidth": 1935,
+    "fp32": 19.5,
+    "power": 300,
+    "sm": 108,
+    "smLabel": "SM",
+    "gpc": 7,
+    "fullSm": 128,
+    "fullGpc": 8,
+    "tagline": "一颗 GPU，多个计算世界",
+    "description": "Ampere A100 扩大矩阵计算支持，引入 TF32、BF16 与结构化稀疏加速。MIG 把一颗 GPU 分为多个隔离实例，让数据中心更灵活地分配算力。",
+    "architecture": "完整 GA100 含 8 个 GPC、128 个 SM；A100 启用 7 个 GPC、108 个 SM。每 SM 64 个 FP32 核心与 4 个第三代 Tensor Core。40 MB L2、HBM2e 与异步数据搬运降低供数压力。",
+    "innovations": [
+      "TF32 与稀疏矩阵",
+      "MIG 硬件分区",
+      "异步访存流水线"
+    ],
+    "smParts": [
+      {
+        "name": "CUDA / FP64",
+        "detail": "每 SM 64 个 FP32、64 个 INT32 与 32 个 FP64 核心。"
+      },
+      {
+        "name": "Tensor Core",
+        "detail": "每 SM 4 个第三代 Tensor Core，增加 TF32、BF16 和 FP64 支持。"
+      },
+      {
+        "name": "异步复制",
+        "detail": "从全局内存直接异步搬运到共享存储，减少寄存器中转。"
+      },
+      {
+        "name": "L1 / 共享存储",
+        "detail": "192 KB 组合空间；共享存储最高可配置 164 KB。"
+      }
+    ],
+    "sources": [
+      {
+        "title": "NVIDIA A100 80GB PCIe 产品简报",
+        "url": "https://www.nvidia.com/content/dam/en-zz/Solutions/Data-Center/a100/pdf/PB-10577-001_v02.pdf"
+      },
+      {
+        "title": "NVIDIA A100 80GB PCIe 2021 年发布公告",
+        "url": "https://nvidianews.nvidia.com/news/nvidia-and-global-partners-launch-new-hgx-a100-systems-to-accelerate-industrial-ai-and-hpc"
+      },
+      {
+        "title": "NVIDIA Ampere A100 架构深入介绍",
+        "url": "https://developer.nvidia.com/blog/nvidia-ampere-architecture-in-depth/"
+      },
+      {
+        "title": "NVIDIA A100 官方规格",
+        "url": "https://www.nvidia.com/en-us/data-center/a100/?ncid=no-ncid"
+      }
+    ],
+    "note": "采用 A100 PCIe 80GB 被动风冷卡：1,935 GB/s、300 W、19.5 TFLOPS FP32；显存为 HBM2e。80GB PCIe 产品于 2021 年推出，架构首次发布仍为 2020 年。A100 无 RT Core。",
+    "diagramNote": "依据 NVIDIA 公开框图重建逻辑层级与单元数量；模块面积、位置、布线与封装细节不代表实测物理版图。",
+    "coreLabel": "CUDA 核心",
+    "transistorsUnit": "B",
+    "bandwidthUnit": "GB/s",
+    "tensorGeneration": 3,
+    "rtGeneration": 0,
+    "fullChipSm": 128,
+    "formFactor": "PCIe"
+  },
+  {
+    "id": "hopper",
+    "name": "Hopper",
+    "year": 2022,
+    "productYear": 2022,
+    "product": "H100 PCIe 80GB",
+    "card": "H100 PCIe 80GB",
+    "chip": "GH100",
+    "category": "数据中心",
+    "process": "TSMC 4N",
+    "transistors": 80,
+    "cores": 14592,
+    "memory": "80 GB",
+    "memoryType": "HBM2e",
+    "bandwidth": 2000,
+    "fp32": 51,
+    "power": 350,
+    "sm": 114,
+    "smLabel": "SM",
+    "gpc": null,
+    "fullSm": 144,
+    "fullGpc": 8,
+    "tagline": "为 Transformer 加速",
+    "description": "Hopper 以 Transformer Engine、FP8 和更强的数据搬运机制回应大模型计算。H100 PCIe 的线程块集群让多个 SM 协作，HBM2e 与 PCIe Gen5 持续供数。",
+    "architecture": "完整 GH100 有 144 个 SM；H100 PCIe 启用 114 个，分布于 7 或 8 个 GPC。每 SM 含 128 个 FP32 核心、64 个 FP64 核心与 4 个第四代 Tensor Core。80GB HBM2e 由 5 组活动堆栈组成，L2 为 50 MB。",
+    "innovations": [
+      "Transformer Engine",
+      "FP8 Tensor Core",
+      "线程块集群与 TMA"
+    ],
+    "smParts": [
+      {
+        "name": "FP32 / FP64",
+        "detail": "每 SM 128 个 FP32、64 个 FP64 与 64 个 INT32 核心。"
+      },
+      {
+        "name": "Tensor Core",
+        "detail": "每 SM 4 个第四代 Tensor Core；Transformer Engine 管理精度切换。"
+      },
+      {
+        "name": "TMA 数据搬运",
+        "detail": "Tensor Memory Accelerator 将多维张量异步搬入共享存储。"
+      },
+      {
+        "name": "共享存储与集群",
+        "detail": "每 SM 最高 228 KB 共享存储；线程块集群支持跨 SM 协作。"
+      }
+    ],
+    "sources": [
+      {
+        "title": "NVIDIA H100 PCIe 产品简报",
+        "url": "https://www.nvidia.com/content/dam/en-zz/Solutions/gtcs22/data-center/h100/PB-11133-001_v01.pdf"
+      },
+      {
+        "title": "NVIDIA H100 PCIe 量产计算规格",
+        "url": "https://developer.nvidia.com/blog/?p=71196"
+      },
+      {
+        "title": "NVIDIA Hopper 架构深入介绍",
+        "url": "https://developer.nvidia.com/blog/?p=45555"
+      },
+      {
+        "title": "NVIDIA Hopper 架构发布公告",
+        "url": "https://nvidianews.nvidia.com/news/nvidia-announces-hopper-architecture-the-next-generation-of-accelerated-computing"
+      }
+    ],
+    "note": "采用 H100 PCIe 80GB：114 SM、14,592 CUDA 核心、456 Tensor Core、51 TFLOPS FP32、2,000 GB/s HBM2e 和最高 350 W；不是 132 SM 的 SXM H100，也不是 94GB H100 NVL。",
+    "diagramNote": "依据 NVIDIA 公开框图重建逻辑层级与单元数量；模块面积、位置、布线与封装细节不代表实测物理版图。",
+    "coreLabel": "CUDA 核心",
+    "transistorsUnit": "B",
+    "bandwidthUnit": "GB/s",
+    "tensorGeneration": 4,
+    "rtGeneration": 0,
+    "fullChipSm": 144,
+    "formFactor": "PCIe"
+  },
+  {
+    "id": "ada",
+    "name": "Ada Lovelace",
+    "year": 2022,
+    "productYear": 2022,
+    "product": "GeForce RTX 4090",
+    "card": "GeForce RTX 4090",
+    "chip": "AD102",
+    "category": "消费级",
+    "process": "TSMC 4N",
+    "transistors": 76.3,
+    "cores": 16384,
+    "memory": "24 GB",
+    "memoryType": "GDDR6X",
+    "bandwidth": 1008,
+    "fp32": 82.6,
+    "power": 450,
+    "sm": 128,
+    "smLabel": "SM",
+    "gpc": 11,
+    "fullSm": 144,
+    "fullGpc": 12,
+    "tagline": "光追与 AI，协同生成画面",
+    "description": "Ada 将第三代 RT Core、第四代 Tensor Core 与更大缓存结合。Shader Execution Reordering 改善光追执行效率，DLSS 3 把 AI 推进到帧生成。",
+    "architecture": "完整 AD102 含 12 个 GPC、144 个 SM；RTX 4090 启用 11 个 GPC、128 个 SM。每 SM 配置 128 个 FP32 核心、4 个 Tensor Core 和 1 个 RT Core；该卡启用 72 MB L2 缓存。",
+    "innovations": [
+      "Shader Execution Reordering",
+      "第三代 RT Core",
+      "DLSS 3 帧生成"
+    ],
+    "smParts": [
+      {
+        "name": "CUDA 执行分区",
+        "detail": "每 SM 64 条 FP32 专用通路、64 条 FP32 / INT32 共用通路，分成四区；另有 2 个低吞吐 FP64 核心。"
+      },
+      {
+        "name": "Tensor Core",
+        "detail": "每 SM 4 个第四代 Tensor Core，支持 FP8 等矩阵运算。"
+      },
+      {
+        "name": "RT Core",
+        "detail": "第三代 RT Core 增加透明度与微网格相关加速机制。"
+      },
+      {
+        "name": "L1 与更大 L2",
+        "detail": "每 SM 128 KB L1 / 共享存储；RTX 4090 的 L2 为 72 MB。"
+      }
+    ],
+    "sources": [
+      {
+        "title": "NVIDIA Ada 架构白皮书",
+        "url": "https://images.nvidia.com/aem-dam/Solutions/Data-Center/l4/nvidia-ada-gpu-architecture-whitepaper-V2.02.pdf?ncid=no-ncid"
+      },
+      {
+        "title": "NVIDIA RTX Blackwell 白皮书中的 RTX 4090 对照",
+        "url": "https://images.nvidia.com/aem-dam/Solutions/geforce/blackwell/nvidia-rtx-blackwell-gpu-architecture.pdf"
+      }
+    ],
+    "note": "采用 RTX 4090 的 128 SM 与 72 MB L2；完整 AD102 为 144 SM 与 96 MB L2。82.6 TFLOPS 基于 Boost 时钟的非 Tensor FP32 峰值，不等于游戏实测倍率。",
+    "diagramNote": "依据 NVIDIA 公开框图重建逻辑层级与单元数量；模块面积、位置、布线与封装细节不代表实测物理版图。",
+    "coreLabel": "CUDA 核心",
+    "transistorsUnit": "B",
+    "bandwidthUnit": "GB/s",
+    "tensorGeneration": 4,
+    "rtGeneration": 3,
+    "fullChipSm": 144
+  },
+  {
+    "id": "blackwell",
+    "name": "Blackwell",
+    "year": 2024,
+    "productYear": 2025,
+    "product": "GeForce RTX 5090",
+    "card": "GeForce RTX 5090",
+    "chip": "GB202",
+    "category": "消费级",
+    "process": "TSMC 4N",
+    "transistors": 92.2,
+    "cores": 21760,
+    "memory": "32 GB",
+    "memoryType": "GDDR7",
+    "bandwidth": 1792,
+    "fp32": 104.8,
+    "power": 575,
+    "sm": 170,
+    "smLabel": "SM",
+    "gpc": 11,
+    "fullSm": 192,
+    "fullGpc": 12,
+    "tagline": "神经渲染，重塑图形",
+    "description": "Blackwell 将神经网络进一步带入图形流水线。RTX 5090 以第五代 Tensor Core、第四代 RT Core 与 GDDR7，支撑神经着色和更复杂的光追几何。",
+    "architecture": "完整 GB202 含 12 个 GPC、192 个 SM、128 MB L2；RTX 5090 启用 11 个 GPC、170 个 SM、96 MB L2。每 SM 有 128 条 FP32 / INT32 统一通路、4 个 Tensor Core、1 个 RT Core 和 2 个低吞吐 FP64 核心；全卡使用 512-bit GDDR7。",
+    "innovations": [
+      "第五代 Tensor Core / FP4",
+      "第四代 RT Core / Mega Geometry",
+      "DLSS 4 多帧生成"
+    ],
+    "smParts": [
+      {
+        "name": "CUDA 核心",
+        "detail": "每 SM 128 条 FP32 / INT32 统一通路，同一时钟周期二选一；另有 2 个 FP64 核心。依据白皮书 v1.1 修订。"
+      },
+      {
+        "name": "Tensor Core",
+        "detail": "每 SM 4 个第五代 Tensor Core，增加 FP4 低精度计算能力。"
+      },
+      {
+        "name": "RT Core",
+        "detail": "每 SM 1 个第四代 RT Core，为更复杂的光追几何提供加速。"
+      },
+      {
+        "name": "缓存与数据",
+        "detail": "每 SM 128 KB L1 / 共享存储，RTX 5090 另有 96 MB 全局 L2。"
+      }
+    ],
+    "sources": [
+      {
+        "title": "NVIDIA RTX Blackwell 架构白皮书",
+        "url": "https://images.nvidia.com/aem-dam/Solutions/geforce/blackwell/nvidia-rtx-blackwell-gpu-architecture.pdf"
+      },
+      {
+        "title": "NVIDIA RTX 5090 官方规格",
+        "url": "https://www.nvidia.com/en-us/geforce/graphics-cards/50-series/rtx-5090/"
+      },
+      {
+        "title": "NVIDIA RTX 50 系列发布公告",
+        "url": "https://nvidianews.nvidia.com/news/nvidia-blackwell-geforce-rtx-50-series-opens-new-world-of-ai-computer-graphics"
+      }
+    ],
+    "note": "Blackwell 数据中心架构于 2024 年发布，RTX 5090 于 2025 年推出。GB202 是 92.2B 单芯片、TSMC 4N；B200 的双芯粒、208B 与 4NP 数据不可套用。FP32 为非 Tensor Boost 峰值。",
+    "sibling": {
+      "name": "B200",
+      "description": "同属 Blackwell 家族的数据中心 GPU。B200 采用两颗芯粒组成统一 GPU，共 208B 晶体管，芯粒间带宽 10 TB/s，使用 TSMC 4NP。早期资料写 192GB HBM3e；当前 MIG 文档列 180GB 显存容量。它与 RTX 5090 的 GB202、32GB GDDR7 不是同一芯片。",
+      "sources": [
+        {
+          "title": "NVIDIA Blackwell 数据中心平台发布",
+          "url": "https://nvidianews.nvidia.com/news/nvidia-blackwell-platform-arrives-to-power-a-new-era-of-computing"
+        },
+        {
+          "title": "NVIDIA MIG 支持产品与显存容量",
+          "url": "https://docs.nvidia.com/datacenter/tesla/mig-user-guide/supported-gpus.html"
+        },
+        {
+          "title": "NVIDIA Brev GPU 产品类型",
+          "url": "https://docs.nvidia.com/brev/reference/gpu-types"
+        }
+      ]
+    },
+    "diagramNote": "依据 NVIDIA 公开框图重建逻辑层级与单元数量；模块面积、位置、布线与封装细节不代表实测物理版图。",
+    "coreLabel": "CUDA 核心",
+    "transistorsUnit": "B",
+    "bandwidthUnit": "GB/s",
+    "tensorGeneration": 5,
+    "rtGeneration": 4,
+    "fullChipSm": 192
+  }
+]
