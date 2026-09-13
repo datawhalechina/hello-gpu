@@ -157,7 +157,7 @@ flowchart TB
 
 **图例**：平行四边形表示候选或结果，圆柱表示保存的当前版本，矩形表示执行动作，菱形表示判定；实线表示数据或控制流，分支标签说明是否更新文件。
 
-注意图中的“追加裁决摘要”。`trajectory.jsonl` 记录进入接受工具的结果，不会自动保存此前所有编译尝试、完整候选源码和原始采样。接受工具内部异常也可能使这次摘要无法写入。摘要与源码写入不是原子事务，异常后还需核对二者是否一致。要制作完整实验报告，还需检查文件是否实际生成，并补存必要证据，不能仅靠“调用过这个工具”判断记录齐全。
+注意图中的“追加裁决摘要”。`trajectory.jsonl` 记录进入接受工具的结果，每行的 `evaluation` 指向对应评测目录。该目录保存当次任务、候选、参考实现、配对的当前版本和完整评测 JSON；只编译就失败的尝试也会留下评测文件，但不会变成一次接受裁决。工具调用及完整返回值另存到 `tool-calls.jsonl`。摘要与 `best.py` 写入仍不是原子事务，异常后需要核对二者是否一致。
 
 ## 15.6 根据失败阶段决定下一步
 
@@ -171,7 +171,7 @@ flowchart TB
 | 正确但未过阈值 | 配对分布与修改假设 | 拒绝原因，保留当前版本 |
 | 分析字段为空 | 采集能力与字段来源 | 标记未知，不猜一个值 |
 
-在 [`tools.py`](https://github.com/datawhalechina/hello-gpu/blob/main/code/part3-agent/kernel_optimize/tools.py) 中，可以沿着工具注册找到这些接口，再进入 [`chapter14/`](https://github.com/datawhalechina/hello-gpu/tree/main/code/part3-agent/chapter14) 阅读评测后端。本章的主要工作是理解接口。统一的现行入口与待补验证说明见 [第 17 章](../chapter17/index.md)。
+在 [`tools.py`](https://github.com/datawhalechina/hello-gpu/blob/main/code/part3-agent/kernel_optimize/tools.py) 中，可以沿着工具注册找到这些接口，再进入 [`chapter14/`](https://github.com/datawhalechina/hello-gpu/tree/main/code/part3-agent/chapter14) 阅读评测后端。本章的主要工作是理解接口。统一的运行入口与实测报告见 [第 17 章](../chapter17/index.md)。
 
 ## 15.7 练习：为结果找对解释
 

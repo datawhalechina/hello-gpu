@@ -19,6 +19,7 @@ import statistics
 import subprocess
 import sys
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
@@ -34,8 +35,9 @@ from . import llm
 
 
 class ToolExecutor:
-    def __init__(self) -> None:
+    def __init__(self, log_path: Path | None = None) -> None:
         self.tools: dict[str, dict[str, Any]] = {}
+        self.log_path = log_path
 
     def register(self, name: str, description: str, func: Callable[..., str],
                  parameters: dict[str, Any] | None = None) -> None:
@@ -46,13 +48,25 @@ class ToolExecutor:
         }
 
     def call(self, name: str, arguments: dict[str, Any]) -> str:
+        started_at = datetime.now(timezone.utc).isoformat()
         tool = self.tools.get(name)
         if tool is None:
-            return f"✗ 未知工具：{name}。可用工具：{', '.join(self.tools)}"
-        try:
-            return str(tool["func"](**arguments))
-        except Exception as error:  # noqa: BLE001
-            return f"✗ 工具 {name} 执行出错：{error}"
+            observation = f"✗ 未知工具：{name}。可用工具：{', '.join(self.tools)}"
+        else:
+            try:
+                observation = str(tool["func"](**arguments))
+            except Exception as error:  # noqa: BLE001
+                observation = f"✗ 工具 {name} 执行出错：{error}"
+        if self.log_path is not None:
+            with self.log_path.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps({
+                    "startedAt": started_at,
+                    "finishedAt": datetime.now(timezone.utc).isoformat(),
+                    "name": name,
+                    "arguments": arguments,
+                    "observation": observation,
+                }, ensure_ascii=False) + "\n")
+        return observation
 
     def schema(self) -> list[dict[str, Any]]:
         """拼成 LiteLLM function-calling 的 tools 参数。"""
@@ -97,6 +111,7 @@ class Workspace:
     def __init__(self, root: Path) -> None:
         self.root = Path(root)
         self.root.mkdir(parents=True, exist_ok=True)
+        self.last_evaluation: Path | None = None
 
     @property
     def task_path(self) -> Path:
@@ -135,17 +150,58 @@ class Workspace:
 
 def _run_eval(workspace: Workspace, source: str, *, incumbent: Path | None,
               correctness_only: bool = False) -> dict[str, Any]:
-    candidate = workspace.write_candidate(source)
+    # 每次评测冻结一份输入。后续更新 best.py，不会覆盖此次配对的 incumbent。
+    evaluations = workspace.root / "evaluations"
+    evaluations.mkdir(exist_ok=True)
+    index = 1
+    while True:
+        artifact = evaluations / f"evaluation-{index:04d}"
+        try:
+            artifact.mkdir()
+            break
+        except FileExistsError:
+            index += 1
+    workspace.last_evaluation = artifact
+    candidate = artifact / "candidate.py"
+    candidate.write_text(source if source.endswith("\n") else source + "\n", encoding="utf-8")
+    task = artifact / "task.json"
+    task.write_bytes(workspace.task_path.read_bytes())
+    reference = artifact / "reference.py"
+    if workspace.reference_path.is_file():
+        reference.write_bytes(workspace.reference_path.read_bytes())
+    paired_source = None
+    if incumbent is not None:
+        paired_source = artifact / "incumbent.py"
+        paired_source.write_bytes(incumbent.read_bytes())
+    request = {
+        "startedAt": datetime.now(timezone.utc).isoformat(),
+        "candidate": "candidate.py",
+        "task": "task.json",
+        "reference": "reference.py",
+        "incumbent": "incumbent.py" if paired_source is not None else None,
+        "correctnessOnly": correctness_only,
+    }
+    (artifact / "request.json").write_text(
+        json.dumps(request, ensure_ascii=False, indent=2) + "\n", encoding="utf-8",
+    )
     try:
-        return _evaluator()(
-            workspace.task_path,
+        evaluation = _evaluator()(
+            task,
             candidate,
-            incumbent_path=incumbent,
-            reference_path=workspace.reference_path,
+            incumbent_path=paired_source,
+            reference_path=reference,
             correctness_only=correctness_only,
         )
-    finally:
-        candidate.unlink(missing_ok=True)
+    except Exception as error:
+        (artifact / "result.json").write_text(
+            json.dumps({"status": "evaluation_error", "details": str(error)},
+                       ensure_ascii=False, indent=2) + "\n", encoding="utf-8",
+        )
+        raise
+    (artifact / "result.json").write_text(
+        json.dumps(evaluation, ensure_ascii=False, indent=2) + "\n", encoding="utf-8",
+    )
+    return evaluation
 
 
 def _parse_compile_errors(text: str) -> list[dict[str, Any]]:
@@ -355,7 +411,7 @@ def build_tools(
     *,
     batch: bool = False,
 ) -> tuple[ToolExecutor, list[dict[str, Any]]]:
-    executor = ToolExecutor()
+    executor = ToolExecutor(workspace.root / "tool-calls.jsonl")
 
     # --- 多轮对话（prompt_toolkit 多行，可靠接收粘贴）---------------------
     def ask_user(question: str) -> str:
@@ -510,6 +566,8 @@ def build_tools(
             "accepted": accepted,
             "reason": reason,
         }
+        if workspace.last_evaluation is not None:
+            entry["evaluation"] = str(workspace.last_evaluation.relative_to(workspace.root))
         comparison = evaluation.get("comparison")
         if comparison:
             entry["improvementFraction"] = comparison.get("improvementFraction")

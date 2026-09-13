@@ -39,7 +39,7 @@ fi
 if [[ -d "${ROCM_PATH}/bin" ]]; then
     export PATH="${ROCM_PATH}/bin:${PATH}"
 fi
-# Arch-specific libraries (e.g. _rocm_sdk_libraries_gfx1151) must precede devel.
+# Arch-specific libraries (e.g. _rocm_sdk_libraries_gfx120x_all) must precede devel.
 ROCM_LIBRARIES_ROOT="$(find "${ROCM_VENV}/lib" -type d -name '_rocm_sdk_libraries_*' -print -quit 2>/dev/null || true)"
 if [[ -n "${ROCM_LIBRARIES_ROOT}" && -d "${ROCM_LIBRARIES_ROOT}/lib" ]]; then
     export LD_LIBRARY_PATH="${ROCM_LIBRARIES_ROOT}/lib:${LD_LIBRARY_PATH:-}"

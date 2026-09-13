@@ -150,6 +150,12 @@ def render_visualizations(
 ) -> list[Path]:
     import matplotlib
 
+    environment_path = workspace / "environment.json"
+    if environment_path.is_file():
+        environment = json.loads(environment_path.read_text(encoding="utf-8"))
+        gpu = str(environment.get("gpu", "GPU 未记录")).removeprefix("AMD ")
+        rocm = environment.get("packages", {}).get("rocm", environment.get("hipRuntime", "未记录"))
+        title += f"\n{gpu} · ROCm {rocm} · GPU event"
     matplotlib.use("Agg")
     # 独立于调用方的深色主题；退出后恢复调用方的绘图配置。
     with matplotlib.rc_context({
@@ -360,7 +366,7 @@ def _render_visualizations(
     ax.set_ylim(0, len(rows) + 1)
     ax.invert_yaxis()
     ax.axis("off")
-    ax.set_title(f"{title}\n逐轮改动与评测状态", fontsize=13, fontweight=600, pad=12)
+    ax.set_title(f"{title}\n逐轮声明的改动与评测状态", fontsize=13, fontweight=600, pad=12)
 
     for idx, (round_i, status, change, imp, lat) in enumerate(
         zip(rounds, statuses, changes, improvements, latencies), start=1
@@ -392,7 +398,7 @@ def _render_visualizations(
         ax.text(0.85, y + 0.22, wrapped, fontsize=8, color="#333333", va="center")
 
     fig.legend(handles=status_handles, loc="lower center", bbox_to_anchor=(0.5, 0.025), ncol=3, fontsize=9)
-    fig.text(0.06, 0.01, "延迟与改进率均为本轮记录；最终收益须重新成对评测确认。",
+    fig.text(0.06, 0.01, "修改说明来自运行记录，其中的原因解释属于假设；最终收益须独立复测。",
              fontsize=9, color="#475569")
     fig.tight_layout(rect=(0, 0.12, 1, 1))
     p3 = out_dir / "process_timeline.png"
