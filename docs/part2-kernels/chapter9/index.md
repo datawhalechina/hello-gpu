@@ -330,6 +330,7 @@ python chapter9/reduction_triton.py --version t1 --size 1027 \
 ```bash
 cd code/part2-kernels
 uv sync
+source ./activate-rocm.sh
 WARMUP=10 REPEAT=50 bash chapter9/run_all.sh
 ```
 
@@ -337,7 +338,11 @@ WARMUP=10 REPEAT=50 bash chapter9/run_all.sh
 
 读 `RESULT` 时依次核对：正确性字段、shape、版本和参数、`stages`/`partials`，最后才比较 `median_ms`。比较改动前后时，还要保持输入与 event 边界一致。
 
-独立 profiler 脚本位于 `chapter9/profile_all.sh`。它要求 `SOURCE_COMMIT` 记录所测源码版本；在本地确定版本后随代码传到实验机，不在实验机运行 git。归档 profile 使用 `warmup=0`、`repeat=5`，与性能实验分开运行。
+需要观察 kernel trace 时，在同一个 Part 2 环境中单独运行 profiler，默认使用 `warmup=0`、`repeat=5`：
+
+```bash
+bash chapter9/profile_all.sh
+```
 
 trace 里不仅有算法主体，还可能有清零、拷贝、预检等 dispatch。HIP 两阶段的两个阶段复用同名 `local_wave_partial_kernel`，要结合记录顺序和输入规模区分；Triton 则分别叫 `program_partial_kernel` 和 `second_reduction_kernel`。
 

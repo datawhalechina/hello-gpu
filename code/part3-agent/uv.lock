@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.12"
 
 [[package]]
@@ -1260,7 +1260,7 @@ dependencies = [
     { name = "rocm" },
     { name = "rocm-sdk-core" },
     { name = "rocm-sdk-devel" },
-    { name = "rocm-sdk-libraries-gfx1151" },
+    { name = "rocm-sdk-libraries-gfx120x-all" },
     { name = "torch" },
     { name = "triton" },
 ]
@@ -1279,12 +1279,12 @@ requires-dist = [
     { name = "orjson", specifier = ">=3.0" },
     { name = "prompt-toolkit", specifier = ">=3.0" },
     { name = "pydantic", specifier = ">=2.0" },
-    { name = "rocm", specifier = "==7.12.0", index = "https://repo.amd.com/rocm/whl/gfx1151/" },
-    { name = "rocm-sdk-core", specifier = "==7.12.0", index = "https://repo.amd.com/rocm/whl/gfx1151/" },
-    { name = "rocm-sdk-devel", specifier = "==7.12.0", index = "https://repo.amd.com/rocm/whl/gfx1151/" },
-    { name = "rocm-sdk-libraries-gfx1151", specifier = "==7.12.0", index = "https://repo.amd.com/rocm/whl/gfx1151/" },
-    { name = "torch", specifier = "==2.10.0+rocm7.12.0", index = "https://repo.amd.com/rocm/whl/gfx1151/" },
-    { name = "triton", specifier = "==3.6.0+rocm7.12.0", index = "https://repo.amd.com/rocm/whl/gfx1151/" },
+    { name = "rocm", specifier = "==7.13.0", index = "https://repo.amd.com/rocm/whl/gfx120X-all/" },
+    { name = "rocm-sdk-core", specifier = "==7.13.0", index = "https://repo.amd.com/rocm/whl/gfx120X-all/" },
+    { name = "rocm-sdk-devel", specifier = "==7.13.0", index = "https://repo.amd.com/rocm/whl/gfx120X-all/" },
+    { name = "rocm-sdk-libraries-gfx120x-all", specifier = "==7.13.0", index = "https://repo.amd.com/rocm/whl/gfx120X-all/" },
+    { name = "torch", specifier = "==2.11.0+rocm7.13.0", index = "https://repo.amd.com/rocm/whl/gfx120X-all/" },
+    { name = "triton", specifier = "==3.6.0+rocm7.13.0", index = "https://repo.amd.com/rocm/whl/gfx120X-all/" },
 ]
 
 [package.metadata.requires-dev]
@@ -1786,43 +1786,43 @@ wheels = [
 
 [[package]]
 name = "rocm"
-version = "7.12.0"
-source = { registry = "https://repo.amd.com/rocm/whl/gfx1151/" }
+version = "7.13.0"
+source = { registry = "https://repo.amd.com/rocm/whl/gfx120X-all/" }
 dependencies = [
     { name = "rocm-sdk-core" },
 ]
-sdist = { url = "https://repo.amd.com/rocm/whl/gfx1151/rocm-7.12.0.tar.gz" }
+sdist = { url = "https://repo.amd.com/rocm/whl/gfx120X-all/rocm-7.13.0.tar.gz" }
 
 [package.optional-dependencies]
 libraries = [
-    { name = "rocm-sdk-libraries-gfx1151" },
+    { name = "rocm-sdk-libraries-gfx120x-all" },
 ]
 
 [[package]]
 name = "rocm-sdk-core"
-version = "7.12.0"
-source = { registry = "https://repo.amd.com/rocm/whl/gfx1151/" }
+version = "7.13.0"
+source = { registry = "https://repo.amd.com/rocm/whl/gfx120X-all/" }
 wheels = [
-    { url = "https://repo.amd.com/rocm/whl/gfx1151/rocm_sdk_core-7.12.0-py3-none-linux_x86_64.whl" },
-    { url = "https://repo.amd.com/rocm/whl/gfx1151/rocm_sdk_core-7.12.0-py3-none-win_amd64.whl" },
+    { url = "https://repo.amd.com/rocm/whl/gfx120X-all/rocm_sdk_core-7.13.0-py3-none-linux_x86_64.whl" },
+    { url = "https://repo.amd.com/rocm/whl/gfx120X-all/rocm_sdk_core-7.13.0-py3-none-win_amd64.whl" },
 ]
 
 [[package]]
 name = "rocm-sdk-devel"
-version = "7.12.0"
-source = { registry = "https://repo.amd.com/rocm/whl/gfx1151/" }
+version = "7.13.0"
+source = { registry = "https://repo.amd.com/rocm/whl/gfx120X-all/" }
 wheels = [
-    { url = "https://repo.amd.com/rocm/whl/gfx1151/rocm_sdk_devel-7.12.0-py3-none-linux_x86_64.whl" },
-    { url = "https://repo.amd.com/rocm/whl/gfx1151/rocm_sdk_devel-7.12.0-py3-none-win_amd64.whl" },
+    { url = "https://repo.amd.com/rocm/whl/gfx120X-all/rocm_sdk_devel-7.13.0-py3-none-linux_x86_64.whl" },
+    { url = "https://repo.amd.com/rocm/whl/gfx120X-all/rocm_sdk_devel-7.13.0-py3-none-win_amd64.whl" },
 ]
 
 [[package]]
-name = "rocm-sdk-libraries-gfx1151"
-version = "7.12.0"
-source = { registry = "https://repo.amd.com/rocm/whl/gfx1151/" }
+name = "rocm-sdk-libraries-gfx120x-all"
+version = "7.13.0"
+source = { registry = "https://repo.amd.com/rocm/whl/gfx120X-all/" }
 wheels = [
-    { url = "https://repo.amd.com/rocm/whl/gfx1151/rocm_sdk_libraries_gfx1151-7.12.0-py3-none-linux_x86_64.whl" },
-    { url = "https://repo.amd.com/rocm/whl/gfx1151/rocm_sdk_libraries_gfx1151-7.12.0-py3-none-win_amd64.whl" },
+    { url = "https://repo.amd.com/rocm/whl/gfx120X-all/rocm_sdk_libraries_gfx120x_all-7.13.0-py3-none-linux_x86_64.whl" },
+    { url = "https://repo.amd.com/rocm/whl/gfx120X-all/rocm_sdk_libraries_gfx120x_all-7.13.0-py3-none-win_amd64.whl" },
 ]
 
 [[package]]
@@ -1923,11 +1923,11 @@ wheels = [
 
 [[package]]
 name = "setuptools"
-version = "83.0.0"
+version = "81.0.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/34/26/f5d29e25ffdb535afef2d35cdb55b325298f96debd670da4c325e08d70f4/setuptools-83.0.0.tar.gz", hash = "sha256:025bccbbf0fa05b6192bc64ae1e7b16e001fd6d6d4d5de03c97b1c1ade523bef", size = 1154254, upload-time = "2026-07-04T15:31:22.699Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0d/1c/73e719955c59b8e424d015ab450f51c0af856ae46ea2da83eba51cc88de1/setuptools-81.0.0.tar.gz", hash = "sha256:487b53915f52501f0a79ccfd0c02c165ffe06631443a886740b91af4b7a5845a", size = 1198299, upload-time = "2026-02-06T21:10:39.601Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5d/40/e1e72872c6354b306daef1703549e8e83b4d43cfea356311bf722a043752/setuptools-83.0.0-py3-none-any.whl", hash = "sha256:29b23c360f22f414dc7336bb39178cc7bcbf6021ed2733cde173f09dba19abb3", size = 1008090, upload-time = "2026-07-04T15:31:20.885Z" },
+    { url = "https://files.pythonhosted.org/packages/e1/e3/c164c88b2e5ce7b24d667b9bd83589cf4f3520d97cad01534cd3c4f55fdb/setuptools-81.0.0-py3-none-any.whl", hash = "sha256:fdd925d5c5d9f62e4b74b30d6dd7828ce236fd6ed998a08d81de62ce5a6310d6", size = 1062021, upload-time = "2026-02-06T21:10:37.175Z" },
 ]
 
 [[package]]
@@ -2049,8 +2049,8 @@ wheels = [
 
 [[package]]
 name = "torch"
-version = "2.10.0+rocm7.12.0"
-source = { registry = "https://repo.amd.com/rocm/whl/gfx1151/" }
+version = "2.11.0+rocm7.13.0"
+source = { registry = "https://repo.amd.com/rocm/whl/gfx120X-all/" }
 dependencies = [
     { name = "filelock" },
     { name = "fsspec" },
@@ -2063,10 +2063,11 @@ dependencies = [
     { name = "typing-extensions" },
 ]
 wheels = [
-    { url = "https://repo.amd.com/rocm/whl/gfx1151/torch-2.10.0%2Brocm7.12.0-cp312-cp312-linux_x86_64.whl" },
-    { url = "https://repo.amd.com/rocm/whl/gfx1151/torch-2.10.0%2Brocm7.12.0-cp312-cp312-win_amd64.whl" },
-    { url = "https://repo.amd.com/rocm/whl/gfx1151/torch-2.10.0%2Brocm7.12.0-cp313-cp313-linux_x86_64.whl" },
-    { url = "https://repo.amd.com/rocm/whl/gfx1151/torch-2.10.0%2Brocm7.12.0-cp313-cp313-win_amd64.whl" },
+    { url = "https://repo.amd.com/rocm/whl/gfx120X-all/torch-2.11.0%2Brocm7.13.0-cp312-cp312-linux_x86_64.whl" },
+    { url = "https://repo.amd.com/rocm/whl/gfx120X-all/torch-2.11.0%2Brocm7.13.0-cp312-cp312-win_amd64.whl" },
+    { url = "https://repo.amd.com/rocm/whl/gfx120X-all/torch-2.11.0%2Brocm7.13.0-cp313-cp313-linux_x86_64.whl" },
+    { url = "https://repo.amd.com/rocm/whl/gfx120X-all/torch-2.11.0%2Brocm7.13.0-cp313-cp313-win_amd64.whl" },
+    { url = "https://repo.amd.com/rocm/whl/gfx120X-all/torch-2.11.0%2Brocm7.13.0-cp314-cp314-linux_x86_64.whl" },
 ]
 
 [[package]]
@@ -2083,11 +2084,12 @@ wheels = [
 
 [[package]]
 name = "triton"
-version = "3.6.0+rocm7.12.0"
-source = { registry = "https://repo.amd.com/rocm/whl/gfx1151/" }
+version = "3.6.0+rocm7.13.0"
+source = { registry = "https://repo.amd.com/rocm/whl/gfx120X-all/" }
 wheels = [
-    { url = "https://repo.amd.com/rocm/whl/gfx1151/triton-3.6.0%2Brocm7.12.0-cp312-cp312-linux_x86_64.whl" },
-    { url = "https://repo.amd.com/rocm/whl/gfx1151/triton-3.6.0%2Brocm7.12.0-cp313-cp313-linux_x86_64.whl" },
+    { url = "https://repo.amd.com/rocm/whl/gfx120X-all/triton-3.6.0%2Brocm7.13.0-cp312-cp312-linux_x86_64.whl" },
+    { url = "https://repo.amd.com/rocm/whl/gfx120X-all/triton-3.6.0%2Brocm7.13.0-cp313-cp313-linux_x86_64.whl" },
+    { url = "https://repo.amd.com/rocm/whl/gfx120X-all/triton-3.6.0%2Brocm7.13.0-cp314-cp314-linux_x86_64.whl" },
 ]
 
 [[package]]

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Unified per-implementation kernel-trace profiling for ALL FOUR Part 0 hardware
 # experiments (branch in ./, global-memory / LDS-banks / matrix-path in
-# ../chapter3/). They were measured together at the pinned commit; this tool
-# reproduces that unified profiling. Per-chapter runners are ./run_all.sh and
+# ../chapter3/). This tool profiles the current source files together.
+# Per-chapter runners are ./run_all.sh and
 # ../chapter3/run_all.sh.
 set -euo pipefail
 
@@ -13,14 +13,6 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PART_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-REPO_ROOT="$(cd "${PART_DIR}/../.." && pwd)"
-# Default to the immutable measurement commit (override with SOURCE_COMMIT).
-SOURCE_COMMIT="${SOURCE_COMMIT:-2107e8a171b9599063468854caccc04de4ea147e}"
-if [[ ! "${SOURCE_COMMIT}" =~ ^[0-9A-Fa-f]{40}$ ]] || ! git -C "${REPO_ROOT}" rev-parse --verify "${SOURCE_COMMIT}^{commit}" >/dev/null 2>&1; then
-    echo "SOURCE_COMMIT must name an existing 40-character Git commit" >&2
-    exit 2
-fi
-
 GPU_ARCH="${GPU_ARCH:-gfx1201}"
 WARMUP="${WARMUP:-10}"
 REPEAT="${REPEAT:-50}"
@@ -51,9 +43,6 @@ hash_file() {
     elif command -v shasum >/dev/null 2>&1; then shasum -a 256 "$1" | awk '{print $1}'
     else python3 -c 'import hashlib,pathlib,sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())' "$1"; fi
 }
-hash_stdin() {
-    python3 -c 'import hashlib,sys; print(hashlib.sha256(sys.stdin.buffer.read()).hexdigest())'
-}
 # branch_divergence.hip lives in this dir; the other three were moved to ../chapter3/.
 src_dir() {
     case "$1" in
@@ -61,21 +50,14 @@ src_dir() {
         *) printf '%s' "${PART_DIR}/chapter3" ;;
     esac
 }
-verify_source() {
-    local source="$1" committed current
-    current="$(hash_file "$(src_dir "${source}")/${source}")"
-    committed="$(git -C "${REPO_ROOT}" show "${SOURCE_COMMIT}:code/part0-intro/chapter2/${source}" | hash_stdin)"
-    if [[ "${current}" != "${committed}" ]]; then
-        echo "${source} does not match SOURCE_COMMIT" >&2
-        exit 2
-    fi
-    printf '%s' "${current}"
+source_sha256() {
+    hash_file "$(src_dir "$1")/$1"
 }
 
-BRANCH_SOURCE_SHA256="$(verify_source branch_divergence.hip)"
-GLOBAL_SOURCE_SHA256="$(verify_source global_memory_access.hip)"
-LDS_SOURCE_SHA256="$(verify_source lds_bank_conflict.hip)"
-MATRIX_SOURCE_SHA256="$(verify_source rdna4_wmma.hip)"
+BRANCH_SOURCE_SHA256="$(source_sha256 branch_divergence.hip)"
+GLOBAL_SOURCE_SHA256="$(source_sha256 global_memory_access.hip)"
+LDS_SOURCE_SHA256="$(source_sha256 lds_bank_conflict.hip)"
+MATRIX_SOURCE_SHA256="$(source_sha256 rdna4_wmma.hip)"
 
 if [[ ! -f "${PART_DIR}/activate-rocm.sh" ]]; then
     echo "missing ${PART_DIR}/activate-rocm.sh" >&2
@@ -123,7 +105,7 @@ ROCM_VERSION="$(rocprofv3 --version 2>&1 | tr '\n' ' ')"
 
 BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hello-gpu-ch2-profile.XXXXXX")"
 mkdir -p "${VERSION_ROOT}"
-VERSION_DIR="$(mktemp -d "${VERSION_ROOT}/${SOURCE_COMMIT}.XXXXXX")"
+VERSION_DIR="$(mktemp -d "${VERSION_ROOT}/run.XXXXXX")"
 cleanup() {
     rm -rf "${BUILD_DIR}"
     if [[ -n "${VERSION_DIR:-}" && -d "${VERSION_DIR}" ]]; then rm -rf "${VERSION_DIR}"; fi
@@ -152,12 +134,12 @@ read_binary_target() {
 }
 compile() {
     local source="$1" binary="$2" argv replay_argv target replay_binary
-    local -a args=(hipcc "--offload-arch=${GPU_ARCH}" -O3 -std=c++17 "-DCHAPTER2_SOURCE_COMMIT=\"${SOURCE_COMMIT}\"" "$(src_dir "${source}")/${source}" -o "${BUILD_DIR}/${binary}")
+    local -a args=(hipcc "--offload-arch=${GPU_ARCH}" -O3 -std=c++17 "$(src_dir "${source}")/${source}" -o "${BUILD_DIR}/${binary}")
     "${args[@]}"
     printf -v argv '%q ' "${args[@]}"
     target="$(read_binary_target "${BUILD_DIR}/${binary}")"
     replay_binary="${PROFILE_PARENT}/.${PROFILE_NAME}.replay-${binary}"
-    local -a replay_args=(hipcc "--offload-arch=${GPU_ARCH}" -O3 -std=c++17 "-DCHAPTER2_SOURCE_COMMIT=\"${SOURCE_COMMIT}\"" "$(src_dir "${source}")/${source}" -o "${replay_binary}")
+    local -a replay_args=(hipcc "--offload-arch=${GPU_ARCH}" -O3 -std=c++17 "$(src_dir "${source}")/${source}" -o "${replay_binary}")
     printf -v replay_argv '%q ' "${replay_args[@]}"
     case "${binary}" in
         branch_divergence) BRANCH_COMPILE_ARGV="${argv% }"; BRANCH_COMPILE_REPLAY_ARGV="${replay_argv% }"; BRANCH_BINARY_SHA256="$(hash_file "${BUILD_DIR}/${binary}")"; BRANCH_BINARY_TARGET="${target}" ;;
@@ -174,7 +156,6 @@ compile rdna4_wmma.hip rdna4_wmma
 write_value() { printf '%s=%q\n' "$1" "$2"; }
 CONFIG="${VERSION_DIR}/profile_config.env"
 {
-    write_value source_commit "${SOURCE_COMMIT}"
     write_value hardware "${HARDWARE}"
     write_value gpu_arch "${GPU_ARCH}"
     write_value gpu_target "${GPU_ARCH}"

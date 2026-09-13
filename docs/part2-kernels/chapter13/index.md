@@ -227,11 +227,16 @@ Triton 的 8-warps 配置在本次形状下更快，但表格没有告诉我们�
 
 ```bash
 cd code/part2-kernels
+uv sync
 source ./activate-rocm.sh
 bash chapter13/run_all.sh
 ```
 
-脚本先跑 `3×13`，再跑主形状，并打印每个实现的 `RESULT`。这是一轮复跑；正文三进程结果的采集参数和来源另见[实验记录](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part2-kernels/chapter13/EXPERIMENT.md)。需要采集 trace 时使用独立 `profile_all.sh`，源码身份由本地 Git 维护机记录并传给实验机。
+脚本先跑 `33×257` 的边界输入，再跑主形状，并打印每个实现的 `RESULT`。这是一轮复跑；正文三进程结果的采集参数和来源另见[实验记录](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part2-kernels/chapter13/EXPERIMENT.md)。需要采集 trace 时，在同一个环境中运行：
+
+```bash
+bash chapter13/profile_all.sh
+```
 
 本章历史 `profile_summary.csv` 的 `kernel_names` 同时包含目标 kernel、拷贝以及 PyTorch 参考计算。表中的 `trace_dispatches=7/24` 是整份 trace 的记录数，不能说一次 RMSNorm 需要启动 7 次或 24 次 kernel。
 

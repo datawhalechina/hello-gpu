@@ -23,7 +23,6 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--chapter-dir", required=True, type=Path)
     parser.add_argument("--operator", required=True)
-    parser.add_argument("--git-commit", required=True)
     parser.add_argument(
         "--run-log",
         required=True,
@@ -42,7 +41,6 @@ def main() -> int:
         publish(
             chapter_dir=args.chapter_dir,
             operator=args.operator,
-            git_commit=args.git_commit,
             run_logs=args.run_log,
             environment_file=args.environment_file,
             profile_dir=args.profile_dir,

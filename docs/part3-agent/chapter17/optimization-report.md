@@ -1,200 +1,129 @@
 ---
-title: "算子优化 Agent 实战报告 · vector_add"
-description: "本地运行记录：工具调用链、指标变化与可视化"
+title: "向量加法 Agent 实验报告"
+description: "RX 9070 XT 上的 6 条搜索裁决与 5 次独立复测：接受候选之后，仍需确认收益"
 ---
 
-# 算子优化 Agent 实战报告 · vector_add
+# 向量加法 Agent 实验报告
 
-> 本文基于一次完整本地跑通，说明 Agent **如何优化**、**调用了哪些工具**、**提升了哪些指标**，并嵌入对应可视化图。  
-> 对应教程：[第16章 设计](../chapter16/) · [第17章 实战](./index.md)
+在 [第 17 章](./index.md) 中，我们用 Agent 调整了向量加法的实现。接下来沿着候选源码和计时结果，分析这些修改是否值得保留。这个例子也展示了怎样组织一份优化报告：先固定比较条件，再解释关键尝试，最后用独立复测检验结论。
 
-## 1. 运行概况
+## 1. 任务与环境
 
-| 项 | 值 |
-|---|---|
-| 工作区 | `code/part3-agent/chapter15/logs/tasks/task-20260806-144647` |
-| 入口 | `uv run python chapter16/run_part3_test.py --max-steps 12 --skip-pytest` |
-| 任务 | `chapter15/fixtures/vector_add`（fp16，`4096×2048`，约 8.4M 元素） |
-| LLM | 硅基流动 · `openai/Qwen/Qwen3.6-35B-A3B` |
-| GPU | Radeon 8060S Graphics · `gfx1151` · ROCm 7.12 · torch `2.10.0+rocm7.12.0` |
-| 退出 | `exit 0`（达到 `max_steps=12`） |
-| 评估轮次 / 接受 | **10 / 5** |
+这一节固定本次实验的范围，便于你判断哪些条件需要在复跑时保持一致。
 
-核心纪律（与教程一致）：
+| 项目 | 本次配置 |
+| --- | --- |
+| 测量日期 | 2026-09-13 |
+| 任务 | `output = x + y`，两个连续 FP16 输入，形状 `4096 × 2048` |
+| 设备 | AMD Radeon RX 9070 XT，`gfx1201` |
+| 系统 | 原生 Ubuntu 24.04.5 LTS，Linux `7.0.0-31-generic` |
+| 软件 | ROCm SDK 7.13.0，HIP runtime 7.13.99004，PyTorch 2.11.0+rocm7.13.0，Triton 3.6.0+rocm7.13.0 |
+| Python 与调用库 | Python 3.12.3，LiteLLM 1.95.0 |
+| 模型 | 硅基流动兼容接口，`openai/Qwen/Qwen3.6-35B-A3B`，temperature 0.2，`enable_thinking=false` |
+| 正确性 | seeds 17、29；`atol=rtol=0.001`；检查输入不变、输出契约与数值结果 |
+| 计时 | GPU event；warmup 10，samples 25，每个样本 innerRepeats 5 |
+| 接受条件 | 配对改进中位数至少 1%，并满足评测器的有效配对数与正改进比例要求 |
+| 搜索预算 | 最多 25 次模型调用；不是 25 个候选 |
+| 最终复测 | 原始基线与最终版本，5 次独立进程运行 |
 
-1. **LLM 只提议**候选 kernel 与改动说明；  
-2. **工具返回值才是事实**（正确性、延迟、是否接受）；  
-3. 失败不覆盖 `best.py`，轨迹里照样留痕。
-
-## 2. Agent 如何优化（闭环）
-
-```mermaid
-flowchart TD
-  A[get_environment] --> B[measure_peak]
-  B --> C[profile_kernel]
-  C --> D[LLM 生成候选]
-  D --> E[compile_kernel]
-  E --> F[bench_kernel]
-  F --> G[profile_kernel]
-  G --> H[accept_candidate]
-  H -->|accepted| I[更新 best.py]
-  H -->|rejected| J[读拒绝原因]
-  I --> D
-  J --> D
-  D --> K{达到 max_steps?}
-  K -->|是| L[确定性汇总 + 可视化]
-```
-
-> 说明：本节数字来自 `task-20260806-144647` 历史跑次；当时工具名仍为 `evaluate_candidate` / `profile`。重构后同等闭环应调用 `compile_kernel` → `bench_kernel` → `profile_kernel` → `accept_candidate`。
-
-对应代码主循环在 `kernel_optimize/agent.py`：每步先让 LLM `chat(..., tools=schema)`，若有 `tool_calls` 则由 `ToolExecutor` 执行，观察写回 history，再进入下一轮。
-
-本算子是 **memory-bound** 的 element-wise add。SOP 引导 Agent 优先做「减启动开销 / 提高并行度」类改动（更大 `block_size`、调整 `num_warps`），而不是在计算侧做无意义花样。
-
-## 3. 调用了哪些工具
-
-### 3.1 本轮实际调用序列（历史跑次）
-
-| Agent 步 | 工具（当时名） | 现今对应 | 关键返回 |
-|---|---|---|---|
-| 1 | `get_environment` | 同左 | `Radeon 8060S` / `gfx1151` / ROCm 7.12 |
-| 1 | `measure_peak` | 同左 | 带宽 **210.5 GB/s**；fp16 **27.8 TFLOPS** |
-| 2 | `profile` | `profile_kernel` | AI≈**0.167** → **memory-bound** |
-| 3–12 | `evaluate_candidate` ×10 | `compile`+`bench`+`accept_candidate` | 5 次接受 / 5 次拒绝 |
-
-### 3.2 当前工具职责一览
-
-| 工具 | 类型 | 做什么 |
-|---|---|---|
-| `compile_kernel` | 权威 | 编译 + 正确性 → `{ok, stage, errors}` |
-| `bench_kernel` | 权威 | 可信计时 → mean/median/p95/带宽/算力 |
-| `profile_kernel` | 权威 | 瓶颈信号 JSON |
-| `accept_candidate` | 权威晋升 | 配对裁决 + 写轨迹 + 更新 best |
-| `measure_peak` | 权威 | 带宽 / TFLOPS 峰值 |
-
-## 4. 提升了哪些指标
-
-### 4.1 硬件与算子画像（优化前）
-
-来自 `hardware.json` 与 `profile_kernel`：
-
-| 指标 | 数值 | 含义 |
-|---|---|---|
-| 设备带宽峰值 | 210.5 GB/s | Roofline 横轴天花板 |
-| fp16 峰值 | 27.8 TFLOPS | 对本算子几乎用不上 |
-| 算术强度 AI | 0.167 FLOP/Byte | `flops/bytes = 8.4M / 50.3MB` |
-| Bound | memory-bound | 应优先减少启动/提高访存效率 |
-
-Baseline（故意朴素）：
-
-```python
-block_size = 256
-# 未设置 num_warps / num_stages
-```
-
-由第 1 轮配对改进反推：baseline 中位延迟 ≈ **0.705 ms**。
-
-### 4.2 最终结果（相对 baseline）
-
-| 指标 | Baseline | Best（R9） | 变化 |
-|---|---|---|---|
-| 中位延迟 | ≈ 0.705 ms | **0.322 ms** | **约 2.19× 加速**（延迟降约 **54.3%**） |
-| `block_size` | 256 | **4096** | grid 启动次数减少 16× |
-| `num_warps` | 默认 | **32** | 提高 CU 占用与并行度 |
-| 正确性 | 通过 | 通过 | 全程无「快但错」被接受 |
-
-最终 `best.py` 要点：
-
-```python
-block_size = 4096
-_vadd_kernel[grid](..., block_size, num_warps=32)
-```
-
-### 4.3 逐轮指标账本
-
-`improvementFraction` 是相对**当时 incumbent** 的配对中位改进，不是相对最初 baseline。
-
-| 轮 | 改动 | 延迟 (ms) | 相对 incumbent | 裁决 |
-|---|---|---|---|---|
-| 1 | `block_size` 256→1024 | 0.378 | **+46.34%** | ✓ 接受 |
-| 2 | + `num_stages=2` | 0.372 | -0.32% | ✗ 阈值下 |
-| 3 | `block_size`→2048 | 0.342 | -1.01% | ✗ |
-| 4 | `block_size`→4096 | 0.338 | **+4.64%** | ✓ 接受 |
-| 5 | `block_size`→8192 | 0.405 | -17.34% | ✗ 明显变慢 |
-| 6 | 4096 + `num_stages=2` | 0.340 | +0.34% | ✗ &lt;1% |
-| 7 | 4096 + `num_warps=8` | 0.329 | **+3.46%** | ✓ 接受 |
-| 8 | `num_warps=16` | 0.326 | **+1.24%** | ✓ 接受 |
-| 9 | `num_warps=32` | **0.322** | **+1.50%** | ✓ 接受（最终 best） |
-| 10 | + `num_stages=2` | 0.323 | +0.50% | ✗ &lt;1% |
-
-观察：
-
-- **最大单轮收益**来自第一次放大 `block_size`（减 grid 启动开销），符合 memory-bound 直觉。  
-- `block_size=8192` 反而大幅回退：过大 block 会伤害占用或调度，Agent 拒绝后回到 4096 路线。  
-- 本机上 `num_stages` 多次试探均未过 1% 阈值；有效头寸主要在 **`block_size` + `num_warps`**。  
-- 后半段收益变小，逼近噪声/带宽墙——正是教程用 vector_add 验收闭环、而不是冲 3–5× 的原因。
-
-## 5. 可视化：优化过程
-
-图源：同一次运行产物（已同步到本目录 `images/`）。
-
-### 5.1 延迟与配对改进总览
-
-![延迟曲线与配对改进百分比](./images/rounds_overview.png)
-
-解读：
-
-- 上图绿线为 **best-so-far latency**，随接受轮次阶梯下降；  
-- 下图红虚线为 **1% 接受阈值**；绿柱为接受轮，橙柱为未达阈值或变慢；  
-- R5 的大负柱对应 `block_size=8192` 失败试探。
-
-### 5.2 每轮改动时间线
-
-![每轮改动与裁决时间线](./images/process_timeline.png)
-
-时间线把「改了什么 → 延迟/Δ → 是否接受」串成一条搜索路径，便于对照 `trajectory.jsonl`。
-
-### 5.3 状态分布
-
-![接受与拒绝状态分布](./images/status_breakdown.png)
-
-10 轮评估中：**接受 = 5**，**未达阈值 = 5**，无编译失败（与另一次含编译失败的搜索不同）。
-
-## 6. 工具调用与指标的对应关系
-
-| 阶段 | 工具 | 产出指标 | 如何影响后续决策 |
-|---|---|---|---|
-| 摸底 | `get_environment` | 设备 / arch / ROCm | 确认跑 Triton-ROCm，无需 `convert_kernel` |
-| 定天花板 | `measure_peak` | 带宽、TFLOPS | 给 Roofline 横纵坐标峰值 |
-| 定方向 | `profile_kernel` | AI、memory-bound | 优先试 block / warps |
-| 搜索 | `compile_kernel` → `bench_kernel` → `accept_candidate` | 延迟、改进、accepted | 唯一更新 best 与轨迹的入口 |
-| 收尾 | 确定性汇总 + 可视化 | 轮次、接受数、曲线 | 报告只引用工具账本，不引用模型口头数字 |
-
-## 7. 复现方式
+在 GPU 机器的仓库根目录执行：
 
 ```bash
 cd code/part3-agent
+uv sync
 source ./activate-rocm.sh
-
-# 需要 ~/.config/hello-gpu/kernel-agent.env
-# KERNEL_AGENT_MODEL=openai/Qwen/Qwen3.6-35B-A3B
-# KERNEL_AGENT_API_BASE=https://api.siliconflow.cn/v1
-# KERNEL_AGENT_API_KEY=...
-
-bash chapter16/run_and_visualize.sh --skip-pytest
-# 或只对已有 workspace 出图：
-# uv run python chapter16/run_part3_test.py --workspace chapter15/logs/tasks/task-XXXX --skip-agent --skip-pytest
+bash chapter17/run_all.sh --skip-pytest
 ```
 
-产物位置：
+运行脚本默认最多调用模型 25 次，并自动创建工作区保存结果。需要调整搜索预算时，可以设置 `MAX_STEPS`。
 
-- 轨迹 / best：`chapter15/logs/tasks/task-*/`  
-- 图：`chapter15/logs/tasks/task-*/viz/` 与 `chapter16/logs/task-*/viz/`  
-- 本文插图副本：`docs/part3-agent/chapter17/images/`
+## 2. 搜索完成了哪些步骤
 
-## 8. 小结
+这一节核对流程是否结束，再讨论候选的表现。
 
-1. Agent 优化不是「模型口算加速比」，而是 **探测 → 定方向 → 提议 → 权威裁决 → 反思** 的闭环。  
-2. 本轮历史日志工具是 `get_environment`、`measure_peak`、`profile` 与 `evaluate_candidate`；**当前代码**请用 `compile_kernel` / `bench_kernel` / `profile_kernel` / `accept_candidate`。  
-3. 相对朴素 baseline，最终 best 延迟从约 **0.705 ms → 0.322 ms（≈2.19×）**；有效机制是更大 `block_size` 与更高 `num_warps`。  
-4. 可视化把接受/拒绝、阈值与改动语义摊开，方便复盘搜索过程与失败回退。
+搜索前，原始基线通过正确性预检与计时检查；参考输出与基线输出的最大绝对、相对误差均为 0。程序还重新进行复制与矩阵乘法校准，避免直接沿用旧环境的硬件画像。
+
+本次共有 25 次模型调用、27 次工具调用、25 份工具评测记录，以及 6 条接受裁决。工具调用和裁决轮数不同：编译、计时、profile 都可能各占一次调用，而它们并不各自构成一次版本替换。
+
+到达第 25 步时，最后一个候选已完成 benchmark，尚未进入接受工具；程序自动提交同一份源码，完成第 6 条裁决。`agent-status.json` 中 `state=complete`、`evidenceReady=true`、`pendingCandidate=false`。这里的完成表示没有遗漏待裁决候选，**不表示搜索收敛**。此次最终文本也是步数用尽的程序提示，不能冒充模型自行写出的分析报告。
+
+从基线预检开始，包含校准、搜索和最终 5 次配对复测的运行段约耗时 **216 s**；它不包含依赖安装与绘图，也不是 GPU kernel 的运行时间。
+
+## 3. 从候选源码理解搜索
+
+这一节将模型声明与实际改动分开，再查看接受工具的结果。
+
+所有裁决候选都通过正确性检查。表中的改动来自各轮保存的 `candidate.py`；时间与改进来自同轮的 `result.json`。前 5 条都被拒绝，因此这些候选以及第 6 条始终与原始基线比较。
+
+| 裁决序号 | 源码确认的配置 | 候选记录延迟（μs） | 配对改进中位数 | 裁决 |
+| --- | --- | --- | --- | --- |
+| 1 | 重新生成同配置基线，`block_size=256` | 112 | +0.719% | 未达阈值 |
+| 2 | `block_size=1024`，其余启动参数默认 | 111 | -1.91% | 未达阈值 |
+| 3 | `block_size=256, num_warps=8` | 112 | -4.16% | 未达阈值 |
+| 4 | `block_size=256, num_warps=2` | 102 | -2.77% | 未达阈值 |
+| 5 | `block_size=256, num_stages=2` | 103 | +0.136% | 未达阈值 |
+| 6 | `block_size=512`，其余启动参数默认 | 109 | +1.35% | 接受 |
+
+第二条记录中，模型将增大 block 解释为“减少 grid 启动开销”。源码只能确认 grid 中的 program 数减少，kernel dispatch 仍然只有一次。类似地，`num_warps=2` 是否降低实际寄存器占用、`num_stages=2` 是否产生预期流水效果，都没有硬件计数器或编译产物证据支持。本报告将这些解释保留为假设。
+
+@fig-vector-add-timeline 保留运行记录中的原话，让你能将模型提出的理由与上表逐项核对。
+
+::: figure fig-vector-add-timeline
+![向量加法 Agent 的六条裁决记录](./images/vector-add-9070xt-timeline.png)
+
+RX 9070 XT + ROCm 7.13，FP16 向量加法：修改说明来自运行记录，计时和裁决来自评测工具。
+:::
+
+**图例**：三角形表示未达阈值，圆点表示接受；每行同时列出本轮候选延迟与相对当时当前版本的配对改进。文字里的原因解释未被自动验证；第 6 条自动提交的实际源码配置是 `block_size=512`。
+
+还发生了两次未进入接受裁决的失败。第一次 profile 调用携带的源码缺少必要的 `block_size` 实参，返回 `compile_error`。另一次候选使用 `cache_modifier='ca'`，编译器返回 `Cache modifier ca not supported`；模型随后改写候选。这两份失败源码和错误分别保存在 `evaluation-0001` 与 `evaluation-0010`，没有被补写成有性能数字的裁决行。
+
+@fig-vector-add-status 只统计进入接受工具的 6 条记录，因此不能从中推断“全部尝试都编译成功”。
+
+::: figure fig-vector-add-status
+![六条接受裁决的状态分布](./images/vector-add-9070xt-status.png)
+
+接受工具共记录 6 条裁决，1 条接受、5 条未达阈值；此前的编译失败不属于这个分母。
+:::
+
+**图例**：青色实色区域表示接受，赭色斜纹表示未达阈值；饼图表示占比，条形图表示次数，二者统计同一组裁决。
+
+## 4. 独立复测是否支持加速
+
+这一节重新比较起点与终点，检验搜索中的局部接受能否支持最终结论。
+
+第 6 条裁决中的配对改进中位数为 **+1.35%**，60% 的配对为正，按现有规则得到接受。最终源码把基线的 `block_size=256` 改成 512，保留相同的逐元素加载、相加和存储。原始基线在 `chapter15/fixtures/vector_add/baseline.py`，本次最终源码另外保存为 [`chapter17/vector_add_selected.py`](https://github.com/datawhalechina/hello-gpu/blob/main/code/part3-agent/chapter17/vector_add_selected.py)，便于脱离模型重新比较。
+
+5 次独立复测的结果如下。每格时间先在该次进程内取样本中位数；最后一列先在该次进程内计算配对改进中位数，不能从表中已经舍入的两个时间重新推导。
+
+| 独立运行 | 原始基线中位延迟（μs） | 最终版本中位延迟（μs） | 配对改进中位数 |
+| --- | --- | --- | --- |
+| 1 | 107 | 107 | +1.17% |
+| 2 | 111 | 108 | -0.476% |
+| 3 | 112 | 112 | +0.467% |
+| 4 | 114 | 113 | +0.261% |
+| 5 | 113 | 112 | -1.74% |
+
+两个时间列表的中位数都约为 **112 μs**，时间比值约为 **1.00 倍**。配对改进中位数跨 5 次运行再取中位数，得到 **+0.261%**；其中两次为负，只有一次超过 1%。这组结果不足以支持稳定加速，也说明一次刚过阈值的接受不能代替独立复测。
+
+这里没有将结果最好的某一次单独作为成绩，也没有把搜索阶段的最低延迟与另一时刻的基线组合。全部 5 次输出都保存在 `final-comparison.json` 中，正确性检查均通过。
+
+## 5. 证据与复现范围
+
+这一节说明如何从报告回到具体文件，以及本次结论的边界。
+
+运行脚本会自动保存这些文件：
+
+| 位置 | 内容 |
+| --- | --- |
+| `environment.json`、`task.json` | 实际运行环境和固定任务 |
+| `preflight.json`、`baseline-evaluation.json` | 搜索前的正确性检查与计时样本 |
+| `hardware.json` | 当次复制、FP32/FP16 矩阵乘法校准结果 |
+| `model-messages.jsonl`、`tool-calls.jsonl` | 模型上下文、调用参数和完整工具返回 |
+| `evaluations/evaluation-*/` | 每次评测的任务、源码快照与结果 JSON |
+| `trajectory.jsonl`、`agent-status.json` | 接受裁决、对应评测目录与结束状态 |
+| `final-comparison.json` | 5 次独立配对复测的样本与统计 |
+
+本次工具层的 profile 来自成本模型与实测校准，没有提供可用的寄存器、占用率或显存计数器证据。因此报告不把 Roofline 方向判断写成已经定位到某个硬件原因。该机器同时运行桌面会话，本次没有施加独占 GPU 或锁频条件；小幅波动应由重复测量展示，不能省略。
+
+代码和插图随教程入仓库，原始日志与 `EXPERIMENT.md` 按项目约定保留在本地。模型采样可能产生不同候选；即使软件环境一致，复跑也不保证生成相同的搜索路径。此处验证的是这次固定输入上的优化过程，没有人工优化对照，也没有覆盖其他输入规模、GPU 或端到端模型。

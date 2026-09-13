@@ -20,7 +20,7 @@ from source_policy import validate_candidate, validate_reference
 from task_spec import load_task
 
 
-FIXTURES = CHAPTER_DIR / "fixtures_v2"
+FIXTURES = CHAPTER_DIR.parent / "chapter15" / "fixtures" / "vector_add"
 
 
 class FakeTensor:
@@ -49,8 +49,13 @@ def _load_worker_with_stubs():
 WORKER = _load_worker_with_stubs()
 
 
-def _base_payload() -> dict:
-    return json.loads((FIXTURES / "task_v2_vadd.json").read_text(encoding="utf-8"))
+def _base_payload(*, with_cost_model: bool = False) -> dict:
+    payload = json.loads((FIXTURES / "task.json").read_text(encoding="utf-8"))
+    # Most tests change the ABI or shapes; the original vector-add traffic
+    # budget no longer describes those contracts. Cost-model tests opt in.
+    if not with_cost_model:
+        payload.pop("costModel", None)
+    return payload
 
 
 def _load_payload(payload: dict):
@@ -352,10 +357,10 @@ class PolicyAndBoundaryTest(unittest.TestCase):
         self.assertEqual(len(captured), MAX_CAPTURE_BYTES)
 
     def test_v2_candidate_and_reference_policies(self) -> None:
-        task = load_task(FIXTURES / "task_v2_vadd.json")
+        task = load_task(FIXTURES / "task.json")
         self.assertEqual(
             validate_candidate(
-                FIXTURES / "baseline_vadd.py",
+                FIXTURES / "baseline.py",
                 50_000,
                 expected_launch_args=task.launch_arguments,
                 entrypoint=task.entrypoint,
@@ -400,7 +405,7 @@ def launch(x, output, n):
             self.assertTrue(validate_candidate(rejected_path, **kwargs))
 
     def test_host_policy_rejects_framework_tensor_math_and_dead_dispatch(self) -> None:
-        task = load_task(FIXTURES / "task_v2_vadd.json")
+        task = load_task(FIXTURES / "task.json")
         sources = {
             "tensor_math": """\
 import triton
@@ -549,7 +554,7 @@ def launch(x, y, output, n_elements):
         self.assertTrue(any("kernel allowlist" in error for error in errors))
         self.assertEqual(
             validate_reference(
-                FIXTURES / "reference_vadd.py",
+                FIXTURES / "reference.py",
                 50_000,
                 entrypoint=task.reference.entrypoint,
                 expected_arguments=task.launch_arguments,
@@ -572,8 +577,8 @@ def launch(x, y, output, n_elements):
         with mock.patch.dict(os.environ, {"OPENAI_API_KEY": "secret", "PATH": "/bin"}, clear=True):
             with mock.patch("evaluate.subprocess.Popen", return_value=CompletedProcess()) as popen:
                 result = evaluate(
-                    FIXTURES / "task_v2_vadd.json",
-                    FIXTURES / "baseline_vadd.py",
+                    FIXTURES / "task.json",
+                    FIXTURES / "baseline.py",
                     reference_path=None,
                     harness_path=CHAPTER_DIR / "does-not-exist.py",
                 )
@@ -611,8 +616,8 @@ def launch(x, y, output, n_elements):
 
         with mock.patch("evaluate.subprocess.Popen", return_value=CompletedProcess()) as popen:
             result = evaluate(
-                FIXTURES / "task_v2_vadd.json",
-                FIXTURES / "baseline_vadd.py",
+                FIXTURES / "task.json",
+                FIXTURES / "baseline.py",
                 correctness_only=True,
             )
         self.assertEqual(result["status"], "ok")
@@ -620,12 +625,13 @@ def launch(x, y, output, n_elements):
         self.assertIn("--correctness-only", command)
 
     def test_evaluator_rejects_frozen_reference_hash_mismatch(self) -> None:
-        payload = _base_payload()
+        payload = _base_payload(with_cost_model=True)
         payload["dimensions"] = {"rows": 4096, "cols": 2048}
         contract = {
             "dimensions": payload["dimensions"],
             "tensors": payload["tensors"],
             "launchArguments": payload["launchArguments"],
+            "costModel": payload["costModel"],
         }
         contract_bytes = json.dumps(
             contract,
@@ -639,7 +645,7 @@ def launch(x, y, output, n_elements):
             "preflightEvidence": {
                 "algorithm": "sha256",
                 "baselineSha256": hashlib.sha256(
-                    (FIXTURES / "baseline_vadd.py").read_bytes()
+                    (FIXTURES / "baseline.py").read_bytes()
                 ).hexdigest(),
                 "referenceSha256": "0" * 64,
                 "contractSha256": hashlib.sha256(contract_bytes).hexdigest(),
@@ -651,8 +657,8 @@ def launch(x, y, output, n_elements):
             with mock.patch("evaluate.subprocess.Popen") as popen:
                 result = evaluate(
                     task_path,
-                    FIXTURES / "baseline_vadd.py",
-                    reference_path=FIXTURES / "reference_vadd.py",
+                    FIXTURES / "baseline.py",
+                    reference_path=FIXTURES / "reference.py",
                 )
         self.assertEqual(result["status"], "evaluator_error")
         self.assertIn("referenceSha256", result["details"])
@@ -668,8 +674,8 @@ def launch(x, y, output, n_elements):
             with mock.patch("evaluate.subprocess.Popen") as popen:
                 result = evaluate(
                     task_path,
-                    FIXTURES / "baseline_vadd.py",
-                    reference_path=FIXTURES / "reference_vadd.py",
+                    FIXTURES / "baseline.py",
+                    reference_path=FIXTURES / "reference.py",
                 )
         self.assertEqual(result["status"], "evaluator_error")
         self.assertIn("requires preflight evidence", result["details"])

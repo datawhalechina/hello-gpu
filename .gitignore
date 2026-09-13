@@ -48,3 +48,10 @@ code/part3-agent 2/
 docs/superpowers/
 .local-keep/
 .zcode
+
+# 已结束的开发计划、交接和图片返修记录仅供本地维护
+/REFACTOR-PLAN.md
+/INTEGRATION-PLAN.md
+/MEMO-9070XT-VERIFY.md
+/code/part3-agent/HANDOFF.md
+/assets/architecture/

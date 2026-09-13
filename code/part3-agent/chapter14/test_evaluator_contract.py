@@ -8,25 +8,12 @@ from source_policy import validate_candidate
 from task_spec import load_task
 
 
-PART_ROOT = Path(__file__).resolve().parent.parent
-TASK_PATH = PART_ROOT / "chapter13" / "task.json"
 BASELINE_PATH = Path(__file__).with_name("baseline.py")
-FIXTURES = Path(__file__).with_name("fixtures")
 
 
 class EvaluatorContractTest(unittest.TestCase):
-    def test_loads_frozen_task(self) -> None:
-        task = load_task(TASK_PATH)
-        self.assertEqual((task.shape.rows, task.shape.cols), (4096, 2048))
-        self.assertEqual(task.optimization.min_improvement_fraction, 0.01)
-
     def test_baseline_passes_source_policy(self) -> None:
         self.assertEqual(validate_candidate(BASELINE_PATH, 50_000), [])
-
-    def test_fixtures_pass_source_policy(self) -> None:
-        for name in ("compile_error.py", "wrong_answer.py", "fused_reference.py"):
-            with self.subTest(name=name):
-                self.assertEqual(validate_candidate(FIXTURES / name, 50_000), [])
 
     def test_rejects_forbidden_import(self) -> None:
         source = "import subprocess\n\ndef launch(*args):\n    pass\n"
@@ -101,10 +88,46 @@ def launch(x, output, exp_values, row_max, row_sum, scale, rows, cols):
         self.assertEqual(_as_text(b"before timeout\xff"), "before timeout\ufffd")
 
     def test_rejects_parent_directory_candidate_filename(self) -> None:
-        payload = json.loads(TASK_PATH.read_text(encoding="utf-8"))
-        payload["candidateFilename"] = ".."
+        # candidateFilename belongs to the supported v1 compatibility contract.
+        # Keep this boundary test independent of the removed frozen-task files.
+        payload = {
+            "schemaVersion": 1,
+            "name": "path-boundary",
+            "description": "candidate filename validation",
+            "language": "triton",
+            "candidateFilename": "candidate.py",
+            "entrypoint": "launch",
+            "shape": {"rows": 2, "cols": 2},
+            "dtype": "float16",
+            "scale": 1,
+            "semantics": {
+                "operation": "scaled-causal-row-softmax",
+                "mask": "column-le-row-mod-cols",
+                "accumulationDtype": "float32",
+                "maskedOutput": 0,
+            },
+            "input": {
+                "distribution": "normal", "mean": 0,
+                "standardDeviation": 1, "stressValues": [-1, 0, 1],
+            },
+            "launchArguments": [
+                "x", "output", "exp_values", "row_max", "row_sum",
+                "scale", "rows", "cols",
+            ],
+            "correctness": {"seeds": [17], "atol": 0.001, "rtol": 0.001},
+            "benchmark": {
+                "warmup": 1, "samples": 5, "innerRepeats": 1, "timeoutSeconds": 1,
+            },
+            "optimization": {
+                "maxRounds": 1, "patience": 1,
+                "minImprovementFraction": 0.01, "maxSourceChars": 50000,
+            },
+        }
         with tempfile.TemporaryDirectory() as temporary_dir:
             task_path = Path(temporary_dir) / "task.json"
+            task_path.write_text(json.dumps(payload), encoding="utf-8")
+            self.assertEqual(load_task(task_path).candidate_filename, "candidate.py")
+            payload["candidateFilename"] = ".."
             task_path.write_text(json.dumps(payload), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "simple filename|must not"):
                 load_task(task_path)

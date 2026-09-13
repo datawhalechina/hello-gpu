@@ -39,7 +39,6 @@ import softwareHardwareImage from './images/software-hardware.png'
 
 这里的**线程（Thread）**，可以先理解成“一份带有自己编号的计算工作”。它不是显卡上独占的一颗小处理器。程序可以提交很多份线程工作，硬件再安排它们执行。
 
-<!-- illustration: ch2-task-to-threads；提示词见 assets/architecture/illustration-prompts.md -->
 ::: figure fig-ch2-task-to-threads
 <a :href="taskToThreadsImage" target="_blank" rel="noopener" aria-label="查看数组任务与线程的高清原图">
   <img src="./images/task-to-threads.webp" alt="四个线程分别将同下标的 a 与 b 相加，输出依次为 11、22、33、44" />
@@ -62,7 +61,6 @@ import softwareHardwareImage from './images/software-hardware.png'
 
 下面做一个小的编号练习：**假设有 10 个元素，每块安排 4 个线程**。这是便于看清下标的手算配置，不是后面实验的 block 大小，也没有定义 wavefront 大小。
 
-<!-- illustration: ch2-block-index；提示词见 assets/architecture/illustration-prompts.md -->
 ::: figure fig-ch2-block-index
 <a :href="blockIndexImage" target="_blank" rel="noopener" aria-label="查看线程分块与编号的高清原图">
   <img src="./images/block-index.webp" alt="10 个元素分配给 3 个各含 4 个线程的 block；block 1 的局部线程 2 对应全局下标 6，最后两个线程的下标 10、11 越界" />
@@ -137,7 +135,6 @@ wavefront 在各个 block 内分别组成，不会把不同 block 的线程拼�
 
 例如，块内线程 35 在第 1 号 wavefront 里，对应 lane 3。**lane 编号会在每个 wavefront 里重新开始，不能把块内线程 224 叫成 lane 224。**
 
-<!-- illustration: ch2-wave-lanes；提示词见 assets/architecture/illustration-prompts.md -->
 ::: figure fig-ch2-wave-lanes
 <a :href="waveLanesImage" target="_blank" rel="noopener" aria-label="查看 Block 与 wave32 编号的高清原图">
   <img src="./images/wave-lanes.webp" alt="256 个线程分成 8 个 wave32；放大的 wavefront 7 中，lane 0 至 31 分别对应块内线程 224 至 255" />
@@ -162,7 +159,6 @@ ROCm 的 `gfx1201` 规格同时列出了 wave32 和 wave64。本章按已经测�
 
 我们可以先把每个 lane 想成带有一个“是否参与本步”的开关。执行 A 路径时，打开对应 lane 的开关；执行 B 路径时，再让另一部分 lane 参与。这份参与记录就叫**执行掩码（Execution Mask，EXEC）**。掩码这个名字并不神秘，它记录的就是哪些位置有效。
 
-<!-- illustration: ch2-exec-masks；提示词见 assets/architecture/illustration-prompts.md -->
 ::: figure fig-ch2-exec-masks
 <a :href="execMasksImage" target="_blank" rel="noopener" aria-label="查看分支与有效 lane 的高清原图">
   <img src="./images/exec-masks.webp" alt="四步分镜：分支前所有 lane 参与，A 路径偶数 lane 参与，B 路径奇数 lane 参与，合流后恢复参与" />
@@ -211,7 +207,6 @@ wavefront 分支的参与状态示意，只显示 wave32 的前 8 个 lane。灰
 | **计算单元（Compute Unit，CU）** | 包含执行单元及相关资源的一层硬件组织 |
 | **工作组处理器（Workgroup Processor，WGP）** | RDNA 中包含 CU 的更外层组织，也与同一工作组的放置范围有关 |
 
-<!-- illustration: ch2-software-hardware；提示词见 assets/architecture/illustration-prompts.md -->
 ::: figure fig-ch2-software-hardware
 <a :href="softwareHardwareImage" target="_blank" rel="noopener" aria-label="查看软件分工与硬件执行的高清原图">
   <img src="./images/software-hardware.webp" alt="左侧展开 grid、block、wavefront 和线程，右侧展开 GPU、WGP、CU 与 SIMD，wavefront 的指令由硬件调度执行" />

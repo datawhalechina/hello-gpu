@@ -1,12 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SOURCE_COMMIT="${SOURCE_COMMIT:-}"
-if [[ ! "${SOURCE_COMMIT}" =~ ^[0-9a-f]{7,40}$ ]]; then
-    echo "SOURCE_COMMIT must be a 7-40 character lowercase Git SHA" >&2
-    exit 2
-fi
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PART_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 requested_gpu_arch="${GPU_ARCH:-}"
@@ -78,7 +72,6 @@ rm -f "${LOG_DIR}/runs"/run*.log "${LOG_DIR}/runs"/hip_run*.log "${LOG_DIR}/runs
 
 {
     echo "timestamp=$(date -Iseconds)"
-    echo "source_commit=${SOURCE_COMMIT}"
     echo "source_sha256=${SOURCE_SHA256}"
     echo "size=${SIZE}"
     echo "hip_block=${HIP_BLOCK}"
@@ -189,7 +182,6 @@ if ((INDEPENDENT_RUNS > 0)); then
 fi
 
 python "${SCRIPT_DIR}/summarize_results.py" \
-    --chapter-dir "${SCRIPT_DIR}" \
-    --git-commit "${SOURCE_COMMIT}"
+    --chapter-dir "${SCRIPT_DIR}"
 echo "logs written to ${LOG_DIR}"
 echo "summary written to ${SCRIPT_DIR}/evidence"

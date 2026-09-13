@@ -6,7 +6,6 @@ from collections.abc import Mapping, Sequence
 MANIFEST_FIELDS = (
     "operator",
     "generated_at",
-    "git_commit",
     "source_sha256",
     "hardware",
     "software",

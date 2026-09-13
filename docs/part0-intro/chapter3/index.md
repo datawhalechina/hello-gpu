@@ -39,7 +39,6 @@ import matrixTileImage from './images/matrix-tile.png'
 
 这种直接供指令使用的临时存储，叫**寄存器（Register）**。你可以先把显存想成存放整批材料的货架，寄存器想成计算时手边的小工作台。需要处理某份材料时，把它取到手边，处理后再把结果放到约定的位置。
 
-<!-- illustration: ch3-data-journey；提示词见 assets/architecture/illustration-prompts.md -->
 ::: figure fig-ch3-data-journey
 <a :href="dataJourneyImage" target="_blank" rel="noopener" aria-label="查看一次加法数据旅程的高清原图">
   <img src="./images/data-journey.webp" alt="灰色读取请求发往缓存及全局内存；蓝色和橙色输入送入寄存器，加法结果沿绿色路径写回输出数组" />
@@ -70,7 +69,6 @@ import matrixTileImage from './images/matrix-tile.png'
 
 还有一种常见情况：程序仍然读取全局数组，但之前访问过的数据可能已经有一份副本留在更近的位置，不必每次都重新从外部显存取。这类由硬件管理的存储叫**缓存（Cache）**。请求的数据在缓存中找到，叫**命中（Hit）**；没有找到，则需要继续向后面的存储层级请求。
 
-<!-- illustration: ch3-storage-scopes；提示词见 assets/architecture/illustration-prompts.md -->
 ::: figure fig-ch3-storage-scopes
 <a :href="storageScopesImage" target="_blank" rel="noopener" aria-label="查看寄存器、LDS 与缓存使用范围的高清原图">
   <img src="./images/storage-scopes.webp" alt="同一工作组中的两个 wavefront 各有 SGPR，各 lane 持有不同 VGPR 分量；工作组共享 LDS，缓存由硬件另行管理" />
@@ -109,7 +107,6 @@ import matrixTileImage from './images/matrix-tile.png'
 
 这里列的是**元素下标**，不是字节地址。步长为 17，就是相邻两个 lane 读取的位置相隔 17 个元素。两种模式里每个 lane 都只读一个数，但合在一起看，请求的分布不同。
 
-<!-- illustration: ch3-coalesced-addresses；提示词见 assets/architecture/illustration-prompts.md -->
 ::: figure fig-ch3-coalesced-addresses
 <a :href="coalescedAddressesImage" target="_blank" rel="noopener" aria-label="查看相邻与分散读取的高清原图">
   <img src="./images/coalesced-addresses.webp" alt="左侧 lane 0 至 3 读取相邻元素 a[0]、a[1]、a[2]、a[3]；右侧对应的蓝框标出分散元素 a[0]、a[17]、a[34]、a[51]" />
@@ -183,7 +180,6 @@ Vector Add 中，每个输出只依赖对应的两个输入，线程各做各的
 
 LDS 可以看成**同一个工作组的共享桌面**。大家约定哪些位置放哪些数据，分别把自己负责的部分写进去，其他线程再按算法需要读取。共享桌面不会自动填满；声明了 `__shared__`，也不等于全局数组已经复制进来了。
 
-<!-- illustration: ch3-lds-cooperation；提示词见 assets/architecture/illustration-prompts.md -->
 ::: figure fig-ch3-lds-cooperation
 <a :href="ldsCooperationImage" target="_blank" rel="noopener" aria-label="查看 LDS 协作三个步骤的高清原图">
   <img src="./images/lds-cooperation.webp" alt="LDS 协作三步：各线程分工写入共享区域，在共同屏障处同步，然后读取自己或同组其他线程写入的数据" />
@@ -230,7 +226,6 @@ LDS 带来的收益是交换与复用，但也需要额外写入、同步和片�
 
 一个 wavefront 可以已经驻留，却仍在等待数据；就绪的 wavefront 也要等待调度机会。把这三件事分开，才不会把“已经安排了很多线程”误认为“每一刻都有很多线程在有效计算”。
 
-<!-- illustration: ch3-latency-hiding；提示词见 assets/architecture/illustration-prompts.md -->
 ::: figure fig-ch3-latency-hiding
 <a :href="latencyHidingImage" target="_blank" rel="noopener" aria-label="查看延迟隐藏与驻留资源的高清原图">
   <img src="./images/latency-hiding.webp" alt="wavefront A 等待数据期间可以执行就绪的 wavefront B；每组工作占用更多片上资源时，能够同时驻留的工作可能减少" />
@@ -266,7 +261,6 @@ LDS 带来的收益是交换与复用，但也需要额外写入、同步和片�
 
 LDS 内部把存储划分为可以并行服务访问的**存储体（Bank）**。可以把它想成多个服务入口：请求分散到不同入口时，有机会同时处理；同一批请求若访问映射到同一 bank 的不同地址，就可能发生竞争。这类访问冲突叫 **bank 冲突（Bank Conflict）**。[AMD RDNA 性能指南](https://gpuopen.com/learn/rdna-performance-guide/)
 
-<!-- illustration: ch3-bank-requests；提示词见 assets/architecture/illustration-prompts.md -->
 ::: figure fig-ch3-bank-requests
 <a :href="bankRequestsImage" target="_blank" rel="noopener" aria-label="查看 LDS bank 请求对照的高清原图">
   <img src="./images/bank-requests.webp" alt="左侧四个请求分散到四个示意入口；右侧 lane 0、1、2、3 读取不同地址 x0、x4、x8、x12，四条箭头共同指向入口 A" />
@@ -313,7 +307,6 @@ hipcc --offload-arch=gfx1201 -O3 -std=c++17 lds_bank_conflict.hip -o lds_bank_co
 
 除了普通的向量算术指令，RDNA 4 还提供**wavefront 矩阵乘加（Wave Matrix Multiply-Accumulate，WMMA）**指令。它把一小块矩阵运算交给整个 wavefront 协作完成，输入和输出分布在参与 lane 的寄存器中。理解它时，要从整个 wavefront 共同处理的矩阵块来看，而不能只盯着一个线程。
 
-<!-- illustration: ch3-matrix-tile；提示词见 assets/architecture/illustration-prompts.md -->
 ::: figure fig-ch3-matrix-tile
 <a :href="matrixTileImage" target="_blank" rel="noopener" aria-label="查看 wavefront 协作计算矩阵块的高清原图">
   <img src="./images/matrix-tile.webp" alt="A、B 和原来的 C 矩阵块共同进入一个 wavefront，协作完成 C 等于 A 乘 B 加 C，输出更新后的 C 矩阵块" />

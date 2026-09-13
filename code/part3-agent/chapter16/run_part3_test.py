@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""把 docs/part3-agent（第13–16章）整理成一份可运行验收脚本。
+"""把 docs/part3-agent（第14–17章）整理成一份可运行验收脚本。
 
 覆盖：
-1. 第14章工具层单测（可选）
-2. 第15/16章 vector_add 非交互 Agent 闭环（硅基流动 LLM）
+1. 第15章工具层单测（可选）
+2. 第16/17章 vector_add 非交互 Agent 闭环（硅基流动 LLM）
 3. 打印确定性汇总 + 轨迹表
 4. 可视化每轮优化过程（PNG）
 
@@ -19,6 +19,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import platform
+import time
+from importlib.metadata import version
 import subprocess
 import sys
 from datetime import datetime
@@ -42,14 +45,14 @@ def _print_banner() -> None:
     line = "═" * 60
     print()
     print(f"╭{line}╮")
-    print("│  part3-agent 本地验收 · docs/part3-agent ch13–16          │")
+    print("│  part3-agent 本地验收 · docs/part3-agent ch14–17          │")
     print(f"╰{line}╯")
     print()
     print("映射：")
-    print("  ch13 Agent 入门     → kernel_optimize 主循环")
-    print("  ch14 工具封装       → chapter14 evaluate + tools")
-    print("  ch15 Agent 设计     → fixtures/vector_add + batch 入口")
-    print("  ch16 多轮实战       → 本脚本：跑闭环 + 打印 + 可视化")
+    print("  ch14 Agent 入门     → kernel_optimize 主循环")
+    print("  ch15 工具封装       → chapter14 evaluate + tools")
+    print("  ch16 Agent 设计     → fixtures/vector_add + batch 入口")
+    print("  ch17 多轮实战       → 本脚本：跑闭环 + 打印 + 可视化")
     print()
 
 
@@ -63,17 +66,60 @@ def _check_llm_env() -> None:
     print(f"[env] API_KEY   = {'set' if key_set else 'missing'}")
 
 
-def _check_gpu() -> None:
-    try:
-        import torch
+def _check_gpu() -> dict:
+    import torch
 
-        ok = torch.cuda.is_available()
-        name = torch.cuda.get_device_name(0) if ok else "N/A"
-        print(f"[gpu] torch={torch.__version__}  cuda={ok}  device={name}")
-        if not ok:
-            print("[gpu] 警告：当前进程看不到 HIP/CUDA GPU，评测可能失败。")
-    except Exception as error:  # noqa: BLE001
-        print(f"[gpu] 探测失败：{error}")
+    if not torch.cuda.is_available():
+        raise RuntimeError("当前进程看不到 HIP/CUDA GPU")
+    environment = {
+        "gpu": torch.cuda.get_device_name(0),
+        "gpuArch": getattr(torch.cuda.get_device_properties(0), "gcnArchName", None),
+        "torch": torch.__version__,
+        "hipRuntime": torch.version.hip,
+        "python": platform.python_version(),
+        "platform": platform.platform(),
+        "osRelease": platform.freedesktop_os_release(),
+        "packages": {name: version(name) for name in ("rocm", "triton", "litellm", "numpy")},
+        "recordedAt": datetime.now().astimezone().isoformat(timespec="seconds"),
+    }
+    print(f"[gpu] torch={environment['torch']}  device={environment['gpu']}  arch={environment['gpuArch']}")
+    return environment
+
+
+def _write_json(path: Path, payload: dict) -> None:
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def _prepare_baseline(workspace: Path) -> None:
+    from kernel_optimize.tools import _evaluator
+    from kernel_optimize.measure import ensure_peak
+
+    _write_json(workspace / "environment.json", _check_gpu())
+    evaluate = _evaluator()
+    for name, correctness_only in (("preflight.json", True), ("baseline-evaluation.json", False)):
+        result = evaluate(
+            workspace / "task.json", workspace / "baseline.py",
+            reference_path=workspace / "reference.py", correctness_only=correctness_only,
+        )
+        _write_json(workspace / name, result)
+        if result.get("status") != "ok" or (result.get("correctness") or {}).get("passed") is not True:
+            raise RuntimeError(f"基线验证失败，详见 {workspace / name}")
+    # 每次新实验重新校准；不要沿用另一环境留下的机器缓存。
+    if not ensure_peak(workspace, force=True):
+        raise RuntimeError("硬件校准失败，无法为 profiling 提供当前环境的参照")
+
+
+def _final_compare(workspace: Path) -> int:
+    print("\n── 原始 baseline 与最终 best 独立配对复测（5 次）──")
+    cmd = [sys.executable, str(PART_ROOT / "chapter14" / "compare.py"),
+           "--task", str(workspace / "task.json"),
+           "--incumbent", str(workspace / "baseline.py"),
+           "--candidate", str(workspace / "best.py"), "--runs", "5"]
+    with (workspace / "final-comparison.json").open("w", encoding="utf-8") as out, \
+         (workspace / "final-comparison.stderr.log").open("w", encoding="utf-8") as err:
+        proc = subprocess.run(cmd, cwd=PART_ROOT, stdout=out, stderr=err)
+    print(f"[compare] exit={proc.returncode}  result={workspace / 'final-comparison.json'}")
+    return proc.returncode
 
 
 def _run_pytest() -> int:
@@ -86,8 +132,6 @@ def _run_pytest() -> int:
         "chapter14",
         "-q",
         "--tb=line",
-        "-k",
-        "not ensure_peak_no_gpu",
     ]
     print("$", " ".join(cmd))
     proc = subprocess.run(cmd, cwd=PART_ROOT)
@@ -115,8 +159,6 @@ def _run_agent(max_steps: int, workspace: Path) -> tuple[int, str]:
     )
     from kernel_optimize.agent import run_agent
 
-    _seed_workspace_from_fixture(FIXTURE, workspace)
-
     def on_step(step: int, action: str, observation: str | None) -> None:
         if action == "done":
             print(f"\n[step {step}] agent 完成")
@@ -128,7 +170,13 @@ def _run_agent(max_steps: int, workspace: Path) -> tuple[int, str]:
             first = observation.strip().splitlines()[0] if observation.strip() else ""
             print(f"[step {step}]   → {first[:160]}")
 
+    if workspace.exists() and any(workspace.iterdir()):
+        print("✗ 新实验需要空工作区；查看旧结果请使用 --skip-agent --workspace")
+        return 1, "(existing workspace preserved)"
+    started = time.monotonic()
     try:
+        _seed_workspace_from_fixture(FIXTURE, workspace)
+        _prepare_baseline(workspace)
         report = run_agent(
             workspace,
             max_steps=max_steps,
@@ -136,16 +184,30 @@ def _run_agent(max_steps: int, workspace: Path) -> tuple[int, str]:
             batch=True,
             goal=None,
         )
-        code = 0
+        code = _agent_exit_code(workspace)
+        if code == 0:
+            code = _final_compare(workspace)
     except Exception as error:  # noqa: BLE001
         print(f"✗ agent 运行失败：{error}")
         report = f"(failed) {error}"
         code = 1
 
+    workspace.mkdir(parents=True, exist_ok=True)
+    (workspace / "agent-report.md").write_text(report + "\n", encoding="utf-8")
+    _write_json(workspace / "run-timing.json", {"elapsedSeconds": time.monotonic() - started})
     print("\n═══ 最终报告（模型文本）═══\n")
     print(report)
     _print_deterministic_summary(workspace)
     return code, report
+
+
+def _agent_exit_code(workspace: Path) -> int:
+    try:
+        status = json.loads((workspace / "agent-status.json").read_text(encoding="utf-8"))
+        return 0 if (status.get("evidenceReady") is True
+                     and status.get("state") in ("complete", "complete_with_warning")) else 1
+    except (OSError, ValueError):
+        return 1
 
 
 def _load_threshold(workspace: Path) -> float:
@@ -204,13 +266,21 @@ def _write_summary(workspace: Path, agent_code: int, pytest_code: int | None, re
         "pytest_exit": pytest_code,
         "rounds": len(rows),
         "accepted": len(accepted),
-        "best_improvement": max(
-            (float(r["improvementFraction"]) for r in rows if r.get("improvementFraction") is not None),
+        "largest_accepted_step_improvement": max(
+            (float(r["improvementFraction"]) for r in accepted if r.get("improvementFraction") is not None),
             default=None,
         ),
         "report_preview": (report or "")[:1000],
         "generatedAt": datetime.now().isoformat(timespec="seconds"),
     }
+    for filename, field in (("agent-status.json", "agent_status"), ("final-comparison.json", "final_comparison")):
+        path = workspace / filename
+        if path.is_file():
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+                summary[field] = {k: v for k, v in data.items() if k not in ("results", "report")}
+            except (ValueError, OSError):
+                summary[field] = {"status": "unreadable"}
     out = workspace / "run_summary.json"
     out.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     mirror = LOG_ROOT / workspace.name
@@ -234,13 +304,13 @@ def main(argv: list[str] | None = None) -> int:
     LOG_ROOT.mkdir(parents=True, exist_ok=True)
     _print_banner()
 
-    try:
-        _check_llm_env()
-    except RuntimeError as error:
-        print(f"✗ LLM 配置缺失：{error}")
-        print("  请配置 ~/.config/hello-gpu/kernel-agent.env")
-        return 2
-    _check_gpu()
+    if not args.skip_agent and not args.reuse_latest:
+        try:
+            _check_llm_env()
+            _check_gpu()
+        except (RuntimeError, ImportError) as error:
+            print(f"✗ 环境检查失败：{error}")
+            return 2
 
     pytest_code: int | None = None
     if not args.skip_pytest and not args.skip_agent and not args.reuse_latest:
@@ -259,6 +329,9 @@ def main(argv: list[str] | None = None) -> int:
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         workspace = PART_ROOT / "chapter15" / "logs" / "tasks" / f"task-{stamp}"
 
+    if not args.skip_agent and not args.reuse_latest and workspace.exists() and any(workspace.iterdir()):
+        print("✗ 新实验需要空工作区；查看旧结果请使用 --skip-agent --workspace")
+        return 2
     agent_code = 0
     report = ""
     if not args.skip_agent and not args.reuse_latest:
@@ -267,7 +340,8 @@ def main(argv: list[str] | None = None) -> int:
         report = "(reused existing run)"
 
     viz_paths = _visualize(workspace)
-    _write_summary(workspace, agent_code, pytest_code, report)
+    if not args.skip_agent and not args.reuse_latest:
+        _write_summary(workspace, agent_code, pytest_code, report)
 
     print("\n═══ 验收结论 ═══")
     print(f"workspace : {workspace}")
@@ -275,8 +349,7 @@ def main(argv: list[str] | None = None) -> int:
     if pytest_code is not None:
         print(f"pytest    : {pytest_code}")
     print(f"figures   : {len(viz_paths)} files")
-    # Agent 闭环跑通即可视为主路径通过；pytest 的 hardware-aimax395 缺失不算阻断
-    return 0 if agent_code == 0 else agent_code
+    return agent_code or pytest_code or 0
 
 
 if __name__ == "__main__":

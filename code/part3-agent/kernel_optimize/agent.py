@@ -17,6 +17,7 @@ profile_kernel / accept_candidate / measure_peak）的返回就是真假判据�
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -145,6 +146,8 @@ def run_agent(
     batch：非交互模式（ask_user 拒答并引导继续闭环）。
     """
     workspace = Workspace(Path(workspace_dir))
+    conversation_path = workspace.root / "model-messages.jsonl"
+    run_started_at = datetime.now(timezone.utc).isoformat()
     executor, schema = build_tools(workspace, batch=batch)
     if batch:
         schema = [
@@ -279,19 +282,33 @@ def run_agent(
             or _file_size(trajectory_path) > trajectory_size_before_loop
         )
 
-    history: list[dict[str, Any]] = [
+    history: list[dict[str, Any]] = []
+
+    def append_history(item: dict[str, Any]) -> None:
+        """保存实际进入模型上下文的消息；API 配置与凭据不属于对话。"""
+        with conversation_path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({
+                "runStartedAt": run_started_at,
+                "messageIndex": len(history),
+                "recordedAt": datetime.now(timezone.utc).isoformat(),
+                "message": item,
+            }, ensure_ascii=False) + "\n")
+        history.append(item)
+
+    for item in [
         {"role": "system", "content": SYSTEM_SOP},
         {"role": "user", "content": goal},
-    ]
+    ]:
+        append_history(item)
     for step in range(1, max_steps + 1):
         if batch and pending_source is not None and not pending_nudged:
-            history.append({"role": "user", "content": _PENDING_ACCEPT_NUDGE})
+            append_history({"role": "user", "content": _PENDING_ACCEPT_NUDGE})
             pending_nudged = True
             if on_step:
                 on_step(step, "nudge", None)
 
         message = llm.chat(history, tools=schema)
-        history.append(_assistant_to_dict(message))
+        append_history(_assistant_to_dict(message))
 
         tool_calls = getattr(message, "tool_calls", None)
 
@@ -327,7 +344,7 @@ def run_agent(
                     nudge = _NUDGE_NO_ACCEPT
                 else:
                     nudge = _NUDGE_QUESTION
-                history.append({"role": "user", "content": nudge})
+                append_history({"role": "user", "content": nudge})
                 if on_step:
                     on_step(step, "nudge", None)
                 continue
@@ -486,7 +503,7 @@ def run_agent(
                     ):
                         clear_pending()
 
-            history.append(
+            append_history(
                 {
                     "role": "tool",
                     "tool_call_id": call.id,

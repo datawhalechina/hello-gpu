@@ -1,8 +1,10 @@
 import { defineConfig } from 'vitepress'
 import { existsSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import footnote from 'markdown-it-footnote'
 import figurePlugin from './markdown-figures.mjs'
 import editorialPlugin from './markdown-editorial.mjs'
+import { createImageDimensionLookup } from './markdown-image-dimensions.mjs'
 import { navItems, sidebar } from './outline.mjs'
 
 function encodeMermaid(value: string) {
@@ -21,6 +23,7 @@ function prepareMathSvgTemplate(value: string) {
 const isEdgeOne = process.env.EDGEONE === '1'
 const baseConfig = isEdgeOne ? '/' : '/hello-gpu/'
 const configuredMarkdownRenderers = new WeakSet<object>()
+let imageDimensionLookup: ReturnType<typeof createImageDimensionLookup> | undefined
 
 export default defineConfig({
   lang: 'zh-CN',
@@ -54,9 +57,13 @@ export default defineConfig({
 
   markdown: {
     math: true,
-    config(md) {
+    async config(md) {
       // Client/server builds can initialize the same renderer concurrently.
       // Register plugins and renderer wrappers only once on each instance.
+      if (configuredMarkdownRenderers.has(md)) return
+      const getImageDimensions = await (imageDimensionLookup ??= createImageDimensionLookup(
+        fileURLToPath(new URL('../', import.meta.url)),
+      ))
       if (configuredMarkdownRenderers.has(md)) return
       configuredMarkdownRenderers.add(md)
 
@@ -108,6 +115,11 @@ export default defineConfig({
         const srcIndex = token.attrIndex('src')
         if (srcIndex >= 0) {
           const src = token.attrs![srcIndex][1]
+          const dimensions = getImageDimensions(src, env.path || env.relativePath)
+          if (dimensions && token.attrIndex('width') < 0 && token.attrIndex('height') < 0) {
+            token.attrSet('width', String(dimensions.width))
+            token.attrSet('height', String(dimensions.height))
+          }
           if (/\.png(\?.*)?$/i.test(src)) {
             token.attrs![srcIndex][1] = src.replace(/\.png(\?.*)?$/i, (_, q) => `.webp${q ?? ''}`)
           }

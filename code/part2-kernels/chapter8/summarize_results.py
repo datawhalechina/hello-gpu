@@ -80,7 +80,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--chapter-dir", type=Path, default=Path(__file__).resolve().parent
     )
-    parser.add_argument("--git-commit")
     parser.add_argument("--print-source-sha256", action="store_true")
     parser.add_argument("--require-complete-profiles", action="store_true")
     return parser.parse_args()
@@ -268,12 +267,10 @@ def write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, object]]) 
 
 
 def validate_evidence_inputs(
-    records: list[dict[str, str]], independent_paths: list[Path], manifest: dict[str, object], git_commit: str
+    records: list[dict[str, str]], independent_paths: list[Path], manifest: dict[str, object]
 ) -> list[str]:
     errors: list[str] = []
     benchmark = manifest["benchmark"]
-    if benchmark.get("source_commit") != git_commit:
-        errors.append("benchmark_manifest source_commit does not match --git-commit")
     if benchmark.get("source_sha256") != manifest["source_sha256"]:
         errors.append("benchmark_manifest source_sha256 does not match current source hash")
     if benchmark.get("independent_runs") != "3":
@@ -357,7 +354,7 @@ def validate_profile_config(paths: ChapterPaths, benchmark: dict[str, str]) -> l
         return []
     profile = read_env_file(profile_path)
     errors: list[str] = []
-    for field in ("source_commit", "source_sha256", "size", "hip_block", "triton_t0_block", "triton_block", "seed"):
+    for field in ("source_sha256", "size", "hip_block", "triton_t0_block", "triton_block", "seed"):
         if profile.get(field) != benchmark.get(field):
             errors.append(f"profile_config {field} does not match benchmark_manifest")
     return errors
@@ -391,8 +388,6 @@ def main() -> None:
     if args.print_source_sha256:
         print(source_sha256(paths.root))
         return
-    if not args.git_commit:
-        raise SystemExit("--git-commit is required unless --print-source-sha256 is used")
     independent_paths = sorted((paths.logs / "runs").glob("run*.log"))
     records = read_records(independent_paths, paths.root)
     if not records:
@@ -403,7 +398,6 @@ def main() -> None:
     manifest = {
         "operator": "vector-add",
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "git_commit": args.git_commit,
         "source_sha256": source_sha256(paths.root),
         "hardware": read_environment_value(
             environment_log, "torch.cuda.device_name"
@@ -419,8 +413,10 @@ def main() -> None:
         "benchmark": read_env_file(paths.logs / "benchmark_manifest.env"),
         "_root": str(paths.root),
     }
+    # Keep historical input readable without carrying obsolete commit metadata forward.
+    manifest["benchmark"].pop("source_commit", None)
     errors = (
-        validate_evidence_inputs(records, independent_paths, manifest, args.git_commit)
+        validate_evidence_inputs(records, independent_paths, manifest)
         + validate_profile_config(paths, manifest["benchmark"])
         + validate_records(records)
         + validate_records(summary)

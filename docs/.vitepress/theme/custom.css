@@ -83,6 +83,11 @@ html {
   scroll-padding-top: 140px;
 }
 
+/* Document headings already reserve the navbar space with scroll-margin-top. */
+html:has(.VPDoc) {
+  scroll-padding-top: 0;
+}
+
 body {
   font-family: var(--vp-font-family-base);
   -webkit-font-smoothing: antialiased;
@@ -453,22 +458,48 @@ a, button {
   color: var(--vp-c-brand-1);
 }
 
+/* Preserve the shared marker rail as nested lists add their own indentation. */
+.VPDocAsideOutline .VPDocOutlineItem.root {
+  --hg-outline-indent: 0px;
+}
+
+.VPDocAsideOutline .VPDocOutlineItem li {
+  --hg-outline-parent-indent: var(--hg-outline-indent);
+}
+
+.VPDocAsideOutline .VPDocOutlineItem.nested {
+  --hg-outline-indent: calc(var(--hg-outline-parent-indent) + 16px);
+}
+
 .VPDocAsideOutline .outline-link {
+  position: relative;
   font-size: 12px;
   line-height: 1.65;
   padding: 8px 0;
   color: var(--vp-c-text-2);
   white-space: normal;
+  overflow: visible;
 }
 
 .VPDocAsideOutline .outline-link.active {
   color: var(--vp-c-brand-1);
 }
 
-.VPDocAsideOutline .outline-marker {
+.VPDocAsideOutline .outline-link.active::before {
+  content: '';
+  position: absolute;
+  left: calc(-16px - var(--hg-outline-indent));
+  top: 50%;
+  transform: translateY(-50%);
   width: 3px;
-  border-radius: 0;
+  height: 18px;
   background: var(--vp-c-brand-1);
+  pointer-events: none;
+}
+
+/* The default marker assumes fixed title/row heights; our links can wrap. */
+.VPDocAsideOutline .outline-marker {
+  display: none;
 }
 
 .hg-chapter-prelude {
@@ -1426,4 +1457,33 @@ html:not(.dark) .hg-directory-visual {
     left: auto;
     width: min(340px, calc(100vw - 48px));
   }
+}
+
+/* Part 3 flowcharts keep readable labels on narrow screens; the figure scrolls locally. */
+:is(#fig-agent-feedback, #fig-kernel-optimization-loop, #fig-tool-validation,
+    #fig-candidate-promotion, #fig-agent-architecture, #fig-pending-candidate,
+    #fig-agent-experiment-artifacts, #fig-accepted-version-state) .mermaid-block > div {
+  min-width: 640px;
+}
+
+@media (max-width: 767px) {
+  :is(#fig-agent-feedback, #fig-kernel-optimization-loop, #fig-tool-validation,
+      #fig-candidate-promotion, #fig-agent-architecture, #fig-pending-candidate,
+      #fig-agent-experiment-artifacts, #fig-accepted-version-state) .mermaid-block::before {
+    content: '左右滑动图内区域，查看完整流程';
+    display: block;
+    position: sticky;
+    left: 0;
+    width: fit-content;
+    margin-bottom: 16px;
+    color: var(--vp-c-text-2);
+    font-size: 12px;
+  }
+}
+
+/* Mermaid measures HTML labels at 1.5 line height; prose styles must not enlarge them. */
+.vp-doc .mermaid-block .nodeLabel p,
+.vp-doc .mermaid-block .edgeLabel p {
+  margin: 0;
+  line-height: 1.5;
 }

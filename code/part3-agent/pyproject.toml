@@ -4,12 +4,12 @@ version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
     "numpy>=2.4.4",
-    "rocm==7.12.0",
-    "rocm-sdk-core==7.12.0",
-    "rocm-sdk-devel==7.12.0",
-    "rocm-sdk-libraries-gfx1151==7.12.0",
-    "torch==2.10.0+rocm7.12.0",
-    "triton==3.6.0+rocm7.12.0",
+    "rocm==7.13.0",
+    "rocm-sdk-core==7.13.0",
+    "rocm-sdk-devel==7.13.0",
+    "rocm-sdk-libraries-gfx120x-all==7.13.0",
+    "torch==2.11.0+rocm7.13.0",
+    "triton==3.6.0+rocm7.13.0",
     # Agent 层依赖：LLM 调用、结构化输出、TUI
     "litellm>=1.50",
     "pydantic>=2.0",
@@ -20,12 +20,12 @@ dependencies = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["kernel_agent/tests", "kernel_optimize/tests", "chapter14"]
+testpaths = ["kernel_optimize/tests", "chapter14"]
 python_files = ["test_*.py"]
 
 [[tool.uv.index]]
 name = "rocm-amd"
-url = "https://repo.amd.com/rocm/whl/gfx1151/"
+url = "https://repo.amd.com/rocm/whl/gfx120X-all/"
 explicit = true
 
 [[tool.uv.index]]
@@ -37,7 +37,7 @@ default = true
 rocm = { index = "rocm-amd" }
 rocm-sdk-core = { index = "rocm-amd" }
 rocm-sdk-devel = { index = "rocm-amd" }
-rocm-sdk-libraries-gfx1151 = { index = "rocm-amd" }
+rocm-sdk-libraries-gfx120x-all = { index = "rocm-amd" }
 rocm-core = { index = "rocm-amd" }
 rocm-smi-lib = { index = "rocm-amd" }
 torch = { index = "rocm-amd" }

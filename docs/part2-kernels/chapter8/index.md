@@ -564,18 +564,17 @@ HIP 的一个 thread 与 Triton 的一个 program **不是一一对应**。更�
 
 ### 8.8.1 一键入口
 
-以下命令对应 2026-07-19 发布的 **Radeon RX 9070 XT + ROCm 7.13 + 原生 Ubuntu 24.04** curated evidence，也是读者复跑本章的入口：
+在已经 clone 的仓库根目录执行以下命令，准备 Part 2 环境，再分别运行正确性与计时、profiling。本章已发布结果的实验环境为 **Radeon RX 9070 XT + ROCm 7.13 + 原生 Ubuntu 24.04**：
 
 ```bash
 cd code/part2-kernels
 uv sync
 source ./activate-rocm.sh
-export SOURCE_COMMIT="<本地 Git 维护机提供的源码提交 SHA>"
 bash chapter8/run_all.sh
 bash chapter8/profile_all.sh
 ```
 
-将占位符替换为本地 Git 维护机提供的实际提交 SHA，再执行命令。实验机只接收对应的源码文件，不执行 Git 操作；两个入口共用这个标识。可选的地址调试工具默认关闭，不影响正确性、benchmark 和 profiling 主流程。
+可选的地址调试工具默认关闭，不影响正确性、benchmark 和 profiling 主流程。
 
 `run_all.sh` 的顺序是：
 

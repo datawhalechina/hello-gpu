@@ -1,232 +1,230 @@
 ---
 title: "第17章 多轮优化实战"
-description: "Hello GPU 第17章 · vector_add 真实轨迹 ≈2.19×、失败回退、对比报告"
+description: "Hello GPU 第17章 · 用向量加法学习运行、读图、独立复测与报告"
 ---
 
 # 第17章 多轮优化实战
 
-## 本章目标、前置知识与产物
+## 本章导读
 
-本章是算子 Agent 篇的高潮：把第 15 章的工具与第 16 章的循环放在一起，跑一次完整多轮优化，然后——**如实展示结果**。
+> 在 [第 15 章](../chapter15/index.md) 和 [第 16 章](../chapter16/index.md) 中，我们已经实现了评测工具和 Agent 循环。现在可以把它们用于一个具体的算子了。本章从向量加法出发，依次运行搜索、查看候选的变化，并比较优化前后的执行时间。在这个过程中，我们将学习如何根据测量结果决定是否保留一项修改。
 
-本章主角是 **`vector_add` fixtures**，硬件为 **Radeon 8060S（`gfx1151`）+ ROCm 7.12**，工作区 `task-20260806-144647`。
+## 17.1 选择一个能读懂结果的任务
 
-先说结论，这也是本书和「Agent 自动优化一切」类教程的区别：
+我们先选择向量加法作为优化任务。它的计算规则只有 `output = x + y`，因而容易检查结果是否正确。我们也已经熟悉它的实现，可以观察模型怎样调整每个 program 处理的元素数量，以及这些调整怎样影响执行时间。
 
-- 在**故意留头寸**的朴素 `vector_add` 上，本轮 Agent 搜索把延迟从约 **0.705 ms → 0.322 ms（≈2.19×）**，10 轮评估中 **5 次接受**；
-- 加速主要来自 **更大 `block_size` + 更高 `num_warps`**（减 grid 启动、提高并行度），符合 memory-bound 直觉；
-- 教程承诺的「3–5×」针对**有明显优化空间**的算子（融合 softmax、naive reduction/matmul 等）。`vector_add` 靠近带宽墙，用来证明**闭环可信**与**失败回退**，不是证明极限加速。
+本章使用 [`chapter15/fixtures/vector_add/`](https://github.com/datawhalechina/hello-gpu/tree/main/code/part3-agent/chapter15/fixtures/vector_add) 中的预置任务。目录里只需先认识三份文件：`task.json` 固定规格，`reference.py` 定义正确结果，`baseline.py` 提供开始搜索的实现。
 
-学完本章，你应该能够：
+| 实验条件 | 配置 |
+| --- | --- |
+| 数学语义 | 逐元素相加，写入预分配的输出 |
+| 输入 | 两个连续 FP16 张量，形状 `4096 × 2048` |
+| 正确性 | 与 PyTorch 参考实现比较，容差见任务配置 |
+| 计时 | GPU event；预热、采样和重复次数由任务固定 |
+| 接受条件 | 相对当前版本的配对中位改进至少 1%，并满足配对数与正改进比例要求 |
+| 运行环境 | Radeon RX 9070 XT（`gfx1201`）、ROCm 7.13、原生 Ubuntu 24.04 |
 
-- 按留痕规则读懂 `trajectory.jsonl`；
-- 从性能曲线指出哪几轮提升最大、哪几轮该回退；
-- 写一份区分事实与假设的对比报告。
-
-对应代码与产物：
-
-```text
-code/part3-agent/chapter15/
-├── fixtures/vector_add/
-│   ├── baseline.py
-│   ├── reference.py
-│   └── task.json
-└── logs/tasks/task-20260806-144647/   # 本章引用的真实工作区
-    ├── trajectory.jsonl
-    ├── best.py
-    ├── hardware.json
-    └── viz/
-
-code/part3-agent/chapter16/
-├── run_part3_test.py
-├── visualize_trajectory.py
-└── run_and_visualize.sh
-```
-
-## 17.1 选一个教学算子
-
-| 算子 | 用途 | 预期 |
-|---|---|---|
-| **vector_add**（本章默认） | 验证 Agent 闭环、评测器、非交互入口 | 中小幅到约 2×（视 baseline 有多朴素）；重在轨迹完整 |
-| masked-softmax / reduction / naive matmul | 冲击 3–5× 叙事 | 融合、LDS、向量化等机制有头寸 |
-
-选型原则：
-
-1. 有可执行的 Triton baseline 与 PyTorch reference；
-2. `costModel` 能区分 bound 类型；
-3. 故意留一点「可改空间」（如偏小 `block_size`），否则 Agent 只能在噪声里打转。
-
-本章任务契约摘要：
-
-| 字段 | 内容 |
-|---|---|
-| Objective | 元素级向量加，与 reference 一致 |
-| Shape / dtype | `4096×2048`，fp16，约 8.4M 元素 |
-| Correctness | 与 PyTorch reference 比对 |
-| Promotion | 配对中位改进 ≥ 1%，多数配对为正 |
-| Constraints | Triton on ROCm |
-
-## 17.2 记录每轮优化的轨迹
-
-优化之前先定「留痕规则」。工作区固定若干证据文件：
-
-```text
-task-20260806-144647/
-├── task.json / reference.py / baseline.py / best.py
-├── hardware.json          # measure_peak 副本
-├── trajectory.jsonl       # 每行一轮：change / status / accepted / latencyMs / …
-├── run_summary.json
-└── viz/                   # 可视化 PNG
-```
-
-规则只有一条：**任何候选版本，无论成败，都留下记录。**
-
-本轮 Agent 步内工具序列（历史跑次工具名曾为 `evaluate_candidate` / `profile`；**当前代码**请用三件套 + `accept_candidate`）：
-
-| Agent 步 | 当时工具 | 现今对应 | 关键返回 |
-|---|---|---|---|
-| 1 | `get_environment` | 同左 | Radeon 8060S / gfx1151 / ROCm 7.12 |
-| 1 | `measure_peak` | 同左 | 带宽 **210.5 GB/s**；fp16 **27.8 TFLOPS** |
-| 2 | `profile` | `profile_kernel` | AI≈**0.167** → **memory-bound** |
-| 3–12 | `evaluate_candidate` ×10 | `compile`+`bench`+`accept` | **5 接受 / 5 拒绝** |
-
-## 17.3 观察性能提升曲线
-
-硬件与算子画像（优化前）：
-
-| 指标 | 数值 |
-|---|---|
-| 设备 | Radeon 8060S Graphics · `gfx1151` |
-| ROCm / torch | 7.12 / `2.10.0+rocm7.12.0` |
-| 带宽峰值 | 210.5 GB/s |
-| AI / bound | 0.167 · memory-bound |
-| Baseline 特征 | `block_size=256`，未设 `num_warps` |
-| Baseline 中位延迟（反推） | ≈ **0.705 ms** |
-
-逐轮账本（`improvementFraction` 相对**当时 incumbent**，不是相对最初 baseline）：
-
-| 轮 | 改动 | 延迟 (ms) | 相对 incumbent | 裁决 |
-|---|---|---|---|---|
-| 1 | `block_size` 256→1024 | 0.378 | **+46.34%** | ✓ 接受 |
-| 2 | + `num_stages=2` | 0.372 | -0.32% | ✗ 阈值下 |
-| 3 | `block_size`→2048 | 0.342 | -1.01% | ✗ |
-| 4 | `block_size`→4096 | 0.338 | **+4.64%** | ✓ 接受 |
-| 5 | `block_size`→8192 | 0.405 | -17.34% | ✗ 明显变慢 |
-| 6 | 4096 + `num_stages=2` | 0.340 | +0.34% | ✗ &lt;1% |
-| 7 | 4096 + `num_warps=8` | 0.329 | **+3.46%** | ✓ 接受 |
-| 8 | `num_warps=16` | 0.326 | **+1.24%** | ✓ 接受 |
-| 9 | `num_warps=32` | **0.322** | **+1.50%** | ✓ 接受（最终 best） |
-| 10 | + `num_stages=2` | 0.323 | +0.50% | ✗ &lt;1% |
-
-相对最初 baseline：
-
-| 指标 | Baseline | Best（R9） | 变化 |
-|---|---|---|---|
-| 中位延迟 | ≈ 0.705 ms | **0.322 ms** | **≈2.19×**（延迟降约 54%） |
-| `block_size` | 256 | **4096** | grid 启动次数约减 16× |
-| `num_warps` | 默认 | **32** | 提高 CU 占用与并行度 |
-
-曲线形状：
-
-- **最大单轮收益**来自 R1 放大 `block_size`（配置搜索，减启动开销）；
-- R7–R9 的 `num_warps` 阶梯是二次提升；
-- R5 `block_size=8192` 是结构/资源边界上的负结果——过大 block 伤害占用或调度。
-
-### 可视化
-
-#### 延迟与配对改进总览
-
-![延迟曲线与配对改进百分比](./images/rounds_overview.png)
-
-上图绿线为 best-so-far latency；下图红虚线为 1% 接受阈值；绿柱接受、橙柱拒绝。R5 大负柱对应 8192 失败试探。
-
-#### 每轮改动时间线
-
-![每轮改动与裁决时间线](./images/process_timeline.png)
-
-#### 状态分布
-
-![接受与拒绝状态分布](./images/status_breakdown.png)
-
-10 轮：**接受 = 5**，**未达阈值 = 5**，本轮无编译失败。
-
-最终 `best.py` 要点：
+基线的入口如下，片段来自现有 `baseline.py`：
 
 ```python
-block_size = 4096
-_vadd_kernel[grid](..., block_size, num_warps=32)
+def launch(x, y, output, n_elements):
+    block_size = 256  # 故意偏小，给优化留空间（可试更大 block / 向量化）
+    grid = (triton.cdiv(n_elements, block_size),)
+    _vadd_kernel[grid](x, y, output, n_elements, block_size)
 ```
 
-## 17.4 失败回退机制
+先看 `grid` 的计算。增大 `block_size` 会减少同一 grid 中的 program 数量，并不意味着减少 kernel dispatch 次数：这段入口仍调用一次核函数。是否因而更快，需要计时回答；是否改变了寄存器压力或占用率，需要额外证据回答。
 
-回退不是单独的「undo 工具」，而是评测器契约：
+## 17.2 运行之前固定基线与记录范围
 
-```text
-候选失败或未过阈值 → accepted=false → 不写 best.py → incumbent 保持上一版
-```
+运行 Agent 之前，我们先保留一份原始基线。它有两个用途。搜索时，它提供最初可验证的实现；搜索结束时，它与最终版本组成独立复测的两端。如果在试验中不断覆盖基线，就无法回答“从起点到终点改进了多少”。
 
-本轮最有教学价值的失败是 **R5：`block_size=8192`**——编译与正确性都过，但中位改进 **-17.3%**，明显变慢。Agent 拒绝后继续从 4096 路线搜索 `num_warps`，没有把坏候选写进 best。
+运行入口会在新工作区保留 `baseline.py`，并将它复制为初始 `best.py`。后续接受的候选更新 `best.py`。运行不同任务时使用新工作区；不要把已有工作区参数当作完整的断点续跑功能。
 
-失败记录的价值：
+模型配置可以写入程序自动读取的 `~/.config/hello-gpu/kernel-agent.env`，或由当前环境提供。选择支持工具调用的模型，并按照服务商要求配置端点。
 
-> 「过大 block 在本机 vector_add 上是负优化」这条结论，来自一次失败实验，却能阻止后续盲目把 `block_size` 推到极限。
+| 配置项 | 用途 |
+| --- | --- |
+| `KERNEL_AGENT_MODEL` | `provider/model` 形式的模型标识 |
+| `KERNEL_AGENT_API_KEY` | 服务要求的密钥 |
+| `KERNEL_AGENT_API_BASE` | 可选，自定义兼容端点 |
+| `KERNEL_AGENT_EXTRA_BODY` | 按模型接口要求调整额外参数；需要移除默认扩展时可设为 `{}` |
 
-Agent 侧配合：把拒绝原因读进下一轮提示；SOP 要求「连续同类失败就换机制」；轨迹保留失败轮次，便于报告诚实引用。
-
-## 17.5 和人工优化的对比
-
-| 维度 | 本轮 Agent | 人工典型做法 |
-|---|---|---|
-| 发现方向 | 在 memory-bound SOP 引导下试 block / warps | 一次选定较大 block + 合理 warps |
-| 执行与留痕 | 10 轮全自动评测 + `trajectory.jsonl` | 常靠笔记，易丢负结果 |
-| 最终结果 | ≈2.19× vs 故意朴素 baseline | 熟练者可能更少轮次到达相近点 |
-| 局限 | 未发明新算法结构；步数耗尽即停 | 需要人盯着跑实验 |
-
-诚实结论：
-
-1. Agent 当前强项是 **执行 + 记录**：给定方向空间，能快速产出变体并自动验证；
-2. Agent 弱项仍是 **发现全新结构**（线上 fused MLP 对照实验里纯 Agent 贡献接近 0%——见线上第 17.5 节）；
-3. 「3–5×」的正确打开方式往往是 **人给关键洞察，Agent 快速验证并留痕**。本轮 2.19× 发生在「baseline 故意很差」的前提下，不要外推到已经接近带宽墙的生产 kernel。
-
-## 17.6 生成对比报告
-
-好的报告回答五个问题：
-
-| 问题 | 本轮回答 |
-|---|---|
-| 题目是什么 | `vector_add` fp16 `4096×2048`；配对改进 ≥1% |
-| 每轮改了什么 | 上表：block_size / num_warps / num_stages |
-| 哪些失败了、为什么 | R5 过大 block；多次 `num_stages` 未过阈值 |
-| 最终结论 | 0.322 ms，≈2.19×；best = 4096 + num_warps=32 |
-| 事实 vs 推测 | 轨迹与 `hardware.json` 是事实；「还能再快」是推测 |
-
-更细的工具调用链与指标说明见同目录 [optimization-report.md](./optimization-report.md)。
-
-### 如何复现
+示例依赖 ROCm 7.13.0、PyTorch 2.11.0 与 Triton 3.6.0。`gfx1201` 对应 AMD 的 `gfx120X-all/` 源和 `rocm-sdk-libraries-gfx120x-all` 包，映射方法见 [附录 B](../../appendix/appendix-b-switch-gpu/index.md)。在 GPU 机器的仓库根目录执行：
 
 ```bash
 cd code/part3-agent
-uv sync && source ./activate-rocm.sh
-
-# 需要 ~/.config/hello-gpu/kernel-agent.env（勿提交 git）
-bash chapter16/run_and_visualize.sh --skip-pytest
+uv sync
+source ./activate-rocm.sh
+bash chapter17/run_all.sh --skip-pytest
 ```
 
-前置检查：
+这个入口先检查基线并重新校准当前机器，再运行 Agent、完成 5 次独立配对复测并生成图。默认最多调用模型 25 次；模型调用步数和接受工具的裁决轮数不同，需要调整预算时可设置 `MAX_STEPS`。`--skip-pytest` 跳过的是开发用测试套件，候选的正确性检查仍由评测器执行。只需要运行搜索时，可将最后一行换为 `bash chapter15/run_vector_add.sh`，但这个较短入口不会自动生成可视化图和 `run_summary.json`。
+
+运行后以终端打印的实际工作区为准。每次新实验使用空目录，避免覆盖上一次的基线、候选和记录；只查看已有结果时使用脚本的 `--reuse-latest`。
+
+## 17.3 先检查产物，再读性能数字
+
+搜索结束后，我们需要知道模型尝试了哪些修改，以及哪些修改被保留下来。程序会将调用和评测结果写入工作区，@fig-agent-experiment-artifacts 展示了这些记录之间的关系。
+
+::: figure fig-agent-experiment-artifacts
+```mermaid
+flowchart TB
+    T[/固定任务与原始 baseline/] --> A[运行 Agent 与评测工具]
+    A --> S[/状态文件、裁决摘要与 best.py/]
+    S --> V[核对状态、源码与搜索图]
+    V --> C[原始 baseline 与最终 best 独立复测]
+    C --> R[/报告：结果、证据与限制/]
+    A --> E[/候选源码、调用记录与原始样本/]
+    E -.-> R
+```
+
+运行状态、搜索过程与最终复测分别支持报告中的不同结论，候选源码和原始记录将这些结论连接起来。
+:::
+
+**图例**：矩形表示执行过程，平行四边形表示输入、记录或报告；实线表示主要产物关系，虚线表示补充证据。运行检查与最终复测不能互相替代。
+
+先打开 `agent-status.json`。若状态是 `incomplete`，应定位缺失步骤；若是 `complete_with_warning`，应阅读警告并在报告中保留限制。即使状态是 `complete`，也只说明当前完成检查通过，不保证性能变好。
+
+然后读取 `trajectory.jsonl`。它每行记录一次进入接受工具的裁决摘要，主要字段包括：
+
+| 字段 | 含义 |
+| --- | --- |
+| `change` | 本轮声明的源码改动 |
+| `status`、`reason` | 评测状态与裁决原因 |
+| `accepted` | 是否替换当前版本 |
+| `latencyMs` | 本轮候选的记录延迟，可能为空 |
+| `improvementFraction` | 相对当时当前版本的配对改进中位数，可能不存在 |
+
+最后检查 `best.py` 与 `baseline.py`，确认当前版本究竟改了什么。完整记录按职责存放：
+
+| 文件或目录 | 用来核对什么 |
+| --- | --- |
+| `environment.json`、`hardware.json` | 实际软件环境与当次硬件校准 |
+| `preflight.json`、`baseline-evaluation.json` | 搜索前的正确性与基线计时 |
+| `model-messages.jsonl` | 实际进入模型上下文的提示词、回复与反馈 |
+| `tool-calls.jsonl` | 工具参数与未经上下文截断的返回值 |
+| `evaluations/evaluation-*/` | 每次评测的源码快照、任务、参考实现和完整结果 |
+| `final-comparison.json` | 原始基线与最终版本的独立配对样本及汇总 |
+
+`trajectory.jsonl` 每行的 `evaluation` 指向对应评测目录。只调用编译工具就失败的尝试会留下文件，但不会额外增加一行接受裁决。终端展示与模型上下文可能截断较长的观察；完整工具返回值仍保存在工具日志中。评测 JSON 里的子进程输出本身有长度限制，因此不能将它称为未截断的全部进程输出。
+
+## 17.4 分清搜索曲线里的三种量
+
+接下来，我们把逐轮记录画成图，观察搜索过程。运行脚本会生成 `rounds_overview.png`、`process_timeline.png` 和 `status_breakdown.png`。总览图用于观察候选延迟与配对改进；时间线连接改动说明和裁决；状态分布统计不同结果的次数。这三张图都来自同一份裁决摘要，因此摘要没有记录的尝试不会凭空出现在图中。
+
+读总览图时，先分清以下三种量：
+
+| 图中信息 | 表示什么 | 容易误解的地方 |
+| --- | --- | --- |
+| 候选延迟点 | 该轮候选的记录延迟 | 跨轮更小的点不等于该轮被接受 |
+| 当前接受版本记录线 | 只在接受事件发生时更新的延迟记录 | 不是每一轮都重新测量当前版本，也不保证单调下降 |
+| 配对改进柱 | 候选相对当时当前版本的改进中位数 | 不是相对最初基线的整体加速 |
+
+当前版本记录线在拒绝轮保持原值，在首次接受之前不补一个猜测的基线值。如果接受记录缺少有效时间，该处应显示缺失，不能继续把旧版本的时间挂在新版本名下。图例同时使用文字、点形和纹理，接受与拒绝不只依赖颜色区分。
+
+我们可以用两个版本说明这一点。假设当前保留的是 A，新生成的候选是 B；只有 B 通过接受判定，当前版本才会变成 B，如 @fig-accepted-version-state 所示。
+
+::: figure fig-accepted-version-state
+```mermaid
+flowchart TB
+    I[(当前版本 A)] --> C[评测候选 B]
+    C --> G{配对接受条件通过？}
+    G -->|拒绝| A[(当前版本仍为 A)]
+    G -->|接受| B[(当前版本变为 B)]
+    A --> L[/记录候选 B 的结果与拒绝原因/]
+    B --> R[/记录候选 B 的结果与接受原因/]
+```
+
+候选结果与当前版本身份分别记录：一次较小的候选延迟，只有通过接受条件后才对应版本替换。
+:::
+
+**图例**：圆柱表示被保留的版本，矩形表示评测动作，菱形表示接受判定，平行四边形表示裁决记录；实线表示状态推进，分支上的文字决定版本是否变化。
+
+我们来看向量加法的搜索曲线。@fig-vector-add-search 显示了 6 条裁决：前 5 条未达阈值，第 6 条被接受。第 4 条候选的记录延迟比第 6 条更低，却没有被接受，因为它们分别与当时重新测量的当前版本比较，不能按跨轮最小值选胜者。
+
+::: figure fig-vector-add-search
+![RX 9070 XT 向量加法的候选延迟与配对改进](./images/vector-add-9070xt-rounds.png)
+
+FP16 向量加法在 RX 9070 XT + ROCm 7.13 上的真实搜索记录；图中的时间属于各轮评测，最终收益另行复测。
+:::
+
+**图例**：三角形与斜纹柱表示未达接受阈值，圆点与实色柱表示接受；红色虚线表示 1% 阈值，黑色记录线仅从首次接受开始更新。这个例子直到第 6 条才接受候选，前 5 条没有接受版本的延迟记录。
+
+拒绝并非没有收获。例如，正确但未过阈值的记录告诉我们：在这组配对测量和接受策略下，证据不足以替换当前版本。它没有证明候选在所有条件下都更慢，也没有证明编译器一定使用了更多寄存器。
+
+## 17.5 独立复测回答整体收益
+
+为了判断整个搜索是否带来了收益，我们需要重新比较最初的基线与最终保留的实现。搜索中的每轮比较面向当时的当前版本；如果发生多次接受，参照物会随之改变，采样时刻也不同。将这些轮次的最佳点连起来，或者连乘每轮改进比例，都不能替代最终的基线对比。
+
+搜索结束后，运行入口会固定最终 `best.py`，重新与原始 `baseline.py` 进行 5 次同口径配对测量，并保存 `final-comparison.json`。如果需要单独复测，可以使用同一个 `compare.py` 入口，将路径替换为本次实际工作区：
 
 ```bash
-uv run python -c "import torch; print(torch.cuda.get_device_name(0), torch.__version__)"
-# 本机实测示例：Radeon 8060S Graphics  2.10.0+rocm7.12.0
+uv run python chapter14/compare.py \
+  --task "chapter15/logs/tasks/<本次工作区>/task.json" \
+  --incumbent "chapter15/logs/tasks/<本次工作区>/baseline.py" \
+  --candidate "chapter15/logs/tasks/<本次工作区>/best.py" \
+  --runs 5
 ```
+
+这里的尖括号是待替换路径，不是可以原样执行的参数。单独复测时也应保存输出，避免新结果与之前的文件混淆。
+
+拿到原始数据后，可以分别报告两项统计量。第一项是同口径下基线与最终版本中位延迟之比。这里的 $t_{\mathrm{baseline}}$ 和 $t_{\mathrm{final}}$ 分别表示多次独立进程运行各自得到的中位延迟列表，公式对应输出中的 `medianIncumbentMs / medianCandidateMs`，没有将所有原始样本混成一组：
+
+$$
+S = \frac{\operatorname{median}(t_{\mathrm{baseline}})}
+         {\operatorname{median}(t_{\mathrm{final}})}.
+$$
+
+第二项是 `medianPairedImprovementFraction`：先在每次运行内部计算配对改进中位数，再跨独立运行取中位数。它们回答相关但不同的问题，不能混用，也不能从其中一个反推另一个的原始时间。小幅收益还应结合样本波动、重复运行和测试范围来解释。
+
+搜索保留的最终版本将 `block_size` 从 256 改为 512，源码保存在 [`chapter17/vector_add_selected.py`](https://github.com/datawhalechina/hello-gpu/blob/main/code/part3-agent/chapter17/vector_add_selected.py)。第 6 条裁决的配对改进为 **+1.35%**，通过了当前规则；随后 5 次独立复测得到以下结果：
+
+| 统计量 | 原始基线 | 最终版本 |
+| --- | --- | --- |
+| 独立运行中位延迟列表的中位数 | 112 μs | 112 μs |
+| 5 次运行的中位延迟范围 | 107–114 μs | 107–113 μs |
+| 正确性 | 通过 | 通过 |
+
+时间比值约为 **1.00 倍**，跨运行的配对改进中位数为 **+0.261%**；各次配对改进从 **−1.74% 到 +1.17%**，正负都有。收益的正负随运行变化，说明这项修改还没有表现出稳定优势。搜索阶段的接受只是一次局部判断，独立复测帮助我们检查这个判断是否可靠。详细逐次数据见 [实验报告](./optimization-report.md)。
+
+与人工优化比较时，也需要相同的任务、起点与实验条件。如果本次没有人工对照，就只报告 Agent 的调用次数、修改内容和结果，不猜测“熟练者几轮就能完成”。模型调用耗时、GPU 评测耗时和最终核函数延迟也应分别记录，不能用其中一项代表总优化成本。
+
+## 17.6 写一份读者能核对的报告
+
+最后，我们将代码变化和测量结果整理成一份简短的报告。先说明哪项修改值得保留，再给出任务、环境、关键尝试和最终复测。每条结论旁边给出对应文件或图，读者就能从叙述回到证据。
+
+| 报告内容 | 应回答的问题 |
+| --- | --- |
+| 任务与基线 | 算什么，输入范围是什么，起点是哪份源码 |
+| 环境与配置 | 在什么 GPU、ROCm、系统与模型配置下运行 |
+| 完成状态 | 有没有未完成候选或证据警告 |
+| 关键尝试 | 改了什么，为什么接受或拒绝 |
+| 最终复测 | 基线与最终版本的正确性、时间及波动 |
+| 限制 | 哪些解释是估算，哪些输入和设备尚未覆盖 |
+
+你可以参考 [向量加法实验报告](./optimization-report.md) 的组织方式，分别记录改了什么、测到了什么，以及还有哪些疑问。例如，达到步数上限只说明计算预算用完；即使最后一个候选已经完成裁决，也还需要判断是否值得继续搜索。
+
+报告中的性能图应由本次实际任务的原始输出生成，并标明设备、软件环境和计时范围。更换环境后重新测量，不能只修改旧图的设备标签。
+
+## 17.7 练习：完成一次可复盘的优化
+
+1. 找出当前 fixture 中与输入规模有关的所有字段，说明只修改 `n_elements` 为什么可能改变实验含义。
+2. 假设某个候选跨轮看起来更快，却被配对裁决拒绝。结合采样时间和比较对象，给出一个可能的解释，并说明还需哪些数据。
+3. 运行完成后，分别指出支持“流程完成”“版本被接受”“相对基线获得加速”的证据文件或实验步骤。
+4. 选择一次被拒绝的尝试，用一个短段落区分源码改动、观察结果与原因假设。没有实测时，先完成这份记录的字段设计。
 
 ## 本章小结
 
-- 实战首先证明闭环可信，再追求 3–5×；算子选型决定加速叙事。
-- 本轮真实结果：10 评 / 5 接受，**0.705→0.322 ms（≈2.19×）**，有效机制是更大 block + 更高 warps。
-- 失败回退由「不更新 best」保证；轨迹 + 可视化是报告账本。
-- Agent 擅长执行与留痕；关键结构洞察仍常需人机协作。
+- 先固定任务与基线，再搜索候选；一次搜索不预设收益大小。
+- 运行状态、裁决摘要和完整实验档案的覆盖范围不同，需要逐项核对。
+- 候选延迟、当前版本记录与配对改进有不同含义，图例应明确说明。
+- 最终加速结论来自原始基线与最终版本的独立复测，不能从搜索曲线反推。
+
+当我们把这种方法用于真实模型时，还需要先测量目标算子占端到端耗时的比例：即使算子变快，模型整体也未必得到同等收益。
 
 ## 延伸阅读
 
-- [算子优化 Agent 实战报告 · vector_add](./optimization-report.md)
-- `code/part3-agent/chapter14/EXPERIMENT.md`
+- [向量加法实验报告](./optimization-report.md)：查看真实裁决与独立复测。
+- [第 16 章：算子优化 Agent 设计](../chapter16/index.md)：回看候选状态和结束条件。
+- [可视化源码](https://github.com/datawhalechina/hello-gpu/blob/main/code/part3-agent/chapter16/visualize_trajectory.py)：核对曲线、状态和图例的含义。

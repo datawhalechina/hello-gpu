@@ -242,11 +242,18 @@ GPU event 对 materialized 包围三个 kernel，对 online 包围一个 kernel�
 
 ```bash
 cd code/part2-kernels
+uv sync
 source ./activate-rocm.sh
 bash chapter12/run_all.sh
 ```
 
-`profile_all.sh` 会为每种实现单独采集 trace，需要的源码提交标识由本地 Git 维护机提供，实验机只运行传入的文件。记录中应先说明追踪的是三个子 kernel 还是在线 kernel，再读 dispatch、workgroup、LDS、VGPR 和 scratch 字段。trace 的 grid 范围也不能直接当成 block 数。
+需要采集 trace 时，在同一个环境中运行：
+
+```bash
+bash chapter12/profile_all.sh
+```
+
+`profile_all.sh` 会为每种实现单独采集 trace。记录中应先说明追踪的是三个子 kernel 还是在线 kernel，再读 dispatch、workgroup、LDS、VGPR 和 scratch 字段。trace 的 grid 范围也不能直接当成 block 数。
 
 下一轮可以先回答一个小问题：HIP online 的每次同步承担哪个依赖？画出“点积完成 → 状态更新 → 所有线程更新 numerator → 下一 key”的顺序，再考虑是否可以按 key tile 一起计算。没有依赖分析就删屏障，即使偶尔跑对也不能说明修改正确。
 

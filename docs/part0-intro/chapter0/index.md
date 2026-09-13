@@ -153,7 +153,7 @@ flowchart LR
 | 入门（第 0 篇）| RX 9070 XT 环境、GPU 体系结构速通、第一个程序 | 跑通环境，建立 Roofline 心智模型 |
 | Profiling（第 1 篇）| benchmark、rocprof、性能记录 | 用数据说明算子慢在哪里 |
 | 算子 + 刷题（第 2 篇）| Reduction / Softmax / GEMM / Flash Attention + 刷题方法论 | 把一个 naive kernel 一步步优化到接近硬件极限 |
-| Agent 算子层（第 3 篇）| Agent 入门、工具封装、多轮优化 | 让 Agent 自动把一个 naive kernel 优化 3-5 倍 |
+| Agent 算子层（第 3 篇）| Agent 入门、工具封装、多轮优化 | 让 Agent 生成、测量、裁决并记录候选，实现可复盘的优化循环 |
 | 真实模型 + Agent（第 4 篇）| YOLO / LLM 部署 + Agent 自动优化 | 让 Agent 对真实模型做性能优化 |
 
 这里有一条贯穿始终的底线：**优化的输入数据必须可信**。benchmark 不可信、profiling 没保存、硬件上下文没写清楚——那么不管最后的结论写得多漂亮，都不能拿到工程场合当结论用。数据质量决定优化判断的上限，这一点怎么强调都不为过。
