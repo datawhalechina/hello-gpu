@@ -1458,3 +1458,32 @@ html:not(.dark) .hg-directory-visual {
     width: min(340px, calc(100vw - 48px));
   }
 }
+
+/* Part 3 flowcharts keep readable labels on narrow screens; the figure scrolls locally. */
+:is(#fig-agent-feedback, #fig-kernel-optimization-loop, #fig-tool-validation,
+    #fig-candidate-promotion, #fig-agent-architecture, #fig-pending-candidate,
+    #fig-agent-experiment-artifacts, #fig-accepted-version-state) .mermaid-block > div {
+  min-width: 640px;
+}
+
+@media (max-width: 767px) {
+  :is(#fig-agent-feedback, #fig-kernel-optimization-loop, #fig-tool-validation,
+      #fig-candidate-promotion, #fig-agent-architecture, #fig-pending-candidate,
+      #fig-agent-experiment-artifacts, #fig-accepted-version-state) .mermaid-block::before {
+    content: '左右滑动图内区域，查看完整流程';
+    display: block;
+    position: sticky;
+    left: 0;
+    width: fit-content;
+    margin-bottom: 16px;
+    color: var(--vp-c-text-2);
+    font-size: 12px;
+  }
+}
+
+/* Mermaid measures HTML labels at 1.5 line height; prose styles must not enlarge them. */
+.vp-doc .mermaid-block .nodeLabel p,
+.vp-doc .mermaid-block .edgeLabel p {
+  margin: 0;
+  line-height: 1.5;
+}

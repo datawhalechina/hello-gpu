@@ -63,10 +63,10 @@ https://datawhalechina.github.io/hello-gpu/
 | [第 12 章 Fusion：融合算子](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter12/index.md) | 从 Attention 加权和推导在线 Softmax，用具体数值理解历史状态重缩放 | ✅ |
 | [第 13 章 综合实战：Fused RMSNorm](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter13/index.md) | 从平方和、行尺度与广播出发，综合归约、融合和可解释的参数实验 | ✅ |
 | **第 3 篇：Agent（算子层）** | | |
-| [第 14 章 Agent 入门](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part3-agent/chapter14/index.md) | 参考 hello-agents、LLM Agent 基本范式、工具调用 | ✅ |
-| [第 15 章 工具封装](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part3-agent/chapter15/index.md) | compile/bench/profile 三件套 + accept_candidate | ✅ |
-| [第 16 章 算子优化 Agent 设计](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part3-agent/chapter16/index.md) | 读题→compile/bench/profile→accept 迭代 | ✅ |
-| [第 17 章 多轮优化实战](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part3-agent/chapter17/index.md) | vector_add 真实轨迹 ≈2.19×、失败回退、对比报告 | ✅ |
+| [第 14 章 Agent 入门](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part3-agent/chapter14/index.md) | 从一次手动优化理解模型、工具与反馈循环 | ✅ |
+| [第 15 章 工具封装](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part3-agent/chapter15/index.md) | 用结构化接口连接正确性、计时、瓶颈分析与接受判定 | ✅ |
+| [第 16 章 算子优化 Agent 设计](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part3-agent/chapter16/index.md) | 连接工具、管理候选状态并判断何时结束 | ✅ |
+| [第 17 章 多轮优化实战](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part3-agent/chapter17/index.md) | 用向量加法学习运行、读图、独立复测与报告 | 🚧 |
 | **第 4 篇：真实模型 + Agent** | | |
 | [第 18 章 YOLO 部署 + Agent 自动优化](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part4-models-agent/chapter18/index.md) | ONNX/MIGraphX 部署、Agent profiling 找瓶颈、改配置/算子、对比 | 🚧 |
 | [第 19 章 小模型 LLM 解码 + Agent 自动优化](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part4-models-agent/chapter19/index.md) | LFM2.5-8B-A1B 量化（GGUF）、decode 算子视角、Agent 优化 KV cache/精度 | 🚧 |
