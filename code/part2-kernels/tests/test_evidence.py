@@ -22,7 +22,6 @@ class EvidenceContractTest(unittest.TestCase):
             errors,
             [
                 "manifest missing field: generated_at",
-                "manifest missing field: git_commit",
                 "manifest missing field: source_sha256",
                 "manifest missing field: hardware",
                 "manifest missing field: software",

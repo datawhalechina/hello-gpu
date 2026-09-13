@@ -398,10 +398,10 @@ bash chapter10/run_all.sh
 
 脚本先编译 HIP，依次运行六组边界 shape 的四种实现，再运行默认 `4096×1024`、warmup 10 次、repeat 50 次。先确认 `correct=OK precheck=OK postcheck=OK`，再比较相同 shape 的 `median_ms`。
 
-`run_all.sh` 负责正确性和计时。需要采集四种实现的 trace 时，在同一个 Part 2 环境中运行下面的独立入口，源码提交号由脚本自动记录：
+`run_all.sh` 负责正确性和计时。需要采集四种实现的 trace 时，在同一个 Part 2 环境中运行：
 
 ```bash
-PROFILE_WARMUP=0 PROFILE_REPEAT=5 bash chapter10/profile_all.sh
+bash chapter10/profile_all.sh
 ```
 
 历史 profile 使用 warmup 0 次、repeat 5 次。加上预检一次，共 6 次逻辑调用，因此四种实现的主体 dispatch 数对应 `18、6、6、6`。后检只检查最后一次输出，不额外运行一次 Softmax。

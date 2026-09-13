@@ -430,10 +430,10 @@ WARMUP=10 REPEAT=50 SEED=20260719 bash chapter11/run_all.sh
 
 正式比较应分别运行 3 个独立进程并保留日志。输出里的 `precheck/postcheck` 先确认正确性；再看 `median_ms` 与各进程范围。`min_ms` 可以作为补充观察，不能替代稳定性判断。
 
-需要 profiler 时，在同一个 Part 2 环境中单独运行以下命令。脚本自动记录源码提交号，无需手动填写：
+需要 profiler 时，在同一个 Part 2 环境中单独运行：
 
 ```bash
-PROFILE_WARMUP=0 PROFILE_REPEAT=5 bash chapter11/profile_all.sh
+bash chapter11/profile_all.sh
 ```
 
 profiler 的时间用于观察 dispatch 与资源，benchmark 的 GPU event 时间用于性能对照，两者分开记录。

@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -39,12 +37,11 @@ class Chapter8SummaryTest(unittest.TestCase):
         self,
         chapter: Path,
         *,
-        source_commit: str = "abc1234",
         source_sha256: str | None = None,
         run_count: int = 3,
         mixed_shape: bool = False,
         bad_metric: bool = False,
-        profile_source_commit: str | None = None,
+        profile_source_sha256: str | None = None,
         independent_runs: int = 3,
         bad_operator: bool = False,
         bad_runtime: bool = False,
@@ -58,7 +55,6 @@ class Chapter8SummaryTest(unittest.TestCase):
         (logs / "benchmark_manifest.env").write_text(
             "\n".join(
                 (
-                    f"source_commit={source_commit}",
                     f"source_sha256={source_sha256}",
                     "size=1024",
                     "hip_block=256",
@@ -103,8 +99,7 @@ class Chapter8SummaryTest(unittest.TestCase):
         (profiles / "profile_config.env").write_text(
             "\n".join(
                 (
-                    f"source_commit={profile_source_commit or source_commit}",
-                    f"source_sha256={source_sha256}",
+                    f"source_sha256={profile_source_sha256 or source_sha256}",
                     "size=1024",
                     "hip_block=256",
                     "triton_t0_block=256",
@@ -116,10 +111,10 @@ class Chapter8SummaryTest(unittest.TestCase):
             encoding="utf-8",
         )
 
-    def _summarize(self, chapter: Path, source_commit: str = "abc1234") -> subprocess.CompletedProcess[str]:
+    def _summarize(self, chapter: Path) -> subprocess.CompletedProcess[str]:
         script = Path(__file__).parents[1] / "chapter8" / "summarize_results.py"
         return subprocess.run(
-            [sys.executable, str(script), "--chapter-dir", str(chapter), "--git-commit", source_commit],
+            [sys.executable, str(script), "--chapter-dir", str(chapter)],
             text=True,
             capture_output=True,
             check=False,
@@ -134,29 +129,30 @@ class Chapter8SummaryTest(unittest.TestCase):
 
             self.assertEqual(completed.returncode, 0, completed.stderr)
             manifest = json.loads((chapter / "evidence" / "manifest.json").read_text())
-            self.assertEqual(manifest["benchmark"]["source_commit"], "abc1234")
+            self.assertNotIn("source_commit", manifest["benchmark"])
+            self.assertNotIn("git_commit", manifest)
             self.assertEqual(len(manifest["benchmark"]["source_sha256"]), 64)
 
-    def test_archive_unknown_commit_preserves_source_fingerprint_validation(self) -> None:
+    def test_commit_free_summary_preserves_source_fingerprint_validation(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             chapter = Path(temporary)
-            self._write_fixture(chapter, source_commit="unknown")
-            completed = self._summarize(chapter, "unknown")
+            self._write_fixture(chapter)
+            completed = self._summarize(chapter)
             self.assertEqual(completed.returncode, 0, completed.stderr)
             manifest = json.loads((chapter / "evidence" / "manifest.json").read_text())
-            self.assertEqual(manifest["git_commit"], "unknown")
+            self.assertNotIn("git_commit", manifest)
             self.assertEqual(manifest["benchmark"]["source_sha256"], self._source_hash(chapter))
 
-            # An unknown commit does not permit benchmark/source drift.
+            # Removing commit metadata does not permit benchmark/source drift.
             (chapter / "benchmark.py").write_text("# changed source\n", encoding="utf-8")
-            completed = self._summarize(chapter, "unknown")
+            completed = self._summarize(chapter)
             self.assertNotEqual(completed.returncode, 0)
             self.assertIn("source_sha256", completed.stderr)
 
     def test_summary_rejects_old_source_identity_without_replacing_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             chapter = Path(temporary)
-            self._write_fixture(chapter, source_commit="deadbeef")
+            self._write_fixture(chapter, source_sha256="0" * 64)
             evidence = chapter / "evidence"
             evidence.mkdir()
             (evidence / "sentinel.txt").write_text("keep", encoding="utf-8")
@@ -164,7 +160,7 @@ class Chapter8SummaryTest(unittest.TestCase):
             completed = self._summarize(chapter)
 
             self.assertNotEqual(completed.returncode, 0)
-            self.assertIn("source_commit", completed.stderr)
+            self.assertIn("source_sha256", completed.stderr)
             self.assertEqual((evidence / "sentinel.txt").read_text(), "keep")
             self.assertFalse((evidence / "summary.csv").exists())
 
@@ -210,7 +206,7 @@ class Chapter8SummaryTest(unittest.TestCase):
     def test_summary_rejects_profile_configuration_from_another_source(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             chapter = Path(temporary)
-            self._write_fixture(chapter, profile_source_commit="deadbeef")
+            self._write_fixture(chapter, profile_source_sha256="0" * 64)
 
             completed = self._summarize(chapter)
 
@@ -272,26 +268,21 @@ class Chapter8SummaryTest(unittest.TestCase):
         run_all = (chapter / "run_all.sh").read_text(encoding="utf-8")
         profile_all = (chapter / "profile_all.sh").read_text(encoding="utf-8")
         for source in (run_all, profile_all):
-            self.assertIn("source_commit=${SOURCE_COMMIT}", source)
+            self.assertNotIn("SOURCE_COMMIT", source)
             self.assertIn("source_sha256=${SOURCE_SHA256}", source)
 
-    def test_scripts_reject_malformed_source_commit_before_writes(self) -> None:
-        for filename, generated in (("run_all.sh", ("logs", "profiles")), ("profile_all.sh", ("logs", "profiles"))):
-            source = Path(__file__).parents[1] / "chapter8" / filename
-            with self.subTest(filename=filename), tempfile.TemporaryDirectory() as temporary:
-                chapter = Path(temporary) / "chapter8"
-                chapter.mkdir()
-                script = chapter / filename
-                shutil.copy2(source, script)
-                environment = os.environ.copy()
-                common = chapter.parent / "common"
-                common.mkdir()
-                shutil.copy2(source.parent.parent / "common" / "source_commit.sh", common)
-                environment["SOURCE_COMMIT"] = "not-a-sha"
-                completed = subprocess.run(["bash", str(script)], cwd=temporary, env=environment, text=True, capture_output=True, check=False)
-                self.assertEqual(completed.returncode, 2, completed.stderr)
-                for name in generated:
-                    self.assertFalse((chapter / name).exists(), name)
+    def test_legacy_commit_fields_are_ignored_and_not_republished(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            chapter = Path(temporary)
+            self._write_fixture(chapter)
+            for name, value in (("logs/benchmark_manifest.env", "abc1234"), ("profiles/profile_config.env", "deadbeef")):
+                path = chapter / name
+                path.write_text(path.read_text() + f"source_commit={value}\n", encoding="utf-8")
+            completed = self._summarize(chapter)
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            manifest = json.loads((chapter / "evidence/manifest.json").read_text())
+            self.assertNotIn("source_commit", manifest["benchmark"])
+            self.assertNotIn("git_commit", manifest)
 
     def test_scripts_activate_python_before_source_hash(self) -> None:
         chapter = Path(__file__).parents[1] / "chapter8"

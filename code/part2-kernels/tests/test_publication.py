@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -60,7 +61,6 @@ class PublicationTest(unittest.TestCase):
         publish(
             chapter_dir=self.chapter,
             operator="sum-reduction",
-            git_commit="abc123",
             run_logs=paths,
             environment_file=self.environment,
             profile_dir=None,
@@ -70,7 +70,7 @@ class PublicationTest(unittest.TestCase):
         profile_dir = self.root / "profiles"
         profile_dir.mkdir()
         (profile_dir / "profile_config.env").write_text(
-            "source_commit=abc123\nshape=N=16777216\nseed=20260719\n",
+            "shape=N=16777216\nseed=20260719\n",
             encoding="utf-8",
         )
         for implementation in ("hip-lds", "triton-t1"):
@@ -86,7 +86,7 @@ class PublicationTest(unittest.TestCase):
 
         manifest = json.loads((self.chapter / "evidence/manifest.json").read_text())
         summary = json.loads((self.chapter / "evidence/summary.json").read_text())
-        self.assertEqual(manifest["git_commit"], "abc123")
+        self.assertNotIn("git_commit", manifest)
         self.assertEqual(manifest["process_count"], 3)
         self.assertEqual(manifest["environment"]["GPU"], "RX 9070 XT")
         self.assertEqual(summary[0]["run_count"], 3)
@@ -97,21 +97,35 @@ class PublicationTest(unittest.TestCase):
         self.assertTrue((self.chapter / "evidence/summary.csv").is_file())
         self.assertTrue((self.chapter / "evidence/profile_summary.csv").is_file())
 
-    def test_archive_unknown_commit_can_publish_matching_profile_metadata(self) -> None:
+    def test_legacy_profile_commit_is_ignored_and_not_republished(self) -> None:
         profiles = self.write_profiles()
         config = profiles / "profile_config.env"
-        config.write_text(config.read_text().replace("abc123", "unknown"), encoding="utf-8")
+        config.write_text(config.read_text() + "source_commit=abc1234\n", encoding="utf-8")
         publish(
             chapter_dir=self.chapter,
             operator="sum-reduction",
-            git_commit="unknown",
             run_logs=self.write_logs(),
             environment_file=self.environment,
             profile_dir=profiles,
         )
         manifest = json.loads((self.chapter / "evidence/manifest.json").read_text())
-        self.assertEqual(manifest["git_commit"], "unknown")
-        self.assertEqual(manifest["profile_config"]["source_commit"], "unknown")
+        self.assertNotIn("git_commit", manifest)
+        self.assertNotIn("source_commit", manifest["profile_config"])
+
+    def test_cli_publishes_without_commit_argument(self) -> None:
+        command = [
+            sys.executable, str(Path(__file__).parents[1] / "tools/publish_chapter.py"),
+            "--chapter-dir", str(self.chapter), "--operator", "sum-reduction",
+            "--environment-file", str(self.environment),
+            "--profile-dir", str(self.write_profiles()),
+        ]
+        for log in self.write_logs():
+            command.extend(("--run-log", str(log)))
+        completed = subprocess.run(command, text=True, capture_output=True, check=False)
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        manifest = json.loads((self.chapter / "evidence/manifest.json").read_text())
+        self.assertNotIn("git_commit", manifest)
+        self.assertNotIn("source_commit", manifest["profile_config"])
 
     def test_requires_exactly_three_distinct_logs(self) -> None:
         with self.assertRaisesRegex(PublicationError, "exactly 3"):
@@ -202,7 +216,6 @@ class PublicationTest(unittest.TestCase):
         publish(
             chapter_dir=self.chapter,
             operator="sum-reduction",
-            git_commit="abc123",
             run_logs=paths,
             environment_file=self.environment,
             profile_dir=profile_dir,
@@ -216,7 +229,6 @@ class PublicationTest(unittest.TestCase):
             publish(
                 chapter_dir=self.chapter,
                 operator="sum-reduction",
-                git_commit="abc123",
                 run_logs=paths,
                 environment_file=self.environment,
                 profile_dir=profile_dir,
@@ -228,7 +240,6 @@ class PublicationTest(unittest.TestCase):
             publish(
                 chapter_dir=self.chapter,
                 operator="sum-reduction",
-                git_commit="abc123",
                 run_logs=paths,
                 environment_file=self.environment,
                 profile_dir=profile_dir,
@@ -240,23 +251,19 @@ class PublicationTest(unittest.TestCase):
             publish(
                 chapter_dir=self.chapter,
                 operator="sum-reduction",
-                git_commit="abc123",
                 run_logs=paths,
                 environment_file=self.environment,
                 profile_dir=profile_dir,
             )
 
-    def test_profile_source_commit_must_match_publication(self) -> None:
+    def test_profile_config_is_still_required(self) -> None:
         paths = self.write_logs()
         profile_dir = self.write_profiles()
-        (profile_dir / "profile_config.env").write_text(
-            "source_commit=stale123\n", encoding="utf-8"
-        )
-        with self.assertRaisesRegex(PublicationError, "source_commit mismatch"):
+        (profile_dir / "profile_config.env").unlink()
+        with self.assertRaisesRegex(PublicationError, "profile config does not exist"):
             publish(
                 chapter_dir=self.chapter,
                 operator="sum-reduction",
-                git_commit="abc123",
                 run_logs=paths,
                 environment_file=self.environment,
                 profile_dir=profile_dir,

@@ -88,14 +88,14 @@
 
 ## Reproduction commands
 
-在仓库根目录同步并远程执行：
+在仓库根目录进入本章环境，运行当前源码：
 
 ```bash
-export SOURCE_COMMIT="$(git rev-parse HEAD)"
-bash scripts/part2-remote.sh sync
-ssh -o BatchMode=yes hwj-frp-9070xt-2404 \
-  "cd /home/hellogpu/hdb/hello-gpu-part2/code/part2-kernels && source .venv/bin/activate && SOURCE_COMMIT=${SOURCE_COMMIT} bash chapter7/run_all.sh && SOURCE_COMMIT=${SOURCE_COMMIT} bash chapter7/profile_all.sh"
-bash scripts/part2-remote.sh fetch chapter7
+cd code/part2-kernels
+uv sync
+source ./activate-rocm.sh
+bash chapter8/run_all.sh
+bash chapter8/profile_all.sh
 ```
 
 从仓库内 `code/part2-kernels` 验证 curated evidence：
@@ -107,7 +107,7 @@ import csv
 import json
 from pathlib import Path
 from common.evidence import validate_manifest, validate_records
-root = Path("chapter7/evidence")
+root = Path("chapter8/evidence")
 manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
 with (root / "summary.csv").open(encoding="utf-8", newline="") as file:
     records = list(csv.DictReader(file))

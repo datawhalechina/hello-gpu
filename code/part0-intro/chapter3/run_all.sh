@@ -5,16 +5,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PART_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-REPO_ROOT="$(cd "${PART_DIR}/../.." && pwd)"
-# Default to the immutable measurement commit. NOTE: at that commit these three
-# programs lived under code/part0-intro/chapter2/; they are organized under
-# chapter3/ in the current tree, so the source-hash check compares the local
-# chapter3 file against the historical chapter2 path (identical content).
-SOURCE_COMMIT="${SOURCE_COMMIT:-2107e8a171b9599063468854caccc04de4ea147e}"
-if [[ ! "${SOURCE_COMMIT}" =~ ^[0-9A-Fa-f]{40}$ ]]; then
-    echo "SOURCE_COMMIT must be exactly 40 hexadecimal characters" >&2; exit 2
-fi
-
 GPU_ARCH="${GPU_ARCH:-gfx1201}"
 WARMUP="${WARMUP:-10}"
 REPEAT="${REPEAT:-50}"
@@ -37,21 +27,6 @@ if [[ "${RUN_EDGE_CASES}" != "0" && "${RUN_EDGE_CASES}" != "1" ]]; then
     echo "RUN_EDGE_CASES must be 0 or 1" >&2; exit 2
 fi
 
-hash_file() {
-    if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}'
-    elif command -v shasum >/dev/null 2>&1; then shasum -a 256 "$1" | awk '{print $1}'
-    else python3 -c 'import hashlib,pathlib,sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())' "$1"; fi
-}
-hash_stdin() { python3 -c 'import hashlib,sys; print(hashlib.sha256(sys.stdin.buffer.read()).hexdigest())'; }
-if ! git -C "${REPO_ROOT}" rev-parse --verify "${SOURCE_COMMIT}^{commit}" >/dev/null 2>&1; then
-    echo "SOURCE_COMMIT must name an existing Git commit" >&2; exit 2
-fi
-# Historical measurement path is code/part0-intro/chapter2/ at SOURCE_COMMIT.
-for source in global_memory_access.hip lds_bank_conflict.hip rdna4_wmma.hip; do
-    if [[ "$(hash_file "${SCRIPT_DIR}/${source}")" != "$(git -C "${REPO_ROOT}" show "${SOURCE_COMMIT}:code/part0-intro/chapter2/${source}" | hash_stdin)" ]]; then
-        echo "${source} does not match SOURCE_COMMIT" >&2; exit 2
-    fi
-done
 if [[ "${WMMA_SOURCE}" == "rdna3_wmma.hip" ]]; then
     if [[ ! -f "${SCRIPT_DIR}/${WMMA_SOURCE}" ]]; then
         echo "missing ${WMMA_SOURCE} for GPU_ARCH=${GPU_ARCH}" >&2; exit 2
@@ -73,10 +48,9 @@ compile() {
     local binary_name="$2"
     local binary="${BUILD_DIR}/${binary_name}"
     hipcc --offload-arch="${GPU_ARCH}" -O3 -std=c++17 \
-        -DCHAPTER2_SOURCE_COMMIT="\"${SOURCE_COMMIT}\"" \
         "${SCRIPT_DIR}/${source_name}" -o "${binary}"
-    printf 'BINARY source_commit=%s source=%s binary=%s\n' \
-        "${SOURCE_COMMIT}" "${source_name}" "${binary_name}" >&2
+    printf 'BINARY source=%s binary=%s\n' \
+        "${source_name}" "${binary_name}" >&2
 }
 binary_sha256() {
     if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}'
@@ -88,8 +62,8 @@ compile global_memory_access.hip global_memory_access
 compile lds_bank_conflict.hip lds_bank_conflict
 compile "${WMMA_SOURCE}" wmma_matmul
 for binary in global_memory_access lds_bank_conflict wmma_matmul; do
-    printf 'BINARY source_commit=%s gpu_target=%s binary=%s sha256=%s\n' \
-        "${SOURCE_COMMIT}" "${GPU_ARCH}" "${binary}" \
+    printf 'BINARY gpu_target=%s binary=%s sha256=%s\n' \
+        "${GPU_ARCH}" "${binary}" \
         "$(binary_sha256 "${BUILD_DIR}/${binary}")" >&2
 done
 

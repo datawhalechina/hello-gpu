@@ -216,18 +216,15 @@ def read_environment(path: Path | None) -> dict[str, str]:
     return result
 
 
-def read_profile_config(profile_dir: Path | None, git_commit: str) -> dict[str, str]:
+def read_profile_config(profile_dir: Path | None) -> dict[str, str]:
     if profile_dir is None:
         return {}
     config_path = profile_dir / "profile_config.env"
     if not config_path.is_file():
         raise PublicationError(f"profile config does not exist: {config_path}")
     config = read_environment(config_path)
-    if config.get("source_commit") != git_commit:
-        raise PublicationError(
-            "profile source_commit mismatch: "
-            f"{config.get('source_commit', '<missing>')} != {git_commit}"
-        )
+    # Older captures may contain a commit field; new summaries omit it.
+    config.pop("source_commit", None)
     return config
 
 
@@ -312,18 +309,15 @@ def publish(
     *,
     chapter_dir: Path,
     operator: str,
-    git_commit: str,
     run_logs: Sequence[Path],
     environment_file: Path | None,
     profile_dir: Path | None,
 ) -> None:
-    if not git_commit.strip():
-        raise PublicationError("git commit must not be empty")
     records = validate_run_logs(run_logs, operator)
     summary = aggregate(records)
     profiles = summarize_profiles(profile_dir)
     environment = read_environment(environment_file)
-    profile_config = read_profile_config(profile_dir, git_commit)
+    profile_config = read_profile_config(profile_dir)
     if profile_dir is not None:
         expected_profiled = {
             record["implementation"]
@@ -340,7 +334,6 @@ def publish(
     manifest = {
         "operator": operator,
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "git_commit": git_commit,
         "process_count": PROCESS_COUNT,
         "run_logs": [path.name for path in run_logs],
         "run_logs_sha256": _log_digest(run_logs),

@@ -247,10 +247,10 @@ source ./activate-rocm.sh
 bash chapter12/run_all.sh
 ```
 
-需要采集 trace 时，在同一个环境中运行独立的 profiling 入口，源码提交号由脚本自动记录：
+需要采集 trace 时，在同一个环境中运行：
 
 ```bash
-PROFILE_WARMUP=0 PROFILE_REPEAT=5 bash chapter12/profile_all.sh
+bash chapter12/profile_all.sh
 ```
 
 `profile_all.sh` 会为每种实现单独采集 trace。记录中应先说明追踪的是三个子 kernel 还是在线 kernel，再读 dispatch、workgroup、LDS、VGPR 和 scratch 字段。trace 的 grid 范围也不能直接当成 block 数。

@@ -574,7 +574,7 @@ bash chapter8/run_all.sh
 bash chapter8/profile_all.sh
 ```
 
-脚本会自动记录当前仓库的提交号，无需手动填写。使用源码压缩包、没有 Git 信息时，会将提交号记为 `unknown`，仍可运行；结果同时记录实际源码的 SHA-256，便于核对两次运行是否使用了相同文件。可选的地址调试工具默认关闭，不影响正确性、benchmark 和 profiling 主流程。
+可选的地址调试工具默认关闭，不影响正确性、benchmark 和 profiling 主流程。
 
 `run_all.sh` 的顺序是：
 

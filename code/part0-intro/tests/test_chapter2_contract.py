@@ -92,7 +92,7 @@ class Chapter2ContractTest(unittest.TestCase):
     def test_profile_is_per_implementation(self):
         text = self.require_file(CHAPTER_DIR / "profile_all.sh").read_text()
         self.assertIn("profile_config.env", text)
-        self.assertIn("source_commit", text)
+        self.assertIn("source_branch_divergence_sha256", text)
         self.assertNotIn("--implementation all", text)
 
     def test_result_contract_matches_public_matrix_and_fields(self):
@@ -884,7 +884,6 @@ class Chapter2EntrypointTest(unittest.TestCase):
         self.environment = os.environ | {
             "PATH": f"{self.tools}:{os.environ['PATH']}",
             "FAKE_TOOL_LOG": str(self.tool_log),
-            "SOURCE_COMMIT": "a" * 40,
             "MPLCONFIGDIR": str(self.root / "mplconfig"),
         }
 
@@ -956,27 +955,9 @@ output.chmod(0o755)
         git = self.tools / "git"
         git.write_text(
             "#!/usr/bin/env python3\n"
-            "import os, pathlib, sys\n"
-            "args = sys.argv[1:]\n"
-            "if args[:1] == ['-C']: args = args[2:]\n"
-            "if 'rev-parse' in args:\n"
-            "    raise SystemExit(1 if os.environ.get('FAKE_GIT_MISSING') else 0)\n"
-            "if 'show' in args:\n"
-            "    spec = args[-1]\n"
-            "    name = spec.rsplit(':', 1)[1].rsplit('/', 1)[1]\n"
-            "    base = pathlib.Path(os.environ['FAKE_GIT_CHAPTER_DIR'])\n"
-            "    data = None\n"
-            "    for chapter in ('chapter2', 'chapter3'):\n"
-            "        candidate = base / chapter / name\n"
-            "        if candidate.is_file():\n"
-            "            data = candidate.read_bytes()\n"
-            "            break\n"
-            "    if data is None:\n"
-            "        raise SystemExit(1)\n"
-            "    if os.environ.get('FAKE_GIT_SOURCE_MISMATCH') == name: data += b'changed'\n"
-            "    sys.stdout.buffer.write(data)\n"
-            "    raise SystemExit(0)\n"
-            "raise SystemExit(1)\n"
+            "import os, sys\n"
+            "with open(os.environ['FAKE_TOOL_LOG'], 'a') as log: log.write('unexpected git call\\n')\n"
+            "sys.exit(99)\n"
         )
         objdump = self.tools / "llvm-objdump"
         objdump.write_text(
@@ -1030,7 +1011,6 @@ output.chmod(0o755)
             "rdna4_wmma.hip",
         ):
             shutil.copy2(CHAPTER3_DIR / source, chapter3_dir / source)
-        environment = environment | {"FAKE_GIT_CHAPTER_DIR": str(part_dir)}
         return subprocess.run(
             ["bash", str(chapter_dir / name), *arguments],
             cwd=chapter_dir,
@@ -1111,35 +1091,22 @@ output.chmod(0o755)
             for fields in formal
         ))
 
-    def test_invalid_source_commit_stops_before_compilation_or_publication(self):
-        for invalid in ("a" * 39, "a" * 41, "g" * 40):
-            with self.subTest(invalid=invalid):
+    def test_entrypoints_run_current_source_without_git_or_commit_setup(self):
+        # An old shell setting must not reintroduce the removed prerequisite.
+        for script in ("run_all.sh", "profile_all.sh"):
+            with self.subTest(script=script):
                 self.tool_log.unlink(missing_ok=True)
-                profile_dir = self.root / f"invalid-{len(invalid)}"
-                run_result = self.run_script("run_all.sh", SOURCE_COMMIT=invalid)
-                profile_result = self.run_script(
-                    "profile_all.sh", SOURCE_COMMIT=invalid,
+                profile_dir = self.root / "current-source-profiles"
+                result = self.run_script(
+                    script, SOURCE_COMMIT="obsolete-setting",
                     PROFILE_DIR=str(profile_dir),
                 )
-                self.assertNotEqual(run_result.returncode, 0)
-                self.assertNotEqual(profile_result.returncode, 0)
-                self.assertEqual(run_result.stdout, "")
-                self.assertEqual(profile_result.stdout, "")
-                self.assertFalse(self.tool_log.exists())
-                self.assertFalse(profile_dir.exists())
-
-    def test_missing_commit_or_source_mismatch_stops_before_compile(self):
-        for name, environment in (
-            ("missing commit", {"FAKE_GIT_MISSING": "1"}),
-            ("source mismatch", {"FAKE_GIT_SOURCE_MISMATCH": "branch_divergence.hip"}),
-        ):
-            with self.subTest(name=name):
-                self.tool_log.unlink(missing_ok=True)
-                for script in ("run_all.sh", "profile_all.sh"):
-                    self.tool_log.unlink(missing_ok=True)
-                    result = self.run_script(script, **environment)
-                    self.assertNotEqual(result.returncode, 0)
-                    self.assertFalse(self.tool_log.exists())
+                self.assertEqual(result.returncode, 0, result.stderr)
+                calls = self.tool_log.read_text()
+                self.assertIn("hipcc ", calls)
+                self.assertNotIn("unexpected git call", calls)
+                if script == "profile_all.sh":
+                    self.assertNotIn("source_commit=", (profile_dir / "profile_config.env").read_text())
 
     def test_invalid_edge_toggle_stops_before_compilation(self):
         self.tool_log.unlink(missing_ok=True)
@@ -1235,7 +1202,7 @@ output.chmod(0o755)
         self.assertEqual(values["observed_hardware"], untrusted_hardware)
         self.assertFalse((self.root / "injected").exists())
         self.assertIn("--implementation wave-uniform", values["profile_branch_divergence_wave_uniform_argv"])
-        for field in ("source_commit", "hardware", "observed_hardware", "gpu_arch", "profile_shapes", "warmup", "repeat", "seed", "rocm_version", "gpu_target"):
+        for field in ("hardware", "observed_hardware", "gpu_arch", "profile_shapes", "warmup", "repeat", "seed", "rocm_version", "gpu_target"):
             self.assertRegex(config, rf"(?m)^{field}=.+$")
         for binary in ("branch_divergence", "global_memory_access", "lds_bank_conflict", "rdna4_wmma"):
             self.assertRegex(config, rf"(?m)^binary_{binary}_sha256=[0-9a-f]{{64}}$")
@@ -1575,10 +1542,10 @@ class Chapter2PublicationTest(unittest.TestCase):
                 )
         path.write_text("\n".join(lines) + "\n")
 
-    def write_profile(self, *, commit: str = "a" * 40) -> tuple[Path, dict[tuple[str, str], Path]]:
+    def write_profile(self) -> tuple[Path, dict[tuple[str, str], Path]]:
         profile = self.root / "profile"
         profile.mkdir(exist_ok=True)
-        (profile / "profile_config.env").write_text(f"source_commit={commit}\n")
+        (profile / "profile_config.env").write_text("gpu_arch=gfx1201\n")
         traces = {}
         for experiment, implementations in EXPECTED_IMPLEMENTATIONS.items():
             for implementation in implementations:
@@ -1588,12 +1555,10 @@ class Chapter2PublicationTest(unittest.TestCase):
                 traces[(experiment, implementation)] = trace
         return profile, traces
 
-    def write_rocprof_profile(
-        self, *, commit: str = "a" * 40
-    ) -> tuple[Path, dict[tuple[str, str], Path]]:
+    def write_rocprof_profile(self) -> tuple[Path, dict[tuple[str, str], Path]]:
         profile = self.root / "rocprof-profile"
         profile.mkdir(exist_ok=True)
-        (profile / "profile_config.env").write_text(f"source_commit={commit}\n")
+        (profile / "profile_config.env").write_text("gpu_arch=gfx1201\n")
         traces = {}
         pid = 4100
         for experiment, implementations in EXPECTED_IMPLEMENTATIONS.items():
@@ -1641,7 +1606,6 @@ class Chapter2PublicationTest(unittest.TestCase):
                 [self.log1, self.log1, self.log2],
                 None,
                 self.evidence,
-                "a" * 40,
             )
         self.assertEqual(sentinel.read_text(), "keep")
 
@@ -1652,13 +1616,13 @@ class Chapter2PublicationTest(unittest.TestCase):
         )
 
         self.module.publish(
-            [self.log1, self.log2, self.log3], profile, self.evidence, "a" * 40
+            [self.log1, self.log2, self.log3], profile, self.evidence
         )
 
         manifest_path = self.evidence / "manifest.json"
         manifest_text = manifest_path.read_text()
         manifest = json.loads(manifest_text)
-        self.assertEqual(manifest["source_commit"], "a" * 40)
+        self.assertNotIn("source_commit", manifest)
         self.assertEqual(
             manifest["run_logs"],
             [
@@ -1719,7 +1683,6 @@ class Chapter2PublicationTest(unittest.TestCase):
                 [first, second, self.log3],
                 None,
                 self.evidence,
-                "a" * 40,
             )
 
         self.assertEqual(sentinel.read_text(), "keep")
@@ -1733,7 +1696,6 @@ class Chapter2PublicationTest(unittest.TestCase):
             command.extend(("--run-log", str(path)))
         command.extend((
             "--profile-dir", str(profile_pointer),
-            "--source-commit", "a" * 40,
             "--evidence-dir", str(self.evidence),
         ))
 
@@ -1817,14 +1779,14 @@ class Chapter2PublicationTest(unittest.TestCase):
         trace.symlink_to(external)
 
         with self.assertRaisesRegex(ValueError, "outside resolved profile root"):
-            self.module._profile_summary(profile, "a" * 40)
+            self.module._profile_summary(profile)
 
     def test_profile_rejects_missing_expected_pair(self):
         profile, traces = self.write_profile()
         traces[("branch-divergence", "wave-divergent")].unlink()
         with self.assertRaisesRegex(ValueError, "complete expected experiment/implementation"):
             self.module.publish(
-                [self.log1, self.log2, self.log3], profile, self.evidence, "a" * 40
+                [self.log1, self.log2, self.log3], profile, self.evidence
             )
 
     def test_profile_rejects_no_dispatch_empty_kernel_and_malformed_table(self):
@@ -1839,7 +1801,7 @@ class Chapter2PublicationTest(unittest.TestCase):
                 traces[("branch-divergence", "wave-divergent")].write_text(contents)
                 with self.assertRaisesRegex(ValueError, expected_error):
                     self.module.publish(
-                        [self.log1, self.log2, self.log3], profile, self.evidence, "a" * 40
+                        [self.log1, self.log2, self.log3], profile, self.evidence
                     )
 
     def test_failed_second_rename_restores_existing_evidence(self):
@@ -1855,7 +1817,7 @@ class Chapter2PublicationTest(unittest.TestCase):
         with mock.patch.object(self.module.os, "replace", side_effect=fail_second_replace):
             with self.assertRaisesRegex(OSError, "second rename"):
                 self.module.publish(
-                    [self.log1, self.log2, self.log3], None, self.evidence, "a" * 40
+                    [self.log1, self.log2, self.log3], None, self.evidence
                 )
 
         self.assertEqual(sentinel.read_text(), "keep")
@@ -1874,7 +1836,7 @@ class Chapter2PublicationTest(unittest.TestCase):
 
         with mock.patch.object(self.module.shutil, "rmtree", side_effect=fail_backup_cleanup):
             self.module.publish(
-                [self.log1, self.log2, self.log3], None, self.evidence, "a" * 40
+                [self.log1, self.log2, self.log3], None, self.evidence
             )
 
         self.assertTrue((self.evidence / "manifest.json").is_file())

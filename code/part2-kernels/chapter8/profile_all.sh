@@ -3,7 +3,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PART_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-SOURCE_COMMIT="$(bash "${PART_DIR}/common/source_commit.sh")"
 requested_gpu_arch="${GPU_ARCH:-}"
 requested_hello_gpu_arch="${HELLO_GPU_ARCH:-}"
 if [[ "${HELLO_GPU_SKIP_ACTIVATE:-0}" == "1" ]]; then
@@ -107,8 +106,7 @@ rm -f \
     "${PROFILE_DIR}/profile_config.env"
 rm -f "${SCRIPT_DIR}/evidence/profile_summary.csv"
 python "${SCRIPT_DIR}/summarize_results.py" \
-    --chapter-dir "${SCRIPT_DIR}" \
-    --git-commit "${SOURCE_COMMIT}"
+    --chapter-dir "${SCRIPT_DIR}"
 echo "profile evidence reset before trace collection"
 
 bash "${SCRIPT_DIR}/collect_environment.sh" \
@@ -216,7 +214,6 @@ if ((triton_precheck_passed != 0)); then
 fi
 
 {
-    echo "source_commit=${SOURCE_COMMIT}"
     echo "source_sha256=${SOURCE_SHA256}"
     echo "size=${SIZE}"
     echo "hip_block=${HIP_BLOCK}"
@@ -238,7 +235,6 @@ fi
 profile_summary_incomplete=0
 if ! python "${SCRIPT_DIR}/summarize_results.py" \
     --chapter-dir "${SCRIPT_DIR}" \
-    --git-commit "${SOURCE_COMMIT}" \
     --require-complete-profiles; then
     profile_summary_incomplete=1
 fi

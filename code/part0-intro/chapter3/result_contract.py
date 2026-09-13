@@ -244,21 +244,13 @@ def _kernel_names(trace_path: Path) -> list[str]:
     return names
 
 
-def _profile_summary(profile_dir: Path | None, source_commit: str) -> list[dict[str, str]]:
+def _profile_summary(profile_dir: Path | None) -> list[dict[str, str]]:
     if profile_dir is None:
         return []
     profile_dir = Path(profile_dir)
     config_path = profile_dir / "profile_config.env"
     if not config_path.is_file():
         raise ValueError(f"{config_path}: missing profile_config.env")
-    config = {}
-    for line in config_path.read_text().splitlines():
-        if "=" in line and not line.lstrip().startswith("#"):
-            key, value = line.split("=", 1)
-            config[key.strip()] = value.strip()
-    if config.get("source_commit") != source_commit:
-        raise ValueError("profile_config.env.source_commit must match source_commit")
-
     profile_rows: dict[tuple[str, str], dict[str, object]] = {}
     for trace_path in sorted(profile_dir.rglob("*_kernel_trace.csv")):
         try:
@@ -331,7 +323,6 @@ def publish(
     run_logs: Sequence[Path],
     profile_dir: Path | None,
     evidence_dir: Path,
-    source_commit: str,
 ) -> None:
     """Publish validated evidence as an all-or-nothing directory replacement."""
     rows = validate_runs(run_logs)
@@ -343,7 +334,7 @@ def publish(
     if duplicate_names:
         raise ValueError(f"duplicate run-log basename: {duplicate_names[0]}")
     summaries = _aggregate(rows)
-    profiles = _profile_summary(profile_dir, source_commit)
+    profiles = _profile_summary(profile_dir)
     evidence_dir = Path(evidence_dir)
     evidence_dir.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = list(REQUIRED_FIELDS) + ["run_count"]
@@ -357,7 +348,6 @@ def publish(
     temporary = Path(tempfile.mkdtemp(prefix=f".{evidence_dir.name}.tmp-", dir=evidence_dir.parent))
     try:
         manifest = {
-            "source_commit": source_commit,
             "process_count": PROCESS_COUNT,
             "run_logs": [
                 {
@@ -389,11 +379,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Publish the chapter's benchmark evidence.")
     parser.add_argument("--run-log", action="append", required=True, type=Path)
     parser.add_argument("--profile-dir", type=Path)
-    parser.add_argument("--source-commit", required=True)
     parser.add_argument("--evidence-dir", required=True, type=Path)
     args = parser.parse_args(argv)
     try:
-        publish(args.run_log, args.profile_dir, args.evidence_dir, args.source_commit)
+        publish(args.run_log, args.profile_dir, args.evidence_dir)
     except ValueError as error:
         parser.error(str(error))
     return 0

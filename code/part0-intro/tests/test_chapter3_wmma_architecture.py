@@ -447,19 +447,7 @@ def _write_fake_hipcc(tool_dir: Path) -> None:
 
 def _write_fake_git(tool_dir: Path) -> None:
     script = tool_dir / "git"
-    script.write_text(
-        '#!/usr/bin/env bash\n'
-        'for arg in "$@"; do\n'
-        '  if [[ "$arg" == *"rev-parse"* ]] || [[ "$arg" == "rev-parse" ]]; then exit 0; fi\n'
-        'done\n'
-        'LAST="${@: -1}"\n'
-        'if [[ "$LAST" == *":"* ]]; then\n'
-        '  FILE="${LAST##*/}"\n'
-        '  cat "${FAKE_GIT_CHAPTER_DIR}/${FILE}"\n'
-        '  exit $?\n'
-        'fi\n'
-        'exit 1\n'
-    )
+    script.write_text('#!/usr/bin/env bash\necho "unexpected Git call" >&2\nexit 99\n')
     script.chmod(0o755)
 
 
@@ -496,9 +484,7 @@ def _prepare_runner_fixture(arch: str) -> tuple[Path, dict, Path, Path]:
     env.update({
         "PATH": f"{tool_dir}:{env['PATH']}",
         "FAKE_TOOL_LOG": str(log_path),
-        "FAKE_GIT_CHAPTER_DIR": str(chapter_dir),
         "GPU_ARCH": arch,
-        "SOURCE_COMMIT": "a" * 40,
         "RUN_EDGE_CASES": "0",
     })
     return chapter_dir, env, log_path, tmpdir

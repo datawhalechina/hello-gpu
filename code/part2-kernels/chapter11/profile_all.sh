@@ -2,7 +2,6 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; PART_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-SOURCE_COMMIT="$(bash "${PART_DIR}/common/source_commit.sh")"
 GPU_ARCH="${GPU_ARCH:-gfx1201}"; M="${M:-512}"; N="${N:-512}"; K="${K:-512}"; SEED="${SEED:-20260719}"
 PROFILE_WARMUP="${PROFILE_WARMUP:-0}"; PROFILE_REPEAT="${PROFILE_REPEAT:-5}"; BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hello-gpu-ch10-profile.XXXXXX")"
 STAGING_ROOT="$(mktemp -d "${SCRIPT_DIR}/.profiles-staging.XXXXXX")"; PROFILE_DIR="${STAGING_ROOT}/profiles"; PREVIOUS_PROFILES="${STAGING_ROOT}/previous-profiles"; PUBLISHED=0
@@ -14,7 +13,7 @@ profile "hip-naive" "${BUILD_DIR}/matmul_hip" --version naive --m "${M}" --n "${
 profile "hip-tiled" "${BUILD_DIR}/matmul_hip" --version tiled --m "${M}" --n "${N}" --k "${K}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"
 profile "triton-baseline" python "${SCRIPT_DIR}/matmul_triton.py" --version baseline --m "${M}" --n "${N}" --k "${K}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"
 profile "triton-grouped" python "${SCRIPT_DIR}/matmul_triton.py" --version grouped --m "${M}" --n "${N}" --k "${K}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"
-printf 'source_commit=%s\ngpu_arch=%s\nm=%s\nn=%s\nk=%s\nseed=%s\nprofile_warmup=%s\nprofile_repeat=%s\n' "${SOURCE_COMMIT}" "${GPU_ARCH}" "${M}" "${N}" "${K}" "${SEED}" "${PROFILE_WARMUP}" "${PROFILE_REPEAT}" > "${PROFILE_DIR}/profile_config.env"
+printf 'gpu_arch=%s\nm=%s\nn=%s\nk=%s\nseed=%s\nprofile_warmup=%s\nprofile_repeat=%s\n' "${GPU_ARCH}" "${M}" "${N}" "${K}" "${SEED}" "${PROFILE_WARMUP}" "${PROFILE_REPEAT}" > "${PROFILE_DIR}/profile_config.env"
 if [[ -e "${SCRIPT_DIR}/profiles" ]]; then mv "${SCRIPT_DIR}/profiles" "${PREVIOUS_PROFILES}"; fi
 mv "${PROFILE_DIR}" "${SCRIPT_DIR}/profiles"
 PUBLISHED=1
