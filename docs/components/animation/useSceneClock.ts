@@ -36,6 +36,10 @@ export function useSceneClock(durations: Ref<number[]>) {
   })
 
   const stepCount = computed(() => durations.value.length)
+  /** 点击步骤时展示该步完成后的画面；刻度也使用同一时间点。 */
+  const stepTargets = computed(() =>
+    starts.value.map((start, index) => start + Math.max(0, durations.value[index] - 1))
+  )
   const stepIndex = computed(() => {
     const idx = starts.value.findIndex(start => time.value < start)
     return idx === -1 ? stepCount.value - 1 : Math.max(idx - 1, 0)
@@ -151,8 +155,7 @@ export function useSceneClock(durations: Ref<number[]>) {
   /** 跳到第 i 步：非 reduced-motion 落在过渡结束的稳定帧，并带一点快进动画。 */
   function goToStep(i: number) {
     const idx = Math.max(0, Math.min(i, stepCount.value - 1))
-    const settled = starts.value[idx] + Math.max(0, durations.value[idx] - 1)
-    glideTo(settled)
+    glideTo(stepTargets.value[idx])
   }
 
   onUnmounted(stopLoop)
@@ -163,6 +166,7 @@ export function useSceneClock(durations: Ref<number[]>) {
     reducedMotion,
     total,
     starts,
+    stepTargets,
     stepCount,
     stepIndex,
     stepLocal,

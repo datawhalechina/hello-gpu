@@ -11,8 +11,15 @@ const clock = useSceneClock(durations)
 const rootEl = ref<HTMLElement | null>(null)
 
 const currentStep = computed(() => props.meta.steps[clock.stepIndex.value])
-const pct = computed(() =>
-  clock.total.value > 0 ? `${((clock.time.value / clock.total.value) * 100).toFixed(2)}%` : '0%'
+const progress = computed(() =>
+  clock.total.value > 0 ? clock.time.value / clock.total.value : 0
+)
+// A native range thumb travels between half-thumb insets, not the input's edges.
+const fillPosition = computed(() =>
+  `calc(${progress.value * 100}% + ${0.5 - progress.value} * var(--ej-thumb-size))`
+)
+const stepPositions = computed(() =>
+  clock.stepTargets.value.map(time => clock.total.value > 0 ? `${time / clock.total.value * 100}%` : '0%')
 )
 const stageLabel = computed(
   () =>
@@ -64,7 +71,7 @@ let observer: IntersectionObserver | undefined
 
 onMounted(() => {
   clock.reducedMotion.value = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  clock.seek(Math.max(0, durations.value[0] - 1))
+  clock.seek(clock.stepTargets.value[0] ?? 0)
 
   document.addEventListener('visibilitychange', onVisibility)
   if (typeof IntersectionObserver === 'undefined' || !rootEl.value) {
@@ -177,18 +184,19 @@ onUnmounted(() => {
         :max="clock.total.value"
         step="1"
         :value="Math.floor(clock.time.value)"
-        :style="{ '--ej-pct': pct }"
+        :style="{ '--ej-fill-position': fillPosition }"
         aria-label="动画时间轴，可拖动擦洗到任意中间状态"
         :aria-valuetext="`第 ${clock.stepIndex.value + 1} 步：${currentStep.label}`"
         @pointerdown="onScrubStart"
         @input="onScrub"
       />
-        <div class="ej-chips" aria-label="跳转到指定步骤">
+        <div class="ej-chips" aria-label="查看指定步骤的完成状态">
           <button
             v-for="(step, index) in meta.steps"
             :key="step.label"
             type="button"
             class="ej-chip"
+            :style="{ left: stepPositions[index] }"
             :class="{ 'is-active': index === clock.stepIndex.value, 'is-done': index < clock.stepIndex.value }"
             :aria-current="index === clock.stepIndex.value ? 'step' : undefined"
             :title="step.label"
@@ -204,7 +212,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <p class="ej-note">算法过程示意 · 可单步查看、拖动进度或播放；动画速度不代表 GPU 耗时。</p>
+    <p class="ej-note">算法过程示意 · 数字定位到该步完成状态，可拖动进度或播放；动画速度不代表 GPU 耗时。</p>
   </section>
 </template>
 
@@ -408,8 +416,9 @@ onUnmounted(() => {
 }
 
 .ej-timeline {
-  flex: 1;
-  min-width: 90px;
+  --ej-thumb-size: 13px;
+  flex: 1 1 180px;
+  min-width: 180px;
   padding-top: 9px;
 }
 
@@ -420,7 +429,7 @@ onUnmounted(() => {
   -webkit-appearance: none;
   height: 3px;
   border-radius: 2px;
-  background: linear-gradient(to right, var(--ej-active) var(--ej-pct), var(--ej-line-strong) var(--ej-pct));
+  background: linear-gradient(to right, var(--ej-active) var(--ej-fill-position), var(--ej-line-strong) var(--ej-fill-position));
   cursor: pointer;
   margin: 0;
 }
@@ -428,8 +437,9 @@ onUnmounted(() => {
 .ej-range::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 13px;
-  height: 13px;
+  box-sizing: border-box;
+  width: var(--ej-thumb-size);
+  height: var(--ej-thumb-size);
   border-radius: 50%;
   background: var(--ej-active);
   border: 2px solid var(--ej-bg);
@@ -437,8 +447,9 @@ onUnmounted(() => {
 }
 
 .ej-range::-moz-range-thumb {
-  width: 9px;
-  height: 9px;
+  box-sizing: border-box;
+  width: var(--ej-thumb-size);
+  height: var(--ej-thumb-size);
   border-radius: 50%;
   background: var(--ej-active);
   border: 2px solid var(--ej-bg);
@@ -446,14 +457,15 @@ onUnmounted(() => {
 }
 
 .ej-chips {
-  display: flex;
-  justify-content: space-between;
-  gap: 0;
-  margin-top: 4px;
+  position: relative;
+  height: 23px;
+  margin: 4px calc(var(--ej-thumb-size) / 2) 0;
 }
 
 .ej-chip {
-  position: relative;
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -573,10 +585,15 @@ onUnmounted(() => {
     font-size: 12px;
   }
   .ej-timeline {
+    grid-column: 1 / -1;
     min-width: 0;
   }
   .ej-progress {
-    max-width: 82px;
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+    max-width: none;
   }
   .ej-note {
     text-align: left;
