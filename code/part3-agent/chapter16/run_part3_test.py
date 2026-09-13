@@ -86,8 +86,6 @@ def _run_pytest() -> int:
         "chapter14",
         "-q",
         "--tb=line",
-        "-k",
-        "not ensure_peak_no_gpu",
     ]
     print("$", " ".join(cmd))
     proc = subprocess.run(cmd, cwd=PART_ROOT)
@@ -275,7 +273,6 @@ def main(argv: list[str] | None = None) -> int:
     if pytest_code is not None:
         print(f"pytest    : {pytest_code}")
     print(f"figures   : {len(viz_paths)} files")
-    # Agent 闭环跑通即可视为主路径通过；pytest 的 hardware-aimax395 缺失不算阻断
     return 0 if agent_code == 0 else agent_code
 
 

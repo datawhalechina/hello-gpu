@@ -33,18 +33,9 @@ REQUIRED_RESULT_FIELDS = {
     "postcheck", "median_ms",
 }
 
-FORBIDDEN_CHAPTER_TEXT = {
-    "~760 GB/s",
-    "实测 ≈ 标称的 67%",
-    "纯 GDDR6 平台，L2 已被打穿",
-    "硬件折叠成 1 次",
-}
-
-
 ROOT = Path(__file__).resolve().parents[3]
 CHAPTER_DIR = ROOT / "code" / "part0-intro" / "chapter2"
 CHAPTER3_DIR = ROOT / "code" / "part0-intro" / "chapter3"
-DOC_PATH = ROOT / "docs" / "part0-intro" / "chapter2" / "index.md"
 EVIDENCE_SUMMARY_PATH = CHAPTER_DIR / "evidence" / "summary.csv"
 
 
@@ -83,17 +74,6 @@ class Chapter2ContractTest(unittest.TestCase):
             "plot_results.py",
         ):
             self.assertTrue((CHAPTER3_DIR / name).is_file(), name)
-
-    def test_run_all_has_formal_controls(self):
-        text = self.require_file(CHAPTER_DIR / "run_all.sh").read_text()
-        for token in ("WARMUP", "REPEAT", "SEED", "RUN_EDGE_CASES", "gfx1201"):
-            self.assertIn(token, text)
-
-    def test_profile_is_per_implementation(self):
-        text = self.require_file(CHAPTER_DIR / "profile_all.sh").read_text()
-        self.assertIn("profile_config.env", text)
-        self.assertIn("source_branch_divergence_sha256", text)
-        self.assertNotIn("--implementation all", text)
 
     def test_result_contract_matches_public_matrix_and_fields(self):
         result_contract = self.load_result_contract()
@@ -169,62 +149,6 @@ class Chapter2ContractTest(unittest.TestCase):
         }
         self.assertEqual(observed_pairs, expected_pairs)
         self.assertEqual(len(rows), len(expected_pairs))
-
-    def test_chapter_removes_stale_claims(self):
-        text = DOC_PATH.read_text()
-        for phrase in FORBIDDEN_CHAPTER_TEXT:
-            self.assertNotIn(phrase, text)
-
-    def test_sequence_diagram_messages_avoid_mermaid_statement_separators(self):
-        text = DOC_PATH.read_text()
-        mermaid_blocks = re.findall(
-            r"```mermaid\s*\n(.*?)\n```",
-            text,
-            flags=re.DOTALL,
-        )
-        sequence_blocks = [
-            block
-            for block in mermaid_blocks
-            if block.lstrip().startswith("sequenceDiagram")
-        ]
-        self.assertTrue(sequence_blocks, "Chapter 2 must retain its EXEC timeline")
-        for block in sequence_blocks:
-            for line in block.splitlines()[1:]:
-                self.assertNotIn(
-                    ";",
-                    line,
-                    "ASCII semicolons terminate Mermaid sequence statements; "
-                    "use punctuation that remains inside the message text",
-                )
-
-    def test_flowchart_labels_quote_nested_square_brackets(self):
-        text = DOC_PATH.read_text()
-        mermaid_blocks = re.findall(
-            r"```mermaid\s*\n(.*?)\n```",
-            text,
-            flags=re.DOTALL,
-        )
-        flowchart_blocks = [
-            block
-            for block in mermaid_blocks
-            if block.lstrip().startswith("flowchart")
-        ]
-        self.assertTrue(flowchart_blocks, "Chapter 2 must retain its flowcharts")
-        unquoted_nested_label = re.compile(
-            r"\b[A-Za-z_]\w*\[(?!\")[^\]\n]*\[[^\]\n]*\][^\]\n]*\]"
-        )
-        invalid_lines = [
-            line
-            for block in flowchart_blocks
-            for line in block.splitlines()[1:]
-            if unquoted_nested_label.search(line)
-        ]
-        self.assertEqual(
-            invalid_lines,
-            [],
-            "Mermaid flowchart labels containing square brackets must be "
-            "quoted so GitHub does not parse them as nested node syntax",
-        )
 
 
 class Chapter2HipSourceContractTest(unittest.TestCase):

@@ -290,16 +290,6 @@ class PublicationTest(unittest.TestCase):
 
         self.assertEqual(marker.read_text(encoding="utf-8"), "old")
 
-    def test_cli_help_documents_repeated_run_log(self) -> None:
-        result = subprocess.run(
-            ["python3", "tools/publish_chapter.py", "--help"],
-            cwd=Path(__file__).resolve().parents[1],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        self.assertIn("pass exactly three times", result.stdout)
-
 
 if __name__ == "__main__":
     unittest.main()

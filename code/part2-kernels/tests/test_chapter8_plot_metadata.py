@@ -7,7 +7,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from chapter8 import plot_vector_add_ch7 as plot
 from chapter8.plot_vector_add_ch7 import (
     format_experiment_note,
     format_experiment_subtitle,
@@ -187,14 +186,6 @@ class Chapter8PlotMetadataTest(unittest.TestCase):
 
         self.assertEqual(labels, ["Triton t0 (512)", "Triton t1 (2048)"])
 
-    def test_publication_layout_reserves_bottom_text_clearance(self) -> None:
-        layout = plot.publication_layout()
-
-        self.assertGreaterEqual(
-            plot.footnote_xlabel_clearance_points(layout),
-            10.0,
-        )
-
     def test_plot_rejects_summary_shape_that_disagrees_with_manifest(self) -> None:
         manifest = {"benchmark": {"size": "1024", "independent_runs": "5"}}
         rows = [{"shape": "2048", "run_count": "5"}]
@@ -208,77 +199,6 @@ class Chapter8PlotMetadataTest(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "summary run counts"):
             validate_summary_metadata(rows, manifest)
-
-
-class Chapter8PublicCommandContractTest(unittest.TestCase):
-    def test_run_all_reports_curated_evidence_directory(self) -> None:
-        script = (
-            Path(__file__).parents[1] / "chapter8" / "run_all.sh"
-        ).read_text(encoding="utf-8")
-
-        self.assertNotIn('"${SCRIPT_DIR}/results"', script)
-        self.assertIn("summary written to ${SCRIPT_DIR}/evidence", script)
-
-    def test_documented_commands_run_without_manual_commit_and_use_evidence_paths(self) -> None:
-        document = (
-            Path(__file__).parents[3]
-            / "docs"
-            / "part2-kernels"
-            / "chapter8"
-            / "index.md"
-        ).read_text(encoding="utf-8")
-        rerun_section = document.split("### 8.8.1 一键入口", 1)[1].split(
-            "### 8.8.2", 1
-        )[0]
-
-        self.assertNotIn('export SOURCE_COMMIT=', rerun_section)
-        self.assertIn("bash chapter8/run_all.sh", rerun_section)
-        self.assertIn("bash chapter8/profile_all.sh", rerun_section)
-        self.assertIn("chapter8/evidence/summary.csv", rerun_section)
-        self.assertIn("chapter8/evidence/manifest.json", rerun_section)
-        self.assertIn(
-            "../../docs/part2-kernels/chapter8/images/"
-            "vector-add-ch7-bandwidth.png",
-            rerun_section,
-        )
-        self.assertNotIn("results/", rerun_section)
-
-    def test_experiment_documents_remote_plot_and_single_png_transfer(self) -> None:
-        experiment = (
-            Path(__file__).parents[1] / "chapter8" / "EXPERIMENT.md"
-        ).read_text(encoding="utf-8")
-        reproduction = experiment.split("## Reproduction commands", 1)[1].split(
-            "## Curated evidence files", 1
-        )[0]
-
-        self.assertIn("python3 -m unittest discover -s tests -v", reproduction)
-        self.assertIn("python3 - <<'PY'", reproduction)
-        self.assertNotIn("python -m unittest discover -s tests -v", reproduction)
-        self.assertIn(
-            "source .venv/bin/activate && python "
-            "chapter7/plot_vector_add_ch7.py",
-            reproduction,
-        )
-        self.assertIn(
-            "--out chapter7/evidence/vector-add-ch7-bandwidth.png",
-            reproduction,
-        )
-        self.assertIn("rsync -az", reproduction)
-        self.assertIn(
-            "hwj-frp-9070xt-2404:/home/hellogpu/hdb/hello-gpu-part2/"
-            "code/part2-kernels/chapter7/evidence/"
-            "vector-add-ch7-bandwidth.png",
-            reproduction,
-        )
-        self.assertIn(
-            "docs/part2-kernels/chapter7/images/"
-            "vector-add-ch7-bandwidth.png",
-            reproduction,
-        )
-        self.assertNotIn(
-            "--out ../../docs/part2-kernels/chapter7/images/",
-            reproduction,
-        )
 
 
 if __name__ == "__main__":

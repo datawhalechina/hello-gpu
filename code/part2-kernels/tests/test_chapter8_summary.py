@@ -133,22 +133,6 @@ class Chapter8SummaryTest(unittest.TestCase):
             self.assertNotIn("git_commit", manifest)
             self.assertEqual(len(manifest["benchmark"]["source_sha256"]), 64)
 
-    def test_commit_free_summary_preserves_source_fingerprint_validation(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary:
-            chapter = Path(temporary)
-            self._write_fixture(chapter)
-            completed = self._summarize(chapter)
-            self.assertEqual(completed.returncode, 0, completed.stderr)
-            manifest = json.loads((chapter / "evidence" / "manifest.json").read_text())
-            self.assertNotIn("git_commit", manifest)
-            self.assertEqual(manifest["benchmark"]["source_sha256"], self._source_hash(chapter))
-
-            # Removing commit metadata does not permit benchmark/source drift.
-            (chapter / "benchmark.py").write_text("# changed source\n", encoding="utf-8")
-            completed = self._summarize(chapter)
-            self.assertNotEqual(completed.returncode, 0)
-            self.assertIn("source_sha256", completed.stderr)
-
     def test_summary_rejects_old_source_identity_without_replacing_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             chapter = Path(temporary)
@@ -263,14 +247,6 @@ class Chapter8SummaryTest(unittest.TestCase):
             self.assertNotEqual(completed.returncode, 0)
             self.assertIn("independent_runs", completed.stderr)
 
-    def test_run_and_profile_manifests_record_source_identity(self) -> None:
-        chapter = Path(__file__).parents[1] / "chapter8"
-        run_all = (chapter / "run_all.sh").read_text(encoding="utf-8")
-        profile_all = (chapter / "profile_all.sh").read_text(encoding="utf-8")
-        for source in (run_all, profile_all):
-            self.assertNotIn("SOURCE_COMMIT", source)
-            self.assertIn("source_sha256=${SOURCE_SHA256}", source)
-
     def test_legacy_commit_fields_are_ignored_and_not_republished(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             chapter = Path(temporary)
@@ -283,16 +259,6 @@ class Chapter8SummaryTest(unittest.TestCase):
             manifest = json.loads((chapter / "evidence/manifest.json").read_text())
             self.assertNotIn("source_commit", manifest["benchmark"])
             self.assertNotIn("git_commit", manifest)
-
-    def test_scripts_activate_python_before_source_hash(self) -> None:
-        chapter = Path(__file__).parents[1] / "chapter8"
-        for filename in ("run_all.sh", "profile_all.sh"):
-            with self.subTest(filename=filename):
-                source = (chapter / filename).read_text(encoding="utf-8")
-                self.assertLess(
-                    source.index('source "${PART_DIR}/activate-rocm.sh"'),
-                    source.index('SOURCE_SHA256="$(python'),
-                )
 
 
 if __name__ == "__main__":

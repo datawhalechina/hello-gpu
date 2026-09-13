@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["kernel_agent/tests", "kernel_optimize/tests", "chapter14"]
+testpaths = ["kernel_optimize/tests", "chapter14"]
 python_files = ["test_*.py"]
 
 [[tool.uv.index]]

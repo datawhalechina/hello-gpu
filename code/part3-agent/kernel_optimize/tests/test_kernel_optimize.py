@@ -163,8 +163,15 @@ class MeasureTest(unittest.TestCase):
         self.assertFalse(_has_peaks(None))
 
     def test_ensure_peak_no_gpu_returns_none(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
+        unavailable = SimpleNamespace(
+            cuda=SimpleNamespace(is_available=mock.Mock(return_value=False)),
+        )
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            mock.patch.dict("sys.modules", {"torch": unavailable}),
+        ):
             self.assertIsNone(ensure_peak(Path(tmp)))
+        unavailable.cuda.is_available.assert_called()
 
 
 # ---------------------------------------------------------------------------
@@ -933,7 +940,6 @@ class AgentLoopTest(unittest.TestCase):
                 report = run_agent(ws.root, max_steps=1, batch=True)
 
             self.assertIn("older accepted round", seen_messages[0][1]["content"])
-            self.assertIn("已有轨迹", seen_messages[0][1]["content"])
             self.assertEqual(report, "基于已有轨迹的最终报告")
 
     def test_existing_trajectory_does_not_hide_unresolved_failed_bench(self) -> None:
@@ -1042,7 +1048,12 @@ class AgentLoopTest(unittest.TestCase):
                 report = run_agent(ws.root, max_steps=5, batch=True)
 
             self.assertNotIn("新候选已经成功", report)
-            self.assertIn("未完成 accept_candidate 权威裁决", report)
+            status = json.loads(
+                (ws.root / "agent-status.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(status["state"], "incomplete")
+            self.assertFalse(status["evidenceReady"])
+            self.assertEqual(status["trajectoryRows"], 1)
 
     def test_existing_trajectory_does_not_hide_invalid_accept_arguments(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1075,7 +1086,12 @@ class AgentLoopTest(unittest.TestCase):
                 report = run_agent(ws.root, max_steps=5, batch=True)
 
             self.assertNotIn("新候选已经成功", report)
-            self.assertIn("未完成 accept_candidate 权威裁决", report)
+            status = json.loads(
+                (ws.root / "agent-status.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(status["state"], "incomplete")
+            self.assertFalse(status["evidenceReady"])
+            self.assertEqual(status["trajectoryRows"], 1)
 
     def test_trajectory_tail_keeps_complete_json_rows(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

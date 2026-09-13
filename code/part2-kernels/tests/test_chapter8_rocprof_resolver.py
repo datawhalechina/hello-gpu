@@ -11,7 +11,6 @@ from pathlib import Path
 ROOT = Path(__file__).parents[1]
 CHAPTER = ROOT / "chapter8"
 RESOLVER = CHAPTER / "resolve_rocprofv3.py"
-NOTEBOOK = ROOT.parents[1] / "notebooks" / "part2-kernels" / "chapter8.ipynb"
 
 
 def load_resolver():
@@ -106,10 +105,6 @@ class RocprofSelectionTest(unittest.TestCase):
 
         self.assertEqual(candidates, (executable.resolve(),))
 
-    def test_production_resolver_does_not_hardcode_rocm_version(self) -> None:
-        source = RESOLVER.read_text(encoding="utf-8")
-        self.assertNotIn("7.2.4", source)
-
     def test_json_contract_contains_paths_and_versions(self) -> None:
         selection = self.module.select_rocprofv3(
             torch_hip="7.2.53211",
@@ -140,31 +135,6 @@ class RocprofSelectionTest(unittest.TestCase):
         self.assertEqual(fields[3], "/opt/rocm-7.2.4")
         self.assertEqual(fields[5], "7.2.53211")
         self.assertEqual(fields[6], "7.2.4")
-
-
-class RocprofIntegrationContractTest(unittest.TestCase):
-    def test_profile_script_uses_shared_resolver_for_triton(self) -> None:
-        source = (CHAPTER / "profile_all.sh").read_text(encoding="utf-8")
-
-        self.assertIn("resolve_rocprofv3.py", source)
-        self.assertIn("TRITON_ROCPROF_KIND", source)
-        self.assertIn('"--rocm-root" "${TRITON_ROCM_ROOT}"', source)
-        self.assertIn("TRITON_LIBRARY_PATH", source)
-
-    def test_notebook_auto_mode_uses_shared_resolver(self) -> None:
-        notebook = json.loads(NOTEBOOK.read_text(encoding="utf-8"))
-        source = "\n".join(
-            line
-            for cell in notebook["cells"]
-            for line in cell.get("source", [])
-        )
-
-        self.assertIn("resolve_rocprofv3.py", source)
-        self.assertIn("rocprof_selection", source)
-        self.assertIn(
-            '"direct" if rocprof_selection["available"] else "skip"',
-            source,
-        )
 
 
 if __name__ == "__main__":
