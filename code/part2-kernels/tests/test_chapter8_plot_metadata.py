@@ -219,7 +219,7 @@ class Chapter8PublicCommandContractTest(unittest.TestCase):
         self.assertNotIn('"${SCRIPT_DIR}/results"', script)
         self.assertIn("summary written to ${SCRIPT_DIR}/evidence", script)
 
-    def test_documented_commands_use_commit_and_evidence_paths(self) -> None:
+    def test_documented_commands_run_without_manual_commit_and_use_evidence_paths(self) -> None:
         document = (
             Path(__file__).parents[3]
             / "docs"
@@ -227,11 +227,11 @@ class Chapter8PublicCommandContractTest(unittest.TestCase):
             / "chapter8"
             / "index.md"
         ).read_text(encoding="utf-8")
-        rerun_section = document.split("### 8.9.1 一键入口", 1)[1].split(
-            "### 8.9.2", 1
+        rerun_section = document.split("### 8.8.1 一键入口", 1)[1].split(
+            "### 8.8.2", 1
         )[0]
 
-        self.assertIn('export SOURCE_COMMIT="$(git rev-parse HEAD)"', rerun_section)
+        self.assertNotIn('export SOURCE_COMMIT=', rerun_section)
         self.assertIn("bash chapter8/run_all.sh", rerun_section)
         self.assertIn("bash chapter8/profile_all.sh", rerun_section)
         self.assertIn("chapter8/evidence/summary.csv", rerun_section)

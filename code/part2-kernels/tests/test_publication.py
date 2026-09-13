@@ -97,6 +97,22 @@ class PublicationTest(unittest.TestCase):
         self.assertTrue((self.chapter / "evidence/summary.csv").is_file())
         self.assertTrue((self.chapter / "evidence/profile_summary.csv").is_file())
 
+    def test_archive_unknown_commit_can_publish_matching_profile_metadata(self) -> None:
+        profiles = self.write_profiles()
+        config = profiles / "profile_config.env"
+        config.write_text(config.read_text().replace("abc123", "unknown"), encoding="utf-8")
+        publish(
+            chapter_dir=self.chapter,
+            operator="sum-reduction",
+            git_commit="unknown",
+            run_logs=self.write_logs(),
+            environment_file=self.environment,
+            profile_dir=profiles,
+        )
+        manifest = json.loads((self.chapter / "evidence/manifest.json").read_text())
+        self.assertEqual(manifest["git_commit"], "unknown")
+        self.assertEqual(manifest["profile_config"]["source_commit"], "unknown")
+
     def test_requires_exactly_three_distinct_logs(self) -> None:
         with self.assertRaisesRegex(PublicationError, "exactly 3"):
             self.publish(self.write_logs()[:2])

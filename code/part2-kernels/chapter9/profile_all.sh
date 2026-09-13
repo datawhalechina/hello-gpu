@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SOURCE_COMMIT="${SOURCE_COMMIT:-}"
-if [[ ! "${SOURCE_COMMIT}" =~ ^[0-9a-f]{7,40}$ ]]; then
-    echo "SOURCE_COMMIT must be a 7-40 character lowercase Git SHA" >&2
-    exit 2
-fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PART_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+SOURCE_COMMIT="$(bash "${PART_DIR}/common/source_commit.sh")"
 GPU_ARCH="${GPU_ARCH:-gfx1201}"; SIZE="${SIZE:-16777216}"; BLOCK="${BLOCK:-256}"
 TRITON_BLOCK="${TRITON_BLOCK:-1024}"; TRITON_PROGRAMS="${TRITON_PROGRAMS:-256}"
 SEED="${SEED:-20260719}"; PROFILE_WARMUP="${PROFILE_WARMUP:-0}"; PROFILE_REPEAT="${PROFILE_REPEAT:-5}"

@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SOURCE_COMMIT="${SOURCE_COMMIT:-}"
-if [[ ! "${SOURCE_COMMIT}" =~ ^[0-9a-f]{7,40}$ ]]; then echo "SOURCE_COMMIT must be a 7-40 character lowercase Git SHA" >&2; exit 2; fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; PART_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+SOURCE_COMMIT="$(bash "${PART_DIR}/common/source_commit.sh")"
 GPU_ARCH="${GPU_ARCH:-gfx1201}"; ROWS="${ROWS:-1024}"; COLS="${COLS:-4096}"; BLOCK="${BLOCK:-256}"; EPSILON="${EPSILON:-1e-5}"; SEED="${SEED:-20260719}"
 PROFILE_WARMUP="${PROFILE_WARMUP:-0}"; PROFILE_REPEAT="${PROFILE_REPEAT:-5}"; BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hello-gpu-ch12-profile.XXXXXX")"
 STAGING_ROOT="$(mktemp -d "${SCRIPT_DIR}/.profiles-staging.XXXXXX")"; PROFILE_DIR="${STAGING_ROOT}/profiles"; PREVIOUS_PROFILES="${STAGING_ROOT}/previous-profiles"; PUBLISHED=0

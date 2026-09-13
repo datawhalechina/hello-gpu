@@ -430,10 +430,9 @@ WARMUP=10 REPEAT=50 SEED=20260719 bash chapter11/run_all.sh
 
 正式比较应分别运行 3 个独立进程并保留日志。输出里的 `precheck/postcheck` 先确认正确性；再看 `median_ms` 与各进程范围。`min_ms` 可以作为补充观察，不能替代稳定性判断。
 
-需要 profiler 时，单独运行 `chapter11/profile_all.sh`。该脚本要求 `SOURCE_COMMIT` 标识源码；将下面的占位内容替换为本地 Git 维护机提供、与传到实验机的源码对应的 SHA，实验机不执行 Git 操作：
+需要 profiler 时，在同一个 Part 2 环境中单独运行以下命令。脚本自动记录源码提交号，无需手动填写：
 
 ```bash
-SOURCE_COMMIT="<与实验源码对应的提交 SHA>" \
 PROFILE_WARMUP=0 PROFILE_REPEAT=5 bash chapter11/profile_all.sh
 ```
 

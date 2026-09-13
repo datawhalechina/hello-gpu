@@ -37,7 +37,7 @@ class FormalEntrypointsTest(unittest.TestCase):
             with self.subTest(chapter=chapter):
                 source = (ROOT / chapter / "profile_all.sh").read_text(encoding="utf-8")
                 self.assertIn("set -euo pipefail", source)
-                self.assertIn('SOURCE_COMMIT="${SOURCE_COMMIT:-}"', source)
+                self.assertIn('SOURCE_COMMIT="$(bash "${PART_DIR}/common/source_commit.sh")"', source)
                 self.assertIn("PROFILE_WARMUP=\"${PROFILE_WARMUP:-0}\"", source)
                 self.assertIn("PROFILE_REPEAT=\"${PROFILE_REPEAT:-", source)
                 self.assertIn("rocprofv3", source)

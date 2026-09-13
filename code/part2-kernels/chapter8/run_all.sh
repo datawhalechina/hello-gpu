@@ -1,14 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SOURCE_COMMIT="${SOURCE_COMMIT:-}"
-if [[ ! "${SOURCE_COMMIT}" =~ ^[0-9a-f]{7,40}$ ]]; then
-    echo "SOURCE_COMMIT must be a 7-40 character lowercase Git SHA" >&2
-    exit 2
-fi
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PART_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+SOURCE_COMMIT="$(bash "${PART_DIR}/common/source_commit.sh")"
 requested_gpu_arch="${GPU_ARCH:-}"
 requested_hello_gpu_arch="${HELLO_GPU_ARCH:-}"
 if [[ "${HELLO_GPU_SKIP_ACTIVATE:-0}" == "1" ]]; then
