@@ -158,6 +158,6 @@ uv run python -m kernel_optimize --batch chapter15/fixtures/vector_add
 
 ## 延伸阅读
 
-- `code/part3-agent/REFACTOR-PLAN-v2.md`
+- [算子优化 Agent 实现](https://github.com/datawhalechina/hello-gpu/tree/main/code/part3-agent/kernel_optimize)
 - `code/part3-agent/skills/rocm-kernel-optimize/SKILL.md`
 - 下一章：多轮实战与可视化报告

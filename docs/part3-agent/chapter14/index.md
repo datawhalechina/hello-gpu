@@ -133,4 +133,4 @@ ToolExecutor.register(name, description, func, parameters_schema)
 
 - [hello-agents](https://github.com/datawhalechina/hello-agents)
 - [ReAct: Synergizing Reasoning and Acting in Language Models](https://arxiv.org/abs/2210.03629)
-- 本仓库 `code/part3-agent/HANDOFF.md`（方法论交接）
+- [第 16 章：算子优化 Agent 设计](../chapter16/index.md)
