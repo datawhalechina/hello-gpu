@@ -101,7 +101,6 @@ bash chapter8/profile_all.sh
 从仓库内 `code/part2-kernels` 验证 curated evidence：
 
 ```bash
-python3 -m unittest discover -s tests -v
 python3 - <<'PY'
 import csv
 import json
