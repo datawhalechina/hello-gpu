@@ -5,7 +5,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
-const vendors = ['amd', 'nvidia']
+const vendors = ['amd']
 
 async function stage(vendor) {
   const source = path.join(root, `apps/gpu-atlas/${vendor}/index.html`)

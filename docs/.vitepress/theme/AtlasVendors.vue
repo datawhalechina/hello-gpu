@@ -29,7 +29,7 @@ defineProps<{ compact?: boolean }>()
 <style scoped>
 .hg-atlas-vendors {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
   gap: 24px;
 }
 
@@ -145,6 +145,29 @@ defineProps<{ compact?: boolean }>()
   transform: translateX(4px);
 }
 
+/* A single vendor stretches the grid to full width; lay the card out side by side. */
+.hg-atlas-vendors:not(.is-compact) .hg-atlas-vendor:only-child {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 48px;
+  align-items: center;
+}
+
+.hg-atlas-vendors:not(.is-compact) .hg-atlas-vendor:only-child .hg-atlas-vendor-identity {
+  grid-area: 1 / 1 / 2 / -1;
+}
+
+.hg-atlas-vendors:not(.is-compact) .hg-atlas-vendor:only-child .hg-atlas-vendor-copy {
+  grid-area: 2 / 1 / 3 / 2;
+  padding: 12px 0 4px;
+}
+
+.hg-atlas-vendors:not(.is-compact) .hg-atlas-vendor:only-child .hg-atlas-vendor-art {
+  grid-area: 2 / 2 / 3 / 3;
+  height: 300px;
+  margin: 0;
+}
+
 .is-compact .hg-atlas-vendor {
   padding: 26px 30px 28px;
   min-height: 275px;
@@ -180,6 +203,11 @@ defineProps<{ compact?: boolean }>()
 
 .is-compact .hg-atlas-vendor-detail {
   display: none;
+}
+
+/* Keep the solo full-width card's arrow next to its copy instead of the far edge. */
+.is-compact .hg-atlas-vendor:only-child .hg-atlas-vendor-action {
+  max-width: 56%;
 }
 
 @media (max-width: 1100px) {
@@ -236,6 +264,17 @@ defineProps<{ compact?: boolean }>()
   }
   .hg-atlas-vendor-status {
     font-size: 10px;
+  }
+  .hg-atlas-vendors:not(.is-compact) .hg-atlas-vendor:only-child {
+    display: flex;
+    align-items: stretch;
+  }
+  .hg-atlas-vendors:not(.is-compact) .hg-atlas-vendor:only-child .hg-atlas-vendor-art {
+    height: 220px;
+    margin: 14px 0 10px;
+  }
+  .is-compact .hg-atlas-vendor:only-child .hg-atlas-vendor-action {
+    max-width: none;
   }
 }
 
