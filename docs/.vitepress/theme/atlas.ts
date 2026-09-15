@@ -11,16 +11,4 @@ export const atlasVendors = [
     standalone: true,
     preview: { src: '/atlas-previews/amd-rx9070xt.webp', width: 1200, height: 700 },
   },
-  {
-    id: 'nvidia',
-    name: 'NVIDIA',
-    status: '已开放',
-    title: '从整卡，到计算单元。',
-    description: '沿着架构演进，探索整卡、封装与芯片内部，连接硬件结构与计算方式。',
-    detail: '沉浸探索 · 架构档案 · 性能演进',
-    href: '/atlas/nvidia/',
-    action: '开始探索',
-    standalone: true,
-    preview: { src: '/atlas-previews/nvidia-rtx5090.webp', width: 1497, height: 1244 },
-  },
 ] as const

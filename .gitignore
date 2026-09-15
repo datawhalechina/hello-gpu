@@ -10,9 +10,6 @@ package-lock.json
 .superpowers/
 
 # GPU Atlas 单文件页面在教程构建前复制；只提交 apps/ 下的 index.html。
-apps/gpu-atlas/nvidia/*
-!apps/gpu-atlas/nvidia/index.html
-docs/public/atlas/nvidia/
 apps/gpu-atlas/amd/*
 !apps/gpu-atlas/amd/index.html
 docs/public/atlas/amd/
