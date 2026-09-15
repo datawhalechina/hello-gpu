@@ -31,7 +31,7 @@ npm install
 npm run docs:dev
 ```
 
-`docs:dev` 和 `docs:build` 都会先调用 `scripts/build-atlas.mjs`。脚本检查展馆的完整 HTML、混淆构建标记及 source map，然后把文件复制到 `docs/public/atlas/amd/index.html`，交给 VitePress 一起发布。这个步骤不安装子应用依赖，也不运行 React/Vite 构建。原有 Pages 工作流的 `npm install` -> `npm run docs:build` 已包含图谱，无须单独发布。
+`docs:dev` 和 `docs:build` 都会先调用 `scripts/build-atlas.mjs`。脚本检查展馆的完整 HTML、混淆构建标记及 source map，然后把文件复制到 `docs/public/atlas/amd/index.html`，交给 VitePress 一起发布；同时清掉 `docs/public/atlas/` 下不在发布列表里的残留输出，老克隆上的已下架展馆不会被重新打进 dist。这个步骤不安装子应用依赖，也不运行 React/Vite 构建。原有 Pages 工作流的 `npm install` -> `npm run docs:build` 已包含图谱，无须单独发布。
 
 ```bash
 npm run docs:build
