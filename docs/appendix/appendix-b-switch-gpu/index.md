@@ -9,7 +9,7 @@ description: "从 GPU 型号查到设备标签，修改三处配置，再安装�
 
 > 教程用的是 RX 9070 XT，我们手上却可能是另一张 Radeon 显卡，或者一台 Ryzen AI Max+ 395 主机。第一次安装时，该把配置改成什么？我们只需要先查到自己设备的标签，把它填到配置里的三个位置，再运行 `uv sync`。
 
-本附录从**还没有创建 Python 虚拟环境、还没有安装 PyTorch**开始。系统和驱动已按 [第 1 章](../../part0-intro/chapter1/index.md)准备好，`uv` 命令可以使用；下面采用原生 Ubuntu 24.04、Linux x86_64 和 Python 3.12。我们会一直使用 ROCm 10.0，操作顺序是：
+本附录从**已下载教程源码，但还没有创建 Python 虚拟环境、还没有安装 PyTorch**开始。系统和驱动已按 [第 1 章](../../part0-intro/chapter1/index.md)准备好，`uv` 命令可以使用；下面采用原生 Ubuntu 24.04、Linux x86_64 和 Python 3.12。我们会一直使用 ROCm 10.0，操作顺序是：
 
 **查 GPU 型号 → 找到 gfx 代号 → 修改三个设备标签 → 安装环境 → 验证 GPU。**
 
@@ -59,17 +59,12 @@ description: "从 GPU 型号查到设备标签，修改三处配置，再安装�
 
 ## B.3 第三步：先改配置，再安装
 
-我们先准备一个独立目录，后面的配置文件和环境都放在这里：
+我们直接使用教程自带的环境配置。下载好本教程的源码后，在编辑器中打开 **`code/part0-intro/pyproject.toml`**。这个文件属于第 0 篇，默认选择 RX 9070 XT 对应的 `gfx1201`；旁边的 `uv.lock` 也先保留，第四步会由 uv 根据修改后的配置更新它。
 
-```bash
-mkdir -p ~/hello-gpu-env
-cd ~/hello-gpu-env
-```
-
-在这个目录中新建 `pyproject.toml`，复制下面这份完整配置。它以 `gfx1201` 为起点；**先完成下方的三处修改，再执行安装命令**。
+先看文件的完整内容，找到我们要改的位置：
 
 <details>
-<summary>展开完整 pyproject.toml，复制到自己的目录</summary>
+<summary>修改前：code/part0-intro/pyproject.toml（gfx1201）</summary>
 
 ```toml
 [project]
@@ -112,7 +107,7 @@ notebook = [
 
 </details>
 
-在文件中搜索 `device-gfx1201`，一共能找到 **3 处**，分别属于 `torch`、`torchvision` 和 `rocm`。如果目标是 `gfx1151`，就把这三处全部改成 `device-gfx1151`。修改后的三行是：
+在文件中搜索 `device-gfx1201`，一共能找到 **3 处**，分别属于 `torch`、`torchvision` 和 `rocm`。如果目标是 `gfx1151`，就把这三处全部改成 `device-gfx1151`：
 
 ```toml
     "torch[device-gfx1151]==2.13.0+rocm10.0.0",
@@ -122,30 +117,98 @@ notebook = [
 
 这三行是用来**替换原有三行**的，不要重复添加。`rocm` 那行里的 `devel` 用于保留课程需要的开发组件，我们只改逗号后的设备标签。版本号和下面的下载源配置照原样保留。
 
+修改完成后，整个文件应如下所示。展开后，可以在「修改后的完整文件」和「只看修改（git diff）」两个选项之间切换：前者便于复制核对，后者只展示改动的位置。diff 中红色的 `-` 表示删去的行，绿色的 `+` 表示替换后的行；**diff 用来对照，复制配置请使用完整文件**。
+
+<details>
+<summary>修改后：完整 pyproject.toml 与 git diff 对照（gfx1151）</summary>
+
+::: code-group
+
+```toml [修改后的完整文件]
+[project]
+name = "part0-intro"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "numpy>=2.4.4",
+    "matplotlib>=3.9",
+    "torch[device-gfx1151]==2.13.0+rocm10.0.0",
+    "torchvision[device-gfx1151]==0.28.0+rocm10.0.0",
+    "torchaudio==2.11.0.2+rocm10.0.0",
+    "rocm[devel,device-gfx1151]==10.0.0",
+]
+
+[tool.uv]
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
+
+[[tool.uv.index]]
+name = "rocm-amd"
+url = "https://stable.repo.amd.com/rocm/whl-next/"
+
+[[tool.uv.index]]
+name = "pypi-mirror"
+url = "https://mirrors.bfsu.edu.cn/pypi/web/simple"
+default = true
+
+[tool.uv.sources]
+torch = { index = "rocm-amd" }
+torchvision = { index = "rocm-amd" }
+torchaudio = { index = "rocm-amd" }
+rocm = { index = "rocm-amd" }
+
+[dependency-groups]
+notebook = [
+    "ipykernel>=7.3.0",
+    "jupyterlab>=4.6.2",
+]
+```
+
+```diff [只看修改（git diff）]
+diff --git a/code/part0-intro/pyproject.toml b/code/part0-intro/pyproject.toml
+--- a/code/part0-intro/pyproject.toml
++++ b/code/part0-intro/pyproject.toml
+@@ -7,6 +7,6 @@
+     "matplotlib>=3.9",
+-    "torch[device-gfx1201]==2.13.0+rocm10.0.0",
+-    "torchvision[device-gfx1201]==0.28.0+rocm10.0.0",
++    "torch[device-gfx1151]==2.13.0+rocm10.0.0",
++    "torchvision[device-gfx1151]==0.28.0+rocm10.0.0",
+     "torchaudio==2.11.0.2+rocm10.0.0",
+-    "rocm[devel,device-gfx1201]==10.0.0",
++    "rocm[devel,device-gfx1151]==10.0.0",
+ ]
+```
+
+:::
+
+</details>
+
 **如果是其他架构呢？** 比如查表得到 `gfx1100`，对应标签是 `device-gfx1100`，我们就把这三个位置都改成它；查到 `gfx942`，也同样填写表中的 `device-gfx942`。方法只有一条：**用查到的标签替换三个位置，三个位置保持一致。**
 
-像 `amd-torch-device-gfx115x` 这样的公共设备包，uv 会根据所选 extra 自动带上，不需要我们手填。模板中的下载源配置允许 uv 继续查找这些依赖：先查 AMD 源，AMD 源中没有的包再到通用镜像查找。因此，复制配置时要保留完整内容。
+像 `amd-torch-device-gfx115x` 这样的公共设备包，uv 会根据所选 extra 自动带上，不需要我们手填。文件中的下载源配置允许 uv 继续查找这些依赖：先查 AMD 源，AMD 源中没有的包再到通用镜像查找。
 
-仓库的 `code/appendix/appendix-b-switch-gpu/` 下也提供了 `gfx1201/`、`gfx1151/` 两份完整示例，方便核对。
+后面学习其他篇时，修改的是那一篇目录下的 `pyproject.toml`，再进入对应目录安装。这里先用 `code/part0-intro` 把完整流程走通。
 
-## B.4 第四步：在配置文件所在目录安装
+## B.4 第四步：更新锁文件，安装本篇环境
 
-保存文件后，确认终端进入的是 `pyproject.toml` 所在目录，然后运行：
+保存 `code/part0-intro/pyproject.toml` 后，在终端中从 **`hello-gpu` 仓库根目录**执行：
 
 ```bash
-cd ~/hello-gpu-env
+cd code/part0-intro
 uv sync
 ```
 
-第一次运行时，uv 会根据配置创建 `.venv`、安装依赖，并生成记录具体版本的 `uv.lock`。**我们不需要自己先建虚拟环境，也不需要先安装 `packaging`、`torch` 等 Python 包。** 初次安装需要下载较大的 GPU 依赖，等待命令结束即可。
+如果终端已经位于 `code/part0-intro`，直接运行第二行即可。后续命令也都在这个目录里执行。
 
-如果我们把文件放在了 `~/env_test/`，这里就应先运行 `cd ~/env_test`，再运行 `uv sync`。终端当前目录很关键：只在脚本路径前面写上 `env_test/`，并不会让 uv 自动进入那个项目。
+**已有的 `uv.lock` 保留即可，不需要删除或手工修改。** 它记录了教程原来选择的依赖；修改设备标签后，`uv sync` 会检查新的 `pyproject.toml`，自动更新 `uv.lock`，再安装对应架构的包。第一次安装时，它还会在本目录创建 `.venv`；如果已有环境，就把环境同步到新的配置。
 
-以后已经有环境了，再换设备，也是在这份配置中修改三个标签，然后重新执行 `uv sync`。uv 会更新锁文件和环境，不需要我们逐个卸载旧设备包。
+这一步使用普通的 **`uv sync`，先不要加 `--locked`**。刚改过配置时，锁文件可能还没更新，`--locked` 会阻止更新并报错。等本次同步成功，后面的验证命令再使用 `--locked`，确认配置与锁文件一致。
+
+我们不需要先创建虚拟环境，也不需要先安装 `packaging`、`torch` 等 Python 包。初次安装需要下载较大的 GPU 依赖，等待命令结束即可；以后的设备切换也按「改三个标签 → 在本篇目录运行 `uv sync`」操作。
 
 ## B.5 第五步：让 GPU 真正算一次
 
-安装成功后，**仍然留在刚才的目录**，复制下面整段命令：
+安装成功后，**仍然留在 `code/part0-intro` 目录**，复制下面整段命令：
 
 ```bash
 uv run --locked python - <<'PY'
@@ -165,9 +228,9 @@ print("GPU calculation:", result)
 PY
 ```
 
-这里的 `--locked` 表示使用刚刚生成的锁文件；前一步 `uv sync` 完成之后再运行。PyTorch 在 AMD GPU 上也使用 `torch.cuda` 这套接口名称。
+这里的 `--locked` 会检查配置与刚刚同步过的锁文件是否一致；前一步 `uv sync` 完成之后再运行。PyTorch 在 AMD GPU 上也使用 `torch.cuda` 这套接口名称。
 
-下面是在 **RX 9070 XT、原生 Ubuntu 24.04.5、Python 3.12.3** 上，使用本附录配置从一个没有 `.venv` 和 `uv.lock` 的新目录开始安装后，实际得到的输出：
+下面是在 **RX 9070 XT、原生 Ubuntu 24.04.5、Python 3.12.3** 上，使用本篇的 ROCm 10.0 配置安装环境后，实际得到的输出：
 
 ```text
 torch: 2.13.0+rocm10.0.0
@@ -185,7 +248,8 @@ GPU calculation: tensor([0., 2., 4., 6.])
 
 | 现象 | 先检查 |
 | ---- | ---- |
-| 提示没有找到 `pyproject.toml`，或运行时缺少包 | 先进入保存配置的目录，完成 `uv sync` 后，再在同一目录运行验证命令 |
+| 提示没有找到 `pyproject.toml`，或运行时缺少包 | 从仓库根目录进入 `code/part0-intro`，完成 `uv sync` 后，再在同一目录运行验证命令 |
+| 修改配置后提示锁文件需要更新 | 保留 `uv.lock`，先运行不带 `--locked` 的 `uv sync`，成功后再验证 GPU |
 | 下载报 `Connection refused` 或 `tunnel error` | 检查网络和代理连接；这类错误发生在下载阶段 |
 | 提示依赖无法解析，或某个 extra 不存在 | 核对是否完整复制配置，三个设备标签是否一致、是否来自表格中的对应行；不要忽略 extra 不存在的警告 |
 | 安装结束，但 `GPU available` 是 `False` | 回到第 1 章检查系统驱动和设备访问权限，并核对设备标签 |
@@ -195,7 +259,7 @@ GPU calculation: tensor([0., 2., 4., 6.])
 
 - **型号决定查哪一行**：先找到自己的设备，再读取 LLVM Target。
 - **标签决定装哪些设备依赖**：查到 device extra 后，在完整配置里改三个位置。
-- **先改，再装**：进入配置所在目录，第一次运行 `uv sync` 即可创建环境。
+- **先改，再装**：进入 `code/part0-intro`，用 `uv sync` 更新已有锁文件并安装本篇环境。
 - **算对才算完成**：安装后检查实际 GPU、架构和计算结果。
 
 ## 参考资料
