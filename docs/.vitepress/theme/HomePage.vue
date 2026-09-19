@@ -28,7 +28,7 @@ import AtlasPreview from './AtlasPreview.vue'
         </figure>
       </div>
       <a class="hg-scroll-invitation" href="#home-story">向下探索，每一次计算的可能 <UiIcon name="arrow" :size="16" /></a>
-      <div class="hg-hardware-strip"><UiIcon name="monitor" /><strong>实验基线</strong><span>Radeon RX 9070 XT</span><i>·</i><span>ROCm 7.13</span><i>·</i><span>原生 Ubuntu 24.04</span></div>
+      <div class="hg-hardware-strip"><UiIcon name="monitor" /><strong>当前环境</strong><span>Radeon RX 9070 XT</span><i>·</i><span>ROCm 10.0</span><i>·</i><span>原生 Ubuntu 24.04</span></div>
     </section>
     <ScrollStory />
     <div id="home-curriculum" class="hg-curriculum-anchor" aria-hidden="true" />

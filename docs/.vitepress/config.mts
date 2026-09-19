@@ -28,7 +28,7 @@ let imageDimensionLookup: ReturnType<typeof createImageDimensionLookup> | undefi
 export default defineConfig({
   lang: 'zh-CN',
   title: 'Hello GPU',
-  description: 'GPU 算子优化入门 + Agent 自动化（AMD Radeon RX 9070 XT + ROCm 7.13 / 原生 Ubuntu 24.04 实测）',
+  description: 'GPU 算子优化入门 + Agent 自动化（AMD Radeon RX 9070 XT + ROCm 10.0 / 原生 Ubuntu 24.04 实测）',
   base: baseConfig,
 
   cleanUrls: true,

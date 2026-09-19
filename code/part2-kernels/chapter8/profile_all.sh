@@ -62,8 +62,8 @@ HIP_BINARY="${BUILD_DIR}/vector_add_hip"
 
 # Triton must be profiled by a rocprofv3 compatible with the ROCm runtime
 # loaded by the active Python. Prefer an environment-bundled TheRock SDK;
-# otherwise accept a system tool only when its ROCm release line matches
-# torch.version.hip.
+# otherwise compare its ROCm release line with torch's ROCm build tag.
+# The HIP component version can differ from the SDK version.
 TRITON_ROCPROFV3=""
 TRITON_ROCM_ROOT=""
 TRITON_LIBRARY_PATH=""

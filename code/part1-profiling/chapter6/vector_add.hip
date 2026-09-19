@@ -8,7 +8,7 @@
 //   ./vector_add_bench --kernel linecross --size 16777216 --block 256 --stride 32 \
 //       --warmup 20 --repeat 100 --output-json logs/linecross_stride32_size16777216.json
 //
-// 硬件上下文：Radeon RX 9070 XT（gfx1201）+ ROCm 7.13（原生 Ubuntu 24.04）
+// 硬件上下文：Radeon RX 9070 XT（gfx1201）+ ROCm 10.0（原生 Ubuntu 24.04）
 
 #include <hip/hip_runtime.h>
 #include <cstdio>

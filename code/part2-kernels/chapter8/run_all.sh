@@ -57,7 +57,6 @@ WARMUP="${WARMUP:-10}"
 REPEAT="${REPEAT:-50}"
 SEED="${SEED:-20260716}"
 RUN_EDGE_CASES="${RUN_EDGE_CASES:-1}"
-RUN_TRITON_VIZ="${RUN_TRITON_VIZ:-0}"
 INDEPENDENT_RUNS="${INDEPENDENT_RUNS:-3}"
 BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hello-gpu-ch7.XXXXXX")"
 HIP_BINARY="${BUILD_DIR}/vector_add_hip"
@@ -83,7 +82,6 @@ rm -f "${LOG_DIR}/runs"/run*.log "${LOG_DIR}/runs"/hip_run*.log "${LOG_DIR}/runs
     echo "independent_runs=${INDEPENDENT_RUNS}"
     echo "gpu_arch=${GPU_ARCH}"
     echo "run_edge_cases=${RUN_EDGE_CASES}"
-    echo "run_triton_viz=${RUN_TRITON_VIZ}"
     echo "grid=${GRID:-auto}"
 } > "${LOG_DIR}/benchmark_manifest.env"
 
@@ -138,12 +136,6 @@ if [[ "${RUN_EDGE_CASES}" == "1" ]]; then
     done
 fi
 
-if [[ "${RUN_TRITON_VIZ}" == "1" ]]; then
-    python "${SCRIPT_DIR}/visualize_triton.py" \
-        --size 13 \
-        --block 8 \
-        2>&1 | tee "${LOG_DIR}/triton_viz.log"
-fi
 
 "${HIP_BINARY}" \
     "${hip_common_args[@]}" \

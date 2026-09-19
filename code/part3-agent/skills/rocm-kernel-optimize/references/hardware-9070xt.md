@@ -1,7 +1,7 @@
 # 硬件参考 · Radeon RX 9070 XT（gfx1201）
 
 - 架构：RDNA4 / gfx1201
-- 软件栈目标：ROCm 7.x + Triton（本仓库 pyproject 锁 ROCm 7.13 wheels）
+- 软件栈目标：ROCm 10.0 + PyTorch 2.13 + Triton 3.8（版本由本篇 pyproject.toml / uv.lock 固定）
 - Wavefront：以运行时 `torch` / `rocminfo` 为准
 - **峰值带宽与算力必须用 `measure_peak` 实测**，不要写死本页数字
 

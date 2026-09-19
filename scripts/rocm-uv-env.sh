@@ -9,7 +9,7 @@
 #   - 自动安装 / 检测 uv
 #   - 自动安装 / 检测 fzf
 #   - TUI 选择 GPU 架构
-#   - TUI 选择 ROCm 版本
+#   - 使用教程验证过的 ROCm 10.0.0 / PyTorch 版本组合
 #   - TUI 选择安装模式
 #   - TUI 选择 uv 项目目录 / 虚拟环境目录
 #   - 使用 uv init 初始化项目
@@ -22,10 +22,10 @@
 #
 # 用法：
 #   ./rocm-uv-env.sh
-#   ./rocm-uv-env.sh --arch gfx120X-all
-#   ./rocm-uv-env.sh --version 7.13.0 --arch gfx120X-all
-#   ./rocm-uv-env.sh --project-dir ~/rocm-uv-projects/rocm-7.13-gfx120X-all
-#   ./rocm-uv-env.sh --venv ~/rocm-venvs/rocm-7.13-gfx120X-all
+#   ./rocm-uv-env.sh --arch gfx1201
+#   ./rocm-uv-env.sh --version 10.0.0 --arch gfx1201
+#   ./rocm-uv-env.sh --project-dir ~/rocm-uv-projects/rocm-10.0-gfx1201
+#   ./rocm-uv-env.sh --venv ~/rocm-venvs/rocm-10.0-gfx1201
 #
 
 set -euo pipefail
@@ -34,13 +34,14 @@ set -euo pipefail
 # Basic Config
 #######################################
 
-SCRIPT_VERSION="1.2.0"
+SCRIPT_VERSION="2.0.0"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-ROCM_WHL_BASE="https://repo.amd.com/rocm/whl"
+ROCM_WHL_BASE="https://stable.repo.amd.com/rocm/whl-next"
 
 GPU_ARCH=""
-ROCM_VERSION=""
-PYTHON_BIN="python3.11"
+ROCM_VERSION="10.0.0"
+PYTHON_BIN="python3.12"
 
 PROJECT_DIR=""
 VENV_PATH=""
@@ -52,8 +53,8 @@ INSTALL_FZF=true
 USE_UV_INIT=true
 
 INSTALL_MODE="full"
-# full: rocm[libraries,devel]，失败后 fallback 到 rocm-sdk-core/devel/libraries
-# minimal: rocm-core rocm-smi-lib
+# full: PyTorch + ROCm runtime + devel（教程默认，支持 HIP 编译）
+# minimal: PyTorch + ROCm runtime（不含 HIP 开发工具）
 
 # 区域 / PyPI 镜像
 REGION=""           # cn | global；空表示走交互或自动判断
@@ -121,7 +122,7 @@ http_status() {
     local url="$1"
 
     if has_cmd curl; then
-        curl -s -o /dev/null -w "%{http_code}" --connect-timeout 8 "$url" 2>/dev/null || echo "000"
+        curl -Ls -o /dev/null -w "%{http_code}" --connect-timeout 8 "$url" 2>/dev/null || echo "000"
     elif has_cmd wget; then
         wget -q --spider --timeout=8 "$url" 2>/dev/null && echo "200" || echo "000"
     else
@@ -141,7 +142,7 @@ draw_box() {
 }
 
 print_header() {
-    clear || true
+    [[ ! -t 1 ]] || clear || true
     echo ""
     echo -e "${CYAN}  ██████╗  ██████╗  ██████╗███╗   ███╗     ██╗   ██╗██╗   ██╗${NC}"
     echo -e "${CYAN}  ██╔══██╗██╔═══██╗██╔════╝████╗ ████║     ██║   ██║██║   ██║${NC}"
@@ -209,15 +210,15 @@ Usage:
   $0 [options]
 
 Options:
-  --version VERSION        ROCm package version, e.g. 7.9.0
-  --arch ARCH             GPU arch: gfx120X-all, gfx94X-dcgpu, gfx950-dcgpu, gfx1151
+  --version VERSION        Tutorial version: 10.0.0 (default)
+  --arch ARCH             LLVM target, e.g. gfx1201, gfx942, gfx1151
   --gpu-arch ARCH         Same as --arch
-  --python PYTHON         Python binary, default: python3.11
+  --python PYTHON         Python 3.12 binary, default: python3.12
 
   --project-dir PATH      uv project directory, venv will be PATH/.venv
   --venv PATH             Explicit virtual environment path
 
-  --minimal               Install minimal packages: rocm-core rocm-smi-lib
+  --minimal               Install PyTorch + ROCm runtime (no HIP development tools)
   --full                  Install full package set, default
   --region cn|global      Region; affects PyPI mirror selection
   --pypi-mirror URL       Use this PyPI mirror as default index (overrides menu)
@@ -229,22 +230,22 @@ Options:
 
 Examples:
   $0
-  $0 --arch gfx120X-all
-  $0 --version 7.13.0 --arch gfx120X-all
-  $0 --project-dir ~/rocm-uv-projects/rocm-7.13.0-gfx120X-all
-  $0 --venv ~/rocm-venvs/rocm-7.13.0-gfx120X-all
+  $0 --arch gfx1201
+  $0 --version 10.0.0 --arch gfx1201
+  $0 --project-dir ~/rocm-uv-projects/rocm-10.0.0-gfx1201
+  $0 --venv ~/rocm-venvs/rocm-10.0.0-gfx1201
   $0 --minimal --arch gfx1151
 
   # Non-interactive 全自动（推荐 CI / 脚本调用）
-  $0 --non-interactive --version 7.13.0 --arch gfx120X-all \\
+  $0 --non-interactive --version 10.0.0 --arch gfx1201 \\
      --region cn --pypi-mirror https://pypi.tuna.tsinghua.edu.cn/simple \\
      --project-dir /path/to/repo
 
 GPU Architecture:
-  gfx120X-all    RX 9070 XT / RX 9070
-  gfx94X-dcgpu    MI325X, MI300X, MI300A
-  gfx950-dcgpu    MI355X, MI350X
-  gfx1151         Ryzen AI APU, Strix, Hawk
+  gfx1201    RX 9070 XT / RX 9070
+  gfx942    MI325X, MI300X, MI300A
+  gfx950    MI355X, MI350X
+  gfx1151         Ryzen AI Max / Strix Halo
 
 EOF
 }
@@ -527,51 +528,22 @@ detect_gpu() {
 }
 
 detect_gpu_architecture() {
-    local detected=""
-
+    local arch
     if has_cmd rocminfo; then
-        local info
-        info="$(rocminfo 2>/dev/null || true)"
-
-        if echo "$info" | grep -qE 'gfx950'; then
-            detected="gfx950-dcgpu"
-        elif echo "$info" | grep -qE 'gfx94[0-9]'; then
-            detected="gfx94X-dcgpu"
-        elif echo "$info" | grep -qE 'gfx120[01]|gfx12-generic'; then
-            detected="gfx120X-all"
-        elif echo "$info" | grep -qE 'gfx1151'; then
-            detected="gfx1151"
-        fi
+        while IFS= read -r arch; do
+            if validate_gpu_arch "$arch"; then
+                echo "$arch"
+                return
+            fi
+        done < <(rocminfo 2>/dev/null | sed -nE 's/^[[:space:]]*Name:[[:space:]]*(gfx[0-9a-f]+)[[:space:]]*$/\1/p')
     fi
-
-    if [[ -z "$detected" ]] && has_cmd lspci; then
-        local gpu_info
-        gpu_info="$(lspci -nn | grep -iE 'VGA|Display|3D' | grep -iE 'AMD|ATI|Advanced Micro Devices' || true)"
-
-        if echo "$gpu_info" | grep -qiE 'MI355|MI350|gfx950'; then
-            detected="gfx950-dcgpu"
-        elif echo "$gpu_info" | grep -qiE 'MI325|MI300|gfx94|Aldebaran|CDNA3'; then
-            detected="gfx94X-dcgpu"
-        elif echo "$gpu_info" | grep -qiE '9070|gfx120|Navi 48|RDNA4'; then
-            detected="gfx120X-all"
-        elif echo "$gpu_info" | grep -qiE 'gfx1151|Strix|Hawk|Ryzen AI'; then
-            detected="gfx1151"
-        fi
-    fi
-
-    echo "$detected"
+    # 不按 "Ryzen AI" 等产品系列猜架构：同一系列可能对应不同的 gfx 编号。
 }
 
 validate_gpu_arch() {
-    local arch="$1"
-
-    case "$arch" in
-        gfx120X-all|gfx94X-dcgpu|gfx950-dcgpu|gfx1151)
-            return 0
-            ;;
-        *)
-            return 1
-            ;;
+    case "$1" in
+        gfx950|gfx942|gfx90a|gfx908|gfx1201|gfx1200|gfx1100|gfx1101|gfx1102|gfx1030|gfx1151|gfx1150|gfx1152|gfx1153|gfx1103) return 0 ;;
+        *) return 1 ;;
     esac
 }
 
@@ -654,99 +626,12 @@ ensure_fzf() {
 #######################################
 
 arch_index_url() {
-    local arch="$1"
-    echo "${ROCM_WHL_BASE}/${arch}/"
-}
-
-rocm_package_arch() {
-    local arch="$1"
-    printf '%s' "$arch" | tr '[:upper:]' '[:lower:]'
+    echo "${ROCM_WHL_BASE}/"
 }
 
 check_arch_index() {
-    local arch="$1"
-    local url
-    url="$(arch_index_url "$arch")"
-
-    local status
-    status="$(http_status "$url")"
-
-    [[ "$status" == "200" ]]
+    [[ "$(http_status "${ROCM_WHL_BASE}/rocm/")" == "200" ]]
 }
-
-fetch_versions_from_wheel_index() {
-    local arch="$1"
-    local base_url="${ROCM_WHL_BASE}/${arch}"
-
-    local html=""
-    local versions=""
-
-    html="$(http_get "${base_url}/rocm/")"
-
-    if [[ -n "$html" ]]; then
-        versions="$(
-            echo "$html" \
-                | grep -oE 'rocm-[0-9]+\.[0-9]+(\.[0-9]+)?([a-zA-Z0-9._+-]*)?\.(whl|tar\.gz)' \
-                | sed -E 's/^rocm-//; s/\.(whl|tar\.gz)$//' \
-                | sort -Vr \
-                | uniq
-        )"
-    fi
-
-    if [[ -z "$versions" ]]; then
-        html="$(http_get "${base_url}/rocm-sdk-core/")"
-
-        if [[ -n "$html" ]]; then
-            versions="$(
-                echo "$html" \
-                    | grep -oE 'rocm_sdk_core-[0-9]+\.[0-9]+(\.[0-9]+)?([a-zA-Z0-9._+-]*)?-[^"]+\.whl' \
-                    | sed -E 's/^rocm_sdk_core-//; s/-[^-]+-[^-]+-[^-]+\.whl$//' \
-                    | sort -Vr \
-                    | uniq
-            )"
-        fi
-    fi
-
-    if [[ -z "$versions" ]]; then
-        html="$(http_get "${base_url}/")"
-
-        local dirs
-        dirs="$(
-            echo "$html" \
-                | grep -oE 'href="[^"]+/"' \
-                | sed -E 's/href="//; s|/"||' \
-                | grep -E '^(rocm|rocm-sdk-core|rocm-sdk-devel|rocm-sdk-libraries|rocm-core|rocm-smi-lib)$' \
-                || true
-        )"
-
-        local all_versions=""
-        while IFS= read -r dir; do
-            [[ -z "$dir" ]] && continue
-
-            local sub_html
-            sub_html="$(http_get "${base_url}/${dir}/")"
-
-            if [[ -n "$sub_html" ]]; then
-                all_versions="$(
-                    {
-                        echo "$all_versions"
-                        echo "$sub_html" \
-                            | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?([a-zA-Z0-9._+-]*)?' \
-                            | grep -E '^[0-9]+\.[0-9]+'
-                    } | sort -Vr | uniq
-                )"
-            fi
-        done <<< "$dirs"
-
-        versions="$all_versions"
-    fi
-
-    [[ -n "$versions" ]] && echo "$versions"
-}
-
-#######################################
-# TUI Menus
-#######################################
 
 select_gpu_arch() {
     if [[ -n "$GPU_ARCH" ]]; then
@@ -767,7 +652,7 @@ select_gpu_arch() {
             return 0
         fi
 
-        error "Non-interactive mode requires --arch. Example: --arch gfx120X-all"
+        error "Non-interactive mode requires --arch. Example: --arch gfx1201"
     fi
 
     echo ""
@@ -780,21 +665,10 @@ select_gpu_arch() {
         options+=("${detected_arch}    Auto-detected")
     fi
 
-    if [[ "$detected_arch" != "gfx120X-all" ]]; then
-        options+=("gfx120X-all    RX 9070 XT / RX 9070")
-    fi
-
-    if [[ "$detected_arch" != "gfx94X-dcgpu" ]]; then
-        options+=("gfx94X-dcgpu    MI325X / MI300X / MI300A")
-    fi
-
-    if [[ "$detected_arch" != "gfx950-dcgpu" ]]; then
-        options+=("gfx950-dcgpu    MI355X / MI350X")
-    fi
-
-    if [[ "$detected_arch" != "gfx1151" ]]; then
-        options+=("gfx1151         Ryzen AI APU / Strix / Hawk")
-    fi
+    local arch
+    for arch in gfx1201 gfx1200 gfx1151 gfx1150 gfx1152 gfx1153 gfx1100 gfx1101 gfx1102 gfx1103 gfx1030 gfx950 gfx942 gfx90a gfx908; do
+        [[ "$arch" == "$detected_arch" ]] || options+=("${arch}    device-${arch}")
+    done
 
     if has_cmd fzf; then
         local selection
@@ -827,63 +701,8 @@ select_gpu_arch() {
 }
 
 select_rocm_version() {
-    if [[ -n "$ROCM_VERSION" ]]; then
-        return 0
-    fi
-
-    echo ""
-    draw_box "Fetching ROCm Versions"
-    echo ""
-
-    local versions
-    versions="$(fetch_versions_from_wheel_index "$GPU_ARCH" || true)"
-
-    if [[ -z "$versions" ]]; then
-        warn "无法从 ${ROCM_WHL_BASE}/${GPU_ARCH}/ 自动解析版本"
-        warn "将使用手动输入版本"
-        read -r -p "Enter ROCm version, e.g. 7.9.0: " ROCM_VERSION
-        [[ -z "$ROCM_VERSION" ]] && error "No ROCm version entered"
-        return 0
-    fi
-
-    echo -e "  ${GREEN}✓${NC} Found available ROCm versions:"
-    echo "$versions" | sed 's/^/    - /'
-    echo ""
-
-    if [[ "$NON_INTERACTIVE" == "true" ]]; then
-        ROCM_VERSION="$(echo "$versions" | head -n1)"
-        log "Non-interactive: using latest ROCm version: ${ROCM_VERSION}"
-        return 0
-    fi
-
-    if has_cmd fzf; then
-        local selection
-        selection="$(echo "$versions" | fzf \
-            --layout=reverse \
-            --border=rounded \
-            --prompt="ROCm Version ❯ " \
-            --header="Select ROCm package version for ${GPU_ARCH}")"
-
-        [[ -z "$selection" ]] && error "No ROCm version selected"
-        ROCM_VERSION="$selection"
-    else
-        local arr=()
-        while IFS= read -r v; do
-            [[ -n "$v" ]] && arr+=("$v")
-        done <<< "$versions"
-
-        PS3=$'\n\033[0;36mYour choice: \033[0m'
-        select opt in "${arr[@]}"; do
-            if [[ -n "$opt" ]]; then
-                ROCM_VERSION="$opt"
-                break
-            else
-                echo "Invalid selection"
-            fi
-        done
-    fi
-
-    log "Selected ROCm version: ${ROCM_VERSION}"
+    [[ "$ROCM_VERSION" == "10.0.0" ]] || error "本教程固定 ROCm 10.0.0；其他版本需要单独验证 PyTorch / torchvision 组合"
+    log "ROCm version: ${ROCM_VERSION}"
 }
 
 select_install_mode() {
@@ -896,8 +715,8 @@ select_install_mode() {
     echo ""
 
     local options=(
-        "full       Install rocm[libraries,devel]    Recommended"
-        "minimal    Install rocm-core rocm-smi-lib   Smaller"
+        "full       PyTorch + ROCm runtime + devel    Recommended"
+        "minimal    PyTorch + ROCm runtime           No HIP compiler"
     )
 
     if has_cmd fzf; then
@@ -1103,30 +922,12 @@ select_pypi_mirror() {
 #######################################
 
 ensure_python() {
-    echo ""
-    draw_box "Checking Python"
-    echo ""
-
-    if has_cmd "$PYTHON_BIN"; then
-        echo -e "  ${GREEN}✓${NC} Python found: $($PYTHON_BIN --version)"
-        return 0
-    fi
-
-    warn "${PYTHON_BIN} not found"
-
-    if has_cmd python3.12; then
-        PYTHON_BIN="python3.12"
-    elif has_cmd python3.11; then
-        PYTHON_BIN="python3.11"
-    elif has_cmd python3.10; then
-        PYTHON_BIN="python3.10"
-    elif has_cmd python3; then
+    if ! has_cmd "$PYTHON_BIN"; then
+        has_cmd python3 || error "需要 Python 3.12；Ubuntu 24.04 可使用系统 python3"
         PYTHON_BIN="python3"
-    else
-        error "No Python 3 found"
     fi
-
-    echo -e "  ${GREEN}✓${NC} Fallback Python: $($PYTHON_BIN --version)"
+    "$PYTHON_BIN" -c 'import sys; sys.exit(sys.version_info[:2] != (3, 12))' || error "本教程使用 Python 3.12，请用 --python 指定对应解释器"
+    log "Python: $($PYTHON_BIN --version)"
 }
 
 default_project_dir() {
@@ -1401,7 +1202,7 @@ create_rocm_venv() {
             rm -rf "$VENV_PATH"
         else
             warn "Venv already exists: ${VENV_PATH}"
-            if confirm "Recreate it? (y/N): " "N"; then
+            if [[ "$NON_INTERACTIVE" != "true" ]] && confirm "Recreate it? (y/N): " "N"; then
                 rm -rf "$VENV_PATH"
             else
                 log "Using existing venv"
@@ -1423,298 +1224,49 @@ create_rocm_venv() {
 #######################################
 
 configure_pyproject_indexes() {
-    echo ""
-    draw_box "Configuring Indexes in pyproject.toml"
-    echo ""
-
-    local pyproject="${PROJECT_DIR}/pyproject.toml"
-    local whl_url
-    local libraries_pkg
-    whl_url="$(arch_index_url "$GPU_ARCH")"
-    libraries_pkg="rocm-sdk-libraries-$(rocm_package_arch "$GPU_ARCH")"
-
-    if [[ ! -f "$pyproject" ]]; then
-        error "pyproject.toml not found at ${pyproject}"
-    fi
-
-    local venv_python="${VENV_PATH}/bin/python"
-    if [[ ! -x "$venv_python" ]]; then
-        error "Venv Python not found: ${venv_python}"
-    fi
-
-    "$venv_python" - "$pyproject" "$whl_url" "${PYPI_MIRROR:-}" "$libraries_pkg" <<'PY'
-import sys
-from pathlib import Path
-
-path = Path(sys.argv[1])
-rocm_url = sys.argv[2]
-pypi_mirror = sys.argv[3] or ""
-libraries_pkg = sys.argv[4]
-
-text = path.read_text()
-original = text
-
-def has_index_named(name: str) -> bool:
-    return f'name = "{name}"' in text
-
-def append_block(text: str, block: str) -> str:
-    if not text.endswith("\n"):
-        text += "\n"
-    return text + block
-
-# 1) PyPI 镜像（如果用户选了），作为 default index 替代 PyPI
-if pypi_mirror and not has_index_named("pypi-mirror"):
-    block = (
-        "\n[[tool.uv.index]]\n"
-        'name = "pypi-mirror"\n'
-        f'url = "{pypi_mirror}"\n'
-        "default = true\n"
-    )
-    text = append_block(text, block)
-
-# 2) AMD ROCm wheel index — 必须 explicit = true！
-#    否则 amd 索引对未知包（如 requests）返回 403 会让 uv 整个解析失败。
-#    explicit 后只对 [tool.uv.sources] 显式映射的包生效。
-if not has_index_named("rocm-amd"):
-    block = (
-        "\n[[tool.uv.index]]\n"
-        'name = "rocm-amd"\n'
-        f'url = "{rocm_url}"\n'
-        "explicit = true\n"
-    )
-    text = append_block(text, block)
-
-# 3) [tool.uv.sources] —— 把所有可能用到的 rocm 包定向到 rocm-amd
-#    注意：sources 仅作用于 direct dependencies，所以 add_rocm_packages
-#    必须把这些包都列成 direct deps（不能只 add 一个 rocm 元包让它拉 transitive）。
-ROCM_PKGS = [
-    "rocm",
-    "rocm-sdk-core",
-    "rocm-sdk-devel",
-    "rocm-sdk-libraries",
-    libraries_pkg,
-    "rocm-core",
-    "rocm-smi-lib",
-]
-
-if "[tool.uv.sources]" not in text:
-    lines = ["", "[tool.uv.sources]"]
-    for pkg in ROCM_PKGS:
-        lines.append(f'{pkg} = {{ index = "rocm-amd" }}')
-    text = append_block(text, "\n".join(lines) + "\n")
-else:
-    for pkg in ROCM_PKGS:
-        if f'\n{pkg} = ' not in text:
-            text = text.replace(
-                "[tool.uv.sources]",
-                f'[tool.uv.sources]\n{pkg} = {{ index = "rocm-amd" }}',
-                1,
-            )
-
-if text != original:
-    path.write_text(text)
-    sys.stderr.write(f"[indexes] updated {path}\n")
-else:
-    sys.stderr.write(f"[indexes] no change to {path}\n")
-PY
-
-    echo -e "  ${GREEN}✓${NC} pyproject.toml indexes configured:"
-    if [[ -n "${PYPI_MIRROR:-}" ]]; then
-        echo -e "      pypi-mirror (default): ${PYPI_MIRROR}"
-    else
-        echo -e "      pypi (default):        official PyPI"
-    fi
-    echo -e "      rocm-amd (explicit):   ${whl_url}"
-    echo -e "      [tool.uv.sources]:     all rocm-* packages mapped"
+    local args=("${PROJECT_DIR}/pyproject.toml" --arch "$GPU_ARCH" --mode "$INSTALL_MODE")
+    [[ -z "${PYPI_MIRROR:-}" ]] || args+=(--pypi-mirror "$PYPI_MIRROR")
+    "$PYTHON_BIN" "${SCRIPT_DIR}/configure-rocm-env.py" "${args[@]}"
+    log "Configured ROCm 10.0: device-${GPU_ARCH}, ${ROCM_WHL_BASE}/"
 }
 
 #######################################
-# Add ROCm packages via `uv add`
-# 这样依赖直接进 [project.dependencies]，
-# 后续 uv sync 在任意机器上都能复现。
+# Sync the recorded dependencies and update uv.lock.
 #######################################
 
 add_rocm_packages() {
-    echo ""
-    draw_box "Adding ROCm Packages via uv add"
-    echo ""
-
     cd "$PROJECT_DIR"
-
-    log "Project dir:  ${PROJECT_DIR}"
-    log "Venv path:    ${VENV_PATH}"
-    log "ROCm version: ${ROCM_VERSION}"
-    log "Install mode: ${INSTALL_MODE}"
-
-    local venv_python="${VENV_PATH}/bin/python"
-    if [[ ! -x "$venv_python" ]]; then
-        error "Venv Python not found: ${venv_python}"
-    fi
-
-    # 让 uv 用项目里的 venv
     export UV_PROJECT_ENVIRONMENT="$VENV_PATH"
-
-    # 关键：所有 rocm 包都要做成 direct dependency，
-    # 这样上面 configure_pyproject_indexes 写的 [tool.uv.sources] 才生效。
-    # 只 add 一个 rocm 元包的话，transitive 的 rocm-sdk-* 会绕开 sources，
-    # 跑去 default index（PyPI 镜像）找不到然后失败。
-
-    if [[ "$INSTALL_MODE" == "minimal" ]]; then
-        log "uv add rocm-core / rocm-smi-lib (==${ROCM_VERSION})"
-
-        if ! uv add "rocm-core==${ROCM_VERSION}" "rocm-smi-lib==${ROCM_VERSION}"; then
-            warn "minimal 锁版本失败，尝试不锁版本"
-            uv add rocm-core rocm-smi-lib
-        fi
-    else
-        local libraries_pkg
-        libraries_pkg="rocm-sdk-libraries-$(rocm_package_arch "$GPU_ARCH")"
-
-        log "uv add rocm + rocm-sdk-{core,devel,${libraries_pkg}} (==${ROCM_VERSION})"
-
-        if ! uv add \
-            "rocm==${ROCM_VERSION}" \
-            "rocm-sdk-core==${ROCM_VERSION}" \
-            "rocm-sdk-devel==${ROCM_VERSION}" \
-            "${libraries_pkg}==${ROCM_VERSION}"
-        then
-            warn "full 安装失败，回退到 minimal（rocm-core + rocm-smi-lib）"
-            uv add rocm-core rocm-smi-lib
-        fi
-    fi
-
-    echo -e "\n  ${GREEN}✓${NC} ROCm packages added (recorded in pyproject.toml + installed)"
+    # uv sync 会按新 pyproject 更新已有 uv.lock；解析失败就停止，保留错误。
+    uv sync --python "$PYTHON_BIN"
 }
 
 write_activation_helper() {
-    echo ""
-    draw_box "Writing Activation Helper"
-    echo ""
-
-    local helper="${PROJECT_DIR}/activate-rocm.sh"
-
-    # 这个 helper 必须能跨机器使用，所以路径全部相对脚本自身计算
-    cat > "$helper" <<'EOF'
-#!/usr/bin/env bash
-# Activate ROCm uv project environment.
-# 路径全部相对本脚本所在目录解析，clone 到任意机器都可用。
-
-# 必须 source 而不是直接执行，否则 venv 激活不会保留到调用方 shell
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    echo "请使用 'source $0' 而不是直接执行" >&2
-    exit 1
-fi
-
-ROCM_PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROCM_VENV="${ROCM_PROJECT_DIR}/.venv"
-
-if [[ ! -d "${ROCM_VENV}" ]]; then
-    echo "[activate-rocm] .venv 不存在：${ROCM_VENV}" >&2
-    echo "[activate-rocm] 请先在项目目录下执行 'uv sync'" >&2
-    return 1
-fi
-
-# shellcheck source=/dev/null
-source "${ROCM_VENV}/bin/activate"
-
-ROCM_SDK_ROOT="$(find "${ROCM_VENV}/lib" -type d -name _rocm_sdk_devel -print -quit 2>/dev/null)"
-if [[ -z "${ROCM_SDK_ROOT}" ]] && command -v rocm-sdk >/dev/null 2>&1; then
-    rocm-sdk init >/dev/null 2>&1 || true
-    ROCM_SDK_ROOT="$(find "${ROCM_VENV}/lib" -type d -name _rocm_sdk_devel -print -quit 2>/dev/null)"
-fi
-if [[ -z "${ROCM_SDK_ROOT}" ]]; then
-    ROCM_SDK_ROOT="$(find "${ROCM_VENV}/lib" -type d -name _rocm_sdk_core -print -quit 2>/dev/null)"
-fi
-if [[ -z "${ROCM_SDK_ROOT}" ]]; then
-    ROCM_SDK_ROOT="${ROCM_VENV}"
-fi
-
-export ROCM_PROJECT_DIR
-export ROCM_VENV
-export ROCM_PATH="${ROCM_SDK_ROOT}"
-export HIP_PATH="${ROCM_SDK_ROOT}"
-
-if [[ -d "${ROCM_VENV}/bin" ]]; then
-    export PATH="${ROCM_VENV}/bin:${PATH}"
-fi
-if [[ -d "${ROCM_PATH}/bin" ]]; then
-    export PATH="${ROCM_PATH}/bin:${PATH}"
-fi
-if [[ -d "${ROCM_PATH}/lib" ]]; then
-    export LD_LIBRARY_PATH="${ROCM_PATH}/lib:${LD_LIBRARY_PATH:-}"
-fi
-if [[ -d "${ROCM_PATH}/lib64" ]]; then
-    export LD_LIBRARY_PATH="${ROCM_PATH}/lib64:${LD_LIBRARY_PATH:-}"
-fi
-
-echo "Activated ROCm uv environment:"
-echo "  PROJECT:    ${ROCM_PROJECT_DIR}"
-echo "  VENV:       ${ROCM_VENV}"
-echo "  ROCM_PATH:  ${ROCM_PATH}"
-echo "  Python:     $(command -v python)"
-python --version
-EOF
-
-    chmod +x "$helper"
-
-    echo -e "  ${GREEN}✓${NC} Helper (portable): ${helper}"
+    cp "${SCRIPT_DIR}/activate-rocm.sh" "${PROJECT_DIR}/activate-rocm.sh"
+    # 显式 --venv 也使用同一份模板，只替换环境目录。
+    "$PYTHON_BIN" - "$PROJECT_DIR" "$VENV_PATH" <<'PY_HELPER'
+from pathlib import Path
+import shlex
+import sys
+project, venv = map(Path, sys.argv[1:])
+if venv != project / ".venv":
+    path = project / "activate-rocm.sh"
+    path.write_text(path.read_text().replace('ROCM_VENV="${ROCM_PROJECT_DIR}/.venv"', "ROCM_VENV=" + shlex.quote(str(venv))))
+PY_HELPER
+    chmod +x "${PROJECT_DIR}/activate-rocm.sh"
 }
 
 verify_env() {
-    echo ""
-    draw_box "Verifying Environment"
-    echo ""
-
-    local venv_python="${VENV_PATH}/bin/python"
-
-    echo -e "  ${CYAN}Project dir:${NC}"
-    echo "  ${PROJECT_DIR}"
-
-    echo ""
-    echo -e "  ${CYAN}Venv path:${NC}"
-    echo "  ${VENV_PATH}"
-
-    echo ""
-    echo -e "  ${CYAN}Python:${NC}"
-    "$venv_python" --version || true
-
-    echo ""
-    echo -e "  ${CYAN}Installed ROCm packages:${NC}"
-    uv pip list --python "$venv_python" | grep -iE 'rocm|hip|amd' || true
-
-    echo ""
-    echo -e "  ${CYAN}Check ROCm package version:${NC}"
-    "$venv_python" -m pip show rocm-core 2>/dev/null | grep -E 'Name|Version' || true
-
-    echo ""
-    echo -e "  ${CYAN}System ROCm commands:${NC}"
-
-    if has_cmd rocminfo; then
-        echo -n "  rocminfo: "
-        if rocminfo >/dev/null 2>&1; then
-            echo -e "${GREEN}PASS${NC}"
-        else
-            echo -e "${YELLOW}FOUND but failed${NC}"
-        fi
-    else
-        echo -e "  rocminfo: ${YELLOW}not found${NC}"
+    "${VENV_PATH}/bin/python" --version
+    "${VENV_PATH}/bin/rocm-sdk" version
+    if [[ "$INSTALL_MODE" == "full" ]]; then
+        "${VENV_PATH}/bin/rocm-sdk" init --quiet
+        "${VENV_PATH}/bin/hipcc" --version
     fi
-
-    if has_cmd rocm-smi; then
-        echo -n "  rocm-smi: "
-        if rocm-smi >/dev/null 2>&1; then
-            echo -e "${GREEN}PASS${NC}"
-        else
-            echo -e "${YELLOW}FOUND but failed${NC}"
-        fi
-    else
-        echo -e "  rocm-smi: ${YELLOW}not found${NC}"
-    fi
-
     if [[ -e /dev/kfd ]]; then
-        echo -e "  /dev/kfd: ${GREEN}present${NC}"
+        log "/dev/kfd present；GPU 运算请继续执行本章的 smoke test"
     else
-        echo -e "  /dev/kfd: ${YELLOW}missing${NC}"
+        warn "/dev/kfd missing；请检查宿主机驱动与设备权限"
     fi
 }
 
@@ -1742,7 +1294,7 @@ print_summary() {
     echo -e "    ${CYAN}uv pip list --python ${VENV_PATH}/bin/python | grep -i rocm${NC}"
     echo ""
     echo -e "  ${BOLD}Check ROCm version in venv:${NC}"
-    echo -e "    ${CYAN}${VENV_PATH}/bin/python -m pip show rocm-core | grep Version${NC}"
+    echo -e "    ${CYAN}${VENV_PATH}/bin/rocm-sdk version${NC}"
     echo ""
 }
 
@@ -1783,6 +1335,8 @@ main() {
     select_region
     select_pypi_mirror
     select_project_and_venv_path
+    PROJECT_DIR="$("$PYTHON_BIN" -c 'import os,sys; print(os.path.abspath(sys.argv[1]))' "$PROJECT_DIR")"
+    VENV_PATH="$("$PYTHON_BIN" -c 'import os,sys; print(os.path.abspath(sys.argv[1]))' "$VENV_PATH")"
 
     init_uv_project
     create_rocm_venv
@@ -1793,4 +1347,6 @@ main() {
     print_summary
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi

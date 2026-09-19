@@ -17,9 +17,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ROCM_UV_ENV="${SCRIPT_DIR}/rocm-uv-env.sh"
 
-# ── 当前 baseline（升级时只改这里） ──────────────────────────────
-ROCM_VERSION="7.13.0"
-GPU_ARCH="gfx120X-all"
+# ── 当前 baseline（版本组合见 configure-rocm-env.py） ──────────────────────────────
+ROCM_VERSION="10.0.0"
+GPU_ARCH="gfx1201"
 INSTALL_MODE_FLAG="--full"   # 或 --minimal
 DEFAULT_REGION="cn"
 DEFAULT_PART="part0-intro"

@@ -23,7 +23,7 @@
 本教程不是简单介绍工具，而是希望帮助读者建立 GPU 工程的核心思维：
 **以硬件为起点，以 profiling 为证据，以优化为手段，以 Agent 自动化为终点。**
 
-> Alpha 阶段所有实验默认以 **Radeon RX 9070 XT + ROCm 7.13 + 原生 Ubuntu 24.04** 为基线。其他 AMD GPU 可以参考方法论，但性能数字和工具可用性需要单独实测确认。
+> 当前安装环境统一为 **Radeon RX 9070 XT + ROCm 10.0 + 原生 Ubuntu 24.04**。已发布的历史实验保留采集时的软件版本与原始数据。其他 AMD GPU 可以参考方法论，但性能数字和工具可用性需要单独实测确认。
 
 ## 项目受众
 
@@ -47,7 +47,7 @@ https://datawhalechina.github.io/hello-gpu/
 | ---- | ---- | ---- |
 | **第 0 篇：入门与硬件速通** | | |
 | [第 0 章 写给读者的话](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter0/index.md) | 教程定位、为什么选 9070XT、和市面教程差异、学习路线 | 🚧 |
-| [第 1 章 环境准备](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter1/index.md) | 9070XT + 原生 Ubuntu + ROCm 7.13 验证、Windows/WSL2 边界、uv 环境、最小 smoke test | 🚧 |
+| [第 1 章 环境准备](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter1/index.md) | 9070XT + 原生 Ubuntu + ROCm 10.0 验证、Windows/WSL2 边界、uv 环境、最小 smoke test | 🚧 |
 | [第 2 章 GPU 体系结构（上）：编程模型与 wavefront 执行](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter2/index.md) | 从数组加法出发，理解线程编号、工作分组、wavefront 执行与分支掩码 | ✅ |
 | [第 3 章 GPU 体系结构（下）：片上资源与数据通路](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter3/index.md) | 跟着一次加法认识寄存器、缓存与 LDS，再理解合并访存和延迟隐藏 | ✅ |
 | [第 4 章 第一个程序 + 性能分析](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter4/index.md) | 从向量加法出发，编写 HIP 程序、验证结果并学习 GPU 计时 | ✅ |

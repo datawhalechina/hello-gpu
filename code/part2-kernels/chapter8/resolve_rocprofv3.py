@@ -63,6 +63,8 @@ def select_rocprofv3(
     bundled_roots: Sequence[Path],
     system_executable: Path | None,
     system_rocm_version: str | None,
+    torch_rocm_version: str | None = None,
+    bundled_rocm_version: str | None = None,
 ) -> RocprofSelection:
     """Select bundled rocprofv3 first, then a release-line-matched system tool."""
     if _release_line(torch_hip) is None:
@@ -86,7 +88,7 @@ def select_rocprofv3(
             root=root,
             library_dirs=_library_dirs(root),
             torch_hip=torch_hip,
-            rocprof_rocm=torch_hip,
+            rocprof_rocm=bundled_rocm_version,
             reason="using the active Python environment's bundled ROCm SDK",
         )
 
@@ -103,7 +105,9 @@ def select_rocprofv3(
         )
 
     executable = Path(system_executable).resolve()
-    if _release_line(system_rocm_version) != _release_line(torch_hip):
+    # ROCm 10.0 ships HIP 7.15: SDK and HIP component versions are independent.
+    expected_rocm = torch_rocm_version or torch_hip
+    if _release_line(system_rocm_version) != _release_line(expected_rocm):
         return RocprofSelection(
             available=False,
             kind="none",
@@ -114,7 +118,7 @@ def select_rocprofv3(
             rocprof_rocm=system_rocm_version,
             reason=(
                 f"system rocprofv3 ROCm {system_rocm_version or 'unknown'} does not "
-                f"match torch HIP release line {torch_hip}"
+                f"match torch ROCm release line {expected_rocm} (HIP {torch_hip})"
             ),
         )
 
@@ -127,7 +131,7 @@ def select_rocprofv3(
         library_dirs=_library_dirs(root),
         torch_hip=torch_hip,
         rocprof_rocm=system_rocm_version,
-        reason="system rocprofv3 matches the active torch HIP release line",
+        reason="system rocprofv3 matches the active torch ROCm release line",
     )
 
 
@@ -162,6 +166,15 @@ def _torch_hip_version() -> str | None:
         return None
     version = getattr(getattr(torch, "version", None), "hip", None)
     return str(version) if version else None
+
+
+def _torch_rocm_version() -> str | None:
+    try:
+        import torch
+    except Exception:
+        return None
+    match = re.search(r"\+rocm(\d+\.\d+(?:\.\d+)?)", str(torch.__version__))
+    return match.group(1) if match else None
 
 
 def system_rocprof_candidates(
@@ -221,6 +234,7 @@ def _rocprof_rocm_version(executable: Path | None) -> str | None:
 
 def detect_rocprofv3() -> RocprofSelection:
     torch_hip = _torch_hip_version()
+    torch_rocm_version = _torch_rocm_version()
     bundled_roots = _bundled_roots()
     if bundled_roots:
         return select_rocprofv3(
@@ -228,6 +242,10 @@ def detect_rocprofv3() -> RocprofSelection:
             bundled_roots=bundled_roots,
             system_executable=None,
             system_rocm_version=None,
+            torch_rocm_version=torch_rocm_version,
+            bundled_rocm_version=_rocprof_rocm_version(
+                bundled_roots[0] / "bin" / "rocprofv3"
+            ),
         )
 
     system_candidates = system_rocprof_candidates(
@@ -247,6 +265,7 @@ def detect_rocprofv3() -> RocprofSelection:
             bundled_roots=(),
             system_executable=executable,
             system_rocm_version=version,
+            torch_rocm_version=torch_rocm_version,
         )
         if selection.available:
             return selection
@@ -256,6 +275,7 @@ def detect_rocprofv3() -> RocprofSelection:
         bundled_roots=(),
         system_executable=first_candidate,
         system_rocm_version=first_version,
+        torch_rocm_version=torch_rocm_version,
     )
 
 
