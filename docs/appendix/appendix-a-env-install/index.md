@@ -124,7 +124,7 @@ ls /usr/include/c++/14/cstdlib
 ls /usr/include/python3.12/Python.h
 ```
 
-如果你给 uv 指定了非系统默认 Python 小版本，再额外安装对应的开发包，例如 `python3.12-dev`。本仓库的 `scripts/bootstrap-rocm-env.sh` 会在 bootstrap 时检查这些依赖；章节脚本（例如第 5 章 `bench_ch4.py`）也会在进入 Triton JIT 前给出同样的修复提示。
+如果你给 uv 指定了非系统默认 Python 小版本，再额外安装对应的开发包，例如 `python3.12-dev`。本仓库的 `scripts/bootstrap-rocm-env.sh` 会在 bootstrap 时检查这些依赖；章节脚本（例如第 5 章 `bench_ch5.py`）也会在进入 Triton JIT 前给出同样的修复提示。
 
 ## 延伸阅读
 

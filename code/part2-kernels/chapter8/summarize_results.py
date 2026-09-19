@@ -1,4 +1,4 @@
-"""Aggregate Chapter 7 RESULT records into curated publication evidence."""
+"""Aggregate Chapter 8 RESULT records into curated publication evidence."""
 
 from __future__ import annotations
 
@@ -361,7 +361,7 @@ def validate_profile_config(paths: ChapterPaths, benchmark: dict[str, str]) -> l
 
 
 def publish_evidence(paths: ChapterPaths, writer: object) -> None:
-    staging_root = Path(tempfile.mkdtemp(prefix=".chapter7-evidence-", dir=paths.root))
+    staging_root = Path(tempfile.mkdtemp(prefix=".chapter8-evidence-", dir=paths.root))
     staging_evidence = staging_root / "evidence"
     staging_evidence.mkdir()
     try:

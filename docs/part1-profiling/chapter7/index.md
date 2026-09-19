@@ -94,7 +94,7 @@ BW_{\mathrm{copy}}=
 \approx535\quad\text{GB/s}.
 $$
 
-早期日志把 `MiB/ms` 直接写成了 `GB/s`，得到约 510 的数值。本章已按原始时间和字节数重新换算；旧日志中的时间不变。矩阵乘按 $2\times4096^3$ FLOP 的常用口径计算，约为 10.6 TFLOPS。两项历史日志的 `min_ms` 表头也不准确：源码实际测的是一批执行的平均时间，本章按真实计时方式说明。
+这里要注意单位：`MiB` 按 $2^{20}$ Byte 换算，`GB` 按 $10^9$ Byte 换算，不能把 `MiB/ms` 直接标成 `GB/s`。矩阵乘按 $2\times4096^3$ FLOP 的常用口径计算，约为 10.6 TFLOPS。两项参考实验都用整批执行的总时间除以执行次数，得到每次平均时间，不是多次测量中的最小值。
 
 代入这两个参考值，拐点约为 `19.9 FLOP/Byte`。计算前应先将 TFLOPS 换成 FLOPS、GB/s 换成 Byte/s；不要直接用 `10.6 / 535`，否则会遗漏 $10^3$ 的单位换算。
 
@@ -143,7 +143,7 @@ $$
 
 这一节使用仓库中的绘图脚本，把参考曲线与两个工作点画在一起。
 
-脚本位于 `code/part1-profiling/chapter7/plot_roofline_ch6.py`。文件名中的 `ch6` 是历史命名，本章继续保留它。脚本内保存了上述测量的输入规模、时间和来源说明，运行时只做换算和绘图，不会重新运行 GPU benchmark。
+脚本位于 `code/part1-profiling/chapter7/plot_roofline_ch7.py`。脚本内保存了上述测量的输入规模、时间和来源说明，运行时只做换算和绘图，不会重新运行 GPU benchmark。
 
 参考线和工作点的核心计算如下，完整实现见该脚本：
 
@@ -165,13 +165,13 @@ KNEE = P_REFERENCE * 1e3 / BW_REFERENCE
 ```bash
 cd code/part1-profiling
 source ./activate-rocm.sh
-python chapter7/plot_roofline_ch6.py --save
+python chapter7/plot_roofline_ch7.py --save
 ```
 
-图片会保存在 `code/part1-profiling/chapter7/roofline-ch6.png`。如果你要画自己的结果，需要把脚本中的输入规模、测量时间和参考值一起换成自己的记录，仅重新运行绘图命令不会自动采集新数据。
+图片会保存在 `code/part1-profiling/chapter7/roofline-ch7.png`。如果你要画自己的结果，需要把脚本中的输入规模、测量时间和参考值一起换成自己的记录，仅重新运行绘图命令不会自动采集新数据。
 
 ::: figure fig-roofline-vadd-linecross
-![Vector Add 的两个工作点与 535 GB/s copy、10.6 TFLOPS FP32 矩阵乘实测参考线](./images/roofline-ch6.png)
+![Vector Add 的两个工作点与 535 GB/s copy、10.6 TFLOPS FP32 矩阵乘实测参考线](./images/roofline-ch7.png)
 
 RX 9070 XT、ROCm 7.13、原生 Ubuntu 24.04 上的历史实测示例；参考线来自独立工作负载，横轴采用算法有效字节口径。
 :::

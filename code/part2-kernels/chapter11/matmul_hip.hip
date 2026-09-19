@@ -1,4 +1,4 @@
-// Chapter 10: FP32 row-major matrix multiplication, HIP route.
+// Chapter 11: FP32 row-major matrix multiplication, HIP route.
 //
 // C[M, N] = A[M, K] @ B[K, N]. The two implementations keep identical
 // semantics: naive assigns one output element to one thread; tiled stages

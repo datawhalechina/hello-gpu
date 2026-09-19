@@ -6,7 +6,7 @@ PART_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 GPU_ARCH="${GPU_ARCH:-gfx1201}"; SIZE="${SIZE:-16777216}"; BLOCK="${BLOCK:-256}"
 TRITON_BLOCK="${TRITON_BLOCK:-1024}"; TRITON_PROGRAMS="${TRITON_PROGRAMS:-256}"
 SEED="${SEED:-20260719}"; PROFILE_WARMUP="${PROFILE_WARMUP:-0}"; PROFILE_REPEAT="${PROFILE_REPEAT:-5}"
-BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hello-gpu-ch8-profile.XXXXXX")"
+BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hello-gpu-ch9-profile.XXXXXX")"
 STAGING_ROOT="$(mktemp -d "${SCRIPT_DIR}/.profiles-staging.XXXXXX")"
 PROFILE_DIR="${STAGING_ROOT}/profiles"; PREVIOUS_PROFILES="${STAGING_ROOT}/previous-profiles"; PUBLISHED=0
 cleanup() { if [[ "${PUBLISHED}" != 1 && -e "${PREVIOUS_PROFILES}" && ! -e "${SCRIPT_DIR}/profiles" ]]; then mv "${PREVIOUS_PROFILES}" "${SCRIPT_DIR}/profiles"; fi; rm -rf "${BUILD_DIR}" "${STAGING_ROOT}"; }

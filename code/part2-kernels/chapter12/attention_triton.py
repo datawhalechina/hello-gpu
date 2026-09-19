@@ -1,4 +1,4 @@
-"""Teaching online-attention kernels for Chapter 11."""
+"""Teaching online-attention kernels for Chapter 12."""
 
 from __future__ import annotations
 

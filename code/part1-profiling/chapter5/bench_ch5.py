@@ -1,10 +1,9 @@
 """第 5 章：PyTorch 向量加法与 Triton 复制的计时实验。
 
-保留历史文件名 bench_ch4.py，便于已有入口继续调用。
 A. 4096 × 4096 FP32 / FP16 向量加法：逐次计时，报告 min / median。
 B. 单个数组 8 / 64 / 256 MiB 的 FP32 复制：整批计时，报告每次平均值。
 默认预热 20 次、正式运行 200 次；分配、初始化、校验均在计时区间外。
-运行：python chapter5/bench_ch4.py（先激活 part1-profiling 环境）
+运行：python chapter5/bench_ch5.py（先激活 part1-profiling 环境）
 """
 import argparse
 import os

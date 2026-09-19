@@ -58,7 +58,7 @@ REPEAT="${REPEAT:-50}"
 SEED="${SEED:-20260716}"
 RUN_EDGE_CASES="${RUN_EDGE_CASES:-1}"
 INDEPENDENT_RUNS="${INDEPENDENT_RUNS:-3}"
-BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hello-gpu-ch7.XXXXXX")"
+BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hello-gpu-ch8.XXXXXX")"
 HIP_BINARY="${BUILD_DIR}/vector_add_hip"
 
 cleanup() {

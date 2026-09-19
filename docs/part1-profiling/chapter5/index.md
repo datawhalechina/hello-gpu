@@ -35,14 +35,14 @@ event 的读数是两个标记在 GPU 时间线上的时间戳之差，并不天
 
 这一节先跑通实验，再逐段阅读它的实现。
 
-配套脚本是 [`code/part1-profiling/chapter5/bench_ch4.py`](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part1-profiling/chapter5/bench_ch4.py)。文件名保留了旧章号，当前对应第 5 章。它完成两件事：对 `4096 × 4096` 个元素做加法；复制一个 FP32 数组，分别测试单个数组为 8、64、256 MiB 的情况。
+配套脚本是 [`code/part1-profiling/chapter5/bench_ch5.py`](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part1-profiling/chapter5/bench_ch5.py)。它完成两件事：对 `4096 × 4096` 个元素做加法；复制一个 FP32 数组，分别测试单个数组为 8、64、256 MiB 的情况。
 
 在完成[第 1 章环境准备](../../part0-intro/chapter1/index.md)的实验机上，从项目根目录进入本篇环境：
 
 ```bash
 cd code/part1-profiling
 source ./activate-rocm.sh
-python chapter5/bench_ch4.py
+python chapter5/bench_ch5.py
 ```
 
 下面是 **2026-09-11 在 Radeon RX 9070 XT（gfx1201）+ ROCm 7.13.99004 + 原生 Ubuntu 24.04.4** 上的一次完整运行。PyTorch 为 `2.11.0+rocm7.13.0`，Triton 为 `3.6.0`，Python 为 `3.12.3`。默认预热 20 次，正式执行 200 次。设备未锁频，采样前可见少量后台 GPU 活动，因此这些数值用于学习方法，不代表独占设备的最佳成绩。
@@ -249,12 +249,12 @@ gbs = bytes_moved / (batch_avg_ms * 1e-3) / 1e9
 脚本也允许改变预热和正式次数。下面的命令已在相同实验机上运行通过，五组输出的正确性检查均为 `PASS`：
 
 ```bash
-python chapter5/bench_ch4.py --warmup 40 --repeats 100
+python chapter5/bench_ch5.py --warmup 40 --repeats 100
 ```
 
 它用来观察测量设置的影响。由于同时改变了两个参数，不应据此把结果变化归因于某一个参数；做对照实验时，再分别改变预热次数或正式次数。
 
-一份记录只需要先写清五件事：运行环境与日期，完整命令，输入与校验方式，计时范围与统计量，观察及待验证的解释。本章本地实验底稿保存在 `code/part1-profiling/chapter5/EXPERIMENT.md`，原始输出保存在该目录的 `logs/bench-native-2026-09-11.log`。早期 WSL2 记录与本次原生 Ubuntu 记录分开保留，正文采用本次修正后脚本的结果。
+一份记录只需要先写清五件事：运行环境与日期，完整命令，输入与校验方式，计时范围与统计量，观察及待验证的解释。本章本地实验底稿保存在 `code/part1-profiling/chapter5/EXPERIMENT.md`，原始输出保存在该目录的 `logs/bench-native-2026-09-11.log`。
 
 你可以用以下问题检查自己是否理解了测量过程：
 

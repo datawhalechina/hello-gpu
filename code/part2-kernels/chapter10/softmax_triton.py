@@ -1,4 +1,4 @@
-"""Chapter 9: stable row-wise Softmax, one Triton program per row.
+"""Chapter 10: stable row-wise Softmax, one Triton program per row.
 
 Performance numbers from this script belong in the tutorial only after a run
 on the documented ROCm machine. The host code checks a PyTorch FP32 reference

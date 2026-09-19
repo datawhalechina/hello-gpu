@@ -1,4 +1,4 @@
-"""Chapter 7 Element-Wise Vector Add, Triton route.
+"""Chapter 8 Element-Wise Vector Add, Triton route.
 
 The kernel is intentionally small. The host program still performs a CPU
 reference check before timing, warmup, GPU-event timing, and a postcheck. Book

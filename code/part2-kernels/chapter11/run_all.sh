@@ -11,7 +11,7 @@ WARMUP="${WARMUP:-5}"
 REPEAT="${REPEAT:-20}"
 SEED="${SEED:-20260719}"
 RUN_EDGE_CASES="${RUN_EDGE_CASES:-1}"
-BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hello-gpu-ch10.XXXXXX")"
+BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hello-gpu-ch11.XXXXXX")"
 HIP_BINARY="${BUILD_DIR}/matmul_hip"
 
 cleanup() {
@@ -75,4 +75,4 @@ python "${SCRIPT_DIR}/matmul_triton.py" \
     --m "${M}" --n "${N}" --k "${K}" \
     --warmup "${WARMUP}" --repeat "${REPEAT}" --seed "${SEED}"
 
-echo "Chapter 10 run completed. Record the output together with the machine state."
+echo "Chapter 11 run completed. Record the output together with the machine state."

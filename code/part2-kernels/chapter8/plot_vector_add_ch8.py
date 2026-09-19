@@ -1,4 +1,4 @@
-"""Plot the measured Chapter 7 Vector Add effective bandwidth.
+"""Plot the measured Chapter 8 Vector Add effective bandwidth.
 
 Style follows the figures4papers publication house style:
 - Helvetica/Arial-like sans fonts, top/right spines off, frameless legend.
@@ -27,9 +27,9 @@ DEFAULT_OUTPUT = (
     REPO_ROOT
     / "docs"
     / "part2-kernels"
-    / "chapter7"
+    / "chapter8"
     / "images"
-    / "vector-add-ch7-bandwidth.png"
+    / "vector-add-ch8-bandwidth.png"
 )
 
 ORDER = (

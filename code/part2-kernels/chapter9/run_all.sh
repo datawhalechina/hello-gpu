@@ -13,7 +13,7 @@ WARMUP="${WARMUP:-5}"
 REPEAT="${REPEAT:-20}"
 SEED="${SEED:-20260719}"
 RUN_EDGE_CASES="${RUN_EDGE_CASES:-1}"
-BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hello-gpu-ch8.XXXXXX")"
+BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hello-gpu-ch9.XXXXXX")"
 HIP_BINARY="${BUILD_DIR}/reduction_hip"
 
 cleanup() {
@@ -31,7 +31,7 @@ fi
 # shellcheck source=/dev/null
 source "${PART_DIR}/activate-rocm.sh"
 
-echo "== Chapter 8: compile HIP (arch=${GPU_ARCH}) =="
+echo "== Chapter 9: compile HIP (arch=${GPU_ARCH}) =="
 hipcc \
     --offload-arch="${GPU_ARCH}" \
     -O3 \
@@ -40,7 +40,7 @@ hipcc \
     -o "${HIP_BINARY}"
 
 if [[ "${RUN_EDGE_CASES}" == "1" ]]; then
-    echo "== Chapter 8: boundary correctness =="
+    echo "== Chapter 9: boundary correctness =="
     for edge_size in 1 31 32 33 255 256 257 1027; do
         echo "-- N=${edge_size} / HIP --"
         "${HIP_BINARY}" \
@@ -63,7 +63,7 @@ if [[ "${RUN_EDGE_CASES}" == "1" ]]; then
     done
 fi
 
-echo "== Chapter 8: main shape N=${SIZE} / HIP =="
+echo "== Chapter 9: main shape N=${SIZE} / HIP =="
 "${HIP_BINARY}" \
     --version all \
     --size "${SIZE}" \
@@ -72,7 +72,7 @@ echo "== Chapter 8: main shape N=${SIZE} / HIP =="
     --repeat "${REPEAT}" \
     --seed "${SEED}"
 
-echo "== Chapter 8: main shape N=${SIZE} / Triton =="
+echo "== Chapter 9: main shape N=${SIZE} / Triton =="
 python "${SCRIPT_DIR}/reduction_triton.py" \
     --version all \
     --size "${SIZE}" \
@@ -82,4 +82,4 @@ python "${SCRIPT_DIR}/reduction_triton.py" \
     --repeat "${REPEAT}" \
     --seed "${SEED}"
 
-echo "== Chapter 8 complete: inspect RESULT lines above =="
+echo "== Chapter 9 complete: inspect RESULT lines above =="

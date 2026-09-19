@@ -1,4 +1,4 @@
-// code/part1-profiling/chapter5/vector_add.hip
+// code/part1-profiling/chapter6/vector_add.hip
 // 第 5 章 profiling 主线程序：合并访存 vs 跨 cache line 反例
 //
 // 用法：

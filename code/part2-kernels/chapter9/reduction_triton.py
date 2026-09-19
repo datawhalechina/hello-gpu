@@ -1,4 +1,4 @@
-"""Chapter 8 Sum Reduction: two-stage Triton teaching implementations."""
+"""Chapter 9 Sum Reduction: two-stage Triton teaching implementations."""
 
 from __future__ import annotations
 

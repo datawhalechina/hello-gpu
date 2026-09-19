@@ -321,7 +321,7 @@ python chapter9/reduction_triton.py --version t1 --size 1027 \
 
 归档中三种两阶段实现的逻辑带宽分别约为 `1136、1120、1321 GB/s`。**这不表示测出了相同数值的 GDDR6 带宽。** 当前分子只计算 `4N+4`，又重复使用同一输入；缓存状态和实际传输字节并没有被这个指标单独测出。
 
-证据在 `code/part2-kernels/chapter9/evidence/` 的 `manifest.json`、`summary.csv` 与 `profile_summary.csv`；来源源码为 `ef1722a6743bc0a9d6528d1fa938ad64976f0c05`。文件中的 `chapter8-process-*` 是章节重排前的日志名，归档内容对应本章 Sum Reduction。
+证据在 `code/part2-kernels/chapter9/evidence/` 的 `manifest.json`、`summary.csv` 与 `profile_summary.csv`；来源源码为 `ef1722a6743bc0a9d6528d1fa938ad64976f0c05`。
 
 ## 9.6 复跑时先检查结果，再读 trace {#reduction-rerun}
 
@@ -334,7 +334,7 @@ source ./activate-rocm.sh
 WARMUP=10 REPEAT=50 bash chapter9/run_all.sh
 ```
 
-脚本先跑 8 个边界长度，再跑主 shape 的全部实现。原有脚本默认是 warmup 5 次、repeat 20 次；上面显式覆盖为性能表采用的 10/50。输出中的 `Chapter 8` 是保留的旧编号，识别结果应看 `operator=sum-reduction` 与 `implementation`。
+脚本先跑 8 个边界长度，再跑主 shape 的全部实现。上面的命令设置预热 10 次、计时 50 次，与性能表的测量参数一致。输出中的 `operator=sum-reduction` 标明算子，`implementation` 标明具体实现。
 
 读 `RESULT` 时依次核对：正确性字段、shape、版本和参数、`stages`/`partials`，最后才比较 `median_ms`。比较改动前后时，还要保持输入与 event 边界一致。
 

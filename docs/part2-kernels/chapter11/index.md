@@ -383,7 +383,7 @@ matmul_kernel[grid](
 
 Triton grouped 的中心值更低，可它的范围与 baseline 重叠，最慢进程还超过 baseline 的范围。我们应保留这个负结果：**当前记录不足以说明 grouped ordering 稳定获胜**。`torch-mm` 的范围也较宽，不能取其中某个最低值作通用结论。
 
-正式记录位于 `code/part2-kernels/chapter11/EXPERIMENT.md`，汇总在同目录 `evidence/summary.csv`，环境和源码版本在 `evidence/manifest.json`。早期日志使用旧章节号 `chapter10`，对应的仍是这组 Matmul 实验。
+正式记录位于 `code/part2-kernels/chapter11/EXPERIMENT.md`，汇总在同目录 `evidence/summary.csv`，环境和源码版本在 `evidence/manifest.json`。
 
 逐实现 trace 可以帮助核对 dispatch，但当前 `profile_summary.csv` 中多个 grid、LDS 和 VGPR 字段是 `unavailable`。它们表示未得到可用字段，不能当成 0，也不足以据此宣称更高占用率或更少 cache miss。Triton trace 中还有参考计算与校验 kernel，读取时间前要先筛选 `matmul_kernel`。
 

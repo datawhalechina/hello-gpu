@@ -1,4 +1,4 @@
-// Chapter 7: Element-Wise Vector Add, HIP route.
+// Chapter 8: Element-Wise Vector Add, HIP route.
 //
 // Performance results from this program are valid for the book only after it
 // runs on the project baseline: Radeon RX 9070 XT, ROCm 10.0, native Ubuntu
