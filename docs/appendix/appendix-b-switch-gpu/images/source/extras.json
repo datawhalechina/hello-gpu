@@ -1,0 +1,372 @@
+{
+  "sections": [
+    {
+      "height": 25.2421875,
+      "rows": [],
+      "tag": "H3",
+      "text": "pip 安装（device extras 速查）\n​",
+      "width": 684,
+      "x": 384,
+      "y": 173.9609375
+    },
+    {
+      "height": 790.90625,
+      "rows": [
+        {
+          "cells": [
+            {
+              "height": 52.59375,
+              "text": "LLVM Target",
+              "width": 261.9765625,
+              "x": 385,
+              "y": 306.203125
+            },
+            {
+              "height": 52.59375,
+              "text": "device extras 标签",
+              "width": 420.0234375,
+              "x": 646.9765625,
+              "y": 306.203125
+            }
+          ],
+          "height": 52.59375,
+          "text": "LLVM Target\tdevice extras 标签",
+          "width": 682,
+          "x": 385,
+          "y": 306.203125
+        },
+        {
+          "cells": [
+            {
+              "height": 52.59375,
+              "text": "gfx950",
+              "width": 261.9765625,
+              "x": 385,
+              "y": 358.796875
+            },
+            {
+              "height": 52.59375,
+              "text": "device-gfx950",
+              "width": 420.0234375,
+              "x": 646.9765625,
+              "y": 358.796875
+            }
+          ],
+          "height": 52.59375,
+          "text": "gfx950\tdevice-gfx950",
+          "width": 682,
+          "x": 385,
+          "y": 358.796875
+        },
+        {
+          "cells": [
+            {
+              "height": 52.59375,
+              "text": "gfx942",
+              "width": 261.9765625,
+              "x": 385,
+              "y": 411.390625
+            },
+            {
+              "height": 52.59375,
+              "text": "device-gfx942",
+              "width": 420.0234375,
+              "x": 646.9765625,
+              "y": 411.390625
+            }
+          ],
+          "height": 52.59375,
+          "text": "gfx942\tdevice-gfx942",
+          "width": 682,
+          "x": 385,
+          "y": 411.390625
+        },
+        {
+          "cells": [
+            {
+              "height": 52.59375,
+              "text": "gfx90a",
+              "width": 261.9765625,
+              "x": 385,
+              "y": 463.984375
+            },
+            {
+              "height": 52.59375,
+              "text": "device-gfx90a",
+              "width": 420.0234375,
+              "x": 646.9765625,
+              "y": 463.984375
+            }
+          ],
+          "height": 52.59375,
+          "text": "gfx90a\tdevice-gfx90a",
+          "width": 682,
+          "x": 385,
+          "y": 463.984375
+        },
+        {
+          "cells": [
+            {
+              "height": 52.59375,
+              "text": "gfx908",
+              "width": 261.9765625,
+              "x": 385,
+              "y": 516.578125
+            },
+            {
+              "height": 52.59375,
+              "text": "device-gfx908",
+              "width": 420.0234375,
+              "x": 646.9765625,
+              "y": 516.578125
+            }
+          ],
+          "height": 52.59375,
+          "text": "gfx908\tdevice-gfx908",
+          "width": 682,
+          "x": 385,
+          "y": 516.578125
+        },
+        {
+          "cells": [
+            {
+              "height": 52.59375,
+              "text": "gfx1201",
+              "width": 261.9765625,
+              "x": 385,
+              "y": 569.171875
+            },
+            {
+              "height": 52.59375,
+              "text": "device-gfx1201",
+              "width": 420.0234375,
+              "x": 646.9765625,
+              "y": 569.171875
+            }
+          ],
+          "height": 52.59375,
+          "text": "gfx1201\tdevice-gfx1201",
+          "width": 682,
+          "x": 385,
+          "y": 569.171875
+        },
+        {
+          "cells": [
+            {
+              "height": 52.59375,
+              "text": "gfx1200",
+              "width": 261.9765625,
+              "x": 385,
+              "y": 621.765625
+            },
+            {
+              "height": 52.59375,
+              "text": "device-gfx1200",
+              "width": 420.0234375,
+              "x": 646.9765625,
+              "y": 621.765625
+            }
+          ],
+          "height": 52.59375,
+          "text": "gfx1200\tdevice-gfx1200",
+          "width": 682,
+          "x": 385,
+          "y": 621.765625
+        },
+        {
+          "cells": [
+            {
+              "height": 52.59375,
+              "text": "gfx1100 / gfx1101 / gfx1102",
+              "width": 261.9765625,
+              "x": 385,
+              "y": 674.359375
+            },
+            {
+              "height": 52.59375,
+              "text": "device-gfx1100 / device-gfx1101 / device-gfx1102",
+              "width": 420.0234375,
+              "x": 646.9765625,
+              "y": 674.359375
+            }
+          ],
+          "height": 52.59375,
+          "text": "gfx1100 / gfx1101 / gfx1102\tdevice-gfx1100 / device-gfx1101 / device-gfx1102",
+          "width": 682,
+          "x": 385,
+          "y": 674.359375
+        },
+        {
+          "cells": [
+            {
+              "height": 52.59375,
+              "text": "gfx1030",
+              "width": 261.9765625,
+              "x": 385,
+              "y": 726.953125
+            },
+            {
+              "height": 52.59375,
+              "text": "device-gfx1030",
+              "width": 420.0234375,
+              "x": 646.9765625,
+              "y": 726.953125
+            }
+          ],
+          "height": 52.59375,
+          "text": "gfx1030\tdevice-gfx1030",
+          "width": 682,
+          "x": 385,
+          "y": 726.953125
+        },
+        {
+          "cells": [
+            {
+              "height": 52.59375,
+              "text": "gfx1151",
+              "width": 261.9765625,
+              "x": 385,
+              "y": 779.546875
+            },
+            {
+              "height": 52.59375,
+              "text": "device-gfx1151",
+              "width": 420.0234375,
+              "x": 646.9765625,
+              "y": 779.546875
+            }
+          ],
+          "height": 52.59375,
+          "text": "gfx1151\tdevice-gfx1151",
+          "width": 682,
+          "x": 385,
+          "y": 779.546875
+        },
+        {
+          "cells": [
+            {
+              "height": 52.59375,
+              "text": "gfx1150",
+              "width": 261.9765625,
+              "x": 385,
+              "y": 832.140625
+            },
+            {
+              "height": 52.59375,
+              "text": "device-gfx1150",
+              "width": 420.0234375,
+              "x": 646.9765625,
+              "y": 832.140625
+            }
+          ],
+          "height": 52.59375,
+          "text": "gfx1150\tdevice-gfx1150",
+          "width": 682,
+          "x": 385,
+          "y": 832.140625
+        },
+        {
+          "cells": [
+            {
+              "height": 52.59375,
+              "text": "gfx1152",
+              "width": 261.9765625,
+              "x": 385,
+              "y": 884.734375
+            },
+            {
+              "height": 52.59375,
+              "text": "device-gfx1152",
+              "width": 420.0234375,
+              "x": 646.9765625,
+              "y": 884.734375
+            }
+          ],
+          "height": 52.59375,
+          "text": "gfx1152\tdevice-gfx1152",
+          "width": 682,
+          "x": 385,
+          "y": 884.734375
+        },
+        {
+          "cells": [
+            {
+              "height": 52.59375,
+              "text": "gfx1153",
+              "width": 261.9765625,
+              "x": 385,
+              "y": 937.328125
+            },
+            {
+              "height": 52.59375,
+              "text": "device-gfx1153",
+              "width": 420.0234375,
+              "x": 646.9765625,
+              "y": 937.328125
+            }
+          ],
+          "height": 52.59375,
+          "text": "gfx1153\tdevice-gfx1153",
+          "width": 682,
+          "x": 385,
+          "y": 937.328125
+        },
+        {
+          "cells": [
+            {
+              "height": 52.59375,
+              "text": "gfx1103",
+              "width": 261.9765625,
+              "x": 385,
+              "y": 989.921875
+            },
+            {
+              "height": 52.59375,
+              "text": "device-gfx1103",
+              "width": 420.0234375,
+              "x": 646.9765625,
+              "y": 989.921875
+            }
+          ],
+          "height": 52.59375,
+          "text": "gfx1103\tdevice-gfx1103",
+          "width": 682,
+          "x": 385,
+          "y": 989.921875
+        },
+        {
+          "cells": [
+            {
+              "height": 52.59375,
+              "text": "全部架构",
+              "width": 261.9765625,
+              "x": 385,
+              "y": 1042.515625
+            },
+            {
+              "height": 52.59375,
+              "text": "device-all",
+              "width": 420.0234375,
+              "x": 646.9765625,
+              "y": 1042.515625
+            }
+          ],
+          "height": 52.59375,
+          "text": "全部架构\tdevice-all",
+          "width": 682,
+          "x": 385,
+          "y": 1042.515625
+        }
+      ],
+      "tag": "TABLE",
+      "text": "LLVM Target\tdevice extras 标签\ngfx950\tdevice-gfx950\ngfx942\tdevice-gfx942\ngfx90a\tdevice-gfx90a\ngfx908\tdevice-gfx908\ngfx1201\tdevice-gfx1201\ngfx1200\tdevice-gfx1200\ngfx1100 / gfx1101 / gfx1102\tdevice-gfx1100 / device-gfx1101 / device-gfx1102\ngfx1030\tdevice-gfx1030\ngfx1151\tdevice-gfx1151\ngfx1150\tdevice-gfx1150\ngfx1152\tdevice-gfx1152\ngfx1153\tdevice-gfx1153\ngfx1103\tdevice-gfx1103\n全部架构\tdevice-all",
+      "width": 684,
+      "x": 384,
+      "y": 305.203125
+    }
+  ],
+  "viewport": {
+    "height": 1243,
+    "width": 1147
+  }
+}

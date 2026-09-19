@@ -376,9 +376,9 @@ export const appendices = [
     source: 'docs/appendix/appendix-a-env-install/index.md',
   },
   {
-    title: '附录 B · 换一张卡：从 gfx120X-all 迁移到 gfx1151',
-    summary: 'AMD wheel 源按架构分开打包，换卡时需要改哪些地方、为什么这么改',
-    lead: '本教程的实验基线是 gfx120X-all（RX 9070 XT / gfx1201）+ ROCm 7.13.0。但如果你手上的是其它架构（比如 RDNA 3.5 的 gfx1151 / AI MAX 395），照着本教程的 pyproject.toml 抄下来，uv sync 很可能直接报错。本附录只回答一个问题：换一张卡，环境文件到底要动哪几行？',
+    title: '附录 B · 换一张卡：ROCm 10.0 下从 gfx1201 到 gfx1151',
+    summary: '查出 GPU 的 LLVM Target，用 device extras 选择架构，再用 uv 锁定、安装和验证 ROCm 10.0 环境',
+    lead: '从 RX 9070 XT 换到 Ryzen AI Max+ 395，先沿架构表找到 LLVM Target，再选择对应的 device extra。本附录用 ROCm 10.0 的完整 uv 配置讲清楚设备包、公共设备包和索引映射如何一起修改，最后用真实的 GPU 运算检查环境。',
     slug: 'appendix-b',
     dir: 'appendix-b-switch-gpu',
     path: '/appendix/appendix-b-switch-gpu/',
