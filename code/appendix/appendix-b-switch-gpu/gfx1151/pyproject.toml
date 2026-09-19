@@ -8,15 +8,7 @@ dependencies = [
     "torch[device-gfx1151]==2.13.0+rocm10.0.0",
     "torchvision[device-gfx1151]==0.28.0+rocm10.0.0",
     "torchaudio==2.11.0.2+rocm10.0.0",
-    "rocm==10.0.0",
-    "rocm-sdk-core==10.0.0",
-    "rocm-sdk-devel==10.0.0",
-    "rocm-sdk-libraries==10.0.0",
-    "rocm-sdk-device-gfx1151==10.0.0",
-    "amd-torch-device-gfx1151==2.13.0+rocm10.0.0",
-    "amd-torch-device-gfx115x==2.13.0+rocm10.0.0",
-    "amd-torchvision-device-gfx1151==0.28.0+rocm10.0.0",
-    "triton==3.8.0+git4cff872c.rocm10.0.0",
+    "rocm[devel,device-gfx1151]==10.0.0",
 ]
 
 [tool.uv]
@@ -25,7 +17,6 @@ environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
 [[tool.uv.index]]
 name = "rocm-amd"
 url = "https://stable.repo.amd.com/rocm/whl-next/"
-explicit = true
 
 [[tool.uv.index]]
 name = "pypi-mirror"
@@ -37,14 +28,6 @@ torch = { index = "rocm-amd" }
 torchvision = { index = "rocm-amd" }
 torchaudio = { index = "rocm-amd" }
 rocm = { index = "rocm-amd" }
-rocm-sdk-core = { index = "rocm-amd" }
-rocm-sdk-devel = { index = "rocm-amd" }
-rocm-sdk-libraries = { index = "rocm-amd" }
-rocm-sdk-device-gfx1151 = { index = "rocm-amd" }
-amd-torch-device-gfx1151 = { index = "rocm-amd" }
-amd-torch-device-gfx115x = { index = "rocm-amd" }
-amd-torchvision-device-gfx1151 = { index = "rocm-amd" }
-triton = { index = "rocm-amd" }
 
 [dependency-groups]
 notebook = [

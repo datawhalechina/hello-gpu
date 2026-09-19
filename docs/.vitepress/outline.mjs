@@ -377,8 +377,8 @@ export const appendices = [
   },
   {
     title: '附录 B · 换一张卡：切换 ROCm 10.0 的 GPU 架构',
-    summary: '从 GPU 型号查到架构，从 wheel 元数据查到设备依赖，再用 uv 切换和验证 ROCm 10.0 环境',
-    lead: '从已经能运行的 ROCm 10.0 环境出发，沿架构表找到目标 GPU 的 LLVM Target，再读取当前 wheel 的依赖声明，确定设备包及版本。按查询结果修改 extra、设备包和来源映射，更新锁文件、同步环境，最后核对实际 GPU 并完成一次张量运算。',
+    summary: '从 GPU 型号查到设备标签，修改三处配置，再安装并验证 ROCm 10.0 环境',
+    lead: '从尚未创建 Python 虚拟环境开始，沿架构表找到自己 GPU 的 LLVM Target 和设备标签，在完整配置中修改三个 extra，再进入配置所在目录运行 uv sync。设备依赖由 uv 自动选择，安装后核对实际 GPU 并完成一次张量运算。',
     slug: 'appendix-b',
     dir: 'appendix-b-switch-gpu',
     path: '/appendix/appendix-b-switch-gpu/',

@@ -265,11 +265,10 @@ wheels = [
 
 [[package]]
 name = "filelock"
-version = "4.0.1"
-source = { registry = "https://mirrors.bfsu.edu.cn/pypi/web/simple" }
-sdist = { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/6f/38/88cd6eda96c40594a1e3da7d8b40f04bc40ace5a6aef9ac5cb407540f173/filelock-4.0.1.tar.gz", hash = "sha256:fdefc3f3e87716d855ae2b732c1cfd521dd99799ef2b4d00e8c0d4dcdc7cc94b", size = 238888, upload-time = "2026-09-19T01:08:15.958Z" }
+version = "3.32.3"
+source = { registry = "https://stable.repo.amd.com/rocm/whl-next/" }
 wheels = [
-    { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/29/33/af0635ab07fe83b1788a1dbe370ff3e226062495a998335cb18a1cac81aa/filelock-4.0.1-py3-none-any.whl", hash = "sha256:481a321a27bef441e23c53371c6abc8d7d16e26b97090074ba44f7538a3fd55a", size = 106219, upload-time = "2026-09-19T01:08:14.49Z" },
+    { url = "https://stable.repo.amd.com/rocm/core/whl-next/filelock/filelock-3.32.3-py3-none-any.whl" },
 ]
 
 [[package]]
@@ -294,11 +293,10 @@ wheels = [
 
 [[package]]
 name = "fsspec"
-version = "2026.9.0"
-source = { registry = "https://mirrors.bfsu.edu.cn/pypi/web/simple" }
-sdist = { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/77/cd/9be253869fc42e764de7f3dedd6969af7d44ff9c3375214a3442a6f3fc08/fsspec-2026.9.0.tar.gz", hash = "sha256:0f08147951c8cb31d844c3547d631053b127863b60be04cf06e121333ee0e2fe", size = 333545, upload-time = "2026-09-18T17:50:42.825Z" }
+version = "2026.7.0"
+source = { registry = "https://stable.repo.amd.com/rocm/whl-next/" }
 wheels = [
-    { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/6c/c0/a98505f18594f1bce828bb159cec0fcf9860562f1a2c85913409fc8f3d9e/fsspec-2026.9.0-py3-none-any.whl", hash = "sha256:8dd6e646e99ea382bd85f97a45e6b526a442d79423a7dc673f1e2756d05fcb5f", size = 221738, upload-time = "2026-09-18T17:50:41.341Z" },
+    { url = "https://stable.repo.amd.com/rocm/core/whl-next/fsspec/fsspec-2026.7.0-py3-none-any.whl" },
 ]
 
 [[package]]
@@ -429,13 +427,12 @@ wheels = [
 [[package]]
 name = "jinja2"
 version = "3.1.6"
-source = { registry = "https://mirrors.bfsu.edu.cn/pypi/web/simple" }
+source = { registry = "https://stable.repo.amd.com/rocm/whl-next/" }
 dependencies = [
     { name = "markupsafe" },
 ]
-sdist = { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/df/bf/f7da0350254c0ed7c72f3e33cef02e048281fec7ecec5f032d4aac52226b/jinja2-3.1.6.tar.gz", hash = "sha256:0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d", size = 245115, upload-time = "2025-03-05T20:05:02.478Z" }
 wheels = [
-    { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/62/a1/3d680cbfd5f4b8f15abc1d571870c5fc3e594bb582bc3b64ea099db13e56/jinja2-3.1.6-py3-none-any.whl", hash = "sha256:85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67", size = 134899, upload-time = "2025-03-05T20:05:00.369Z" },
+    { url = "https://stable.repo.amd.com/rocm/core/whl-next/jinja2/jinja2-3.1.6-py3-none-any.whl" },
 ]
 
 [[package]]
@@ -684,11 +681,9 @@ wheels = [
 [[package]]
 name = "markupsafe"
 version = "3.0.3"
-source = { registry = "https://mirrors.bfsu.edu.cn/pypi/web/simple" }
-sdist = { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/7e/99/7690b6d4034fffd95959cbe0c02de8deb3098cc577c67bb6a24fe5d7caa7/markupsafe-3.0.3.tar.gz", hash = "sha256:722695808f4b6457b320fdc131280796bdceb04ab50fe1795cd540799ebe1698", size = 80313, upload-time = "2025-09-27T18:37:40.426Z" }
+source = { registry = "https://stable.repo.amd.com/rocm/whl-next/" }
 wheels = [
-    { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/3c/2e/8d0c2ab90a8c1d9a24f0399058ab8519a3279d1bd4289511d74e909f060e/markupsafe-3.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:d6dd0be5b5b189d31db7cda48b91d7e0a9795f31430b7f271219ab30f1d3ac9d", size = 22947, upload-time = "2025-09-27T18:36:33.86Z" },
-    { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/89/e0/4486f11e51bbba8b0c041098859e869e304d1c261e59244baa3d295d47b7/markupsafe-3.0.3-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:77f0643abe7495da77fb436f50f8dab76dbc6e5fd25d39589a0f1fe6548bfa2b", size = 23015, upload-time = "2025-09-27T18:36:37.868Z" },
+    { url = "https://stable.repo.amd.com/rocm/core/whl-next/markupsafe/markupsafe-3.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl" },
 ]
 
 [[package]]
@@ -736,10 +731,9 @@ wheels = [
 [[package]]
 name = "mpmath"
 version = "1.3.0"
-source = { registry = "https://mirrors.bfsu.edu.cn/pypi/web/simple" }
-sdist = { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/e0/47/dd32fa426cc72114383ac549964eecb20ecfd886d1e5ccf5340b55b02f57/mpmath-1.3.0.tar.gz", hash = "sha256:7a28eb2a9774d00c7bc92411c19a89209d5da7c4c9a9e227be8330a23a25b91f", size = 508106, upload-time = "2023-03-07T16:47:11.061Z" }
+source = { registry = "https://stable.repo.amd.com/rocm/whl-next/" }
 wheels = [
-    { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/43/e3/7d92a15f894aa0c9c4b49b8ee9ac9850d6e63b03c9c32c0367a13ae62209/mpmath-1.3.0-py3-none-any.whl", hash = "sha256:a0b2b9fe80bbcd81a6647ff13108738cfb482d481d826cc0e02f5b35e5c88d2c", size = 536198, upload-time = "2023-03-07T16:47:09.197Z" },
+    { url = "https://stable.repo.amd.com/rocm/core/whl-next/mpmath/mpmath-1.3.0-py3-none-any.whl" },
 ]
 
 [[package]]
@@ -809,10 +803,9 @@ wheels = [
 [[package]]
 name = "networkx"
 version = "3.6.1"
-source = { registry = "https://mirrors.bfsu.edu.cn/pypi/web/simple" }
-sdist = { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/6a/51/63fe664f3908c97be9d2e4f1158eb633317598cfa6e1fc14af5383f17512/networkx-3.6.1.tar.gz", hash = "sha256:26b7c357accc0c8cde558ad486283728b65b6a95d85ee1cd66bafab4c8168509", size = 2517025, upload-time = "2025-12-08T17:02:39.908Z" }
+source = { registry = "https://stable.repo.amd.com/rocm/whl-next/" }
 wheels = [
-    { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/9e/c9/b2622292ea83fbb4ec318f5b9ab867d0a28ab43c5717bb85b0a5f6b3b0a4/networkx-3.6.1-py3-none-any.whl", hash = "sha256:d47fbf302e7d9cbbb9e2555a0d267983d2aa476bac30e90dfbe5669bd57f3762", size = 2068504, upload-time = "2025-12-08T17:02:38.159Z" },
+    { url = "https://stable.repo.amd.com/rocm/core/whl-next/networkx/networkx-3.6.1-py3-none-any.whl" },
 ]
 
 [[package]]
@@ -829,12 +822,10 @@ wheels = [
 
 [[package]]
 name = "numpy"
-version = "2.5.3"
-source = { registry = "https://mirrors.bfsu.edu.cn/pypi/web/simple" }
-sdist = { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/13/01/11703282db468b85f6f7b8c7f22d058de5970d5c7e60a3a8aaa313c3de36/numpy-2.5.3.tar.gz", hash = "sha256:df2d5874ff183595a4ba404edd04f6bd9b5505c1d7708573f6a6c17489a67563", size = 20791231, upload-time = "2026-09-06T16:27:47.073Z" }
+version = "2.5.2"
+source = { registry = "https://stable.repo.amd.com/rocm/whl-next/" }
 wheels = [
-    { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/65/af/aa78d1a88805456e212b65461354cd943197fb9acecc4c90fd12295123a3/numpy-2.5.3-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:b7e18c623bb5c95acb3b3328861272816ba199fb531921c5d6d0b675f1fde9e3", size = 16717410, upload-time = "2026-09-06T16:24:42.745Z" },
-    { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/62/4a/8877e629445a7176297dffcaf9c485faa96a95d81728a62521ad55bd4c0f/numpy-2.5.3-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:b5d93cf48f687479941d12b69c873ad2cc76bbd487f0091c2200636497f34034", size = 18476479, upload-time = "2026-09-06T16:24:49.35Z" },
+    { url = "https://stable.repo.amd.com/rocm/core/whl-next/numpy/numpy-2.5.2-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" },
 ]
 
 [[package]]
@@ -869,20 +860,12 @@ name = "part0-intro"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "amd-torch-device-gfx1151" },
-    { name = "amd-torch-device-gfx115x" },
-    { name = "amd-torchvision-device-gfx1151" },
     { name = "matplotlib" },
     { name = "numpy" },
-    { name = "rocm" },
-    { name = "rocm-sdk-core" },
-    { name = "rocm-sdk-devel" },
-    { name = "rocm-sdk-device-gfx1151" },
-    { name = "rocm-sdk-libraries" },
+    { name = "rocm", extra = ["devel", "device-gfx1151"] },
     { name = "torch", extra = ["device-gfx1151"] },
     { name = "torchaudio" },
     { name = "torchvision", extra = ["device-gfx1151"] },
-    { name = "triton" },
 ]
 
 [package.dev-dependencies]
@@ -893,20 +876,12 @@ notebook = [
 
 [package.metadata]
 requires-dist = [
-    { name = "amd-torch-device-gfx1151", specifier = "==2.13.0+rocm10.0.0", index = "https://stable.repo.amd.com/rocm/whl-next/" },
-    { name = "amd-torch-device-gfx115x", specifier = "==2.13.0+rocm10.0.0", index = "https://stable.repo.amd.com/rocm/whl-next/" },
-    { name = "amd-torchvision-device-gfx1151", specifier = "==0.28.0+rocm10.0.0", index = "https://stable.repo.amd.com/rocm/whl-next/" },
     { name = "matplotlib", specifier = ">=3.9" },
     { name = "numpy", specifier = ">=2.4.4" },
-    { name = "rocm", specifier = "==10.0.0", index = "https://stable.repo.amd.com/rocm/whl-next/" },
-    { name = "rocm-sdk-core", specifier = "==10.0.0", index = "https://stable.repo.amd.com/rocm/whl-next/" },
-    { name = "rocm-sdk-devel", specifier = "==10.0.0", index = "https://stable.repo.amd.com/rocm/whl-next/" },
-    { name = "rocm-sdk-device-gfx1151", specifier = "==10.0.0", index = "https://stable.repo.amd.com/rocm/whl-next/" },
-    { name = "rocm-sdk-libraries", specifier = "==10.0.0", index = "https://stable.repo.amd.com/rocm/whl-next/" },
+    { name = "rocm", extras = ["devel", "device-gfx1151"], specifier = "==10.0.0", index = "https://stable.repo.amd.com/rocm/whl-next/" },
     { name = "torch", extras = ["device-gfx1151"], specifier = "==2.13.0+rocm10.0.0", index = "https://stable.repo.amd.com/rocm/whl-next/" },
     { name = "torchaudio", specifier = "==2.11.0.2+rocm10.0.0", index = "https://stable.repo.amd.com/rocm/whl-next/" },
     { name = "torchvision", extras = ["device-gfx1151"], specifier = "==0.28.0+rocm10.0.0", index = "https://stable.repo.amd.com/rocm/whl-next/" },
-    { name = "triton", specifier = "==3.8.0+git4cff872c.rocm10.0.0", index = "https://stable.repo.amd.com/rocm/whl-next/" },
 ]
 
 [package.metadata.requires-dev]
@@ -930,11 +905,9 @@ wheels = [
 [[package]]
 name = "pillow"
 version = "12.3.0"
-source = { registry = "https://mirrors.bfsu.edu.cn/pypi/web/simple" }
-sdist = { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/1c/3d/bb7fca845737cf9d7dbde16ed1843984665ff2e0a518f5db43e77ec540b9/pillow-12.3.0.tar.gz", hash = "sha256:3b8182a766685eaa002637e28b4ec8d6b18819a0c71f579bf0dbaa5830297cce", size = 47025035, upload-time = "2026-07-01T11:56:38.965Z" }
+source = { registry = "https://stable.repo.amd.com/rocm/whl-next/" }
 wheels = [
-    { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/84/21/a35af28dcc61f37ed850a2d64c65c701321dfbf25085e469d5559360cbbf/pillow-12.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:78cb2c6865a35ab8ff8b75fd122f6033b92a62c82801110e48ddd6c936a45d91", size = 6940830, upload-time = "2026-07-01T11:54:13.732Z" },
-    { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/1d/72/cf78ac9780bb93c28328f408973845a309d4d145041665f734572ced1b52/pillow-12.3.0-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:0dd2064cbc55aaec028ef5fbb60fa47bb6c3e7918e07ff17935284b227a9d2df", size = 7052934, upload-time = "2026-07-01T11:54:17.721Z" },
+    { url = "https://stable.repo.amd.com/rocm/core/whl-next/pillow/pillow-12.3.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" },
 ]
 
 [[package]]
@@ -1138,16 +1111,22 @@ dependencies = [
 sdist = { url = "https://stable.repo.amd.com/rocm/core/whl-next/rocm/rocm-10.0.0.tar.gz" }
 
 [package.optional-dependencies]
+devel = [
+    { name = "rocm-sdk-devel" },
+]
+device-gfx1151 = [
+    { name = "rocm-sdk-device-gfx1151" },
+]
 libraries = [
     { name = "rocm-sdk-libraries" },
 ]
 
 [[package]]
 name = "rocm-bootstrap"
-version = "0.2.0"
-source = { registry = "https://mirrors.bfsu.edu.cn/pypi/web/simple" }
+version = "0.1.0"
+source = { registry = "https://stable.repo.amd.com/rocm/whl-next/" }
 wheels = [
-    { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/81/0d/1cbbe79ac672ccd84d61bf45c0e6a7a093436586a0c94b1070c760d75968/rocm_bootstrap-0.2.0-py3-none-any.whl", hash = "sha256:3e23c2621597a133f4d5074461b1678367042a8b8a001ef8cc89dd8785ff9292", size = 27806, upload-time = "2026-08-26T19:11:03.218Z" },
+    { url = "https://stable.repo.amd.com/rocm/core/whl-next/rocm-bootstrap/rocm_bootstrap-0.1.0-py3-none-any.whl" },
 ]
 
 [[package]]
@@ -1206,11 +1185,10 @@ wheels = [
 
 [[package]]
 name = "setuptools"
-version = "84.0.0"
-source = { registry = "https://mirrors.bfsu.edu.cn/pypi/web/simple" }
-sdist = { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/6d/44/f5da03a8ef95d369145c5bb53050e7877c9f3d312e128605fd9504829143/setuptools-84.0.0.tar.gz", hash = "sha256:f4695c21257f0d9b537ec2692c941d02ee143b7cc1276941349a546573b2ef73", size = 1168449, upload-time = "2026-08-08T18:27:58.365Z" }
+version = "81.0.0"
+source = { registry = "https://stable.repo.amd.com/rocm/whl-next/" }
 wheels = [
-    { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/95/9c/c510029fc6ef33a6275cd2c5d3cecd6613dfd6aa401d57c54f1c18852ccf/setuptools-84.0.0-py3-none-any.whl", hash = "sha256:51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670", size = 818216, upload-time = "2026-08-08T18:27:56.719Z" },
+    { url = "https://stable.repo.amd.com/rocm/core/whl-next/setuptools/setuptools-81.0.0-py3-none-any.whl" },
 ]
 
 [[package]]
@@ -1248,13 +1226,12 @@ wheels = [
 [[package]]
 name = "sympy"
 version = "1.14.0"
-source = { registry = "https://mirrors.bfsu.edu.cn/pypi/web/simple" }
+source = { registry = "https://stable.repo.amd.com/rocm/whl-next/" }
 dependencies = [
     { name = "mpmath" },
 ]
-sdist = { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/83/d3/803453b36afefb7c2bb238361cd4ae6125a569b4db67cd9e79846ba2d68c/sympy-1.14.0.tar.gz", hash = "sha256:d3d3fe8df1e5a0b42f0e7bdf50541697dbe7d23746e894990c030e2b05e72517", size = 7793921, upload-time = "2025-04-27T18:05:01.611Z" }
 wheels = [
-    { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/a2/09/77d55d46fd61b4a135c444fc97158ef34a095e5681d0a6c10b75bf356191/sympy-1.14.0-py3-none-any.whl", hash = "sha256:e091cc3e99d2141a0ba2847328f5479b05d94a6635cb96148ccb3f34671bd8f5", size = 6299353, upload-time = "2025-04-27T18:04:59.103Z" },
+    { url = "https://stable.repo.amd.com/rocm/core/whl-next/sympy/sympy-1.14.0-py3-none-any.whl" },
 ]
 
 [[package]]
@@ -1365,10 +1342,9 @@ wheels = [
 [[package]]
 name = "typing-extensions"
 version = "4.16.0"
-source = { registry = "https://mirrors.bfsu.edu.cn/pypi/web/simple" }
-sdist = { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/f6/cc/6253133b5bb138fc3306cebfbda2c520f545d36b5be2c7255cc528bb45d6/typing_extensions-4.16.0.tar.gz", hash = "sha256:dc983d19a509c94dba722ee6abd33940f7c05a89e243c47e907eb4db6f1a43e5", size = 113555, upload-time = "2026-07-02T08:40:05.92Z" }
+source = { registry = "https://stable.repo.amd.com/rocm/whl-next/" }
 wheels = [
-    { url = "https://mirrors.bfsu.edu.cn/pypi/web/packages/49/d3/b8441a820a491ddfc024b0b0cf0393375b75ea13866d9c66727e54c2fc80/typing_extensions-4.16.0-py3-none-any.whl", hash = "sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8", size = 45571, upload-time = "2026-07-02T08:40:04.659Z" },
+    { url = "https://stable.repo.amd.com/rocm/core/whl-next/typing-extensions/typing_extensions-4.16.0-py3-none-any.whl" },
 ]
 
 [[package]]
