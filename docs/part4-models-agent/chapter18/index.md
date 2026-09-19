@@ -40,7 +40,7 @@ description: "Hello GPU 第18章 · ONNX/MIGraphX 部署、Agent profiling 找�
 ## 本章小结
 
 - 本章目前是 Alpha 阶段的大纲骨架，正式正文会在对应实验跑通后补齐。
-- 涉及命令、输出或性能数字的内容，后续必须在 Radeon RX 9070 XT + ROCm 7.13 / 原生 Ubuntu 24.04 上实测。
+- 涉及命令、输出或性能数字的内容，后续必须在 Radeon RX 9070 XT + ROCm 10.0 / 原生 Ubuntu 24.04 上实测。
 - 与本章相关的代码、日志和实验底稿会放在 `code/part4-models-agent/chapter18/`。
 
 ## 延伸阅读

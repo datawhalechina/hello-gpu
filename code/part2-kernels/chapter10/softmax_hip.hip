@@ -1,4 +1,4 @@
-// Chapter 9: numerically stable row-wise Softmax in HIP.
+// Chapter 10: numerically stable row-wise Softmax in HIP.
 //
 // The baseline deliberately exposes three global-memory stages. The fused
 // version assigns one block to one row and keeps both reductions in LDS.

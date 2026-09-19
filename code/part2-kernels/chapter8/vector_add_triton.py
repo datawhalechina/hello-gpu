@@ -1,9 +1,9 @@
-"""Chapter 7 Element-Wise Vector Add, Triton route.
+"""Chapter 8 Element-Wise Vector Add, Triton route.
 
 The kernel is intentionally small. The host program still performs a CPU
 reference check before timing, warmup, GPU-event timing, and a postcheck. Book
 performance claims are valid only after this script runs on Radeon RX 9070 XT,
-ROCm 7.13, and native Ubuntu 24.04.
+ROCm 10.0, and native Ubuntu 24.04.
 """
 
 from __future__ import annotations

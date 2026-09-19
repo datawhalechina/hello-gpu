@@ -48,7 +48,7 @@ function onPartKey(event: KeyboardEvent, index: number) {
         <a v-if="selected === 2" class="hg-part-reading" :href="withBase('/part2-kernels/')">本篇读法与实验说明 <UiIcon name="arrow" :size="17" /></a>
       </div>
     </div>
-    <p v-if="!embedded" class="hg-curriculum-baseline">实验基线：Radeon RX 9070 XT <span>·</span> ROCm 7.13 <span>·</span> 原生 Ubuntu 24.04</p>
+    <p v-if="!embedded" class="hg-curriculum-baseline">当前环境：Radeon RX 9070 XT <span>·</span> ROCm 10.0 <span>·</span> 原生 Ubuntu 24.04</p>
   </section>
 </template>
 

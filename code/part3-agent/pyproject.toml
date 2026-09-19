@@ -1,15 +1,13 @@
 [project]
 name = "part3-agent"
 version = "0.1.0"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.13"
 dependencies = [
     "numpy>=2.4.4",
-    "rocm==7.13.0",
-    "rocm-sdk-core==7.13.0",
-    "rocm-sdk-devel==7.13.0",
-    "rocm-sdk-libraries-gfx120x-all==7.13.0",
-    "torch==2.11.0+rocm7.13.0",
-    "triton==3.6.0+rocm7.13.0",
+    "torch[device-gfx1201]==2.13.0+rocm10.0.0",
+    "torchvision[device-gfx1201]==0.28.0+rocm10.0.0",
+    "torchaudio==2.11.0.2+rocm10.0.0",
+    "rocm[devel,device-gfx1201]==10.0.0",
     # Agent 层依赖：LLM 调用、结构化输出、TUI
     "litellm>=1.50",
     "pydantic>=2.0",
@@ -23,10 +21,12 @@ dependencies = [
 testpaths = ["kernel_optimize/tests", "chapter14"]
 python_files = ["test_*.py"]
 
+[tool.uv]
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
+
 [[tool.uv.index]]
 name = "rocm-amd"
-url = "https://repo.amd.com/rocm/whl/gfx120X-all/"
-explicit = true
+url = "https://stable.repo.amd.com/rocm/whl-next/"
 
 [[tool.uv.index]]
 name = "pypi-mirror"
@@ -34,14 +34,10 @@ url = "https://pypi.org/simple"
 default = true
 
 [tool.uv.sources]
-rocm = { index = "rocm-amd" }
-rocm-sdk-core = { index = "rocm-amd" }
-rocm-sdk-devel = { index = "rocm-amd" }
-rocm-sdk-libraries-gfx120x-all = { index = "rocm-amd" }
-rocm-core = { index = "rocm-amd" }
-rocm-smi-lib = { index = "rocm-amd" }
 torch = { index = "rocm-amd" }
-triton = { index = "rocm-amd" }
+torchvision = { index = "rocm-amd" }
+torchaudio = { index = "rocm-amd" }
+rocm = { index = "rocm-amd" }
 
 [dependency-groups]
 dev = [

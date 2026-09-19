@@ -381,7 +381,7 @@ Triton wide 版比 compact 版慢。两者数学相同，却分别使用 `1024/4
 
 program 内的逻辑值不等于每种配置都能完全驻留在寄存器。源码能告诉我们没有显式全局中间数组，实际是否发生溢出存储仍应检查生成代码与资源信息。
 
-证据入口是 `code/part2-kernels/chapter10/evidence/manifest.json`、`summary.csv`、`profile_summary.csv`，对应源码 `ef1722a6743bc0a9d6528d1fa938ad64976f0c05`。其中 `chapter9-process-*` 是章节重排前的命名。历史记录保留原数值；代码修复后的结果需要另外实测，不能自动沿用这张表。
+证据入口是 `code/part2-kernels/chapter10/evidence/manifest.json`、`summary.csv`、`profile_summary.csv`，对应源码 `ef1722a6743bc0a9d6528d1fa938ad64976f0c05`。历史记录保留原数值；代码修复后的结果需要另外实测，不能自动沿用这张表。
 
 2026-09-11 补上 LDS 复用屏障后，两个 HIP 实现在 8 组边界形状和主形状 `4096×1024` 的 3 个独立进程中，计时前后校验均通过。该次运行的融合版三进程 median 为 `0.113042 ms`，范围为 `0.101562–0.118622 ms`；它属于单独的修正验证，未重跑 Triton 或采集新 trace，不能与上面的历史表拼成新排名。详细参数、源码哈希和逐条结果见[同步修正记录](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part2-kernels/chapter10/EXPERIMENT.md)。
 

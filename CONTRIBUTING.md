@@ -82,7 +82,7 @@ git checkout -b feat/part2-ch7-attention   # 从 dev 切功能分支
 
 ### 2. 本地开发 → 远程实验
 
-实验代码、命令、性能数字必须先在 **Radeon RX 9070 XT + ROCm 7.13 + 原生 Ubuntu 24.04** 实测。
+实验代码、命令、性能数字必须先在 **Radeon RX 9070 XT + ROCm 10.0 + 原生 Ubuntu 24.04** 实测。
 Mac 只做 git，实验机只跑实验，文件 scp 双向流转，详见 [AGENTS.md](./AGENTS.md)「远程实验速查」。
 
 ### 3. 提交
@@ -151,7 +151,7 @@ docs: rewrite part1-hardware-rocm with examples, illustrations, and clearer flow
 发 PR 前自查：
 
 - [ ] 功能分支是从**最新 `dev`** 切出的
-- [ ] 涉及命令/输出/性能数字的内容，已在 **Radeon RX 9070 XT + ROCm 7.13 + 原生 Ubuntu 24.04** 实测
+- [ ] 涉及命令/输出/性能数字的内容，已在 **Radeon RX 9070 XT + ROCm 10.0 + 原生 Ubuntu 24.04** 实测
 - [ ] 图片已入仓库（不要外链），性能数字带硬件上下文
 - [ ] commit message 符合 Conventional Commits
 - [ ] PR 标题与主要 commit 一致

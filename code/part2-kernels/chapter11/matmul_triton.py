@@ -1,4 +1,4 @@
-"""Chapter 10 FP32 row-major matrix multiplication, Triton route.
+"""Chapter 11 FP32 row-major matrix multiplication, Triton route.
 
 The Triton baseline and grouped variants use the same tl.dot kernel. Only the
 program ordering changes: baseline uses GROUP_M=1; grouped uses GROUP_M=8.

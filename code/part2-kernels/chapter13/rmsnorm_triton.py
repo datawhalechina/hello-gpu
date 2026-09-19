@@ -1,4 +1,4 @@
-"""Row-wise fused RMSNorm for Chapter 12."""
+"""Row-wise fused RMSNorm for Chapter 13."""
 
 from __future__ import annotations
 

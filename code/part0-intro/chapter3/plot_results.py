@@ -185,7 +185,7 @@ def plot(rows: dict[tuple[str, str], dict[str, float]], output: Path) -> None:
 
 
 def main(argv: Iterable[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Plot validated Chapter 2 results.")
+    parser = argparse.ArgumentParser(description="Plot validated Chapter 3 results.")
     parser.add_argument("--summary", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args(argv)

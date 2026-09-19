@@ -1,6 +1,6 @@
 ---
 title: "附录 A · 环境安装细节与常见坑"
-description: "Hello GPU 附录 · 本篇环境文件是怎么来的、为什么 AMD wheel 源要 explicit、rocm-sdk init 的坑"
+description: "Hello GPU 附录 · 本篇环境文件是怎么来的、ROCm 10.0 设备 extras 与依赖源、rocm-sdk init 的坑"
 ---
 
 # 附录 A · 环境安装细节与常见坑
@@ -9,7 +9,7 @@ description: "Hello GPU 附录 · 本篇环境文件是怎么来的、为什么 
 
 > [第 1 章 环境准备](../../part0-intro/chapter1/index.md) 的主线内容只要求你会跑 `uv sync` 和几个验证命令。但很多读者还会想知道——**这套环境文件到底是怎么来的？**本附录就从这个问题出发，按步骤拆开本篇环境的生成过程，顺便把几个反复出现的坑提前指出来。
 
-如果你想换一张不同架构的卡（比如从 gfx120X-all 换到 gfx1151），请看 [附录 B · 换一张卡](../appendix-b-switch-gpu/index.md)；本附录只讲本教程基线架构（gfx120X-all）下的环境细节和常见坑。
+如果你使用的 GPU 与教程不同，如何在 ROCm 10.0 环境中选择对应架构的设备包，可以接着看 [附录 B · 换一张卡](../appendix-b-switch-gpu/index.md)。
 
 ## A.1 用脚本生成本篇初始环境
 
@@ -19,7 +19,7 @@ description: "Hello GPU 附录 · 本篇环境文件是怎么来的、为什么 
 bash scripts/bootstrap-rocm-env.sh --part part0-intro
 ```
 
-> 当前脚本默认基线是 `gfx120X-all` / ROCm 7.13.0 / `https://repo.amd.com/rocm/whl/gfx120X-all/`。如果你换卡，只改 wheel 源 URL 和 libraries 包名，详见附录 B。
+> 当前脚本默认使用 **ROCm 10.0.0 + Python 3.12 + `device-gfx1201`**，从 AMD 的统一 wheel 源安装。它会保留本篇其他依赖，并让 `uv sync` 更新已有的 `uv.lock`。
 
 这个脚本会在 `code/part0-intro/` 下准备好三类文件：
 
@@ -38,17 +38,39 @@ code/part0-intro/
 | `uv.lock` | 锁定实际解析出来的包版本，保证复现 |
 | `activate-rocm.sh` | 激活 `.venv`，并设置 `ROCM_PATH` / `HIP_PATH` 等环境变量 |
 
-## A.2 为什么 AMD wheel 源要 explicit
+## A.2 同一个下载源，靠 extras 选择显卡
 
-RX 9070 XT（RDNA4 消费卡）走的是 AMD `gfx120X-all` wheel 源（gfx1200/1201 通用合并包），和数据中心卡、gfx1151 等源不同。
+ROCm 10.0 的 wheel 都从 `https://stable.repo.amd.com/rocm/whl-next/` 下载。我们不用按显卡更换下载地址，只要在依赖后面的方括号里写上架构：
 
-`explicit = true` 的意思是：**只有在 `[tool.uv.sources]` 里被明确点名映射到 `rocm-amd` 的包，才会去这个源查询**，其他包一律不打扰它。
+```toml
+"torch[device-gfx1201]==2.13.0+rocm10.0.0",
+"torchvision[device-gfx1201]==0.28.0+rocm10.0.0",
+"torchaudio==2.11.0.2+rocm10.0.0",
+"rocm[devel,device-gfx1201]==10.0.0",
+```
 
-这一点非常关键。AMD wheel 源有个「脾气」——对一些普通 Python 包，它不返回「没找到」，而是直接甩一个 `403 Forbidden`。如果让 uv 在解析任意包时都跑去问 AMD 源，那些普通依赖就可能被这个 `403` 一刀切，整个解析直接崩掉。
+可以把 extras 理解成给安装器的备注：**我要这套软件，再带上这张卡需要的设备包**。`devel` 则表示我们还要编译 HIP 程序所需的开发文件。至于底下的 `rocm-sdk-core`、设备库和 Triton，由这些包的依赖声明带进来，读者不用逐个找包名。
 
-所以本篇环境采用「双源 + 显式映射」的结构：普通包走默认 PyPI（或镜像），ROCm 相关的才走 AMD wheel 源。井水不犯河水，干净利落。
+下载源的配置如下，完整文件见 [附录 B 的配置示例](../appendix-b-switch-gpu/index.md#b-3-第三步-先改配置-再安装)：
 
-> 💡 如果你换的卡让 wheel 源路径变化（例如从 gfx120X-all 换到 gfx1151），`explicit` 的写法不用动，要改的是 wheel 源 URL 和 libraries 包名——细节见 [附录 B · 换一张卡](../appendix-b-switch-gpu/index.md)。
+```toml
+[[tool.uv.index]]
+name = "rocm-amd"
+url = "https://stable.repo.amd.com/rocm/whl-next/"
+
+[[tool.uv.index]]
+name = "pypi-mirror"
+url = "https://mirrors.bfsu.edu.cn/pypi/web/simple"
+default = true
+
+[tool.uv.sources]
+torch = { index = "rocm-amd" }
+torchvision = { index = "rocm-amd" }
+torchaudio = { index = "rocm-amd" }
+rocm = { index = "rocm-amd" }
+```
+
+这里的 AMD 源**不加 `explicit = true`**。四个直接依赖已指定来源，它们自动带进来的 SDK 与设备包也需要能在 AMD 源里被找到。若把 AMD 源限制为仅供显式映射使用，就容易遇到「找不到 `rocm-sdk-core==10.0.0`」这类解析错误。保留上面的写法即可，不用自己维护一长串底层包。
 
 ## A.3 `rocm-sdk init` 和 `ROCM_PATH` 的坑
 
@@ -63,7 +85,7 @@ uv sync
 source ./activate-rocm.sh
 ```
 
-脚本内部会检查 `_rocm_sdk_devel` 是否存在，不存在就帮你跑一次 `rocm-sdk init`，然后再回头查找正确的路径。
+脚本会先执行 `rocm-sdk init --quiet`，再通过 `rocm-sdk path --root` 取得 SDK 路径，设置当前 shell 的 `ROCM_PATH` / `HIP_PATH`。每次激活都会刷新设备文件链接，所以换过架构、重新 `uv sync` 后，也要重新激活一次。
 
 但如果你在没有用新版 `activate-rocm.sh` 的情况下手动操作，就很容易掉进下面这个陷阱——`rocm-sdk init` 把 devel 文件展开出来了，但**不会回头刷新当前 shell 里已经设好的 `ROCM_PATH` / `HIP_PATH`**，于是 `hipcc` 还在用旧路径，报出：
 
@@ -102,12 +124,14 @@ ls /usr/include/c++/14/cstdlib
 ls /usr/include/python3.12/Python.h
 ```
 
-如果你给 uv 指定了非系统默认 Python 小版本，再额外安装对应的开发包，例如 `python3.12-dev`。本仓库的 `scripts/bootstrap-rocm-env.sh` 会在 bootstrap 时检查这些依赖；章节脚本（例如第 5 章 `bench_ch4.py`）也会在进入 Triton JIT 前给出同样的修复提示。
+如果你给 uv 指定了非系统默认 Python 小版本，再额外安装对应的开发包，例如 `python3.12-dev`。本仓库的 `scripts/bootstrap-rocm-env.sh` 会在 bootstrap 时检查这些依赖；章节脚本（例如第 5 章 `bench_ch5.py`）也会在进入 Triton JIT 前给出同样的修复提示。
 
 ## 延伸阅读
 
 - [uv Documentation](https://docs.astral.sh/uv/)
 - [AMD ROCm Documentation](https://rocm.docs.amd.com/)
-- [AMD ROCm wheel 源（gfx120X-all）](https://repo.amd.com/rocm/whl/gfx120X-all/)
+- [AMD ROCm 10.0 wheel 源](https://stable.repo.amd.com/rocm/whl-next/)
+- [ROCm 10.0 安装说明](https://rocm.docs.amd.com/en/docs-10.0.0/install/rocm.html)
+- [TheRock Python 包与 SDK 命令](https://github.com/ROCm/TheRock/blob/main/docs/packaging/python_packaging.md)
 - 本教程 [第 1 章 环境准备](../../part0-intro/chapter1/index.md)
-- [附录 B · 换一张卡：从 gfx120X-all 迁移到 gfx1151](../appendix-b-switch-gpu/index.md)
+- [附录 B · 换一张卡：切换 ROCm 10.0 的 GPU 架构](../appendix-b-switch-gpu/index.md)

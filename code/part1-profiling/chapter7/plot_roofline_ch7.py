@@ -1,6 +1,5 @@
 """Chapter 7: plot Chapter 6 vector-add results against measured references.
 
-The historical filename is kept so existing links continue to work.
 No GPU benchmark is run by this script.
 
 Recorded on Radeon RX 9070 XT / gfx1201, ROCm 7.13, native Ubuntu 24.04:
@@ -17,7 +16,7 @@ Neither reference is a specification peak or a universal performance bound.
 Algorithmic bytes do not measure physical DRAM traffic or cache hits.
 
 Usage:
-    python plot_roofline_ch6.py --save
+    python plot_roofline_ch7.py --save
 """
 import argparse
 from pathlib import Path
@@ -120,7 +119,7 @@ def plot(save_path=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--save", action="store_true")
-    parser.add_argument("--out", default=str(Path(__file__).with_name("roofline-ch6.png")))
+    parser.add_argument("--out", default=str(Path(__file__).with_name("roofline-ch7.png")))
     args = parser.parse_args()
     print(f"copy_reference_gbs={BW_REFERENCE:.6f}")
     print(f"fp32_reference_tflops={P_REFERENCE:.6f}")

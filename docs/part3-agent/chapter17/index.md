@@ -22,7 +22,7 @@ description: "Hello GPU 第17章 · 用向量加法学习运行、读图、独�
 | 正确性 | 与 PyTorch 参考实现比较，容差见任务配置 |
 | 计时 | GPU event；预热、采样和重复次数由任务固定 |
 | 接受条件 | 相对当前版本的配对中位改进至少 1%，并满足配对数与正改进比例要求 |
-| 运行环境 | Radeon RX 9070 XT（`gfx1201`）、ROCm 7.13、原生 Ubuntu 24.04 |
+| 当前运行环境 | Radeon RX 9070 XT（`gfx1201`）、ROCm 10.0、原生 Ubuntu 24.04 |
 
 基线的入口如下，片段来自现有 `baseline.py`：
 
@@ -50,7 +50,7 @@ def launch(x, y, output, n_elements):
 | `KERNEL_AGENT_API_BASE` | 可选，自定义兼容端点 |
 | `KERNEL_AGENT_EXTRA_BODY` | 按模型接口要求调整额外参数；需要移除默认扩展时可设为 `{}` |
 
-示例依赖 ROCm 7.13.0、PyTorch 2.11.0 与 Triton 3.6.0。`gfx1201` 对应 AMD 的 `gfx120X-all/` 源和 `rocm-sdk-libraries-gfx120x-all` 包，映射方法见 [附录 B](../../appendix/appendix-b-switch-gpu/index.md)。在 GPU 机器的仓库根目录执行：
+本篇环境统一为 ROCm 10.0.0、PyTorch 2.13.0 与 Triton 3.8.0。`pyproject.toml` 中的 `device-gfx1201` 会选择 RX 9070 XT 对应的设备包，Triton 随 PyTorch 一起安装。其他架构的修改方法见 [附录 B](../../appendix/appendix-b-switch-gpu/index.md)。在 GPU 机器的仓库根目录执行：
 
 ```bash
 cd code/part3-agent

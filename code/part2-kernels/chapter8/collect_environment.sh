@@ -68,7 +68,7 @@ from __future__ import annotations
 
 import importlib
 
-for name in ("torch", "triton", "triton_viz", "numpy"):
+for name in ("torch", "triton", "numpy"):
     try:
         module = importlib.import_module(name)
     except Exception as error:  # environment evidence should keep going

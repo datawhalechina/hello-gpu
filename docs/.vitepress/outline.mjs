@@ -24,12 +24,12 @@ export const parts = [
       },
       {
         title: '环境准备',
-        summary: '9070XT + 原生 Ubuntu + ROCm 7.13 验证、Windows/WSL2 边界、uv 环境、最小 smoke test',
+        summary: '9070XT + 原生 Ubuntu + ROCm 10.0 验证、Windows/WSL2 边界、uv 环境、最小 smoke test',
         status: '🚧',
         lead: '本章不深入讲 ROCm 软件栈原理，只用最短路径帮你确认实验环境能不能继续往后跑。读完后，你应该能通过 uv sync 复现本篇环境，确认 ROCm 能看到 GPU，并跑通最小 HIP 程序。',
         sections: [
-          ['本教程的实验基线', '锚定书基线 RX 9070 XT / ROCm 7.13，全书实验数字都挂在这套组合上'],
-          ['平台边界：原生 Linux 优先，WSL2 可用', '原生 Linux 是唯一实验平台；WSL2 可跑通但不作性能结论'],
+          ['本教程的实验基线', '说明当前 RX 9070 XT / ROCm 10.0 环境，历史性能结果保留各自的采集版本'],
+          ['平台边界：原生 Linux 优先，WSL2 需单独验证', '原生 Linux 是当前验证平台；WSL2 的驱动与功能需单独验证'],
           ['同步本篇 uv 环境', 'uv sync 拉取 ROCm wheel 并激活 venv'],
           ['验证 GPU 可见性', 'rocminfo 确认 gfx1201 与驱动状态'],
           ['验证 PyTorch ROCm', 'torch 版本与 HIP 后端的 smoke test'],
@@ -368,7 +368,7 @@ export function numberedChapters() {
 export const appendices = [
   {
     title: '附录 A · 环境安装细节与常见坑',
-    summary: '本篇环境文件是怎么来的、为什么 AMD wheel 源要 explicit、rocm-sdk init 的坑',
+    summary: '本篇环境文件是怎么来的、ROCm 10.0 设备 extras 与依赖源、rocm-sdk init 的坑',
     lead: '主线内容只要求你会跑 uv sync 和几个验证命令。但很多读者还会想知道——这套环境文件到底是怎么来的？本附录从这个问题出发，按步骤拆开本篇环境的生成过程，顺便把几个反复出现的坑提前指出来。',
     slug: 'appendix-a',
     dir: 'appendix-a-env-install',
@@ -376,9 +376,9 @@ export const appendices = [
     source: 'docs/appendix/appendix-a-env-install/index.md',
   },
   {
-    title: '附录 B · 换一张卡：从 gfx120X-all 迁移到 gfx1151',
-    summary: 'AMD wheel 源按架构分开打包，换卡时需要改哪些地方、为什么这么改',
-    lead: '本教程的实验基线是 gfx120X-all（RX 9070 XT / gfx1201）+ ROCm 7.13.0。但如果你手上的是其它架构（比如 RDNA 3.5 的 gfx1151 / AI MAX 395），照着本教程的 pyproject.toml 抄下来，uv sync 很可能直接报错。本附录只回答一个问题：换一张卡，环境文件到底要动哪几行？',
+    title: '附录 B · 换一张卡：切换 ROCm 10.0 的 GPU 架构',
+    summary: '从 GPU 型号查到设备标签，修改三处配置，再安装并验证 ROCm 10.0 环境',
+    lead: '从尚未创建 Python 虚拟环境开始，沿架构表找到自己 GPU 的 LLVM Target 和设备标签，在完整配置中修改三个 extra，再进入配置所在目录运行 uv sync。设备依赖由 uv 自动选择，安装后核对实际 GPU 并完成一次张量运算。',
     slug: 'appendix-b',
     dir: 'appendix-b-switch-gpu',
     path: '/appendix/appendix-b-switch-gpu/',

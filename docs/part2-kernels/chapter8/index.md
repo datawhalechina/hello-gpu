@@ -444,7 +444,7 @@ def launch(
 
 Triton ladder 只把 `BLOCK_SIZE` 从 256 改为 1024，并保持 `num_warps=4`。更大的 tile 同时减少 program 数并改变资源需求，所以仍要把时间范围和 trace 放在一起读。统一结果见 [共同实验](#_8-5-正确性、benchmark-与-profiling)，不能只看到 program 数减少就提前宣布胜负。
 
-完整实现位于 `code/part2-kernels/chapter8/vector_add_triton.py`；可视化入口位于 `code/part2-kernels/chapter8/visualize_triton.py`。
+完整实现位于 `code/part2-kernels/chapter8/vector_add_triton.py`。
 
 
 </template>
@@ -484,7 +484,7 @@ Triton ladder 只把 `BLOCK_SIZE` 从 256 改为 1024，并保持 `num_warps=4`�
 | `triton-t1` | 0.338504 | 0.338404–0.338844 | 594.753950 | 594.157167–594.929706 |
 
 ::: figure fig-vector-add-bandwidth
-![七个 HIP 与 Triton Vector Add 实现的逻辑有效带宽；跨步 HIP 版本明显低于其余连续访问版本](./images/vector-add-ch7-bandwidth.png)
+![七个 HIP 与 Triton Vector Add 实现的逻辑有效带宽；跨步 HIP 版本明显低于其余连续访问版本](./images/vector-add-ch8-bandwidth.png)
 
 Radeon RX 9070 XT 上的 Vector Add 逻辑有效带宽；柱长为三进程中位数，误差线为三进程范围。
 :::
@@ -564,7 +564,7 @@ HIP 的一个 thread 与 Triton 的一个 program **不是一一对应**。更�
 
 ### 8.8.1 一键入口
 
-在已经 clone 的仓库根目录执行以下命令，准备 Part 2 环境，再分别运行正确性与计时、profiling。本章已发布结果的实验环境为 **Radeon RX 9070 XT + ROCm 7.13 + 原生 Ubuntu 24.04**：
+在已经 clone 的仓库根目录执行以下命令，准备 Part 2 环境，再分别运行正确性与计时、profiling。当前安装的是 **ROCm 10.0**；上面的历史性能表仍对应其标注的 ROCm 7.13 采集环境，复跑时请记录自己的版本与结果：
 
 ```bash
 cd code/part2-kernels
@@ -603,10 +603,10 @@ code/part2-kernels/chapter8/
 详细环境、参数、关键结果与证据路径见 `code/part2-kernels/chapter8/EXPERIMENT.md`。带宽图可以直接从汇总结果重画：
 
 ```bash
-python chapter8/plot_vector_add_ch7.py \
+python chapter8/plot_vector_add_ch8.py \
   --summary chapter8/evidence/summary.csv \
   --manifest chapter8/evidence/manifest.json \
-  --out ../../docs/part2-kernels/chapter8/images/vector-add-ch7-bandwidth.png
+  --out ../../docs/part2-kernels/chapter8/images/vector-add-ch8-bandwidth.png
 ```
 
 ### 8.8.2 从 Add 迁移到更多逐元素算子

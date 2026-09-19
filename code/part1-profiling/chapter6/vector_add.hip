@@ -1,4 +1,4 @@
-// code/part1-profiling/chapter5/vector_add.hip
+// code/part1-profiling/chapter6/vector_add.hip
 // 第 5 章 profiling 主线程序：合并访存 vs 跨 cache line 反例
 //
 // 用法：
@@ -8,7 +8,7 @@
 //   ./vector_add_bench --kernel linecross --size 16777216 --block 256 --stride 32 \
 //       --warmup 20 --repeat 100 --output-json logs/linecross_stride32_size16777216.json
 //
-// 硬件上下文：Radeon RX 9070 XT（gfx1201）+ ROCm 7.13（原生 Ubuntu 24.04）
+// 硬件上下文：Radeon RX 9070 XT（gfx1201）+ ROCm 10.0（原生 Ubuntu 24.04）
 
 #include <hip/hip_runtime.h>
 #include <cstdio>

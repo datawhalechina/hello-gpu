@@ -1,0 +1,36 @@
+[project]
+name = "part0-intro"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "numpy>=2.4.4",
+    "matplotlib>=3.9",
+    "torch[device-gfx1151]==2.13.0+rocm10.0.0",
+    "torchvision[device-gfx1151]==0.28.0+rocm10.0.0",
+    "torchaudio==2.11.0.2+rocm10.0.0",
+    "rocm[devel,device-gfx1151]==10.0.0",
+]
+
+[tool.uv]
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
+
+[[tool.uv.index]]
+name = "rocm-amd"
+url = "https://stable.repo.amd.com/rocm/whl-next/"
+
+[[tool.uv.index]]
+name = "pypi-mirror"
+url = "https://mirrors.bfsu.edu.cn/pypi/web/simple"
+default = true
+
+[tool.uv.sources]
+torch = { index = "rocm-amd" }
+torchvision = { index = "rocm-amd" }
+torchaudio = { index = "rocm-amd" }
+rocm = { index = "rocm-amd" }
+
+[dependency-groups]
+notebook = [
+    "ipykernel>=7.3.0",
+    "jupyterlab>=4.6.2",
+]

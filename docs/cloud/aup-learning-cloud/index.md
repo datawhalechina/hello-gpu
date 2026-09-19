@@ -98,7 +98,7 @@ description: AUP Learning Cloud 远程 JupyterHub/Code Server 使用指南与登
 
 **可用资源目录**：
 
-- **Course**（课程资料）：Computer Vision Course、Deep Learning Course、HIP Programming Course、Large Language Models Course、Genesis Physical Simulation Course（均提供 ROCm 7.13.0 版本）
+- **Course**（课程资料）：Computer Vision Course、Deep Learning Course、HIP Programming Course、Large Language Models Course、Genesis Physical Simulation Course（镜像版本以平台当前课程页面为准；本教程仓库中的 uv 环境统一使用 ROCm 10.0）
 - **Development**（开发环境）：Code Server CPU Environment、Code Server GPU Environment
 - **Test**（测试环境）：HIP and ROCm Notebook Test
 - **Tutorial**（教程内容）：Introduction to HIP
