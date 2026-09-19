@@ -376,9 +376,9 @@ export const appendices = [
     source: 'docs/appendix/appendix-a-env-install/index.md',
   },
   {
-    title: '附录 B · 换一张卡：ROCm 10.0 下从 gfx1201 到 gfx1151',
-    summary: '查出 GPU 的 LLVM Target，用 device extras 选择架构，再用 uv 锁定、安装和验证 ROCm 10.0 环境',
-    lead: '从 RX 9070 XT 换到 Ryzen AI Max+ 395，先沿架构表找到 LLVM Target，再选择对应的 device extra。本附录用 ROCm 10.0 的完整 uv 配置讲清楚设备包、公共设备包和索引映射如何一起修改，最后用真实的 GPU 运算检查环境。',
+    title: '附录 B · 换一张卡：切换 ROCm 10.0 的 GPU 架构',
+    summary: '以 gfx1201 切换到 gfx1151 为例，查架构、修改设备依赖，再用 uv 同步和验证当前环境',
+    lead: '从已经能运行的 ROCm 10.0 环境出发，沿架构表找到目标 GPU 的 LLVM Target，再修改当前项目中的 device extra、设备包和来源映射。以 gfx1201 切换到 gfx1151 为例，更新锁文件、同步环境，最后核对实际 GPU 并完成一次张量运算。',
     slug: 'appendix-b',
     dir: 'appendix-b-switch-gpu',
     path: '/appendix/appendix-b-switch-gpu/',
