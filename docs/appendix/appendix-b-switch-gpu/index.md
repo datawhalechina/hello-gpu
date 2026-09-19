@@ -117,10 +117,10 @@ notebook = [
 
 这三行是用来**替换原有三行**的，不要重复添加。`rocm` 那行里的 `devel` 用于保留课程需要的开发组件，我们只改逗号后的设备标签。版本号和下面的下载源配置照原样保留。
 
-修改完成后，整个文件应如下所示。展开后，可以在「修改后的完整文件」和「只看修改（git diff）」两个选项之间切换：前者便于复制核对，后者只展示改动的位置。diff 中红色的 `-` 表示删去的行，绿色的 `+` 表示替换后的行；**diff 用来对照，复制配置请使用完整文件**。
+修改完成后，整个文件应如下所示。展开后，可以在「修改后的完整文件」和「全文修改对照」两个选项之间切换：前者便于复制核对，后者保留整个文件，并在原位置标出三处替换。diff 中红色的 `-` 表示删去的行，绿色的 `+` 表示替换后的行；**diff 用来对照，复制配置请使用完整文件**。
 
 <details>
-<summary>修改后：完整 pyproject.toml 与 git diff 对照（gfx1151）</summary>
+<summary>修改后：完整 pyproject.toml 与全文修改对照（gfx1151）</summary>
 
 ::: code-group
 
@@ -163,11 +163,13 @@ notebook = [
 ]
 ```
 
-```diff [只看修改（git diff）]
-diff --git a/code/part0-intro/pyproject.toml b/code/part0-intro/pyproject.toml
---- a/code/part0-intro/pyproject.toml
-+++ b/code/part0-intro/pyproject.toml
-@@ -7,6 +7,6 @@
+```diff [全文修改对照]
+ [project]
+ name = "part0-intro"
+ version = "0.1.0"
+ requires-python = ">=3.12,<3.13"
+ dependencies = [
+     "numpy>=2.4.4",
      "matplotlib>=3.9",
 -    "torch[device-gfx1201]==2.13.0+rocm10.0.0",
 -    "torchvision[device-gfx1201]==0.28.0+rocm10.0.0",
@@ -176,6 +178,30 @@ diff --git a/code/part0-intro/pyproject.toml b/code/part0-intro/pyproject.toml
      "torchaudio==2.11.0.2+rocm10.0.0",
 -    "rocm[devel,device-gfx1201]==10.0.0",
 +    "rocm[devel,device-gfx1151]==10.0.0",
+ ]
+
+ [tool.uv]
+ environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
+
+ [[tool.uv.index]]
+ name = "rocm-amd"
+ url = "https://stable.repo.amd.com/rocm/whl-next/"
+
+ [[tool.uv.index]]
+ name = "pypi-mirror"
+ url = "https://mirrors.bfsu.edu.cn/pypi/web/simple"
+ default = true
+
+ [tool.uv.sources]
+ torch = { index = "rocm-amd" }
+ torchvision = { index = "rocm-amd" }
+ torchaudio = { index = "rocm-amd" }
+ rocm = { index = "rocm-amd" }
+
+ [dependency-groups]
+ notebook = [
+     "ipykernel>=7.3.0",
+     "jupyterlab>=4.6.2",
  ]
 ```
 
