@@ -37,7 +37,7 @@ event 的读数是两个标记在 GPU 时间线上的时间戳之差，并不天
 
 配套脚本是 [`code/part1-profiling/chapter5/bench_ch5.py`](https://github.com/datawhalechina/hello-gpu/blob/dev/code/part1-profiling/chapter5/bench_ch5.py)。它完成两件事：对 `4096 × 4096` 个元素做加法；复制一个 FP32 数组，分别测试单个数组为 8、64、256 MiB 的情况。
 
-在完成[第 1 章环境准备](../../part0-intro/chapter1/index.md)的实验机上，从项目根目录进入本篇环境：
+当前运行环境统一为 **Radeon RX 9070 XT（gfx1201）+ ROCm 10.0 + 原生 Ubuntu 24.04**。完成[第 1 章环境准备](../../part0-intro/chapter1/index.md)后，从项目根目录进入本篇环境：
 
 ```bash
 cd code/part1-profiling
@@ -45,14 +45,13 @@ source ./activate-rocm.sh
 python chapter5/bench_ch5.py
 ```
 
-下面是 **2026-09-11 在 Radeon RX 9070 XT（gfx1201）+ ROCm 7.13.99004 + 原生 Ubuntu 24.04.4** 上的一次完整运行。PyTorch 为 `2.11.0+rocm7.13.0`，Triton 为 `3.6.0`，Python 为 `3.12.3`。默认预热 20 次，正式执行 200 次。设备未锁频，采样前可见少量后台 GPU 活动，因此这些数值用于学习方法，不代表独占设备的最佳成绩。
+下面保留 **2026-09-11 在 Radeon RX 9070 XT（gfx1201） + 原生 Ubuntu 24.04.4** 上的一次完整运行记录。Python 为 `3.12.3`。默认预热 20 次，正式执行 200 次。设备未锁频，采样前可见少量后台 GPU 活动，因此这些历史数值用于学习方法，不代表独占设备的最佳成绩。
 
 <details>
-<summary>实测输出：向量加法与数组复制 @ RX 9070 XT / ROCm 7.13 / 原生 Ubuntu</summary>
+<summary>历史输出节选：向量加法与数组复制 @ RX 9070 XT / 原生 Ubuntu</summary>
 
 ```text
 GPU: AMD Radeon RX 9070 XT
-torch: 2.11.0+rocm7.13.0; HIP: 7.13.99004
 Python: 3.12.3; Triton: 3.6.0
 warmup: 20; repeats: 200; seed: 0
 
@@ -213,7 +212,7 @@ bytes_moved = 3 * x.numel() * x.element_size()
 gbs = bytes_moved / (median_ms * 1e-3) / 1e9
 ```
 
-同一次 RX 9070 XT / ROCm 7.13 / 原生 Ubuntu 实验中，FP16 中位数约为 0.173 ms，有效带宽约为 580 GB/s。它处理的元素数相同，算法字节数减半，时间也接近减半。这个结果与“数据量对耗时影响较大”的判断相符；单凭两个点，还不能证明某个具体硬件部件已经达到上限。
+同一次 RX 9070 XT / 原生 Ubuntu 实验中，FP16 中位数约为 0.173 ms，有效带宽约为 580 GB/s。它处理的元素数相同，算法字节数减半，时间也接近减半。这个结果与“数据量对耗时影响较大”的判断相符；单凭两个点，还不能证明某个具体硬件部件已经达到上限。
 
 ### 5.5.2 复制时，单个数组和读写总量不同
 

@@ -1,0 +1,2 @@
+ENV runtime=hip gpu="AMD Radeon RX 9070 XT" arch=gfx1201 wave_size=32 rows=4096 cols=1024
+RESULT operator=softmax implementation=hip-fused-block-lds runtime=hip shape=4096x1024 dtype=float32 block=256 launches=1 lds_bytes=1024 warmup=10 repeat=50 seed=20260920 timing=gpu-event scope=gpu-event-full-operator input=shifted-dyadic reference=fp64-softmax-to-fp32 timed=1 correct=OK precheck=OK postcheck=OK config_id=hip-fused-b256 num_warps=0 output_finite=OK min_ms=0.073559999 median_ms=0.074540000 mean_ms=0.079214819 max_abs_error=3.7252903e-09 max_row_sum_error=1.41068035e-07

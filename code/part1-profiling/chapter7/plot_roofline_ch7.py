@@ -2,7 +2,7 @@
 
 No GPU benchmark is run by this script.
 
-Recorded on Radeon RX 9070 XT / gfx1201, ROCm 7.13, native Ubuntu 24.04:
+Recorded on Radeon RX 9070 XT / gfx1201, native Ubuntu 24.04:
 - Vector add: Chapter 6 logs/ch5_native_ubuntu_profiling.md, 2026-07-06.
   n=16777216, FP32, block=256, warmup=20, repeat=100; minimum HIP event time.
 - Copy and matmul: Chapter 2 logs/micro_bench-native-ubuntu-2026-07-08.log.
@@ -105,7 +105,7 @@ def plot(save_path=None):
               title_fontsize=9)
     fig.subplots_adjust(left=0.105, right=0.98, top=0.89, bottom=0.24)
     fig.text(0.105, 0.07,
-             "ROCm 7.13 | native Ubuntu 24.04 | FP32 | historical measurements, July 2026\n"
+             "Native Ubuntu 24.04 | FP32 | historical measurements, July 2026\n"
              "Q = algorithmic bytes. A point above the copy reference does not prove a cache hit.",
              fontsize=9, color="#475569", linespacing=1.6)
     if save_path:

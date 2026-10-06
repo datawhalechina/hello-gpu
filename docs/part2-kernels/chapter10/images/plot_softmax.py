@@ -23,7 +23,6 @@ def main() -> None:
     environment = manifest["environment"]
     hardware = environment["torch.cuda.device_name"]
     system = environment["PRETTY_NAME"].strip('"')
-    rocm = ".".join(environment["torch.version.hip"].split(".")[:2])
     date = manifest["generated_at"].split("T", 1)[0]
 
     render_timing_figure(
@@ -31,7 +30,7 @@ def main() -> None:
         title="Softmax 各实现的完整计时",
         subtitle=(
             f"{hardware} · {benchmark['shape'].replace('x', ' × ')} · FP32 · "
-            f"{system} · ROCm {rocm} · 历史实验 {date}"
+            f"{system} · 历史参考结果 {date}"
         ),
         notes=[
             f"每进程预热 {benchmark['warmup']} 次、计时重复 {benchmark['repeat']} 次；完整 GPU event 区间，越短越好。",

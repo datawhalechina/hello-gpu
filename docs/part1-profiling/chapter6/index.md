@@ -11,7 +11,7 @@ description: "Hello GPU 第6章 · 运行向量加法、读懂 kernel trace，�
 >
 > 本章先运行两个实现，确认差距；再用 `rocprofv3` 记录 kernel 的执行过程，读懂其中一条记录；最后回到代码，检查到底改变了什么。你需要了解第 4 章的线程编号和第 5 章的 GPU event，无需提前掌握性能分析工具。
 
-本章的性能数据来自 **2026-07-06，Radeon RX 9070 XT（gfx1201）+ ROCm 7.13 + 原生 Ubuntu 24.04** 的实验。我们重点学习怎样从记录得到结论，不要求你的每次运行都复现相同的小数。
+本章运行环境统一为 **Radeon RX 9070 XT（gfx1201）+ ROCm 10.0 + 原生 Ubuntu 24.04**。我们重点学习怎样从记录得到结论，不要求你的每次运行都复现相同的小数。
 
 ## 6.1 先运行两个向量加法
 
@@ -60,7 +60,7 @@ hipcc --offload-arch=gfx1201 -O3 vector_add.hip -o vector_add_bench
 
 计时起止 event 包住一次 kernel 启动，输入已提前准备好，不包含显存分配和主机与设备之间的数据拷贝。与第 5 章一样，这是两个 event 之间的设备时间；若提交过程产生空隙，也可能被计入。程序逐次使用 HIP event 计时，三个统计量来自同一组样本。
 
-2026-07-06 的原生 Ubuntu 实验记录如下。有效带宽使用**最短时间**换算，因此阅读一行时，要将它和 `min_ms` 对应起来。
+下面是 **2026-07-06，Radeon RX 9070 XT（gfx1201） + 原生 Ubuntu 24.04** 的历史实验记录。有效带宽使用**最短时间**换算，因此阅读一行时，要将它和 `min_ms` 对应起来。
 
 | 实现 | 最短时间 | 中位数 | 有效带宽 |
 | ---- | ----: | ----: | ----: |
@@ -162,7 +162,7 @@ GPU event 可以回答“我计时的这段工作花了多久”。当一个程�
 
 本章使用的命令行工具是 **`rocprofv3`**。它来自 ROCprofiler-SDK，在本章实验机上已经随系统 ROCm 工具环境准备好；激活 Python 虚拟环境本身不等于安装了这个工具。如果终端找不到该命令，应先按 [AMD 的 ROCprofiler-SDK 安装说明](https://rocm.docs.amd.com/projects/rocprofiler-sdk/en/latest/install/install.html)检查系统安装和可执行文件路径，再继续本节。
 
-本节只开启 `--kernel-trace`，不要求先配置硬件性能计数器。命令和输出列名以本章保留的 ROCm 7.13 实测为准，其他版本可查 [AMD 的 rocprofv3 使用说明](https://rocm.docs.amd.com/projects/rocprofiler-sdk/en/latest/how-to/using-rocprofv3.html#kernel-trace)。
+本节只开启 `--kernel-trace`，不要求先配置硬件性能计数器。运行时使用本篇 ROCm 10.0 环境中的 `rocprofv3`；下面的 trace 示例保留历史采集结果，输出列名请以本次生成的文件为准，也可以查阅 [AMD 的 rocprofv3 使用说明](https://rocm.docs.amd.com/projects/rocprofiler-sdk/en/latest/how-to/using-rocprofv3.html#kernel-trace)。
 
 ### 6.3.2 采集连续版，再采集 linecross
 
@@ -289,7 +289,7 @@ $$
 
 硬件性能计数器（performance counter，PMC）可以记录执行过程中的某些事件，例如 wavefront 数量或访存相关活动。但“文件里有一列”不代表当前环境已经获得可信的测量。
 
-本章 **2026-07-08** 在同一原生 Ubuntu、RX 9070 XT、ROCm 7.13 环境复核时，`FETCH_SIZE`、`GL2C_HIT_sum`、`SQ_INSTS_VALU` 和 `OccupancyPercent` 返回 0；这组值不足以作为显存字节数、缓存命中或占用率的证据。它们也不能被解释成“没有访存”“没有执行指令”或“占用率确实是零”。
+本章 **2026-07-08** 在同一原生 Ubuntu、RX 9070 XT 环境复核时，`FETCH_SIZE`、`GL2C_HIT_sum`、`SQ_INSTS_VALU` 和 `OccupancyPercent` 返回 0；这组值不足以作为显存字节数、缓存命中或占用率的证据。它们也不能被解释成“没有访存”“没有执行指令”或“占用率确实是零”。
 
 另一方面，`GPUBusy` 和 `Wavefronts` 在该次检查中有非零值，所以也不能说所有 PMC 都不可用。本章只使用已经核对过的 event、kernel trace 和源码推导，不由这些无效零值推断缓存行为。后续工具版本或设备配置的结果，应重新验证；这里记录的是当时的实验边界。
 

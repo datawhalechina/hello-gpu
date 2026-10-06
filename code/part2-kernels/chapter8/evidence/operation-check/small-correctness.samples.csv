@@ -1,0 +1,2 @@
+config_id,implementation,runtime,shape,dtype,block,grid,num_warps,warmup,repeat,seed,process,sample,ms
+hip-v0-smoke,hip-v0,hip,17,float32,256,1,0,0,1,20260920,1,0,0.0215199999511

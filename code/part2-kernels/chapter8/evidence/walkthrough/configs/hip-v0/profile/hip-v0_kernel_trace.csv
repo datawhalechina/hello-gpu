@@ -1,0 +1,18 @@
+"Kind","Agent_Id","Queue_Id","Stream_Id","Thread_Id","Dispatch_Id","Kernel_Id","Kernel_Name","Correlation_Id","Start_Timestamp","End_Timestamp","LDS_Block_Size","Scratch_Size","VGPR_Count","Accum_VGPR_Count","SGPR_Count","Workgroup_Size_X","Workgroup_Size_Y","Workgroup_Size_Z","Grid_Size_X","Grid_Size_Y","Grid_Size_Z"
+"KERNEL_DISPATCH","Agent 1",2,0,1401833,1,4,"__amd_rocclr_fillBufferUnAligned",14,908153729517605,908153729558685,0,0,8,0,128,256,1,1,8192,1,1
+"KERNEL_DISPATCH","Agent 1",2,0,1401833,2,23,"(anonymous namespace)::vector_add_v0(float const*, float const*, float*, unsigned long)",17,908153741205911,908153741882753,0,0,8,0,128,256,1,1,16777216,1,1
+"KERNEL_DISPATCH","Agent 1",2,0,1401833,3,23,"(anonymous namespace)::vector_add_v0(float const*, float const*, float*, unsigned long)",23,908153773225567,908153773685129,0,0,8,0,128,256,1,1,16777216,1,1
+"KERNEL_DISPATCH","Agent 1",2,0,1401833,4,23,"(anonymous namespace)::vector_add_v0(float const*, float const*, float*, unsigned long)",27,908153773689409,908153774155491,0,0,8,0,128,256,1,1,16777216,1,1
+"KERNEL_DISPATCH","Agent 1",2,0,1401833,5,23,"(anonymous namespace)::vector_add_v0(float const*, float const*, float*, unsigned long)",31,908153774160891,908153774733293,0,0,8,0,128,256,1,1,16777216,1,1
+"KERNEL_DISPATCH","Agent 1",2,0,1401833,6,23,"(anonymous namespace)::vector_add_v0(float const*, float const*, float*, unsigned long)",35,908153774747493,908153775111294,0,0,8,0,128,256,1,1,16777216,1,1
+"KERNEL_DISPATCH","Agent 1",2,0,1401833,7,23,"(anonymous namespace)::vector_add_v0(float const*, float const*, float*, unsigned long)",39,908153775116854,908153775481176,0,0,8,0,128,256,1,1,16777216,1,1
+"KERNEL_DISPATCH","Agent 1",2,0,1401833,8,23,"(anonymous namespace)::vector_add_v0(float const*, float const*, float*, unsigned long)",65,908153775686576,908153776012898,0,0,8,0,128,256,1,1,16777216,1,1
+"KERNEL_DISPATCH","Agent 1",2,0,1401833,9,23,"(anonymous namespace)::vector_add_v0(float const*, float const*, float*, unsigned long)",71,908153776029138,908153776355819,0,0,8,0,128,256,1,1,16777216,1,1
+"KERNEL_DISPATCH","Agent 1",2,0,1401833,10,23,"(anonymous namespace)::vector_add_v0(float const*, float const*, float*, unsigned long)",77,908153776371859,908153776698100,0,0,8,0,128,256,1,1,16777216,1,1
+"KERNEL_DISPATCH","Agent 1",2,0,1401833,11,23,"(anonymous namespace)::vector_add_v0(float const*, float const*, float*, unsigned long)",83,908153776714052,908153777040893,0,0,8,0,128,256,1,1,16777216,1,1
+"KERNEL_DISPATCH","Agent 1",2,0,1401833,12,23,"(anonymous namespace)::vector_add_v0(float const*, float const*, float*, unsigned long)",89,908153777056613,908153777382814,0,0,8,0,128,256,1,1,16777216,1,1
+"KERNEL_DISPATCH","Agent 1",2,0,1401833,13,23,"(anonymous namespace)::vector_add_v0(float const*, float const*, float*, unsigned long)",95,908153777398534,908153777725255,0,0,8,0,128,256,1,1,16777216,1,1
+"KERNEL_DISPATCH","Agent 1",2,0,1401833,14,23,"(anonymous namespace)::vector_add_v0(float const*, float const*, float*, unsigned long)",101,908153777741015,908153778067216,0,0,8,0,128,256,1,1,16777216,1,1
+"KERNEL_DISPATCH","Agent 1",2,0,1401833,15,23,"(anonymous namespace)::vector_add_v0(float const*, float const*, float*, unsigned long)",107,908153778083176,908153778409058,0,0,8,0,128,256,1,1,16777216,1,1
+"KERNEL_DISPATCH","Agent 1",2,0,1401833,16,23,"(anonymous namespace)::vector_add_v0(float const*, float const*, float*, unsigned long)",113,908153778424658,908153778751539,0,0,8,0,128,256,1,1,16777216,1,1
+"KERNEL_DISPATCH","Agent 1",2,0,1401833,17,23,"(anonymous namespace)::vector_add_v0(float const*, float const*, float*, unsigned long)",119,908153778767179,908153779092500,0,0,8,0,128,256,1,1,16777216,1,1

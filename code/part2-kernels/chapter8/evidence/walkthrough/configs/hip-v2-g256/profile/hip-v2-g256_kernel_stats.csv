@@ -1,0 +1,3 @@
+"Name","Calls","TotalDurationNs","AverageNs","Percentage","MinNs","MaxNs","StdDev"
+"(anonymous namespace)::vector_add_v2_grid_stride(float const*, float const*, float*, unsigned long)",16,6826066,426629.125000,99.45,327921,741083,140170.546730
+"__amd_rocclr_fillBufferUnAligned",1,37681,37681.000000,0.5490,37681,37681,0.00000000e+00

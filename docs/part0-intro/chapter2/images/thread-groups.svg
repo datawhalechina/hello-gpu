@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="410" viewBox="0 0 800 410" role="img" aria-labelledby="title desc">
+  <title id="title">每组的线程编号都从 0 开始</title>
+  <desc id="desc">手算示意：第 0、1、2 组分别有四个线程，组内编号都是 0、1、2、3。每组的 0 号用蓝色标出，说明只知道组内编号还不能识别一个线程。</desc>
+  <rect width="800" height="410" rx="12" fill="#fcfbf7"/>
+  <g font-family="PingFang SC, Microsoft YaHei, Noto Sans CJK SC, sans-serif" fill="#27323a" text-anchor="middle">
+    <g font-size="28" fill="#59646b">
+      <text x="124" y="43">组号</text>
+      <text x="490" y="43">组内编号</text>
+    </g>
+
+    <rect x="28" y="64" width="744" height="94" rx="10" fill="#fcf0e3" stroke="#dfc2a2" stroke-width="2"/>
+    <text x="124" y="123" font-size="32" font-weight="600">第 0 组</text>
+    <g transform="translate(248 78)">
+      <rect width="100" height="66" rx="7" fill="#eaf2f8" stroke="#2f6e9e" stroke-width="3"/>
+      <rect x="128" width="100" height="66" rx="7" fill="#fff" stroke="#cbd1d3" stroke-width="2"/>
+      <rect x="256" width="100" height="66" rx="7" fill="#fff" stroke="#cbd1d3" stroke-width="2"/>
+      <rect x="384" width="100" height="66" rx="7" fill="#fff" stroke="#cbd1d3" stroke-width="2"/>
+      <g font-size="38">
+        <text x="50" y="47" fill="#2f6e9e" font-weight="650">0</text>
+        <text x="178" y="47">1</text><text x="306" y="47">2</text><text x="434" y="47">3</text>
+      </g>
+    </g>
+
+    <rect x="28" y="180" width="744" height="94" rx="10" fill="#eaf4ec" stroke="#aecbb7" stroke-width="2"/>
+    <text x="124" y="239" font-size="32" font-weight="600">第 1 组</text>
+    <g transform="translate(248 194)">
+      <rect width="100" height="66" rx="7" fill="#eaf2f8" stroke="#2f6e9e" stroke-width="3"/>
+      <rect x="128" width="100" height="66" rx="7" fill="#fff" stroke="#cbd1d3" stroke-width="2"/>
+      <rect x="256" width="100" height="66" rx="7" fill="#fff" stroke="#cbd1d3" stroke-width="2"/>
+      <rect x="384" width="100" height="66" rx="7" fill="#fff" stroke="#cbd1d3" stroke-width="2"/>
+      <g font-size="38">
+        <text x="50" y="47" fill="#2f6e9e" font-weight="650">0</text>
+        <text x="178" y="47">1</text><text x="306" y="47">2</text><text x="434" y="47">3</text>
+      </g>
+    </g>
+
+    <rect x="28" y="296" width="744" height="94" rx="10" fill="#fff6de" stroke="#d8c696" stroke-width="2"/>
+    <text x="124" y="355" font-size="32" font-weight="600">第 2 组</text>
+    <g transform="translate(248 310)">
+      <rect width="100" height="66" rx="7" fill="#eaf2f8" stroke="#2f6e9e" stroke-width="3"/>
+      <rect x="128" width="100" height="66" rx="7" fill="#fff" stroke="#cbd1d3" stroke-width="2"/>
+      <rect x="256" width="100" height="66" rx="7" fill="#fff" stroke="#cbd1d3" stroke-width="2"/>
+      <rect x="384" width="100" height="66" rx="7" fill="#fff" stroke="#cbd1d3" stroke-width="2"/>
+      <g font-size="38">
+        <text x="50" y="47" fill="#2f6e9e" font-weight="650">0</text>
+        <text x="178" y="47">1</text><text x="306" y="47">2</text><text x="434" y="47">3</text>
+      </g>
+    </g>
+  </g>
+</svg>

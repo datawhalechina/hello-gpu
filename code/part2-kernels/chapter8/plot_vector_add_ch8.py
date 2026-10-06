@@ -140,11 +140,10 @@ def footnote_xlabel_clearance_points(layout: PublicationLayout) -> float:
 
 
 def format_experiment_subtitle(manifest: dict[str, object]) -> str:
-    software = manifest["software"]
     benchmark = manifest["benchmark"]
     size = int(benchmark["size"])
     return (
-        f'{manifest["hardware"]} | ROCm {software["rocm"]} | '
+        f'{manifest["hardware"]} | '
         f"N={size:,} FP32 | kernel-only GPU event 计时"
     )
 

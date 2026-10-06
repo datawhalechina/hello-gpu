@@ -1,0 +1,204 @@
+{
+  "schema_version": 1,
+  "purpose": "Verify the chapter reader commands and correctness in the measured environment; do not use these operation-check timings as published benchmark results.",
+  "started_at": "2026-09-20T06:11:37.456402+00:00",
+  "finished_at": "2026-09-20T06:12:29.567114+00:00",
+  "hardware": "Radeon RX 9070 XT / gfx1201",
+  "platform": "native Ubuntu 24.04.5",
+  "rocm_sdk": "10.0.0",
+  "chapter": 13,
+  "all_passed": true,
+  "records": [
+    {
+      "label": "environment",
+      "started_at": "2026-09-20T06:11:37.459106+00:00",
+      "command": "python - <<'END'\nimport platform,torch,triton\nfrom importlib.metadata import version\nprint(platform.freedesktop_os_release()['PRETTY_NAME'])\nprint('torch',torch.__version__,'triton',triton.__version__,'rocm',version('rocm'),'HIP',torch.version.hip)\nprint(torch.cuda.get_device_name(),torch.cuda.get_device_properties(0).gcnArchName)\nassert '9070 XT' in torch.cuda.get_device_name()\nassert torch.cuda.get_device_properties(0).gcnArchName=='gfx1201'\nassert version('rocm')=='10.0.0'\nEND",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "environment.log",
+      "log_sha256": "7e853d7d9f5efa4216bf9e68678ae41064c6b666751b9d64ca801c546a748d4e"
+    },
+    {
+      "label": "ch13-new-run",
+      "started_at": "2026-09-20T06:12:20.786930+00:00",
+      "command": "RUN=$(mktemp -d chapter13/results/walkthrough-XXXXXX) && mkdir \"$RUN/build\" && printf \"%s\\n\" \"$RUN\"",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch13-new-run.log",
+      "log_sha256": "6ccfd18b4dd35a46b1188b9d0c3080ea5516b24b41e9c62f955ae2d97404af54"
+    },
+    {
+      "label": "ch13-compile",
+      "started_at": "2026-09-20T06:12:20.790992+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\nif [[ ! -x \"$RUN/build/rmsnorm_hip\" ]]; then\n  hipcc --offload-arch=gfx1201 -O3 -std=c++17 \\\n    chapter13/rmsnorm_hip.hip -o \"$RUN/build/rmsnorm_hip\"\nfi",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch13-compile.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "ch13-compile-reuse",
+      "started_at": "2026-09-20T06:12:22.317580+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\nif [[ ! -x \"$RUN/build/rmsnorm_hip\" ]]; then\n  hipcc --offload-arch=gfx1201 -O3 -std=c++17 \\\n    chapter13/rmsnorm_hip.hip -o \"$RUN/build/rmsnorm_hip\"\nfi",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch13-compile-reuse.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "ch13-restore-terminal",
+      "started_at": "2026-09-20T06:12:22.319177+00:00",
+      "command": "source ./activate-rocm.sh >/dev/null && read -r -p \"粘贴上次输出的结果目录：\" RUN && test -n \"$RUN\" && test -d \"$RUN/build\" && printf \"继续使用结果目录：%s\\n\" \"$RUN\"",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch13-restore-terminal.log",
+      "log_sha256": "9efbde2513de18364ea9a952f97b1bcfe50604d5f16fd13b2f93e05ea2f42f86"
+    },
+    {
+      "label": "ch13-00-benchmark-command-operation",
+      "started_at": "2026-09-20T06:12:22.558599+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\ntest ! -e \"$RUN/n4096x1024-hip-block-b128-p1.csv\" && \\\n\"$RUN/build/rmsnorm_hip\" \\\n  --block 128 --version block --rows 4096 \\\n  --cols 1024 --warmup 10 --repeat 50 \\\n  --seed 20260920 --epsilon 9.999999747378752e-06 --input normal \\\n  --config-id hip-block-b128 --samples \"$RUN/n4096x1024-hip-block-b128-p1.csv\" --process 1",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch13-00-benchmark-command-operation.log",
+      "log_sha256": "9b25be928a54af4d7f95bb47d03c35061e6fbba3fc8c4a0b5db10dde50a5dde3"
+    },
+    {
+      "label": "ch13-00-repeat-protected",
+      "started_at": "2026-09-20T06:12:22.677443+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\ntest ! -e \"$RUN/n4096x1024-hip-block-b128-p1.csv\" && \\\n\"$RUN/build/rmsnorm_hip\" \\\n  --block 128 --version block --rows 4096 \\\n  --cols 1024 --warmup 10 --repeat 50 \\\n  --seed 20260920 --epsilon 9.999999747378752e-06 --input normal \\\n  --config-id hip-block-b128 --samples \"$RUN/n4096x1024-hip-block-b128-p1.csv\" --process 1",
+      "cwd": "code/part2-kernels",
+      "returncode": 1,
+      "expected_returncode": 1,
+      "log": "ch13-00-repeat-protected.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "ch13-01-benchmark-command-operation",
+      "started_at": "2026-09-20T06:12:22.679459+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\ntest ! -e \"$RUN/n4096x1024-triton-r1-w4-p1.csv\" && \\\npython chapter13/rmsnorm_triton.py \\\n  --rows-per-program 1 --num-warps 4 --version configured \\\n  --rows 4096 --cols 1024 --warmup 10 \\\n  --repeat 50 --seed 20260920 --epsilon 9.999999747378752e-06 \\\n  --input normal --config-id triton-r1-w4 --samples \"$RUN/n4096x1024-triton-r1-w4-p1.csv\" \\\n  --process 1",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch13-01-benchmark-command-operation.log",
+      "log_sha256": "76594a943556d34cfde55018e3ab66ee7612b1bbb441b259fd73c157a8968a30"
+    },
+    {
+      "label": "ch13-01-repeat-protected",
+      "started_at": "2026-09-20T06:12:25.009596+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\ntest ! -e \"$RUN/n4096x1024-triton-r1-w4-p1.csv\" && \\\npython chapter13/rmsnorm_triton.py \\\n  --rows-per-program 1 --num-warps 4 --version configured \\\n  --rows 4096 --cols 1024 --warmup 10 \\\n  --repeat 50 --seed 20260920 --epsilon 9.999999747378752e-06 \\\n  --input normal --config-id triton-r1-w4 --samples \"$RUN/n4096x1024-triton-r1-w4-p1.csv\" \\\n  --process 1",
+      "cwd": "code/part2-kernels",
+      "returncode": 1,
+      "expected_returncode": 1,
+      "log": "ch13-01-repeat-protected.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "ch13-02-correctness-command-operation",
+      "started_at": "2026-09-20T06:12:25.011702+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\n\"$RUN/build/rmsnorm_hip\" \\\n  --block 64 --version block --rows 33 \\\n  --cols 1 --warmup 0 --repeat 1 \\\n  --seed 20260920 --epsilon 9.999999747378752e-06 --input zero \\\n  --config-id hip-block-b64",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch13-02-correctness-command-operation.log",
+      "log_sha256": "2df466ebd1fb5fb36da370606e6d42443b600c194cc4806d1c168b9668641fb4"
+    },
+    {
+      "label": "ch13-03-correctness-command-operation",
+      "started_at": "2026-09-20T06:12:25.069362+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\n\"$RUN/build/rmsnorm_hip\" \\\n  --block 64 --version block --rows 33 \\\n  --cols 257 --warmup 0 --repeat 1 \\\n  --seed 20260920 --epsilon 9.999999747378752e-06 --input zero-weight \\\n  --config-id hip-block-b64",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch13-03-correctness-command-operation.log",
+      "log_sha256": "71db06e80c2a532afe866325c8b60dbb74003d070d11c6b224b0130035eff464"
+    },
+    {
+      "label": "ch13-04-correctness-command-operation",
+      "started_at": "2026-09-20T06:12:25.135370+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\npython chapter13/rmsnorm_triton.py \\\n  --rows-per-program 2 --num-warps 4 --version configured \\\n  --rows 33 --cols 129 --warmup 0 \\\n  --repeat 1 --seed 20260920 --epsilon 9.999999747378752e-06 \\\n  --input signed-weight --config-id triton-r2-w4",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch13-04-correctness-command-operation.log",
+      "log_sha256": "784ed4403c7dd72496179988e1f0ac8f67155fbbdf96b5abd5fb47fd040d4723"
+    },
+    {
+      "label": "ch13-05-correctness-command-operation",
+      "started_at": "2026-09-20T06:12:27.348334+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\npython chapter13/rmsnorm_triton.py \\\n  --rows-per-program 4 --num-warps 4 --version configured \\\n  --rows 33 --cols 129 --warmup 0 \\\n  --repeat 1 --seed 20260920 --epsilon 9.999999747378752e-06 \\\n  --input normal --config-id triton-r4-w4",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch13-05-correctness-command-operation.log",
+      "log_sha256": "a599dd072fcca885a50dcc2edaa29fbbb6f01083c057b4d74c36201cb8a57d58"
+    }
+  ],
+  "source_sha256": {
+    "uv.lock": "269fa97856dc59dfdb3c724d9b58eb4d3d4e380f25ecc41fccb8e63daaf79993",
+    "pyproject.toml": "cccd4cadeabd153b617741349385ccac784615409660d4c7814d6c52605cdece",
+    "chapter13/rmsnorm_triton.py": "63fcf6c0b8453d6d37ab56238cbfea46c268fb0c58891daf43010da6e0275088",
+    "chapter13/plot_rounds.py": "d408630cb274ab6b5f75b774df7a36e64e825386a86fa644206ded68f1750cb9",
+    "chapter13/test_plot_rounds.py": "7a26c9e5032cc73a423234a22c4db42e9056dc1efeb184808ca5a7b099671175",
+    "chapter13/verify_rounds.py": "3dca10525a8056bfa6c3e5f456075dee2e4e0de33da4fe8afec70c9bd68f2ba4",
+    "chapter13/rounds_identity.py": "0e60528045d055891710e1863af5a23ddbc0c202f9b220d0aae3ddd1830a83bb",
+    "chapter13/run_rounds.py": "76c32601d56a5e9194ed5400536b1ca71b6502153357805f4738c7347a70d77e",
+    "chapter13/summarize_rounds.py": "390a8e39410f4ba1e79d772672483552f440b1a3416c4d709106e09e63a4c644",
+    "chapter13/rmsnorm_hip.hip": "e991ebda3c505e48d7cee84c2ce71c65dd2bdad4745ebbed1ebaa2d2e6047bca"
+  },
+  "original_operation_manifest_sha256": "9f21c021e9cf0dadacb7f8d23151dd3e8708140cc869009357c339af476d4e8a",
+  "uv_sync_locked": {
+    "exit_code": 0,
+    "raw_log_sha256": "771a4c8559a41d4cf2356200fa9c841d9204764cf5d3bc226edfa1df4552b5c6"
+  },
+  "output_paths": "Chapter-relative RUN directories. The CLI blocks are copied from the chapter; output samples have not replaced the original published experiment.",
+  "gpu_settings_changed": false,
+  "git_on_experiment_host": false,
+  "artifacts_sha256": {
+    "README.md": "b96987058b6a98a530cff63ce171bfd1f06a3f34d13f483e34495ca28666292f",
+    "ch13-00-benchmark-command-operation.log": "9b25be928a54af4d7f95bb47d03c35061e6fbba3fc8c4a0b5db10dde50a5dde3",
+    "ch13-00-repeat-protected.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ch13-01-benchmark-command-operation.log": "76594a943556d34cfde55018e3ab66ee7612b1bbb441b259fd73c157a8968a30",
+    "ch13-01-repeat-protected.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ch13-02-correctness-command-operation.log": "2df466ebd1fb5fb36da370606e6d42443b600c194cc4806d1c168b9668641fb4",
+    "ch13-03-correctness-command-operation.log": "71db06e80c2a532afe866325c8b60dbb74003d070d11c6b224b0130035eff464",
+    "ch13-04-correctness-command-operation.log": "784ed4403c7dd72496179988e1f0ac8f67155fbbdf96b5abd5fb47fd040d4723",
+    "ch13-05-correctness-command-operation.log": "a599dd072fcca885a50dcc2edaa29fbbb6f01083c057b4d74c36201cb8a57d58",
+    "ch13-compile-reuse.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ch13-compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ch13-new-run.log": "6ccfd18b4dd35a46b1188b9d0c3080ea5516b24b41e9c62f955ae2d97404af54",
+    "ch13-restore-terminal.log": "9efbde2513de18364ea9a952f97b1bcfe50604d5f16fd13b2f93e05ea2f42f86",
+    "environment.log": "7e853d7d9f5efa4216bf9e68678ae41064c6b666751b9d64ca801c546a748d4e",
+    "reader-plot.log": "7fc8a340e5844a977c4b2c6ce2042761971aacedfadc56024cb001a48221a18b"
+  },
+  "reader_plot_validation": {
+    "chapter": 13,
+    "argv": [
+      "python",
+      "chapter13/plot_rounds.py",
+      "--evidence",
+      "chapter13/results/reader-plot-fixture/rounds/summary",
+      "--out-dir",
+      "chapter13/results/reader-plot-fixture/figures/main",
+      "--round",
+      "cooperative",
+      "--round",
+      "block",
+      "--round",
+      "warps"
+    ],
+    "returncode": 0,
+    "log": "reader-plot.log",
+    "new_gpu_measurement": false,
+    "source": "CPU-only subset of original measured main records; no new main/profile/validation collection",
+    "figures": 6,
+    "log_sha256": "7fc8a340e5844a977c4b2c6ce2042761971aacedfadc56024cb001a48221a18b",
+    "validation_environment": "same native Ubuntu ROCm10 Part2 Python environment; plotting is CPU-only"
+  }
+}

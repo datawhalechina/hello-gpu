@@ -1,17 +1,64 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; PART_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-GPU_ARCH="${GPU_ARCH:-gfx1201}"; ROWS="${ROWS:-1024}"; COLS="${COLS:-4096}"; BLOCK="${BLOCK:-256}"; EPSILON="${EPSILON:-1e-5}"; SEED="${SEED:-20260719}"
-PROFILE_WARMUP="${PROFILE_WARMUP:-0}"; PROFILE_REPEAT="${PROFILE_REPEAT:-5}"; BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hello-gpu-ch13-profile.XXXXXX")"
-STAGING_ROOT="$(mktemp -d "${SCRIPT_DIR}/.profiles-staging.XXXXXX")"; PROFILE_DIR="${STAGING_ROOT}/profiles"; PREVIOUS_PROFILES="${STAGING_ROOT}/previous-profiles"; PUBLISHED=0
-cleanup() { if [[ "${PUBLISHED}" != 1 && -e "${PREVIOUS_PROFILES}" && ! -e "${SCRIPT_DIR}/profiles" ]]; then mv "${PREVIOUS_PROFILES}" "${SCRIPT_DIR}/profiles"; fi; rm -rf "${BUILD_DIR}" "${STAGING_ROOT}"; }
-trap cleanup EXIT; mkdir -p "${PROFILE_DIR}"; source "${PART_DIR}/activate-rocm.sh"
-hipcc --offload-arch="${GPU_ARCH}" -O3 -std=c++17 "${SCRIPT_DIR}/rmsnorm_hip.hip" -o "${BUILD_DIR}/rmsnorm_hip"
-profile() { local label="$1"; shift; rocprofv3 --kernel-trace --output-directory "${PROFILE_DIR}" --output-file "${label}" --output-format csv -- "$@"; }
-for version in serial block; do profile "hip-${version}" "${BUILD_DIR}/rmsnorm_hip" --version "${version}" --rows "${ROWS}" --cols "${COLS}" --block "${BLOCK}" --epsilon "${EPSILON}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"; done
-for version in t0 t1; do profile "triton-${version}" python "${SCRIPT_DIR}/rmsnorm_triton.py" --version "${version}" --rows "${ROWS}" --cols "${COLS}" --epsilon "${EPSILON}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"; done
-printf 'gpu_arch=%s\nrows=%s\ncols=%s\nblock=%s\nepsilon=%s\nseed=%s\nprofile_warmup=%s\nprofile_repeat=%s\n' "${GPU_ARCH}" "${ROWS}" "${COLS}" "${BLOCK}" "${EPSILON}" "${SEED}" "${PROFILE_WARMUP}" "${PROFILE_REPEAT}" > "${PROFILE_DIR}/profile_config.env"
-if [[ -e "${SCRIPT_DIR}/profiles" ]]; then mv "${SCRIPT_DIR}/profiles" "${PREVIOUS_PROFILES}"; fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PART_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+GPU_ARCH="${GPU_ARCH:-gfx1201}"
+ROWS="${ROWS:-1024}"
+COLS="${COLS:-4096}"
+BLOCK="${BLOCK:-256}"
+EPSILON="${EPSILON:-1e-5}"
+INPUT_MODE="${INPUT_MODE:-normal}"
+TRITON_ROWS_PER_PROGRAM="${TRITON_ROWS_PER_PROGRAM:-1}"
+SEED="${SEED:-20260920}"
+PROFILE_WARMUP="${PROFILE_WARMUP:-0}"
+PROFILE_REPEAT="${PROFILE_REPEAT:-5}"
+BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hello-gpu-ch13-profile.XXXXXX")"
+STAGING_ROOT="$(mktemp -d "${SCRIPT_DIR}/.profiles-staging.XXXXXX")"
+PROFILE_DIR="${STAGING_ROOT}/profiles"
+PREVIOUS_PROFILES="${STAGING_ROOT}/previous-profiles"
+PUBLISHED=0
+cleanup() {
+    if [[ "${PUBLISHED}" != 1 && -e "${PREVIOUS_PROFILES}" && ! -e "${SCRIPT_DIR}/profiles" ]]; then
+        mv "${PREVIOUS_PROFILES}" "${SCRIPT_DIR}/profiles"
+    fi
+    rm -rf "${BUILD_DIR}" "${STAGING_ROOT}"
+}
+trap cleanup EXIT
+mkdir -p "${PROFILE_DIR}"
+# shellcheck source=/dev/null
+source "${PART_DIR}/activate-rocm.sh"
+
+hipcc --offload-arch="${GPU_ARCH}" -O3 -std=c++17 \
+    "${SCRIPT_DIR}/rmsnorm_hip.hip" -o "${BUILD_DIR}/rmsnorm_hip"
+profile() {
+    local label="$1"
+    shift
+    rocprofv3 --kernel-trace --output-directory "${PROFILE_DIR}" \
+        --output-file "${label}" --output-format csv -- "$@"
+}
+for version in serial block; do
+    profile "hip-${version}" "${BUILD_DIR}/rmsnorm_hip" --version "${version}" \
+        --rows "${ROWS}" --cols "${COLS}" --block "${BLOCK}" --epsilon "${EPSILON}" \
+        --input "${INPUT_MODE}" --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"
+done
+if [[ "${TRITON_ROWS_PER_PROGRAM}" == 1 ]]; then
+    for version in t0 t1; do
+        profile "triton-${version}" python "${SCRIPT_DIR}/rmsnorm_triton.py" --version "${version}" \
+            --rows "${ROWS}" --cols "${COLS}" --epsilon "${EPSILON}" --input "${INPUT_MODE}" \
+            --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"
+    done
+else
+    profile "triton-r${TRITON_ROWS_PER_PROGRAM}-w4" python "${SCRIPT_DIR}/rmsnorm_triton.py" \
+        --version configured --num-warps 4 --rows-per-program "${TRITON_ROWS_PER_PROGRAM}" \
+        --rows "${ROWS}" --cols "${COLS}" --epsilon "${EPSILON}" --input "${INPUT_MODE}" \
+        --warmup "${PROFILE_WARMUP}" --repeat "${PROFILE_REPEAT}" --seed "${SEED}"
+fi
+printf 'gpu_arch=%s\nrows=%s\ncols=%s\nblock=%s\nepsilon=%s\ninput_mode=%s\ntriton_rows_per_program=%s\nseed=%s\nprofile_warmup=%s\nprofile_repeat=%s\n' \
+    "${GPU_ARCH}" "${ROWS}" "${COLS}" "${BLOCK}" "${EPSILON}" "${INPUT_MODE}" \
+    "${TRITON_ROWS_PER_PROGRAM}" "${SEED}" "${PROFILE_WARMUP}" "${PROFILE_REPEAT}" > "${PROFILE_DIR}/profile_config.env"
+if [[ -e "${SCRIPT_DIR}/profiles" ]]; then
+    mv "${SCRIPT_DIR}/profiles" "${PREVIOUS_PROFILES}"
+fi
 mv "${PROFILE_DIR}" "${SCRIPT_DIR}/profiles"
 PUBLISHED=1

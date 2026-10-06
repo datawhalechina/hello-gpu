@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="990" viewBox="0 0 700 990" role="img" aria-labelledby="title desc">
+  <title id="title">同一 wavefront 的四个 lane 读取相邻与分散的位置</title>
+  <desc id="desc">只观察同一 wavefront 中的四个 lane，不表示 wavefront 只有四个 lane。上半图中 lane 0 到 3 分别读取下标 0、1、2、3；下半图分别读取下标 0、5、10、15。把连续的 16 个数组元素分成四个教学组，每组四个元素：深色实框表示本次所需元素，浅蓝表示与所需元素同组的其他元素，灰色表示本次未涉及的组。教学组只帮助比较地址分布，不代表实际硬件事务数或缓存行尺寸。</desc>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 9 5 0 9Z" fill="#2f6e9e"/></marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 9 5 0 9Z" fill="#a35d27"/></marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 9 5 0 9Z" fill="#377554"/></marker>
+    <marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 9 5 0 9Z" fill="#59646b"/></marker>
+  </defs>
+  <rect width="700" height="990" rx="12" fill="#fcfbf7"/>
+  <g font-family="PingFang SC, Microsoft YaHei, Noto Sans CJK SC, sans-serif" fill="#27323a" text-anchor="middle">
+    <text x="32" y="46" font-size="30" font-weight="600" text-anchor="start">同组线程读取哪些位置</text>
+    <text x="32" y="84" font-size="26" fill="#59646b" text-anchor="start">只观察同一 wavefront 的 4 个 lane</text>
+    <rect x="24" y="112" width="652" height="316" rx="10" fill="#fff" stroke="#a7afad" stroke-width="2"/>
+    <text x="44" y="150" font-size="28" font-weight="600" text-anchor="start">相邻位置</text>
+    <rect x="49" y="170" width="140" height="77" rx="8" fill="#eaf2f8" stroke="#8fb4cf" stroke-width="2"/>
+    <text x="119" y="200" font-size="24">lane 0</text>
+    <text x="119" y="232" font-size="26" fill="#2f6e9e" font-weight="600">读取 0</text>
+    <rect x="203" y="170" width="140" height="77" rx="8" fill="#eaf2f8" stroke="#8fb4cf" stroke-width="2"/>
+    <text x="273" y="200" font-size="24">lane 1</text>
+    <text x="273" y="232" font-size="26" fill="#2f6e9e" font-weight="600">读取 1</text>
+    <rect x="357" y="170" width="140" height="77" rx="8" fill="#eaf2f8" stroke="#8fb4cf" stroke-width="2"/>
+    <text x="427" y="200" font-size="24">lane 2</text>
+    <text x="427" y="232" font-size="26" fill="#2f6e9e" font-weight="600">读取 2</text>
+    <rect x="511" y="170" width="140" height="77" rx="8" fill="#eaf2f8" stroke="#8fb4cf" stroke-width="2"/>
+    <text x="581" y="200" font-size="24">lane 3</text>
+    <text x="581" y="232" font-size="26" fill="#2f6e9e" font-weight="600">读取 3</text>
+    <text x="44" y="286" font-size="24" fill="#59646b" text-anchor="start">数组下标</text>
+    <rect x="47" y="302" width="36" height="50" rx="0" fill="#2f6e9e" stroke="#2f6e9e" stroke-width="3"/>
+    <text x="65" y="336" font-size="24" fill="#fff" font-weight="600">0</text>
+    <rect x="83" y="302" width="36" height="50" rx="0" fill="#2f6e9e" stroke="#2f6e9e" stroke-width="3"/>
+    <text x="101" y="336" font-size="24" fill="#fff" font-weight="600">1</text>
+    <rect x="119" y="302" width="36" height="50" rx="0" fill="#2f6e9e" stroke="#2f6e9e" stroke-width="3"/>
+    <text x="137" y="336" font-size="24" fill="#fff" font-weight="600">2</text>
+    <rect x="155" y="302" width="36" height="50" rx="0" fill="#2f6e9e" stroke="#2f6e9e" stroke-width="3"/>
+    <text x="173" y="336" font-size="24" fill="#fff" font-weight="600">3</text>
+    <text x="119" y="383" font-size="24" fill="#59646b">教学组 1</text>
+    <rect x="201" y="302" width="36" height="50" rx="0" fill="#f0f1ee" stroke="#a7afad" stroke-width="1"/>
+    <text x="219" y="336" font-size="24" fill="#59646b">4</text>
+    <rect x="237" y="302" width="36" height="50" rx="0" fill="#f0f1ee" stroke="#a7afad" stroke-width="1"/>
+    <text x="255" y="336" font-size="24" fill="#59646b">5</text>
+    <rect x="273" y="302" width="36" height="50" rx="0" fill="#f0f1ee" stroke="#a7afad" stroke-width="1"/>
+    <text x="291" y="336" font-size="24" fill="#59646b">6</text>
+    <rect x="309" y="302" width="36" height="50" rx="0" fill="#f0f1ee" stroke="#a7afad" stroke-width="1"/>
+    <text x="327" y="336" font-size="24" fill="#59646b">7</text>
+    <text x="273" y="383" font-size="24" fill="#59646b">教学组 2</text>
+    <rect x="355" y="302" width="36" height="50" rx="0" fill="#f0f1ee" stroke="#a7afad" stroke-width="1"/>
+    <text x="373" y="336" font-size="24" fill="#59646b">8</text>
+    <rect x="391" y="302" width="36" height="50" rx="0" fill="#f0f1ee" stroke="#a7afad" stroke-width="1"/>
+    <text x="409" y="336" font-size="24" fill="#59646b">9</text>
+    <rect x="427" y="302" width="36" height="50" rx="0" fill="#f0f1ee" stroke="#a7afad" stroke-width="1"/>
+    <text x="445" y="336" font-size="24" fill="#59646b">10</text>
+    <rect x="463" y="302" width="36" height="50" rx="0" fill="#f0f1ee" stroke="#a7afad" stroke-width="1"/>
+    <text x="481" y="336" font-size="24" fill="#59646b">11</text>
+    <text x="427" y="383" font-size="24" fill="#59646b">教学组 3</text>
+    <rect x="509" y="302" width="36" height="50" rx="0" fill="#f0f1ee" stroke="#a7afad" stroke-width="1"/>
+    <text x="527" y="336" font-size="24" fill="#59646b">12</text>
+    <rect x="545" y="302" width="36" height="50" rx="0" fill="#f0f1ee" stroke="#a7afad" stroke-width="1"/>
+    <text x="563" y="336" font-size="24" fill="#59646b">13</text>
+    <rect x="581" y="302" width="36" height="50" rx="0" fill="#f0f1ee" stroke="#a7afad" stroke-width="1"/>
+    <text x="599" y="336" font-size="24" fill="#59646b">14</text>
+    <rect x="617" y="302" width="36" height="50" rx="0" fill="#f0f1ee" stroke="#a7afad" stroke-width="1"/>
+    <text x="635" y="336" font-size="24" fill="#59646b">15</text>
+    <text x="581" y="383" font-size="24" fill="#59646b">教学组 4</text>
+    <text x="350" y="417" font-size="26" fill="#2f6e9e" font-weight="600">所需位置分布在 1 个教学组</text>
+    <rect x="24" y="451" width="652" height="316" rx="10" fill="#fff" stroke="#a7afad" stroke-width="2"/>
+    <text x="44" y="489" font-size="28" font-weight="600" text-anchor="start">分散位置</text>
+    <rect x="49" y="509" width="140" height="77" rx="8" fill="#eaf2f8" stroke="#8fb4cf" stroke-width="2"/>
+    <text x="119" y="539" font-size="24">lane 0</text>
+    <text x="119" y="571" font-size="26" fill="#2f6e9e" font-weight="600">读取 0</text>
+    <rect x="203" y="509" width="140" height="77" rx="8" fill="#eaf2f8" stroke="#8fb4cf" stroke-width="2"/>
+    <text x="273" y="539" font-size="24">lane 1</text>
+    <text x="273" y="571" font-size="26" fill="#2f6e9e" font-weight="600">读取 5</text>
+    <rect x="357" y="509" width="140" height="77" rx="8" fill="#eaf2f8" stroke="#8fb4cf" stroke-width="2"/>
+    <text x="427" y="539" font-size="24">lane 2</text>
+    <text x="427" y="571" font-size="26" fill="#2f6e9e" font-weight="600">读取 10</text>
+    <rect x="511" y="509" width="140" height="77" rx="8" fill="#eaf2f8" stroke="#8fb4cf" stroke-width="2"/>
+    <text x="581" y="539" font-size="24">lane 3</text>
+    <text x="581" y="571" font-size="26" fill="#2f6e9e" font-weight="600">读取 15</text>
+    <text x="44" y="625" font-size="24" fill="#59646b" text-anchor="start">数组下标</text>
+    <rect x="47" y="641" width="36" height="50" rx="0" fill="#2f6e9e" stroke="#2f6e9e" stroke-width="3"/>
+    <text x="65" y="675" font-size="24" fill="#fff" font-weight="600">0</text>
+    <rect x="83" y="641" width="36" height="50" rx="0" fill="#eaf2f8" stroke="#a7afad" stroke-width="1"/>
+    <text x="101" y="675" font-size="24" fill="#59646b">1</text>
+    <rect x="119" y="641" width="36" height="50" rx="0" fill="#eaf2f8" stroke="#a7afad" stroke-width="1"/>
+    <text x="137" y="675" font-size="24" fill="#59646b">2</text>
+    <rect x="155" y="641" width="36" height="50" rx="0" fill="#eaf2f8" stroke="#a7afad" stroke-width="1"/>
+    <text x="173" y="675" font-size="24" fill="#59646b">3</text>
+    <text x="119" y="722" font-size="24" fill="#59646b">教学组 1</text>
+    <rect x="201" y="641" width="36" height="50" rx="0" fill="#eaf2f8" stroke="#a7afad" stroke-width="1"/>
+    <text x="219" y="675" font-size="24" fill="#59646b">4</text>
+    <rect x="237" y="641" width="36" height="50" rx="0" fill="#2f6e9e" stroke="#2f6e9e" stroke-width="3"/>
+    <text x="255" y="675" font-size="24" fill="#fff" font-weight="600">5</text>
+    <rect x="273" y="641" width="36" height="50" rx="0" fill="#eaf2f8" stroke="#a7afad" stroke-width="1"/>
+    <text x="291" y="675" font-size="24" fill="#59646b">6</text>
+    <rect x="309" y="641" width="36" height="50" rx="0" fill="#eaf2f8" stroke="#a7afad" stroke-width="1"/>
+    <text x="327" y="675" font-size="24" fill="#59646b">7</text>
+    <text x="273" y="722" font-size="24" fill="#59646b">教学组 2</text>
+    <rect x="355" y="641" width="36" height="50" rx="0" fill="#eaf2f8" stroke="#a7afad" stroke-width="1"/>
+    <text x="373" y="675" font-size="24" fill="#59646b">8</text>
+    <rect x="391" y="641" width="36" height="50" rx="0" fill="#eaf2f8" stroke="#a7afad" stroke-width="1"/>
+    <text x="409" y="675" font-size="24" fill="#59646b">9</text>
+    <rect x="427" y="641" width="36" height="50" rx="0" fill="#2f6e9e" stroke="#2f6e9e" stroke-width="3"/>
+    <text x="445" y="675" font-size="24" fill="#fff" font-weight="600">10</text>
+    <rect x="463" y="641" width="36" height="50" rx="0" fill="#eaf2f8" stroke="#a7afad" stroke-width="1"/>
+    <text x="481" y="675" font-size="24" fill="#59646b">11</text>
+    <text x="427" y="722" font-size="24" fill="#59646b">教学组 3</text>
+    <rect x="509" y="641" width="36" height="50" rx="0" fill="#eaf2f8" stroke="#a7afad" stroke-width="1"/>
+    <text x="527" y="675" font-size="24" fill="#59646b">12</text>
+    <rect x="545" y="641" width="36" height="50" rx="0" fill="#eaf2f8" stroke="#a7afad" stroke-width="1"/>
+    <text x="563" y="675" font-size="24" fill="#59646b">13</text>
+    <rect x="581" y="641" width="36" height="50" rx="0" fill="#eaf2f8" stroke="#a7afad" stroke-width="1"/>
+    <text x="599" y="675" font-size="24" fill="#59646b">14</text>
+    <rect x="617" y="641" width="36" height="50" rx="0" fill="#2f6e9e" stroke="#2f6e9e" stroke-width="3"/>
+    <text x="635" y="675" font-size="24" fill="#fff" font-weight="600">15</text>
+    <text x="581" y="722" font-size="24" fill="#59646b">教学组 4</text>
+    <text x="350" y="756" font-size="26" fill="#2f6e9e" font-weight="600">所需位置分布在 4 个教学组</text>
+    <rect x="46" y="797" width="24" height="24" rx="2" fill="#2f6e9e" stroke="#2f6e9e" stroke-width="2"/>
+    <text x="82" y="818" font-size="24" text-anchor="start">本次所需</text>
+    <rect x="319" y="797" width="24" height="24" rx="2" fill="#eaf2f8" stroke="#a7afad" stroke-width="2"/>
+    <text x="356" y="818" font-size="24" text-anchor="start">同组其他元素</text>
+    <text x="350" y="873" font-size="24" fill="#59646b">每 4 个元素划为一个教学组。</text>
+    <text x="350" y="912" font-size="24" fill="#59646b">仅用于比较地址分布，</text>
+    <text x="350" y="951" font-size="24" fill="#59646b">不代表硬件事务或缓存行大小。</text>
+  </g>
+</svg>

@@ -1,0 +1,18 @@
+W0920 08:17:20.065342 1401902 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.001347 sec
+W0920 08:17:20.065629 1401902 tool.cpp:3348] HIP (compiler) version 7.15.0 initialized (instance=0)
+W0920 08:17:20.065672 1401902 simple_timer.cpp:55] [rocprofv3] 'chapter8/results/walkthrough-20260920/build/vector_add_hip --version v2 --size 16777216 --block 256 --warmup 5 --repeat 10 --seed 20260920 --config-id hip-v2-g256 --process 1 --grid 256' ::     0.000000 sec
+W0920 08:17:20.065813 1401902 tool.cpp:3348] HIP (runtime) version 7.15.0 initialized (instance=0)
+W0920 08:17:20.070621 1401902 tool.cpp:3348] HSA version 1.21.0 initialized (instance=0)
+W0920 08:17:20.164172 1401902 queue_controller.cpp:170] [queue-intercept] device-memory ring-buffer requested but profiling requires system-memory InterceptQueue; falling back to system-memory ring for agent 103419623385472 (priority and CU-mask from the descriptor are not preserved)
+W0920 08:17:20.279297 1401902 simple_timer.cpp:55] [rocprofv3] 'chapter8/results/walkthrough-20260920/build/vector_add_hip --version v2 --size 16777216 --block 256 --warmup 5 --repeat 10 --seed 20260920 --config-id hip-v2-g256 --process 1 --grid 256' ::     0.213624 sec
+E0920 08:17:20.307830 1401902 output_stream.cpp:110] Opened result file: chapter8/results/walkthrough-20260920/configs/hip-v2-g256/profile/hip-v2-g256_kernel_stats.csv
+E0920 08:17:20.307967 1401902 output_stream.cpp:110] Opened result file: chapter8/results/walkthrough-20260920/configs/hip-v2-g256/profile/hip-v2-g256_kernel_trace.csv
+E0920 08:17:20.324443 1401902 output_stream.cpp:110] Opened result file: chapter8/results/walkthrough-20260920/configs/hip-v2-g256/profile/hip-v2-g256_hip_api_stats.csv
+E0920 08:17:20.324590 1401902 output_stream.cpp:110] Opened result file: chapter8/results/walkthrough-20260920/configs/hip-v2-g256/profile/hip-v2-g256_hip_api_trace.csv
+E0920 08:17:20.329538 1401902 output_stream.cpp:110] Opened result file: chapter8/results/walkthrough-20260920/configs/hip-v2-g256/profile/hip-v2-g256_agent_info.csv
+E0920 08:17:20.329654 1401902 output_stream.cpp:110] Opened result file: chapter8/results/walkthrough-20260920/configs/hip-v2-g256/profile/hip-v2-g256_domain_stats.csv
+[156.379]       perfetto.cc:47314 Configured tracing session 1, #sources:1, duration:0 ms, #buffers:1, total buffer size:1048576 KB, total sessions:1, uid:0 session name: ""
+E0920 08:17:20.356423 1401902 output_stream.cpp:110] Opened result file: chapter8/results/walkthrough-20260920/configs/hip-v2-g256/profile/hip-v2-g256_results.pftrace
+[156.398]       perfetto.cc:48889 Tracing session 1 ended, total sessions:0
+W0920 08:17:20.358760 1401902 simple_timer.cpp:55] [rocprofv3] output generation ::     0.065059 sec
+W0920 08:17:20.358793 1401902 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.065148 sec

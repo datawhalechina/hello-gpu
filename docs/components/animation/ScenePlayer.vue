@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useSceneClock } from './useSceneClock'
 import type { SceneMeta } from './sceneTypes'
 
@@ -11,6 +11,14 @@ const clock = useSceneClock(durations)
 const rootEl = ref<HTMLElement | null>(null)
 
 const currentStep = computed(() => props.meta.steps[clock.stepIndex.value])
+const visibleLocal = computed(() => clock.reducedMotion.value
+  ? durations.value[clock.stepIndex.value] - 1 : clock.stepLocal.value)
+
+// Scene wrappers key their identity; a dynamic title may describe a selected thread.
+watch(() => durations.value.join('|'), () => {
+  clock.pause()
+  clock.seek(clock.stepTargets.value[0] ?? 0)
+})
 const progress = computed(() =>
   clock.total.value > 0 ? clock.time.value / clock.total.value : 0
 )
@@ -53,7 +61,8 @@ function onScrub(event: Event) {
 
 function onKeydown(event: KeyboardEvent) {
   const target = event.target as HTMLElement
-  if (target instanceof HTMLInputElement) return
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
+  if (target.closest('input, select, textarea, [contenteditable="true"]')) return
   const onButton = target instanceof HTMLButtonElement
   if (event.key === 'ArrowLeft') {
     event.preventDefault()
@@ -68,9 +77,29 @@ function onKeydown(event: KeyboardEvent) {
 }
 
 let observer: IntersectionObserver | undefined
+let motionQuery: MediaQueryList | undefined
+
+function onMotionChange() {
+  clock.reducedMotion.value = motionQuery?.matches ?? false
+  if (clock.reducedMotion.value) {
+    clock.pause()
+    clock.seek(clock.stepTargets.value[clock.stepIndex.value] ?? 0)
+  }
+}
+
+function onRangeKey(event: KeyboardEvent) {
+  const index = clock.stepIndex.value
+  const target = event.key === 'Home' ? 0 : event.key === 'End' ? clock.stepCount.value - 1
+    : event.key === 'ArrowLeft' ? index - 1 : event.key === 'ArrowRight' ? index + 1 : null
+  if (target === null || event.altKey || event.ctrlKey || event.metaKey) return
+  event.preventDefault()
+  manualGo(target)
+}
 
 onMounted(() => {
-  clock.reducedMotion.value = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+  onMotionChange()
+  motionQuery.addEventListener('change', onMotionChange)
   clock.seek(clock.stepTargets.value[0] ?? 0)
 
   document.addEventListener('visibilitychange', onVisibility)
@@ -95,6 +124,7 @@ function onVisibility() {
 
 onUnmounted(() => {
   observer?.disconnect()
+  motionQuery?.removeEventListener('change', onMotionChange)
   document.removeEventListener('visibilitychange', onVisibility)
 })
 </script>
@@ -120,10 +150,10 @@ onUnmounted(() => {
 
     <div class="ej-stage" :class="{ 'has-mobile-scene': meta.mobileViewBox }">
       <svg class="ej-desktop-scene" :viewBox="meta.viewBox" role="img" :aria-label="stageLabel">
-        <slot name="stage" :step="clock.stepIndex.value" :local="clock.stepLocal.value" />
+        <slot name="stage" :step="clock.stepIndex.value" :local="visibleLocal" :compact="false" :reduced-motion="clock.reducedMotion.value" />
       </svg>
       <svg v-if="meta.mobileViewBox" class="ej-mobile-scene" :viewBox="meta.mobileViewBox" role="img" :aria-label="stageLabel">
-        <slot name="stage" :step="clock.stepIndex.value" :local="clock.stepLocal.value" />
+        <slot name="stage" :step="clock.stepIndex.value" :local="visibleLocal" :compact="true" :reduced-motion="clock.reducedMotion.value" />
       </svg>
     </div>
 
@@ -189,6 +219,7 @@ onUnmounted(() => {
         :aria-valuetext="`第 ${clock.stepIndex.value + 1} 步：${currentStep.label}`"
         @pointerdown="onScrubStart"
         @input="onScrub"
+        @keydown="onRangeKey"
       />
         <div class="ej-chips" aria-label="查看指定步骤的完成状态">
           <button
@@ -212,7 +243,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <p class="ej-note">算法过程示意 · 数字定位到该步完成状态，可拖动进度或播放；动画速度不代表 GPU 耗时。</p>
+    <p class="ej-note">{{ meta.note ?? '算法过程示意 · 数字定位到该步完成状态，可拖动进度或播放；动画速度不代表 GPU 耗时。' }}</p>
   </section>
 </template>
 

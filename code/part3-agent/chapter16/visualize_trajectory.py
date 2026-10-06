@@ -147,6 +147,8 @@ def render_visualizations(
     out_dir: Path | None = None,
     threshold: float = 0.01,
     title: str = "Kernel Optimize Agent · vector_add",
+    *,
+    show_software_version: bool = True,
 ) -> list[Path]:
     import matplotlib
 
@@ -155,7 +157,8 @@ def render_visualizations(
         environment = json.loads(environment_path.read_text(encoding="utf-8"))
         gpu = str(environment.get("gpu", "GPU 未记录")).removeprefix("AMD ")
         rocm = environment.get("packages", {}).get("rocm", environment.get("hipRuntime", "未记录"))
-        title += f"\n{gpu} · ROCm {rocm} · GPU event"
+        software = f" · ROCm {rocm}" if show_software_version else ""
+        title += f"\n{gpu}{software} · GPU event"
     matplotlib.use("Agg")
     # 独立于调用方的深色主题；退出后恢复调用方的绘图配置。
     with matplotlib.rc_context({

@@ -33,7 +33,7 @@ cd chapter4
 
 后续命令都在 `code/part0-intro/chapter4/` 中运行。`uv sync` 安装本篇锁定的依赖；激活脚本选择对应的 Python，并设置 HIP 编译器需要的路径。
 
-本章输出于 **2026-09-11** 复跑，环境为 Radeon RX 9070 XT（gfx1201）、ROCm 7.13、原生 Ubuntu 24.04.4、PyTorch 2.11.0+rocm7.13.0；CPU 是 Intel Core i5-12600K。实验机有其他进程，因此下面的时间是一组带环境记录的观测值，复跑时不必与它逐位相同。
+本章运行环境统一为 **Radeon RX 9070 XT（gfx1201）+ ROCm 10.0 + 原生 Ubuntu 24.04**，与第 1 章一致。下面用已有实验记录学习怎样读输出；每组记录的采集环境会在对应结果旁说明，复跑时不必与它逐位相同。
 
 ## 4.2 从向量加法到 HIP 程序
 
@@ -147,7 +147,7 @@ hipcc vector_add.hip -O2 -o vector_add
 
 `hipcc` 把源码编译为可执行程序，`-O2` 开启编译优化，`-o vector_add` 指定输出文件名。`./vector_add` 运行当前目录里的这个文件。
 
-本次 RX 9070 XT + ROCm 7.13 / 原生 Ubuntu 24.04.4 的输出为：
+下面保留 **2026-09-11** 的历史输出，采集环境为 **RX 9070 XT / 原生 Ubuntu 24.04.4**：
 
 ```text
 device_name: AMD Radeon RX 9070 XT
@@ -366,7 +366,7 @@ if __name__ == "__main__":
 
 ## 4.4 解释测量结果
 
-本节先读清输出字段，再将时间转换成有效带宽。以下结果来自 2026-09-11 的同一轮测试：RX 9070 XT、ROCm 7.13、原生 Ubuntu 24.04.4；输入是 16,777,216 个 `float32`，预热 5 次、测量 30 次。
+本节先读清输出字段，再将时间转换成有效带宽。以下历史结果来自 2026-09-11 的同一轮测试：RX 9070 XT、原生 Ubuntu 24.04.4；CPU 为 Intel Core i5-12600K，采集时有其他进程运行。输入是 16,777,216 个 `float32`，预热 5 次、测量 30 次。
 
 ### 4.4.1 先读时间和计时范围
 
@@ -380,11 +380,9 @@ if __name__ == "__main__":
 两边都执行预分配输出的加法，但使用不同位置的时钟。CPU 时间包括 Python 到算子实现的调用开销；GPU 时间是设备侧 event 间隔。它们帮助我们观察当前实现，**不能直接代表把整个应用从 CPU 换到 GPU 后的加速比**。
 
 <details>
-<summary>原始输出：PyTorch 向量加法 @ RX 9070 XT + ROCm 7.13 / 原生 Ubuntu 24.04.4</summary>
+<summary>历史输出节选：PyTorch 向量加法 @ RX 9070 XT / 原生 Ubuntu 24.04.4</summary>
 
 ```text
-torch: 2.11.0+rocm7.13.0
-hip: 7.13.99004
 cuda_available: True
 device_name: AMD Radeon RX 9070 XT
 cpu_name: 12th Gen Intel(R) Core(TM) i5-12600K
@@ -475,7 +473,7 @@ python benchmark_vector_add.py --size 1048576 --warmup 5 --repeat 30 --cpu-threa
 python benchmark_vector_add.py --size 67108864 --warmup 5 --repeat 30 --cpu-threads 1
 ```
 
-三组均于 2026-09-11 在上述 RX 9070 XT + ROCm 7.13 / 原生 Ubuntu 24.04.4 环境实测，以下只比较 PyTorch GPU 路径，均为 `float32`、warmup 5、repeat 30：
+三组均于 2026-09-11 在上述 RX 9070 XT / 原生 Ubuntu 24.04.4 环境实测，以下只比较 PyTorch GPU 路径，均为 `float32`、warmup 5、repeat 30：
 
 | 元素数 $N$ | 每个数组的大小 | GPU 中位数 | 按中位数计算的有效带宽 |
 | ---: | ---: | ---: | ---: |

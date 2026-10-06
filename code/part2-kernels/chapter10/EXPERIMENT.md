@@ -1,3 +1,15 @@
+## 2026-09-20：问题驱动的操作流程复核
+
+本轮未改动本章 kernel、输入、正确性标准或原性能矩阵。复用 `results/rocm10-20260920/`，将正文直接引用的原始 p1 日志、代表边界检查与按需 trace 导出至 `evidence/walkthrough/`；原始字节、实际参数及来源哈希由 manifest 核对。`reports/` 是在原生 Ubuntu 篇环境中对旧 CSV 的新 CPU 分析，不是新的 GPU 性能测量。
+
+读者命令的操作验证见 `evidence/operation-check/manifest.json`：本章 HIP/Triton 各一条完整 benchmark、正文代表边界、首次编译与复用、换终端恢复及重复输出保护均实际执行；新增计时只作操作检查，不进入原图。第 9 章另验证 mapping 编译与 ISA；第 12 章另验证一次 kernel trace 完整链路。所有实验机操作无 Git，源文件与锁文件身份在运行后再次核对。
+
+另在同一实验机环境中，以旧实测主阶段数据的 CPU 子集验证正文绘图参数，五章共输出 18 张图的 SVG/PNG（36 个文件）。这是绘图兼容性验证，没有新的 GPU 测量，结果未覆盖发布图；记录见 `evidence/operation-check/reader-plot.log`。
+
+入口默认阶段由 all 调整为 main，profiling 与附形状 validation 显式选择。文档绘图入口使用本轮 summary，确认组仍保存在独立目录，不用旧证据补值。原实验记录继续保留如下。
+
+---
+
 # Chapter 10 Row Softmax — RX 9070 XT 实验记录
 
 ## 环境与口径
@@ -57,3 +69,13 @@ hipcc --offload-arch=gfx1201 -O3 -std=c++17 softmax_hip.hip -o softmax_hip
 这组结果用于确认同步修正后的正确性回归和记录运行状态，未重新采集 Triton 或 profile。参数与系统状态也不完全等同于 2026-07-19 历史组，因此不与旧图拼接，不据此计算“修复带来的提速/减速”。修正前的历史图表继续保留源码身份，不能当成修正版的当前性能排名。
 
 可追溯汇总与每条 RESULT 字段保存在 [`sync-fix-2026-09-11.json`](evidence/sync-fix-2026-09-11.json)，原始日志保留于本地 `logs/sync-fix-2026-09-11/`（按仓库规则忽略）。
+
+## 2026-09-20：ROCm 10.0 受控 Softmax 主路线
+
+硬件 Radeon RX 9070 XT / gfx1201；原生 Ubuntu 24.04.5，kernel 7.0.0-31-generic；ROCm SDK 10.0.0，HIP 7.15.26333，PyTorch 2.13.0+rocm10.0.0，Triton 3.8.0。冻结实际文件与编译产物，不读取远端 Git。完整参数、命令、输入和证据范围见 [`rounds/README.md`](evidence/rounds/README.md)。本地原始目录 `results/rocm10-20260920/`，独立确认另在带 `-confirmation` / `-shape-confirmation` 后缀目录。
+
+新增 cooperative 三阶段保持与 fused 相同的行内线程分工，主 HIP 对照从 cooperative 出发。CPU 参考统一为 FP64 stable Softmax 后转 FP32，绝对误差和 FP64 行和误差阈值均 2e−5，输出 NaN prefill 并检查有限值。28 小边界、主+三附形状 75 进程 / 3750 样本以及全部目标 trace 均通过验证。
+
+主 4096×1024 的 serial/cooperative/fused 三进程中位数为 773.261 / 149.296 / 119.717 μs；四个 Triton B4/B8/2B4/2B8 为 37.599 / 41.439 / 51.879 / 56.279 μs。主 shape 的独立确认复现 cooperative→fused 改进；1025 列时 B=2048，独立确认 B4=72.959 μs、B8=62.799 μs，体现执行配置依赖形状。128 行 B8 的宽范围完整保留，不据此给确定选择。两次独立确认共 15 进程、750 样本，不并入主矩阵。
+
+旧根 evidence 与同步修正记录保持采集时 ROCm 7.13 身份；新结论只引用 `evidence/rounds/`。fused 源码重读输入并重算 exp，不能把时间差全部解释成消除显存流量或 kernel 启动；未采可用于这些因果拆分的硬件 counter。

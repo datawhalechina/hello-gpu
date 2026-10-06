@@ -1,0 +1,18 @@
+ENV runtime=hip gpu="AMD Radeon RX 9070 XT" arch=gfx1201 wave_size=32
+RESULT operator=attention implementation=hip-online runtime=hip config_id=hip-online-b256 shape=128x64 seq=128 dim=64 dtype=float32 input_precision=fp32 block=256 block_k=1 block_d=0 num_warps=0 launches=1 warmup=5 repeat=10 seed=20260920 process=1 timing=gpu-event scope=gpu-event-full-operator input=dyadic reference=fp64-attention-to-fp32 atol=2.0000000000000002e-05 rtol=0.00020000000000000001 intermediate_allocated_bytes=131072 intermediate_used_bytes=0 output_finite=OK timed=1 correct=OK precheck=OK postcheck=OK min_ms=0.14911900460720062 median_ms=0.14929899573326111 mean_ms=0.14929930120706558 max_abs_error=2.1653249859809875e-08 max_tolerance_ratio=0.0010513768060094045
+kernel_name="online_attention_kernel(float const*, float const*, float const*, float*, int, int, float)"
+csv_rows=19 target_rows=16 skipped_rows=6 kept_rows=10
+sort=Start_Timestamp_ascending
+first_start_ns=929456750333427 first_end_ns=929456750474626 first_duration_ns=141199
+kernel_min_us=141.039000 kernel_median_us=141.120000 kernel_max_us=141.320000
+grid_work_items_xyz=32768x1x1 workgroup_size_xyz=256x1x1 workgroups_xyz=128x1x1
+workgroups_total=128
+vgpr_count=16 sgpr_count=128 lds_bytes=0 scratch_bytes=0
+W0920 14:12:20.665180 1575483 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.000317 sec
+W0920 14:12:20.665461 1575483 simple_timer.cpp:55] [rocprofv3] 'chapter12/results/walkthrough-9i7ssK/build/attention_hip --block 256 --version online --seq 128 --dim 64 --warmup 5 --repeat 10 --seed 20260920 --input dyadic --config-id hip-online-b256' ::     0.000000 sec
+W0920 14:12:20.670434 1575483 tool.cpp:3348] HSA version 1.21.0 initialized (instance=0)
+W0920 14:12:20.710574 1575483 simple_timer.cpp:55] [rocprofv3] 'chapter12/results/walkthrough-9i7ssK/build/attention_hip --block 256 --version online --seq 128 --dim 64 --warmup 5 --repeat 10 --seed 20260920 --input dyadic --config-id hip-online-b256' ::     0.045113 sec
+E0920 14:12:20.733140 1575483 output_stream.cpp:110] Opened result file: chapter12/results/walkthrough-9i7ssK/profile-hip-online-b256/hip-online-b256_kernel_trace.csv
+E0920 14:12:20.737814 1575483 output_stream.cpp:110] Opened result file: chapter12/results/walkthrough-9i7ssK/profile-hip-online-b256/hip-online-b256_agent_info.csv
+W0920 14:12:20.738880 1575483 simple_timer.cpp:55] [rocprofv3] output generation ::     0.016155 sec
+W0920 14:12:20.738908 1575483 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.016267 sec

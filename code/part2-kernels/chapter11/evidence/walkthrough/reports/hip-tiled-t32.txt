@@ -1,0 +1,8 @@
+kernel_name="void (anonymous namespace)::matmul_tiled<32u>(float const*, float const*, float*, unsigned long, unsigned long, unsigned long)"
+csv_rows=17 target_rows=16 skipped_rows=6 kept_rows=10
+sort=Start_Timestamp_ascending
+first_start_ns=886504583339964 first_end_ns=886504584853541 first_duration_ns=1513577
+kernel_min_us=1435.812000 kernel_median_us=1503.956500 kernel_max_us=1526.898000
+grid_work_items_xyz=1024x1024x1 workgroup_size_xyz=32x32x1 workgroups_xyz=32x32x1
+workgroups_total=1024
+vgpr_count=88 sgpr_count=128 lds_bytes=8192 scratch_bytes=0

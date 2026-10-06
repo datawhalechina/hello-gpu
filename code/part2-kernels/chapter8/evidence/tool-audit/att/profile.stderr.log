@@ -1,0 +1,11 @@
+W0920 08:41:31.355825 1414466 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.065424 sec
+W0920 08:41:31.356418 1414466 simple_timer.cpp:55] [rocprofv3] 'chapter8/results/walkthrough-20260920/att-verified/build/vector_add_hip_debug --version v0 --size 16777216 --block 256 --warmup 5 --repeat 1 --seed 20260920' ::     0.000000 sec
+W0920 08:41:31.365662 1414466 tool.cpp:3348] HSA version 1.21.0 initialized (instance=0)
+W0920 08:41:31.460928 1414466 queue_controller.cpp:170] [queue-intercept] device-memory ring-buffer requested but profiling requires system-memory InterceptQueue; falling back to system-memory ring for agent 107007324322592 (priority and CU-mask from the descriptor are not preserved)
+E0920 08:41:31.478486 1414466 output_stream.cpp:110] Opened result file: chapter8/results/walkthrough-20260920/att-verified/trace/baseline_gfx1201_code_object_id_1.out
+E0920 08:41:31.491417 1414466 output_stream.cpp:110] Opened result file: chapter8/results/walkthrough-20260920/att-verified/trace/baseline_gfx1201_code_object_id_2.out
+E0920 08:41:31.537903 1414468 output_stream.cpp:110] Opened result file: chapter8/results/walkthrough-20260920/att-verified/trace/baseline_3208_shader_engine_0_8.att
+W0920 08:41:31.566081 1414466 simple_timer.cpp:55] [rocprofv3] 'chapter8/results/walkthrough-20260920/att-verified/build/vector_add_hip_debug --version v0 --size 16777216 --block 256 --warmup 5 --repeat 1 --seed 20260920' ::     0.209663 sec
+E0920 08:41:31.579793 1414466 output_stream.cpp:110] Opened result file: chapter8/results/walkthrough-20260920/att-verified/trace/baseline_agent_info.csv
+W0920 08:41:32.202873 1414466 simple_timer.cpp:55] [rocprofv3] output generation ::     0.623269 sec
+W0920 08:41:32.202914 1414466 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.623313 sec

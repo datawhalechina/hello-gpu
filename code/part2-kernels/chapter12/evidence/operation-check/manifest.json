@@ -1,0 +1,237 @@
+{
+  "schema_version": 1,
+  "purpose": "Verify the chapter reader commands and correctness in the measured environment; do not use these operation-check timings as published benchmark results.",
+  "started_at": "2026-09-20T06:11:37.456402+00:00",
+  "finished_at": "2026-09-20T06:12:29.567114+00:00",
+  "hardware": "Radeon RX 9070 XT / gfx1201",
+  "platform": "native Ubuntu 24.04.5",
+  "rocm_sdk": "10.0.0",
+  "chapter": 12,
+  "all_passed": true,
+  "records": [
+    {
+      "label": "environment",
+      "started_at": "2026-09-20T06:11:37.459106+00:00",
+      "command": "python - <<'END'\nimport platform,torch,triton\nfrom importlib.metadata import version\nprint(platform.freedesktop_os_release()['PRETTY_NAME'])\nprint('torch',torch.__version__,'triton',triton.__version__,'rocm',version('rocm'),'HIP',torch.version.hip)\nprint(torch.cuda.get_device_name(),torch.cuda.get_device_properties(0).gcnArchName)\nassert '9070 XT' in torch.cuda.get_device_name()\nassert torch.cuda.get_device_properties(0).gcnArchName=='gfx1201'\nassert version('rocm')=='10.0.0'\nEND",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "environment.log",
+      "log_sha256": "7e853d7d9f5efa4216bf9e68678ae41064c6b666751b9d64ca801c546a748d4e"
+    },
+    {
+      "label": "ch12-new-run",
+      "started_at": "2026-09-20T06:12:07.476337+00:00",
+      "command": "RUN=$(mktemp -d chapter12/results/walkthrough-XXXXXX) && mkdir \"$RUN/build\" && printf \"%s\\n\" \"$RUN\"",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch12-new-run.log",
+      "log_sha256": "5b0247298bf67710155ec640261c541ef8b23ac8c83ebc584a6c0c15fddd261a"
+    },
+    {
+      "label": "ch12-compile",
+      "started_at": "2026-09-20T06:12:07.480430+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\nif [[ ! -x \"$RUN/build/attention_hip\" ]]; then\n  hipcc --offload-arch=gfx1201 -O3 -std=c++17 \\\n    chapter12/attention_hip.hip -o \"$RUN/build/attention_hip\"\nfi",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch12-compile.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "ch12-compile-reuse",
+      "started_at": "2026-09-20T06:12:08.846157+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\nif [[ ! -x \"$RUN/build/attention_hip\" ]]; then\n  hipcc --offload-arch=gfx1201 -O3 -std=c++17 \\\n    chapter12/attention_hip.hip -o \"$RUN/build/attention_hip\"\nfi",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch12-compile-reuse.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "ch12-restore-terminal",
+      "started_at": "2026-09-20T06:12:08.848227+00:00",
+      "command": "source ./activate-rocm.sh >/dev/null && read -r -p \"粘贴上次输出的结果目录：\" RUN && test -n \"$RUN\" && test -d \"$RUN/build\" && printf \"继续使用结果目录：%s\\n\" \"$RUN\"",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch12-restore-terminal.log",
+      "log_sha256": "fec4c2616b3aaac4e8cbcee033a897a4451db974f50e4b963aba3e498e629ce7"
+    },
+    {
+      "label": "ch12-00-benchmark-command-operation",
+      "started_at": "2026-09-20T06:12:09.093578+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\ntest ! -e \"$RUN/n128x64-hip-online-b256-p1.csv\" && \\\n\"$RUN/build/attention_hip\" \\\n  --block 256 --version online --seq 128 \\\n  --dim 64 --warmup 10 --repeat 50 \\\n  --seed 20260920 --input dyadic --config-id hip-online-b256 \\\n  --samples \"$RUN/n128x64-hip-online-b256-p1.csv\" --process 1",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch12-00-benchmark-command-operation.log",
+      "log_sha256": "ae1304146d8ddcf3a8defa7b6d76044a25bcb9c36f04639599d06aaf8e326ead"
+    },
+    {
+      "label": "ch12-00-repeat-protected",
+      "started_at": "2026-09-20T06:12:09.173581+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\ntest ! -e \"$RUN/n128x64-hip-online-b256-p1.csv\" && \\\n\"$RUN/build/attention_hip\" \\\n  --block 256 --version online --seq 128 \\\n  --dim 64 --warmup 10 --repeat 50 \\\n  --seed 20260920 --input dyadic --config-id hip-online-b256 \\\n  --samples \"$RUN/n128x64-hip-online-b256-p1.csv\" --process 1",
+      "cwd": "code/part2-kernels",
+      "returncode": 1,
+      "expected_returncode": 1,
+      "log": "ch12-00-repeat-protected.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "ch12-01-benchmark-command-operation",
+      "started_at": "2026-09-20T06:12:09.175532+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\ntest ! -e \"$RUN/n128x64-triton-online-k32-p1.csv\" && \\\npython chapter12/attention_triton.py \\\n  --block-k 32 --num-warps 4 --version online \\\n  --seq 128 --dim 64 --warmup 10 \\\n  --repeat 50 --seed 20260920 --input dyadic \\\n  --config-id triton-online-k32 --samples \"$RUN/n128x64-triton-online-k32-p1.csv\" --process 1",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch12-01-benchmark-command-operation.log",
+      "log_sha256": "28e194c9a5fb6d2e2b0ee6cb508e9827fa18cc51119c3fd01ecc067184709158"
+    },
+    {
+      "label": "ch12-01-repeat-protected",
+      "started_at": "2026-09-20T06:12:11.423309+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\ntest ! -e \"$RUN/n128x64-triton-online-k32-p1.csv\" && \\\npython chapter12/attention_triton.py \\\n  --block-k 32 --num-warps 4 --version online \\\n  --seq 128 --dim 64 --warmup 10 \\\n  --repeat 50 --seed 20260920 --input dyadic \\\n  --config-id triton-online-k32 --samples \"$RUN/n128x64-triton-online-k32-p1.csv\" --process 1",
+      "cwd": "code/part2-kernels",
+      "returncode": 1,
+      "expected_returncode": 1,
+      "log": "ch12-01-repeat-protected.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "ch12-02-correctness-command-operation",
+      "started_at": "2026-09-20T06:12:11.425267+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\n\"$RUN/build/attention_hip\" \\\n  --block 256 --version online --seq 65 \\\n  --dim 64 --warmup 0 --repeat 1 \\\n  --seed 20260920 --input rising-max --config-id hip-online-b256",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch12-02-correctness-command-operation.log",
+      "log_sha256": "6dd6442874b99889daaa9607e0733336524226b2567319cf00edb9dddd11a1f8"
+    },
+    {
+      "label": "ch12-03-correctness-command-operation",
+      "started_at": "2026-09-20T06:12:11.490259+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\n\"$RUN/build/attention_hip\" \\\n  --block 256 --version online --seq 1 \\\n  --dim 1 --warmup 0 --repeat 1 \\\n  --seed 20260920 --input dyadic --config-id hip-online-b256",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch12-03-correctness-command-operation.log",
+      "log_sha256": "cb1a1f83fc7c5833ce194cf3ae95117616f4acdf1e4fb60fa15fa3bf65ee810a"
+    },
+    {
+      "label": "ch12-04-correctness-command-operation",
+      "started_at": "2026-09-20T06:12:11.549350+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\npython chapter12/attention_triton.py \\\n  --block-k 32 --num-warps 4 --version online \\\n  --seq 65 --dim 64 --warmup 0 \\\n  --repeat 1 --seed 20260920 --input rising-max \\\n  --config-id triton-online-k32",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch12-04-correctness-command-operation.log",
+      "log_sha256": "c044c2a0045437a84f0a8bb3d7ff674ce2fffb9c31b671d09ead85b130e5cd4a"
+    },
+    {
+      "label": "ch12-05-correctness-command-operation",
+      "started_at": "2026-09-20T06:12:13.800802+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\npython chapter12/attention_triton.py \\\n  --block-k 32 --num-warps 4 --version online \\\n  --seq 1 --dim 1 --warmup 0 \\\n  --repeat 1 --seed 20260920 --input dyadic \\\n  --config-id triton-online-k32",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch12-05-correctness-command-operation.log",
+      "log_sha256": "ddd01ba6837cabc3ef7874e969e4a9dbf7e024970f433eefeda3c52971f991c2"
+    },
+    {
+      "label": "ch12-06-correctness-command-operation",
+      "started_at": "2026-09-20T06:12:16.020458+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\npython chapter12/attention_triton.py \\\n  --block-k 32 --num-warps 4 --version online \\\n  --seq 17 --dim 31 --warmup 0 \\\n  --repeat 1 --seed 20260920 --input dyadic \\\n  --config-id triton-online-k32",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch12-06-correctness-command-operation.log",
+      "log_sha256": "2090c1d6dac71f02e7b53f34de1227b954760bbd8b1ecd53ef0e6b79dfe40851"
+    },
+    {
+      "label": "ch12-07-correctness-command-operation",
+      "started_at": "2026-09-20T06:12:18.244860+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\npython chapter12/attention_triton.py \\\n  --block-k 32 --num-warps 4 --version online \\\n  --seq 33 --dim 65 --warmup 0 \\\n  --repeat 1 --seed 20260920 --input dyadic \\\n  --config-id triton-online-k32",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch12-07-correctness-command-operation.log",
+      "log_sha256": "cb04914f58fcf478aa0530546c666034294371987a5c22e1454479e5b1735127"
+    },
+    {
+      "label": "ch12-08-trace-command-operation",
+      "started_at": "2026-09-20T06:12:20.562372+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\nmkdir \"$RUN/profile-hip-online-b256\" && \\\nrocprofv3 --kernel-trace --output-format csv \\\n  --output-directory \"$RUN/profile-hip-online-b256\" --output-file hip-online-b256 -- \\\n  \"$RUN/build/attention_hip\" \\\n    --block 256 --version online --seq 128 \\\n    --dim 64 --warmup 5 --repeat 10 \\\n    --seed 20260920 --input dyadic --config-id hip-online-b256 && \\\npython chapter8/inspect_trace.py \\\n  \"$RUN/profile-hip-online-b256/hip-online-b256_kernel_trace.csv\" \\\n  --kernel online_attention_kernel --skip 6 --take 10",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch12-08-trace-command-operation.log",
+      "log_sha256": "3d9605eb5eee56186c1d2b93c4dda5c91edac39db2f63acc5e02487abb1621e4"
+    }
+  ],
+  "source_sha256": {
+    "uv.lock": "269fa97856dc59dfdb3c724d9b58eb4d3d4e380f25ecc41fccb8e63daaf79993",
+    "pyproject.toml": "cccd4cadeabd153b617741349385ccac784615409660d4c7814d6c52605cdece",
+    "chapter12/attention_triton.py": "68ce5312f4daacfa72b4f6a37b79c98cd646485f4086418c93230339c33b89f6",
+    "chapter12/plot_rounds.py": "7c02c2a544a38cf7abc98e1fb97a585d23bdd5d6db7e89ce0a4b3b4f461d7395",
+    "chapter12/test_plot_rounds.py": "ac0e595daef900c3cbdb95bf47df40b8beb9b9c4f02330849c0d97b3d21fdb3d",
+    "chapter12/attention_hip.hip": "0e66b4246af72b6bc077f654838f52c914dee12c1c7bc2110ec247979947bf94",
+    "chapter12/verify_rounds.py": "aae59387d7bcc402812acb384d95f20cc0e8c72dd36b98489c0bc376adc6d4c8",
+    "chapter12/rounds_identity.py": "23a80fb7c678212e181efd795aa6ca5806ed42292b8d96c0d52c9c4f65af4af3",
+    "chapter12/run_rounds.py": "b4dad894a684a64940798f776a890e422b30a2a2c9facf623c7473017b7c45f1",
+    "chapter12/summarize_rounds.py": "5252f3312721a4fea14ab6b70a18ecdfee2fbbf795d4d0d10f827c235a205dd6"
+  },
+  "original_operation_manifest_sha256": "9f21c021e9cf0dadacb7f8d23151dd3e8708140cc869009357c339af476d4e8a",
+  "uv_sync_locked": {
+    "exit_code": 0,
+    "raw_log_sha256": "771a4c8559a41d4cf2356200fa9c841d9204764cf5d3bc226edfa1df4552b5c6"
+  },
+  "output_paths": "Chapter-relative RUN directories. The CLI blocks are copied from the chapter; output samples have not replaced the original published experiment.",
+  "gpu_settings_changed": false,
+  "git_on_experiment_host": false,
+  "artifacts_sha256": {
+    "README.md": "3cdd00d4699b5f8efad534393535cc641c7f55dfa9d874e853fdb13a7d79b791",
+    "ch12-00-benchmark-command-operation.log": "ae1304146d8ddcf3a8defa7b6d76044a25bcb9c36f04639599d06aaf8e326ead",
+    "ch12-00-repeat-protected.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ch12-01-benchmark-command-operation.log": "28e194c9a5fb6d2e2b0ee6cb508e9827fa18cc51119c3fd01ecc067184709158",
+    "ch12-01-repeat-protected.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ch12-02-correctness-command-operation.log": "6dd6442874b99889daaa9607e0733336524226b2567319cf00edb9dddd11a1f8",
+    "ch12-03-correctness-command-operation.log": "cb1a1f83fc7c5833ce194cf3ae95117616f4acdf1e4fb60fa15fa3bf65ee810a",
+    "ch12-04-correctness-command-operation.log": "c044c2a0045437a84f0a8bb3d7ff674ce2fffb9c31b671d09ead85b130e5cd4a",
+    "ch12-05-correctness-command-operation.log": "ddd01ba6837cabc3ef7874e969e4a9dbf7e024970f433eefeda3c52971f991c2",
+    "ch12-06-correctness-command-operation.log": "2090c1d6dac71f02e7b53f34de1227b954760bbd8b1ecd53ef0e6b79dfe40851",
+    "ch12-07-correctness-command-operation.log": "cb04914f58fcf478aa0530546c666034294371987a5c22e1454479e5b1735127",
+    "ch12-08-trace-command-operation.log": "3d9605eb5eee56186c1d2b93c4dda5c91edac39db2f63acc5e02487abb1621e4",
+    "ch12-compile-reuse.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ch12-compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ch12-new-run.log": "5b0247298bf67710155ec640261c541ef8b23ac8c83ebc584a6c0c15fddd261a",
+    "ch12-restore-terminal.log": "fec4c2616b3aaac4e8cbcee033a897a4451db974f50e4b963aba3e498e629ce7",
+    "environment.log": "7e853d7d9f5efa4216bf9e68678ae41064c6b666751b9d64ca801c546a748d4e",
+    "reader-plot.log": "4a8adade33c6546cd31b8673b7c7f6e977a549ebd455d43b1725ab95048da231"
+  },
+  "reader_plot_validation": {
+    "chapter": 12,
+    "argv": [
+      "python",
+      "chapter12/plot_rounds.py",
+      "--evidence",
+      "chapter12/results/reader-plot-fixture/rounds/summary",
+      "--out-dir",
+      "chapter12/results/reader-plot-fixture/figures/main",
+      "--round",
+      "hip-fusion",
+      "--round",
+      "triton-fusion",
+      "--round",
+      "triton-tile"
+    ],
+    "returncode": 0,
+    "log": "reader-plot.log",
+    "new_gpu_measurement": false,
+    "source": "CPU-only subset of original measured main records; no new main/profile/validation collection",
+    "figures": 6,
+    "log_sha256": "4a8adade33c6546cd31b8673b7c7f6e977a549ebd455d43b1725ab95048da231",
+    "validation_environment": "same native Ubuntu ROCm10 Part2 Python environment; plotting is CPU-only"
+  }
+}

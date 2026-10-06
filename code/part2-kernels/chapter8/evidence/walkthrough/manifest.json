@@ -1,0 +1,1473 @@
+{
+  "schema_version": 1,
+  "experiment": "chapter8-vector-add-walkthrough",
+  "started_at": "2026-09-20T00:14:09.673705+00:00",
+  "environment": {
+    "gpu": "AMD Radeon RX 9070 XT",
+    "architecture": "gfx1201",
+    "rocm_sdk": "10.0.0",
+    "hip": "7.15.26333",
+    "torch": "2.13.0+rocm10.0.0",
+    "triton": "3.8.0+git4cff872c.rocm10.0.0",
+    "os": "Ubuntu 24.04.5 LTS",
+    "kernel": "7.0.0-31-generic",
+    "python": "3.12.3",
+    "profiler_during_benchmark": false,
+    "gpu_exclusive": false,
+    "background_note": "Existing desktop and unrelated contexts retained; no clock/power changes."
+  },
+  "hardware": "AMD Radeon RX 9070 XT",
+  "software": {
+    "rocm": "10.0.0",
+    "hip": "7.15.26333",
+    "torch": "2.13.0+rocm10.0.0",
+    "triton": "3.8.0+git4cff872c.rocm10.0.0"
+  },
+  "platform": {
+    "os_pretty_name": "Ubuntu 24.04.5 LTS",
+    "execution": "native"
+  },
+  "source_sha256": {
+    "capture_walkthrough.py": "d39f95927be26a1a3917f9932a69dfcb7a516e619fdca69d23c2f6d17eb4a714",
+    "inspect_trace.py": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b",
+    "vector_add_hip.hip": "73e1af89d25a91fb35ee78198ce74c93d617a9ac5a0852ff74d20abd2184aa80",
+    "vector_add_triton.py": "831525557254b8cf17965403972491e6b95cac63dc1c9a343af49366752fa893"
+  },
+  "benchmark": {
+    "shape": 16777216,
+    "size": 16777216,
+    "warmup": 10,
+    "repeat": 50,
+    "processes": 3,
+    "independent_runs": 3,
+    "seed": 20260920,
+    "dtype": "float32",
+    "scope": "gpu-event-single-kernel",
+    "cache": "same arrays reused; no explicit flush",
+    "order": "three sequential passes; rotate configuration order by 3 each pass",
+    "input": "a=((17*i+seed)%2048-1024)/1024; b=((29*i+3*seed)%4096-2048)/2048",
+    "correctness": "NaN-prefilled precheck and postcheck; finite output; abs error <= 1e-6"
+  },
+  "configurations": [
+    {
+      "id": "hip-v0",
+      "runtime": "hip",
+      "version": "v0",
+      "block": 256
+    },
+    {
+      "id": "hip-v1-contiguous",
+      "runtime": "hip",
+      "version": "v1-contiguous",
+      "block": 256
+    },
+    {
+      "id": "hip-v1-strided",
+      "runtime": "hip",
+      "version": "v1-strided",
+      "block": 256
+    },
+    {
+      "id": "hip-v2-g65536",
+      "runtime": "hip",
+      "version": "v2",
+      "block": 256,
+      "grid": 65536
+    },
+    {
+      "id": "hip-v2-g2048",
+      "runtime": "hip",
+      "version": "v2",
+      "block": 256,
+      "grid": 2048
+    },
+    {
+      "id": "hip-v2-g256",
+      "runtime": "hip",
+      "version": "v2",
+      "block": 256,
+      "grid": 256
+    },
+    {
+      "id": "hip-v3-g256",
+      "runtime": "hip",
+      "version": "v3",
+      "block": 256,
+      "grid": 256
+    },
+    {
+      "id": "triton-t0-b256",
+      "runtime": "triton",
+      "version": "t0",
+      "block": 256
+    },
+    {
+      "id": "triton-t1-b512",
+      "runtime": "triton",
+      "version": "t1",
+      "block": 512
+    },
+    {
+      "id": "triton-t1-b1024",
+      "runtime": "triton",
+      "version": "t1",
+      "block": 1024
+    },
+    {
+      "id": "triton-t1-b2048",
+      "runtime": "triton",
+      "version": "t1",
+      "block": 2048
+    }
+  ],
+  "execution_order": [
+    {
+      "shape": 16777216,
+      "process": 1,
+      "configs": [
+        "hip-v0",
+        "hip-v1-contiguous",
+        "hip-v1-strided",
+        "hip-v2-g65536",
+        "hip-v2-g2048",
+        "hip-v2-g256",
+        "hip-v3-g256",
+        "triton-t0-b256",
+        "triton-t1-b512",
+        "triton-t1-b1024",
+        "triton-t1-b2048"
+      ]
+    },
+    {
+      "shape": 16777216,
+      "process": 2,
+      "configs": [
+        "hip-v2-g65536",
+        "hip-v2-g2048",
+        "hip-v2-g256",
+        "hip-v3-g256",
+        "triton-t0-b256",
+        "triton-t1-b512",
+        "triton-t1-b1024",
+        "triton-t1-b2048",
+        "hip-v0",
+        "hip-v1-contiguous",
+        "hip-v1-strided"
+      ]
+    },
+    {
+      "shape": 16777216,
+      "process": 3,
+      "configs": [
+        "hip-v3-g256",
+        "triton-t0-b256",
+        "triton-t1-b512",
+        "triton-t1-b1024",
+        "triton-t1-b2048",
+        "hip-v0",
+        "hip-v1-contiguous",
+        "hip-v1-strided",
+        "hip-v2-g65536",
+        "hip-v2-g2048",
+        "hip-v2-g256"
+      ]
+    }
+  ],
+  "profile": {
+    "warmup": 5,
+    "repeat": 10,
+    "precheck_dispatches": 1,
+    "scope": "separate rocprofv3 kernel and HIP API trace; excluded from benchmark",
+    "tool_kind": "public ROCm wheel wrapper",
+    "sdk": "10.0.0",
+    "formats": [
+      "csv",
+      "pftrace"
+    ],
+    "filtering": "all dispatches retained; inspect_trace selects one kernel name, sorts timestamps, skips 6 and keeps 10"
+  },
+  "updated_at": "2026-09-20T00:17:35.929295+00:00",
+  "build": {
+    "command": [
+      "hipcc",
+      "--offload-arch=gfx1201",
+      "-O3",
+      "-std=c++17",
+      "chapter8/vector_add_hip.hip",
+      "-o",
+      "chapter8/results/walkthrough-20260920/build/vector_add_hip"
+    ],
+    "binary_sha256": "9fc283682aed5da6cdffe2479c70f78399eda3861ae20ccf1796fd8c7c02a71c"
+  },
+  "benchmark_completed_at": "2026-09-20T00:14:49.942435+00:00",
+  "profile_driver": {
+    "source": "source/finish_profiles.py",
+    "sha256": "42b023748ce762d67f37fbbaac78003c55a03ec1b520063f59c982f50f13d055",
+    "reason": "Profile subprocesses run without initializing the GPU in the parent process; initial failed profiler logs retained separately."
+  },
+  "completed_at": "2026-09-20T00:17:35.829247+00:00",
+  "raw_sha256": {
+    "build/vector_add_hip": "9fc283682aed5da6cdffe2479c70f78399eda3861ae20ccf1796fd8c7c02a71c",
+    "commands.jsonl": "700bf7faa9ba6579371aef82ea07fbdafda911e3dbd32c5b9226f660f5be5c76",
+    "configs/hip-v0/benchmark-p1.samples.csv": "e572396c4425d5edd07bc7a9840c64a8d65a72d292cb2f2d3dbefb571325c937",
+    "configs/hip-v0/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v0/benchmark-p1.stdout.log": "8bad5ca5d1d8be486ec33fcaf70a49d8d8a9f99214b38f32fec65a92558b6d78",
+    "configs/hip-v0/benchmark-p2.samples.csv": "6c9c5f33eb1a833bed81f3f5820ca9188ce918fa91aaf509fc7e09b2464aae81",
+    "configs/hip-v0/benchmark-p2.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v0/benchmark-p2.stdout.log": "c0120bbd9345a4a9094208f00ad2a13107182fe2b5159c352d29a63370825968",
+    "configs/hip-v0/benchmark-p3.samples.csv": "a70b68fcdb41409b91da424f936a8d8ce662d61f69f30d8d7fef90df6b6fc524",
+    "configs/hip-v0/benchmark-p3.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v0/benchmark-p3.stdout.log": "9051839aed3e8ee7289dcc7ae1fa113cada3822254a311d9d70e1adee3709fe3",
+    "configs/hip-v0/failed-profile-runtime-registration/profile.stderr.log": "0070606e94373f64e89a5bbd94247dc310f363751e8ba24ffea6c06d9b21ed8e",
+    "configs/hip-v0/failed-profile-runtime-registration/profile.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v0/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v0/inspect.stdout.log": "168f2d67b015e4fa88b70e188cb4c3ed6e47a2c1e33bee2f2ecf1c5a465215b3",
+    "configs/hip-v0/profile/hip-v0_agent_info.csv": "cdab8675e0580be24065daea957ae58f3d5a6f8b8f1052ce023b266fc2e3b358",
+    "configs/hip-v0/profile/hip-v0_domain_stats.csv": "7952777f827700dcc46526a43da6a7d166e5da6df000ea86b4a726348aea2e3a",
+    "configs/hip-v0/profile/hip-v0_hip_api_stats.csv": "5f7e70b20173aa4bd5cd6a82f306678a4b6e71f0975dc87f3d83f2097ca64cb4",
+    "configs/hip-v0/profile/hip-v0_hip_api_trace.csv": "6b16d31e6a009f32184f378c6cde689b520c909e260d25f2fb58fc6ad5d6d3b0",
+    "configs/hip-v0/profile/hip-v0_kernel_stats.csv": "e92e9133e846d1b8e8f2706809eb35bd96f07463b2222d883201bdebd8484fc5",
+    "configs/hip-v0/profile/hip-v0_kernel_trace.csv": "1980a8b351d72ffbe2c11cad94c630f850868dd5c1405b952e899e8e99ae0c28",
+    "configs/hip-v0/profile/hip-v0_results.pftrace": "1fd8aa7ea5dfb48d0b1729dc5aec1c93a016b6d1152ec11c6aca434adea15f5c",
+    "configs/hip-v0/profile.stderr.log": "a8a2cf68e56618b89a7715f0e5ed0721075c92758b5b49ac36da515bf586f698",
+    "configs/hip-v0/profile.stdout.log": "74b21bffb28a127cbe7bfdb8da8719a170b60269c759ccd42614dbd76ee397c3",
+    "configs/hip-v1-contiguous/benchmark-p1.samples.csv": "607a5e5d4ae0d820d7be29a6cb82c3c9e462abc34a0130eaea5624913b53d84f",
+    "configs/hip-v1-contiguous/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v1-contiguous/benchmark-p1.stdout.log": "82e871ee8859523bd0c27781654861d4427723d84f763cd930d42c6a3a1d3fee",
+    "configs/hip-v1-contiguous/benchmark-p2.samples.csv": "a7ec4dc0324ea86d2183b47ee6d61917c80c5ce10783927a63a83c7e0ef8ccaf",
+    "configs/hip-v1-contiguous/benchmark-p2.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v1-contiguous/benchmark-p2.stdout.log": "56372143ca5e0824e0b7c6f6ebe9673e6798d6cf789c8791a09f29aa78636a26",
+    "configs/hip-v1-contiguous/benchmark-p3.samples.csv": "b37bfc07eeed5ea1c78104f18c2c20be1e135b2ba32d1be88ad3642b4d5f08bd",
+    "configs/hip-v1-contiguous/benchmark-p3.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v1-contiguous/benchmark-p3.stdout.log": "c74647c5d378bcbe8b6a62d4c9e0a6fceba36c80f0fd381aba754df4a1b276c3",
+    "configs/hip-v1-contiguous/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v1-contiguous/inspect.stdout.log": "932866c951ce4edb6e09da359d6d0a0f85e293231149d31a1ce450896f533419",
+    "configs/hip-v1-contiguous/profile/hip-v1-contiguous_agent_info.csv": "cdab8675e0580be24065daea957ae58f3d5a6f8b8f1052ce023b266fc2e3b358",
+    "configs/hip-v1-contiguous/profile/hip-v1-contiguous_domain_stats.csv": "cc7552405da6bde4e4638836bf0724f4d7915873a85216696c3aa4235cc07d89",
+    "configs/hip-v1-contiguous/profile/hip-v1-contiguous_hip_api_stats.csv": "e7983a6ed259c380195824634f7fca493d4ba96e47c987b4478475f7808c7f4d",
+    "configs/hip-v1-contiguous/profile/hip-v1-contiguous_hip_api_trace.csv": "9dd6a82051f658daf583786813331e87397f0d229ec625e356f6039a17777092",
+    "configs/hip-v1-contiguous/profile/hip-v1-contiguous_kernel_stats.csv": "82612b7f5b72f3fdb69ba22d7b0977c255f78b456ea28087e8f12f277ebbfc38",
+    "configs/hip-v1-contiguous/profile/hip-v1-contiguous_kernel_trace.csv": "1a2968754db9498964e40c476b85cc2b26f26f32a2d5f653edfed18864bdda4b",
+    "configs/hip-v1-contiguous/profile/hip-v1-contiguous_results.pftrace": "6aa5e5200e90b23e2060253412b7e61624260a957e1aeba1cc7e885ef638e4d0",
+    "configs/hip-v1-contiguous/profile.stderr.log": "8d0e9cbf3f8b7962593a338a902c63036dbc6544fceb89f2c4f3aba7f17b1d72",
+    "configs/hip-v1-contiguous/profile.stdout.log": "8f79977c0e8bf2e053d07955be880c6d519d598e4be98a07c0686b354af7224a",
+    "configs/hip-v1-strided/benchmark-p1.samples.csv": "e05a8d624e98313bc0fc60bbfa3a614e8cea60af73393f64ef15570076d64103",
+    "configs/hip-v1-strided/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v1-strided/benchmark-p1.stdout.log": "b46a2ccd2950e6ced218a2a95e627e25ac2c4e8be6412a64e181b9d00a1035d8",
+    "configs/hip-v1-strided/benchmark-p2.samples.csv": "beba7838af12cb41c19022d419090721e380f3780bc3ac337c91d4773e082bd5",
+    "configs/hip-v1-strided/benchmark-p2.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v1-strided/benchmark-p2.stdout.log": "cde3cf5bd9b0ddbe5a8deb05191de744f238f1dd388a4790bf17512a676b1718",
+    "configs/hip-v1-strided/benchmark-p3.samples.csv": "362ccb7fd3e22f9387fa0a32adde979d4ae42647e20181c4705258d245fc8f20",
+    "configs/hip-v1-strided/benchmark-p3.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v1-strided/benchmark-p3.stdout.log": "d4e63461c768621769251c78b5e86d5e9252751151811a2579a532579627adbe",
+    "configs/hip-v1-strided/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v1-strided/inspect.stdout.log": "5e61ca382fc3552eac0d393b2d5026c59e93f610cef5a2d5f4e98c30157000f6",
+    "configs/hip-v1-strided/profile/hip-v1-strided_agent_info.csv": "cdab8675e0580be24065daea957ae58f3d5a6f8b8f1052ce023b266fc2e3b358",
+    "configs/hip-v1-strided/profile/hip-v1-strided_domain_stats.csv": "701fde5b8553f8db797dad06c3286e27548c9f6b65262b836ed88fef4ccd6457",
+    "configs/hip-v1-strided/profile/hip-v1-strided_hip_api_stats.csv": "61f7f6946ac46d1760bcfe15ca2bb8552119b2264ed36464fbb10f677c7fbe6c",
+    "configs/hip-v1-strided/profile/hip-v1-strided_hip_api_trace.csv": "047aa6cc01d4497a0a7edef9789fa72a0cf23957b776b90b0e5cf260afc50bd4",
+    "configs/hip-v1-strided/profile/hip-v1-strided_kernel_stats.csv": "335379fe859b30d8cd9d8e5fec6742dc58e816144e877c1eb1222270459c47ee",
+    "configs/hip-v1-strided/profile/hip-v1-strided_kernel_trace.csv": "988bead65532ebb5340d05cf5068478fec0d096cb5b791a93f8ca3a948a3de30",
+    "configs/hip-v1-strided/profile/hip-v1-strided_results.pftrace": "60924e76226ca1d6d873e00c116ce0d55826b0574ddf147c3807bc7252d79378",
+    "configs/hip-v1-strided/profile.stderr.log": "850e6a6adec620bc8e910ad1e20f72757f66a8ca98319e46381aa013a2a3b315",
+    "configs/hip-v1-strided/profile.stdout.log": "a504f083036c86e8899a74664fa9e928ecc3fea096de8927b4e6d0585819486c",
+    "configs/hip-v2-g2048/benchmark-p1.samples.csv": "882f58f1faa9d0f8e33ad752e1745556675ef08d0b6d54c90d4ef9be523e4700",
+    "configs/hip-v2-g2048/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v2-g2048/benchmark-p1.stdout.log": "db38dd391629ccfb3efa5061ebdd1c19eff1266aeb2a3a68c8eb077ae4d2c270",
+    "configs/hip-v2-g2048/benchmark-p2.samples.csv": "de2a74a4d8e95210b46fb0d47726708a5b4cffae82d28eba97abc882c20b89c8",
+    "configs/hip-v2-g2048/benchmark-p2.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v2-g2048/benchmark-p2.stdout.log": "5154df4ed03b3c5b935533d755af6df6aac084c0512ef3a4a0cd2cb5d0a833ec",
+    "configs/hip-v2-g2048/benchmark-p3.samples.csv": "0abe733480f2a791ae9b63ca0b8d0ce6bbc0556f8e3f3b32959223e732935d53",
+    "configs/hip-v2-g2048/benchmark-p3.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v2-g2048/benchmark-p3.stdout.log": "78ed906ee39d3f9d5033543757c52c95e96b78a4d78ec4cae6e727dea97c8108",
+    "configs/hip-v2-g2048/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v2-g2048/inspect.stdout.log": "e486ccf469bd33dcb25a6f8bc1423de7960c120b0d424be52e86a77114a33f11",
+    "configs/hip-v2-g2048/profile/hip-v2-g2048_agent_info.csv": "cdab8675e0580be24065daea957ae58f3d5a6f8b8f1052ce023b266fc2e3b358",
+    "configs/hip-v2-g2048/profile/hip-v2-g2048_domain_stats.csv": "fa048cc37d3d3522fc9861c8b13d503028253633b43538f76cba254c3f3457f2",
+    "configs/hip-v2-g2048/profile/hip-v2-g2048_hip_api_stats.csv": "4946e455896f4c3c9fc283228a874ef24634ede853954771e0ee5ed60e158fcc",
+    "configs/hip-v2-g2048/profile/hip-v2-g2048_hip_api_trace.csv": "2d5d4f2c964e765b14322116960ab92a3207342951af04c8776ca66a6e194945",
+    "configs/hip-v2-g2048/profile/hip-v2-g2048_kernel_stats.csv": "d87917da65096173c3a5c4bc4c84686c8624e311286b464db8c7010d4f941a2a",
+    "configs/hip-v2-g2048/profile/hip-v2-g2048_kernel_trace.csv": "01a14cc6aed740cfc5265cd4d537904f3bb04f01dc1590752a0b9249c0711120",
+    "configs/hip-v2-g2048/profile/hip-v2-g2048_results.pftrace": "6b757758712002821aabe58af288bafc61a99f1a927741add3b28ed34f5dfcbe",
+    "configs/hip-v2-g2048/profile.stderr.log": "bd04b67b5def932489de860d4aa31dc21b5802bcbb50287b2b90f105ea6aa7f1",
+    "configs/hip-v2-g2048/profile.stdout.log": "d83ee4eb7bbaa2ee51a0245e1fc0bf4938db414494528802837cb2723c57371d",
+    "configs/hip-v2-g256/benchmark-p1.samples.csv": "87aa49f7983d0c96f96247d189e661467cf283c51a91674c5bb80d6c0d27e1b1",
+    "configs/hip-v2-g256/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v2-g256/benchmark-p1.stdout.log": "34eda7abce80c7307d427e9659ed1a69e729c2e608cd24c3389a6d7604992785",
+    "configs/hip-v2-g256/benchmark-p2.samples.csv": "95006298c709a203b4a4c484d01d137795f5f0c97c023800620a108ae29d25f1",
+    "configs/hip-v2-g256/benchmark-p2.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v2-g256/benchmark-p2.stdout.log": "e7a72e4a15a3aade724e9d9b4224905a0df8b612b2c19bfea2de5425edc6fc88",
+    "configs/hip-v2-g256/benchmark-p3.samples.csv": "ec2ea86e082b498a979fbad26eec98a4e668a5b27a56132654a9b9bab4e8d7b3",
+    "configs/hip-v2-g256/benchmark-p3.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v2-g256/benchmark-p3.stdout.log": "528919e0586ba7be2094fd707752a6b01be72834eb8207116de14c578043911b",
+    "configs/hip-v2-g256/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v2-g256/inspect.stdout.log": "fca52aff9b4a085d25e4dbcce7414b1747b7242eb2335e29b347dcf2ffdb5de0",
+    "configs/hip-v2-g256/profile/hip-v2-g256_agent_info.csv": "cdab8675e0580be24065daea957ae58f3d5a6f8b8f1052ce023b266fc2e3b358",
+    "configs/hip-v2-g256/profile/hip-v2-g256_domain_stats.csv": "b182f82bda92c96ed8e7f819aa5aadfcdc9785a8da25d81961ec9ca49a48d85d",
+    "configs/hip-v2-g256/profile/hip-v2-g256_hip_api_stats.csv": "c1e1a44be86a30c8aaf148afc626cad23535c2d0968fa06e5516fba35983da50",
+    "configs/hip-v2-g256/profile/hip-v2-g256_hip_api_trace.csv": "239c853ea39b13badad12459860d233a8e45fda7e0bd89d77f417f9cf72548e3",
+    "configs/hip-v2-g256/profile/hip-v2-g256_kernel_stats.csv": "3260e064ace6260a49587d2fee5ba970eb9b316502b67ada373f258b623c10ed",
+    "configs/hip-v2-g256/profile/hip-v2-g256_kernel_trace.csv": "ce8935981b7764ace547c4798f651a7ccbc6362b1fbbfaf75a349602cb2039d2",
+    "configs/hip-v2-g256/profile/hip-v2-g256_results.pftrace": "4b10056f759648a16f6318a5271fbee5c729110093313a97784085041109ad2e",
+    "configs/hip-v2-g256/profile.stderr.log": "355880897e5348aa760e1ed8ea6f65c64f6bbfae6ba4d1020c020b1e04ae498c",
+    "configs/hip-v2-g256/profile.stdout.log": "1bd98b93625d52f569c28210dcbd50cba8a2cadf1e08aa757314de56ea065570",
+    "configs/hip-v2-g65536/benchmark-p1.samples.csv": "49979800b125e41c1db8230454573cbe250d4f7cf21f8dd7bc1a41cf57f0111a",
+    "configs/hip-v2-g65536/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v2-g65536/benchmark-p1.stdout.log": "59d29bb384b934eaa94bcef2340b07085498a2dfe99f55f7635e6405d17de368",
+    "configs/hip-v2-g65536/benchmark-p2.samples.csv": "ed621310f6f86eb10085ebd0ee22486cd6e351a74c4601259cb251f693cad98a",
+    "configs/hip-v2-g65536/benchmark-p2.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v2-g65536/benchmark-p2.stdout.log": "798c9a355ac9c968577a2404af7cf9c5978350eee8aab4ea5d79b88ec12121aa",
+    "configs/hip-v2-g65536/benchmark-p3.samples.csv": "03f77c1400ca9072fca7add6137e60b2794f41707bee4128ad99dbc4ff9ea79d",
+    "configs/hip-v2-g65536/benchmark-p3.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v2-g65536/benchmark-p3.stdout.log": "8c8da2cb785587ab076966f299ead62922c9b33d3430f81b712bf98bd6f7f0b8",
+    "configs/hip-v2-g65536/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v2-g65536/inspect.stdout.log": "d53cdd293aab12dbf76fd52ef8881b7cc05b6719c89cbef1c8b1abe401fee022",
+    "configs/hip-v2-g65536/profile/hip-v2-g65536_agent_info.csv": "cdab8675e0580be24065daea957ae58f3d5a6f8b8f1052ce023b266fc2e3b358",
+    "configs/hip-v2-g65536/profile/hip-v2-g65536_domain_stats.csv": "bdd8daa134bbdb5a8fac882ca44d7daf56128c44e21e5f78cc3c8cd1e3ddec3d",
+    "configs/hip-v2-g65536/profile/hip-v2-g65536_hip_api_stats.csv": "664e0dc05bed55f1de7d50528a117fed58983e7d2aaeeac4cc2a0e526d8c76e2",
+    "configs/hip-v2-g65536/profile/hip-v2-g65536_hip_api_trace.csv": "e8a7b1522b2e914dfdc168a262a7044de64ee7e67f60adfeb2e5fb38249fb4c5",
+    "configs/hip-v2-g65536/profile/hip-v2-g65536_kernel_stats.csv": "65dec622bfb3c7f6cb701d0eee521a1b387a5aecd2aecff01c2666c17c22c41e",
+    "configs/hip-v2-g65536/profile/hip-v2-g65536_kernel_trace.csv": "fcc26bba9530b141de60c117eceda3521ee072dd953ac4a7d334423730ad105d",
+    "configs/hip-v2-g65536/profile/hip-v2-g65536_results.pftrace": "f1486cc02207b4741a1788dcda03119ac3ffcd47283e70bf043d98bd7a9d2ac7",
+    "configs/hip-v2-g65536/profile.stderr.log": "b4ffc5804b2b5b4398d4078f5af1d368dcc4633f9251c504c5eb2acfabcb8c36",
+    "configs/hip-v2-g65536/profile.stdout.log": "681dffb1f139cd01e95e4784b0df7889440443cd1824df26d2e50719b90d5b7d",
+    "configs/hip-v3-g256/benchmark-p1.samples.csv": "3ad53cfc5f34ec510bf7db83fa81489e055919c50625e30719afcd314ebbcd6f",
+    "configs/hip-v3-g256/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v3-g256/benchmark-p1.stdout.log": "fe89ff83b914048dc2fd089ae8fd5821d57d16159d0c55afc3d85b9316b0dd1a",
+    "configs/hip-v3-g256/benchmark-p2.samples.csv": "39d27313cbee3f74e43c6a72aa0677a65e9cf4cb8b1b60c3560aaddd0e6c4847",
+    "configs/hip-v3-g256/benchmark-p2.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v3-g256/benchmark-p2.stdout.log": "476d28938a351a35c1a904392cb108872917d333120884536082b7ea8027a686",
+    "configs/hip-v3-g256/benchmark-p3.samples.csv": "f9d81084cc971c2c56616774e8b3b3758757913575fcefc504388d45dd5c8110",
+    "configs/hip-v3-g256/benchmark-p3.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v3-g256/benchmark-p3.stdout.log": "fab74e7aeab81ac9caac9e9a7dbabba36c4464b4599e645d154b844a6a4d3fad",
+    "configs/hip-v3-g256/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v3-g256/inspect.stdout.log": "fcde4155ab6b6b082d76d6802ac8ede096f22686d762fa53a77a38bd4c2ccf02",
+    "configs/hip-v3-g256/profile/hip-v3-g256_agent_info.csv": "cdab8675e0580be24065daea957ae58f3d5a6f8b8f1052ce023b266fc2e3b358",
+    "configs/hip-v3-g256/profile/hip-v3-g256_domain_stats.csv": "d96d31850081f56b60674d27c8e44b5af08a5a3ac4c324cadfa8164c4d0a946c",
+    "configs/hip-v3-g256/profile/hip-v3-g256_hip_api_stats.csv": "0d4580bbc5245b7ba25d6855396ac22f2cb5b49ebc606920f2a5ea7ad159c3d4",
+    "configs/hip-v3-g256/profile/hip-v3-g256_hip_api_trace.csv": "04ccddec52eb526f094d4f22e16fe2dba0a798503cb4117421426592066244e1",
+    "configs/hip-v3-g256/profile/hip-v3-g256_kernel_stats.csv": "7a4fc50118f391c2510e4716127da82e75b57b26f750961dd0eec81589d747cc",
+    "configs/hip-v3-g256/profile/hip-v3-g256_kernel_trace.csv": "9f2d7fe7f320ad4676eb2a021b81cf73a47b19c73a385e4df0e5915b7ed6f3a8",
+    "configs/hip-v3-g256/profile/hip-v3-g256_results.pftrace": "c08d3eadf9c142af4d8f41f8be67a41e581dd2748c4c4f8e0083a9d00071dbf2",
+    "configs/hip-v3-g256/profile.stderr.log": "f5fd4752b631f5b3ab53be7707792ae2aa4db8054c88f3d38f9b3bd48b233f2d",
+    "configs/hip-v3-g256/profile.stdout.log": "839f7328d7f38fb0785cb748fa6cbbe58a519f9120bf32a98acd72667c75fa3d",
+    "configs/triton-t0-b256/benchmark-p1.samples.csv": "790d9f0ab54000f171a0b02ec4e2598568c00592faa56fd8fb41589e461d5cd1",
+    "configs/triton-t0-b256/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t0-b256/benchmark-p1.stdout.log": "907a667e839b195cb78b15413bbde4bc6260c9911a3e05fabceb950aa6f4944e",
+    "configs/triton-t0-b256/benchmark-p2.samples.csv": "f1e8f7df8be30569c4cb46f0ef83dc1d66fdcb92aec873b64c126ecbe3276dcc",
+    "configs/triton-t0-b256/benchmark-p2.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t0-b256/benchmark-p2.stdout.log": "ebe7c1beb17669d93e1e9381b65f723dd9237d0fc0543c73bf49a52bd040ae39",
+    "configs/triton-t0-b256/benchmark-p3.samples.csv": "3a6391671aaeec61aca5b569998e1cbecca15c177e442d426dd9c6c708ab900f",
+    "configs/triton-t0-b256/benchmark-p3.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t0-b256/benchmark-p3.stdout.log": "05b5c6f17fe9fd516503835c63cd71bd58f9daf78d5bfc55be3085fc29435771",
+    "configs/triton-t0-b256/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t0-b256/inspect.stdout.log": "8d8a3943e025d6f5eb066a890bb1a8f3296dd973b70dc9a3644a8a3b652e7725",
+    "configs/triton-t0-b256/profile/triton-t0-b256_agent_info.csv": "cdab8675e0580be24065daea957ae58f3d5a6f8b8f1052ce023b266fc2e3b358",
+    "configs/triton-t0-b256/profile/triton-t0-b256_domain_stats.csv": "0654d2f628be13194971c2d41b04bb61828d8457de97ce8eeee34954f0f8c3f0",
+    "configs/triton-t0-b256/profile/triton-t0-b256_hip_api_stats.csv": "146509e5d85b5472ff51ae01a1fea78f502bf4df24433320027fbd335fe882b4",
+    "configs/triton-t0-b256/profile/triton-t0-b256_hip_api_trace.csv": "23d0ebe754719e2fb624b77d06b3eed14998238f78022c81ce82814616566afe",
+    "configs/triton-t0-b256/profile/triton-t0-b256_kernel_stats.csv": "d9a9b28ab68deda344414f716406add38bb60c56117b8e7cb5c4fc23c667f035",
+    "configs/triton-t0-b256/profile/triton-t0-b256_kernel_trace.csv": "dbeac6f87ecc5e689c2750539be4adeb9d17e1fd257c931ecbac04862f9cc251",
+    "configs/triton-t0-b256/profile/triton-t0-b256_results.pftrace": "68e87681a1c61ce31516b27967e64d0a6a82af878d72849e1a0ad35db713e57f",
+    "configs/triton-t0-b256/profile.stderr.log": "252319db5425e09bae6a32dce59df76f5d491e25df52953360bc78db341f3081",
+    "configs/triton-t0-b256/profile.stdout.log": "bc31b754e52cf3f1cccafbc73d3fb7e1078cb4d86b06b4f0297b686c79a3983f",
+    "configs/triton-t1-b1024/benchmark-p1.samples.csv": "e17034167d03ad2b9587290ec3f7de5e73325dbc0da4a5fa23c01773f0634b38",
+    "configs/triton-t1-b1024/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t1-b1024/benchmark-p1.stdout.log": "c593f57af9cdcabe8cdd60f0fc2a8248dc5b740bebddc4c490efb5691e1412f5",
+    "configs/triton-t1-b1024/benchmark-p2.samples.csv": "4f1de05122cd0d2a346a1a6b7d324f3956575a951b1a1e31e07fb40ecb715ebc",
+    "configs/triton-t1-b1024/benchmark-p2.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t1-b1024/benchmark-p2.stdout.log": "5da55f6faed1bfe7280a29dae3f0e98e66000c72ee9f8181330709250b1d8e2c",
+    "configs/triton-t1-b1024/benchmark-p3.samples.csv": "3dc028d517e1f86d93a69d50cd4a32be2c65d5049e113f36c557c1bbf55277dd",
+    "configs/triton-t1-b1024/benchmark-p3.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t1-b1024/benchmark-p3.stdout.log": "dedd9b198c72bd71dbc94aed86d55b9f059cb31c736f04fba146a3638de41f29",
+    "configs/triton-t1-b1024/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t1-b1024/inspect.stdout.log": "63e7ce5a823a089bdba8337e2e1dfe5eb0aa3706f1b722c1e8d8a079def4d66d",
+    "configs/triton-t1-b1024/profile/triton-t1-b1024_agent_info.csv": "cdab8675e0580be24065daea957ae58f3d5a6f8b8f1052ce023b266fc2e3b358",
+    "configs/triton-t1-b1024/profile/triton-t1-b1024_domain_stats.csv": "82ce3e63010aaaef4a67e8a3e70b1c6b6bcf06c92d18cfef86ade04c3eeabe41",
+    "configs/triton-t1-b1024/profile/triton-t1-b1024_hip_api_stats.csv": "114f7b723753b3051de0e756d0fa530923a1518cb87aad32fefeb0b3905bd117",
+    "configs/triton-t1-b1024/profile/triton-t1-b1024_hip_api_trace.csv": "11c0491ab1cba824d81988f844a1509aef7670b5752c24c690636a6b88e0edce",
+    "configs/triton-t1-b1024/profile/triton-t1-b1024_kernel_stats.csv": "ffc532237cb290e9e296fe6b70cf1f8f72f989e0ab0c708319025f574f132981",
+    "configs/triton-t1-b1024/profile/triton-t1-b1024_kernel_trace.csv": "02101494d52cc1c4edb861778b6ee573a84aafdf2b6ad08338fb170bca538a85",
+    "configs/triton-t1-b1024/profile/triton-t1-b1024_results.pftrace": "36326371005a551521e201f35dd814d2fb102d1f64541a1e95d381649744a885",
+    "configs/triton-t1-b1024/profile.stderr.log": "7de1544d143159b31efae93c43517b54da226b4ebd5325e668a5722e0fd6ce78",
+    "configs/triton-t1-b1024/profile.stdout.log": "dcb42e74ca1f6e28dc1cf05e59998e5ef79315e82b6dcff00cdcd2d4cb03423f",
+    "configs/triton-t1-b2048/benchmark-p1.samples.csv": "f25ec6bc9637dff4c00635e86eddd2bc2a6055b169974ff3a1ac571651018553",
+    "configs/triton-t1-b2048/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t1-b2048/benchmark-p1.stdout.log": "2ca2e7fb659008561c8311622b9db3de01ccf7d7972e6add53cf6b01983c551d",
+    "configs/triton-t1-b2048/benchmark-p2.samples.csv": "c61795520768caef346c42cd985923ddadad404630fe31d18568a38fae3ddcd4",
+    "configs/triton-t1-b2048/benchmark-p2.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t1-b2048/benchmark-p2.stdout.log": "d94bac22fc8c1ff41b13cf27da67692bca6abee94d49dd70e1569bd38fe4e9c9",
+    "configs/triton-t1-b2048/benchmark-p3.samples.csv": "64909965e6e06360a27ff0893f4829aa1c91fd41d6b2b52173233c73d73e591f",
+    "configs/triton-t1-b2048/benchmark-p3.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t1-b2048/benchmark-p3.stdout.log": "8ef1cdb85ab6c13ba6a4249ab6a60cb66e5d7d477530dcf1e77a516de46753eb",
+    "configs/triton-t1-b2048/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t1-b2048/inspect.stdout.log": "f6cec1fff73792266bdeddb6ac6be22c7dcdc277d9c0f52e1e760eb91aadf7ff",
+    "configs/triton-t1-b2048/profile/triton-t1-b2048_agent_info.csv": "cdab8675e0580be24065daea957ae58f3d5a6f8b8f1052ce023b266fc2e3b358",
+    "configs/triton-t1-b2048/profile/triton-t1-b2048_domain_stats.csv": "53f081d7266e2cd2b568b48ab7a254798fe45f45b2fef1aaa5bd70ae9060e4d1",
+    "configs/triton-t1-b2048/profile/triton-t1-b2048_hip_api_stats.csv": "0bd939fd48cc5d97f0ddc5fe71ce6246b9e764c28c9e5da3c3c77ac0ae9456cb",
+    "configs/triton-t1-b2048/profile/triton-t1-b2048_hip_api_trace.csv": "b62b8fdce82129800961b6c49303a48765a8afb6347a7d9630fefbc20f4ed0a0",
+    "configs/triton-t1-b2048/profile/triton-t1-b2048_kernel_stats.csv": "c62c996a608e11420d8a31a91f454e5a93b0308ede1878330a1c15b77fb42f47",
+    "configs/triton-t1-b2048/profile/triton-t1-b2048_kernel_trace.csv": "184ca14ecc45ccf5cd1d769809310137c5a54d26eb5815ed10059aaba2a7561d",
+    "configs/triton-t1-b2048/profile/triton-t1-b2048_results.pftrace": "b409ab52145b28f0b533689c536551fe404503df7e057614a41c2b7c28d1f0b9",
+    "configs/triton-t1-b2048/profile.stderr.log": "7416a194a7cbbb3a0ee96dc6b9bc68a56620815b7e5507e8468b0c4dd5c3f937",
+    "configs/triton-t1-b2048/profile.stdout.log": "5c932f2e8a3d9f1abd564eb1216749022f29dae368a9c1431ea8855c0eed5394",
+    "configs/triton-t1-b512/benchmark-p1.samples.csv": "6b3e447508c574e2ba9038abe1d3ca59685989188ae7bcaa5500b57a4580ebc2",
+    "configs/triton-t1-b512/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t1-b512/benchmark-p1.stdout.log": "8db8b5aeee2eb8f5fcd73cf3f237888e80a882832ff383ab75b22b6f1aaf08c3",
+    "configs/triton-t1-b512/benchmark-p2.samples.csv": "b864f1ac5f0d7ddd6f0a7a37760748a919c6e7afd4df321fb47970a094736518",
+    "configs/triton-t1-b512/benchmark-p2.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t1-b512/benchmark-p2.stdout.log": "08a57d008693764a980a130aaa63d24480d5c046b1f1522af098f0274558ade1",
+    "configs/triton-t1-b512/benchmark-p3.samples.csv": "3e52eec87c23e2bdc8709d41fc8b046635b42d013d8af2c4a26adf9f1363adb8",
+    "configs/triton-t1-b512/benchmark-p3.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t1-b512/benchmark-p3.stdout.log": "d992bd003269739e181b24fde73b83a79512383c3584efd2689eb7ee6869a780",
+    "configs/triton-t1-b512/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t1-b512/inspect.stdout.log": "6b74e660546115057ed561255c088cf741ec4b72381ec760ee84d1e979d3364d",
+    "configs/triton-t1-b512/profile/triton-t1-b512_agent_info.csv": "cdab8675e0580be24065daea957ae58f3d5a6f8b8f1052ce023b266fc2e3b358",
+    "configs/triton-t1-b512/profile/triton-t1-b512_domain_stats.csv": "30f1f07d9711b5ede28202d06e4fb0c62d05fd647af79687946a4847a3a24835",
+    "configs/triton-t1-b512/profile/triton-t1-b512_hip_api_stats.csv": "ed9cf89bba4fa0d4f3cff1519aa41847682b78a6ea22f4540e8d69ed34d4c95c",
+    "configs/triton-t1-b512/profile/triton-t1-b512_hip_api_trace.csv": "c86c08d1f0f4128d9f148a48d0c82fa7f7ab911da6eb4fd67b766080a362a499",
+    "configs/triton-t1-b512/profile/triton-t1-b512_kernel_stats.csv": "592401c61f3bc1de7fca8224ca5ac096fc0482adf7e4b491a5b13c21d7217226",
+    "configs/triton-t1-b512/profile/triton-t1-b512_kernel_trace.csv": "04ccdddd7cd7aafed7014bdd60446e613b4048687abb6031e09909d10c8001e3",
+    "configs/triton-t1-b512/profile/triton-t1-b512_results.pftrace": "a66002272422f35e94606df2cfae36774aca93d6a7cc6c168999906ead2e622f",
+    "configs/triton-t1-b512/profile.stderr.log": "df907c3a40e12915340eacd035988e678be6366f85b71bf1d896807d6a1206b0",
+    "configs/triton-t1-b512/profile.stdout.log": "0eeac848b5878031bbf0eca5286107307aa00b7e6ae54017b88c522f5e49f63a",
+    "logs/compile.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "logs/compile.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "logs/gpu-process-after.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "logs/gpu-process-after.stdout.log": "925dacb52879cf2603decbf28d5175b4a6fe4419ae2bb6d1fcef51e4948b8f7c",
+    "logs/gpu-process-before.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "logs/gpu-process-before.stdout.log": "309deae4ea03b1a8d20fe2a751f5fbcc87b75a2bada2728223a0ebf46a76a590",
+    "logs/gpu-state-after.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "logs/gpu-state-after.stdout.log": "26050f37c97b31a3344695bd4860b71033306098da3e1814e94311518367a8a1",
+    "logs/gpu-state-before.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "logs/gpu-state-before.stdout.log": "af94aa7eb66c50be7f19531d34c7534a01102508def83d94959ee472933ee9e9",
+    "logs/hipcc-version.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "logs/hipcc-version.stdout.log": "e12f8aa62ab2eab6bb2106da142622215cbf837dabc57879129d31d32e80f6b3",
+    "logs/n16777216-hip-v0-p1.log": "8bad5ca5d1d8be486ec33fcaf70a49d8d8a9f99214b38f32fec65a92558b6d78",
+    "logs/n16777216-hip-v0-p2.log": "c0120bbd9345a4a9094208f00ad2a13107182fe2b5159c352d29a63370825968",
+    "logs/n16777216-hip-v0-p3.log": "9051839aed3e8ee7289dcc7ae1fa113cada3822254a311d9d70e1adee3709fe3",
+    "logs/n16777216-hip-v1-contiguous-p1.log": "82e871ee8859523bd0c27781654861d4427723d84f763cd930d42c6a3a1d3fee",
+    "logs/n16777216-hip-v1-contiguous-p2.log": "56372143ca5e0824e0b7c6f6ebe9673e6798d6cf789c8791a09f29aa78636a26",
+    "logs/n16777216-hip-v1-contiguous-p3.log": "c74647c5d378bcbe8b6a62d4c9e0a6fceba36c80f0fd381aba754df4a1b276c3",
+    "logs/n16777216-hip-v1-strided-p1.log": "b46a2ccd2950e6ced218a2a95e627e25ac2c4e8be6412a64e181b9d00a1035d8",
+    "logs/n16777216-hip-v1-strided-p2.log": "cde3cf5bd9b0ddbe5a8deb05191de744f238f1dd388a4790bf17512a676b1718",
+    "logs/n16777216-hip-v1-strided-p3.log": "d4e63461c768621769251c78b5e86d5e9252751151811a2579a532579627adbe",
+    "logs/n16777216-hip-v2-g2048-p1.log": "db38dd391629ccfb3efa5061ebdd1c19eff1266aeb2a3a68c8eb077ae4d2c270",
+    "logs/n16777216-hip-v2-g2048-p2.log": "5154df4ed03b3c5b935533d755af6df6aac084c0512ef3a4a0cd2cb5d0a833ec",
+    "logs/n16777216-hip-v2-g2048-p3.log": "78ed906ee39d3f9d5033543757c52c95e96b78a4d78ec4cae6e727dea97c8108",
+    "logs/n16777216-hip-v2-g256-p1.log": "34eda7abce80c7307d427e9659ed1a69e729c2e608cd24c3389a6d7604992785",
+    "logs/n16777216-hip-v2-g256-p2.log": "e7a72e4a15a3aade724e9d9b4224905a0df8b612b2c19bfea2de5425edc6fc88",
+    "logs/n16777216-hip-v2-g256-p3.log": "528919e0586ba7be2094fd707752a6b01be72834eb8207116de14c578043911b",
+    "logs/n16777216-hip-v2-g65536-p1.log": "59d29bb384b934eaa94bcef2340b07085498a2dfe99f55f7635e6405d17de368",
+    "logs/n16777216-hip-v2-g65536-p2.log": "798c9a355ac9c968577a2404af7cf9c5978350eee8aab4ea5d79b88ec12121aa",
+    "logs/n16777216-hip-v2-g65536-p3.log": "8c8da2cb785587ab076966f299ead62922c9b33d3430f81b712bf98bd6f7f0b8",
+    "logs/n16777216-hip-v3-g256-p1.log": "fe89ff83b914048dc2fd089ae8fd5821d57d16159d0c55afc3d85b9316b0dd1a",
+    "logs/n16777216-hip-v3-g256-p2.log": "476d28938a351a35c1a904392cb108872917d333120884536082b7ea8027a686",
+    "logs/n16777216-hip-v3-g256-p3.log": "fab74e7aeab81ac9caac9e9a7dbabba36c4464b4599e645d154b844a6a4d3fad",
+    "logs/n16777216-triton-t0-b256-p1.log": "907a667e839b195cb78b15413bbde4bc6260c9911a3e05fabceb950aa6f4944e",
+    "logs/n16777216-triton-t0-b256-p2.log": "ebe7c1beb17669d93e1e9381b65f723dd9237d0fc0543c73bf49a52bd040ae39",
+    "logs/n16777216-triton-t0-b256-p3.log": "05b5c6f17fe9fd516503835c63cd71bd58f9daf78d5bfc55be3085fc29435771",
+    "logs/n16777216-triton-t1-b1024-p1.log": "c593f57af9cdcabe8cdd60f0fc2a8248dc5b740bebddc4c490efb5691e1412f5",
+    "logs/n16777216-triton-t1-b1024-p2.log": "5da55f6faed1bfe7280a29dae3f0e98e66000c72ee9f8181330709250b1d8e2c",
+    "logs/n16777216-triton-t1-b1024-p3.log": "dedd9b198c72bd71dbc94aed86d55b9f059cb31c736f04fba146a3638de41f29",
+    "logs/n16777216-triton-t1-b2048-p1.log": "2ca2e7fb659008561c8311622b9db3de01ccf7d7972e6add53cf6b01983c551d",
+    "logs/n16777216-triton-t1-b2048-p2.log": "d94bac22fc8c1ff41b13cf27da67692bca6abee94d49dd70e1569bd38fe4e9c9",
+    "logs/n16777216-triton-t1-b2048-p3.log": "8ef1cdb85ab6c13ba6a4249ab6a60cb66e5d7d477530dcf1e77a516de46753eb",
+    "logs/n16777216-triton-t1-b512-p1.log": "8db8b5aeee2eb8f5fcd73cf3f237888e80a882832ff383ab75b22b6f1aaf08c3",
+    "logs/n16777216-triton-t1-b512-p2.log": "08a57d008693764a980a130aaa63d24480d5c046b1f1522af098f0274558ade1",
+    "logs/n16777216-triton-t1-b512-p3.log": "d992bd003269739e181b24fde73b83a79512383c3584efd2689eb7ee6869a780",
+    "logs/profile-hip-v0.log": "74b21bffb28a127cbe7bfdb8da8719a170b60269c759ccd42614dbd76ee397c3",
+    "logs/profile-hip-v1-contiguous.log": "8f79977c0e8bf2e053d07955be880c6d519d598e4be98a07c0686b354af7224a",
+    "logs/profile-hip-v1-strided.log": "a504f083036c86e8899a74664fa9e928ecc3fea096de8927b4e6d0585819486c",
+    "logs/profile-hip-v2-g2048.log": "d83ee4eb7bbaa2ee51a0245e1fc0bf4938db414494528802837cb2723c57371d",
+    "logs/profile-hip-v2-g256.log": "1bd98b93625d52f569c28210dcbd50cba8a2cadf1e08aa757314de56ea065570",
+    "logs/profile-hip-v2-g65536.log": "681dffb1f139cd01e95e4784b0df7889440443cd1824df26d2e50719b90d5b7d",
+    "logs/profile-hip-v3-g256.log": "839f7328d7f38fb0785cb748fa6cbbe58a519f9120bf32a98acd72667c75fa3d",
+    "logs/profile-triton-t0-b256.log": "bc31b754e52cf3f1cccafbc73d3fb7e1078cb4d86b06b4f0297b686c79a3983f",
+    "logs/profile-triton-t1-b1024.log": "dcb42e74ca1f6e28dc1cf05e59998e5ef79315e82b6dcff00cdcd2d4cb03423f",
+    "logs/profile-triton-t1-b2048.log": "5c932f2e8a3d9f1abd564eb1216749022f29dae368a9c1431ea8855c0eed5394",
+    "logs/profile-triton-t1-b512.log": "0eeac848b5878031bbf0eca5286107307aa00b7e6ae54017b88c522f5e49f63a",
+    "logs/rocprofv3-version.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "logs/rocprofv3-version.stdout.log": "ad224f8e9219d895dc43a641a2792d5b3ef4e500538fe46ba5046f3fec7e0fe8",
+    "profiles/hip-v0_kernel_trace.csv": "1980a8b351d72ffbe2c11cad94c630f850868dd5c1405b952e899e8e99ae0c28",
+    "profiles/hip-v1-contiguous_kernel_trace.csv": "1a2968754db9498964e40c476b85cc2b26f26f32a2d5f653edfed18864bdda4b",
+    "profiles/hip-v1-strided_kernel_trace.csv": "988bead65532ebb5340d05cf5068478fec0d096cb5b791a93f8ca3a948a3de30",
+    "profiles/hip-v2-g2048_kernel_trace.csv": "01a14cc6aed740cfc5265cd4d537904f3bb04f01dc1590752a0b9249c0711120",
+    "profiles/hip-v2-g256_kernel_trace.csv": "ce8935981b7764ace547c4798f651a7ccbc6362b1fbbfaf75a349602cb2039d2",
+    "profiles/hip-v2-g65536_kernel_trace.csv": "fcc26bba9530b141de60c117eceda3521ee072dd953ac4a7d334423730ad105d",
+    "profiles/hip-v3-g256_kernel_trace.csv": "9f2d7fe7f320ad4676eb2a021b81cf73a47b19c73a385e4df0e5915b7ed6f3a8",
+    "profiles/triton-t0-b256_kernel_trace.csv": "dbeac6f87ecc5e689c2750539be4adeb9d17e1fd257c931ecbac04862f9cc251",
+    "profiles/triton-t1-b1024_kernel_trace.csv": "02101494d52cc1c4edb861778b6ee573a84aafdf2b6ad08338fb170bca538a85",
+    "profiles/triton-t1-b2048_kernel_trace.csv": "184ca14ecc45ccf5cd1d769809310137c5a54d26eb5815ed10059aaba2a7561d",
+    "profiles/triton-t1-b512_kernel_trace.csv": "04ccdddd7cd7aafed7014bdd60446e613b4048687abb6031e09909d10c8001e3",
+    "samples/n16777216-hip-v0-p1.csv": "e572396c4425d5edd07bc7a9840c64a8d65a72d292cb2f2d3dbefb571325c937",
+    "samples/n16777216-hip-v0-p2.csv": "6c9c5f33eb1a833bed81f3f5820ca9188ce918fa91aaf509fc7e09b2464aae81",
+    "samples/n16777216-hip-v0-p3.csv": "a70b68fcdb41409b91da424f936a8d8ce662d61f69f30d8d7fef90df6b6fc524",
+    "samples/n16777216-hip-v1-contiguous-p1.csv": "607a5e5d4ae0d820d7be29a6cb82c3c9e462abc34a0130eaea5624913b53d84f",
+    "samples/n16777216-hip-v1-contiguous-p2.csv": "a7ec4dc0324ea86d2183b47ee6d61917c80c5ce10783927a63a83c7e0ef8ccaf",
+    "samples/n16777216-hip-v1-contiguous-p3.csv": "b37bfc07eeed5ea1c78104f18c2c20be1e135b2ba32d1be88ad3642b4d5f08bd",
+    "samples/n16777216-hip-v1-strided-p1.csv": "e05a8d624e98313bc0fc60bbfa3a614e8cea60af73393f64ef15570076d64103",
+    "samples/n16777216-hip-v1-strided-p2.csv": "beba7838af12cb41c19022d419090721e380f3780bc3ac337c91d4773e082bd5",
+    "samples/n16777216-hip-v1-strided-p3.csv": "362ccb7fd3e22f9387fa0a32adde979d4ae42647e20181c4705258d245fc8f20",
+    "samples/n16777216-hip-v2-g2048-p1.csv": "882f58f1faa9d0f8e33ad752e1745556675ef08d0b6d54c90d4ef9be523e4700",
+    "samples/n16777216-hip-v2-g2048-p2.csv": "de2a74a4d8e95210b46fb0d47726708a5b4cffae82d28eba97abc882c20b89c8",
+    "samples/n16777216-hip-v2-g2048-p3.csv": "0abe733480f2a791ae9b63ca0b8d0ce6bbc0556f8e3f3b32959223e732935d53",
+    "samples/n16777216-hip-v2-g256-p1.csv": "87aa49f7983d0c96f96247d189e661467cf283c51a91674c5bb80d6c0d27e1b1",
+    "samples/n16777216-hip-v2-g256-p2.csv": "95006298c709a203b4a4c484d01d137795f5f0c97c023800620a108ae29d25f1",
+    "samples/n16777216-hip-v2-g256-p3.csv": "ec2ea86e082b498a979fbad26eec98a4e668a5b27a56132654a9b9bab4e8d7b3",
+    "samples/n16777216-hip-v2-g65536-p1.csv": "49979800b125e41c1db8230454573cbe250d4f7cf21f8dd7bc1a41cf57f0111a",
+    "samples/n16777216-hip-v2-g65536-p2.csv": "ed621310f6f86eb10085ebd0ee22486cd6e351a74c4601259cb251f693cad98a",
+    "samples/n16777216-hip-v2-g65536-p3.csv": "03f77c1400ca9072fca7add6137e60b2794f41707bee4128ad99dbc4ff9ea79d",
+    "samples/n16777216-hip-v3-g256-p1.csv": "3ad53cfc5f34ec510bf7db83fa81489e055919c50625e30719afcd314ebbcd6f",
+    "samples/n16777216-hip-v3-g256-p2.csv": "39d27313cbee3f74e43c6a72aa0677a65e9cf4cb8b1b60c3560aaddd0e6c4847",
+    "samples/n16777216-hip-v3-g256-p3.csv": "f9d81084cc971c2c56616774e8b3b3758757913575fcefc504388d45dd5c8110",
+    "samples/n16777216-triton-t0-b256-p1.csv": "790d9f0ab54000f171a0b02ec4e2598568c00592faa56fd8fb41589e461d5cd1",
+    "samples/n16777216-triton-t0-b256-p2.csv": "f1e8f7df8be30569c4cb46f0ef83dc1d66fdcb92aec873b64c126ecbe3276dcc",
+    "samples/n16777216-triton-t0-b256-p3.csv": "3a6391671aaeec61aca5b569998e1cbecca15c177e442d426dd9c6c708ab900f",
+    "samples/n16777216-triton-t1-b1024-p1.csv": "e17034167d03ad2b9587290ec3f7de5e73325dbc0da4a5fa23c01773f0634b38",
+    "samples/n16777216-triton-t1-b1024-p2.csv": "4f1de05122cd0d2a346a1a6b7d324f3956575a951b1a1e31e07fb40ecb715ebc",
+    "samples/n16777216-triton-t1-b1024-p3.csv": "3dc028d517e1f86d93a69d50cd4a32be2c65d5049e113f36c557c1bbf55277dd",
+    "samples/n16777216-triton-t1-b2048-p1.csv": "f25ec6bc9637dff4c00635e86eddd2bc2a6055b169974ff3a1ac571651018553",
+    "samples/n16777216-triton-t1-b2048-p2.csv": "c61795520768caef346c42cd985923ddadad404630fe31d18568a38fae3ddcd4",
+    "samples/n16777216-triton-t1-b2048-p3.csv": "64909965e6e06360a27ff0893f4829aa1c91fd41d6b2b52173233c73d73e591f",
+    "samples/n16777216-triton-t1-b512-p1.csv": "6b3e447508c574e2ba9038abe1d3ca59685989188ae7bcaa5500b57a4580ebc2",
+    "samples/n16777216-triton-t1-b512-p2.csv": "b864f1ac5f0d7ddd6f0a7a37760748a919c6e7afd4df321fb47970a094736518",
+    "samples/n16777216-triton-t1-b512-p3.csv": "3e52eec87c23e2bdc8709d41fc8b046635b42d013d8af2c4a26adf9f1363adb8",
+    "source/capture_walkthrough.py": "d39f95927be26a1a3917f9932a69dfcb7a516e619fdca69d23c2f6d17eb4a714",
+    "source/finish_profiles.py": "42b023748ce762d67f37fbbaac78003c55a03ec1b520063f59c982f50f13d055",
+    "source/inspect_trace.py": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b",
+    "source/vector_add_hip.hip": "73e1af89d25a91fb35ee78198ce74c93d617a9ac5a0852ff74d20abd2184aa80",
+    "source/vector_add_triton.py": "831525557254b8cf17965403972491e6b95cac63dc1c9a343af49366752fa893"
+  },
+  "sample_sha256": {
+    "samples/n16777216-hip-v0-p1.csv": "e572396c4425d5edd07bc7a9840c64a8d65a72d292cb2f2d3dbefb571325c937",
+    "samples/n16777216-hip-v0-p2.csv": "6c9c5f33eb1a833bed81f3f5820ca9188ce918fa91aaf509fc7e09b2464aae81",
+    "samples/n16777216-hip-v0-p3.csv": "a70b68fcdb41409b91da424f936a8d8ce662d61f69f30d8d7fef90df6b6fc524",
+    "samples/n16777216-hip-v1-contiguous-p1.csv": "607a5e5d4ae0d820d7be29a6cb82c3c9e462abc34a0130eaea5624913b53d84f",
+    "samples/n16777216-hip-v1-contiguous-p2.csv": "a7ec4dc0324ea86d2183b47ee6d61917c80c5ce10783927a63a83c7e0ef8ccaf",
+    "samples/n16777216-hip-v1-contiguous-p3.csv": "b37bfc07eeed5ea1c78104f18c2c20be1e135b2ba32d1be88ad3642b4d5f08bd",
+    "samples/n16777216-hip-v1-strided-p1.csv": "e05a8d624e98313bc0fc60bbfa3a614e8cea60af73393f64ef15570076d64103",
+    "samples/n16777216-hip-v1-strided-p2.csv": "beba7838af12cb41c19022d419090721e380f3780bc3ac337c91d4773e082bd5",
+    "samples/n16777216-hip-v1-strided-p3.csv": "362ccb7fd3e22f9387fa0a32adde979d4ae42647e20181c4705258d245fc8f20",
+    "samples/n16777216-hip-v2-g2048-p1.csv": "882f58f1faa9d0f8e33ad752e1745556675ef08d0b6d54c90d4ef9be523e4700",
+    "samples/n16777216-hip-v2-g2048-p2.csv": "de2a74a4d8e95210b46fb0d47726708a5b4cffae82d28eba97abc882c20b89c8",
+    "samples/n16777216-hip-v2-g2048-p3.csv": "0abe733480f2a791ae9b63ca0b8d0ce6bbc0556f8e3f3b32959223e732935d53",
+    "samples/n16777216-hip-v2-g256-p1.csv": "87aa49f7983d0c96f96247d189e661467cf283c51a91674c5bb80d6c0d27e1b1",
+    "samples/n16777216-hip-v2-g256-p2.csv": "95006298c709a203b4a4c484d01d137795f5f0c97c023800620a108ae29d25f1",
+    "samples/n16777216-hip-v2-g256-p3.csv": "ec2ea86e082b498a979fbad26eec98a4e668a5b27a56132654a9b9bab4e8d7b3",
+    "samples/n16777216-hip-v2-g65536-p1.csv": "49979800b125e41c1db8230454573cbe250d4f7cf21f8dd7bc1a41cf57f0111a",
+    "samples/n16777216-hip-v2-g65536-p2.csv": "ed621310f6f86eb10085ebd0ee22486cd6e351a74c4601259cb251f693cad98a",
+    "samples/n16777216-hip-v2-g65536-p3.csv": "03f77c1400ca9072fca7add6137e60b2794f41707bee4128ad99dbc4ff9ea79d",
+    "samples/n16777216-hip-v3-g256-p1.csv": "3ad53cfc5f34ec510bf7db83fa81489e055919c50625e30719afcd314ebbcd6f",
+    "samples/n16777216-hip-v3-g256-p2.csv": "39d27313cbee3f74e43c6a72aa0677a65e9cf4cb8b1b60c3560aaddd0e6c4847",
+    "samples/n16777216-hip-v3-g256-p3.csv": "f9d81084cc971c2c56616774e8b3b3758757913575fcefc504388d45dd5c8110",
+    "samples/n16777216-triton-t0-b256-p1.csv": "790d9f0ab54000f171a0b02ec4e2598568c00592faa56fd8fb41589e461d5cd1",
+    "samples/n16777216-triton-t0-b256-p2.csv": "f1e8f7df8be30569c4cb46f0ef83dc1d66fdcb92aec873b64c126ecbe3276dcc",
+    "samples/n16777216-triton-t0-b256-p3.csv": "3a6391671aaeec61aca5b569998e1cbecca15c177e442d426dd9c6c708ab900f",
+    "samples/n16777216-triton-t1-b1024-p1.csv": "e17034167d03ad2b9587290ec3f7de5e73325dbc0da4a5fa23c01773f0634b38",
+    "samples/n16777216-triton-t1-b1024-p2.csv": "4f1de05122cd0d2a346a1a6b7d324f3956575a951b1a1e31e07fb40ecb715ebc",
+    "samples/n16777216-triton-t1-b1024-p3.csv": "3dc028d517e1f86d93a69d50cd4a32be2c65d5049e113f36c557c1bbf55277dd",
+    "samples/n16777216-triton-t1-b2048-p1.csv": "f25ec6bc9637dff4c00635e86eddd2bc2a6055b169974ff3a1ac571651018553",
+    "samples/n16777216-triton-t1-b2048-p2.csv": "c61795520768caef346c42cd985923ddadad404630fe31d18568a38fae3ddcd4",
+    "samples/n16777216-triton-t1-b2048-p3.csv": "64909965e6e06360a27ff0893f4829aa1c91fd41d6b2b52173233c73d73e591f",
+    "samples/n16777216-triton-t1-b512-p1.csv": "6b3e447508c574e2ba9038abe1d3ca59685989188ae7bcaa5500b57a4580ebc2",
+    "samples/n16777216-triton-t1-b512-p2.csv": "b864f1ac5f0d7ddd6f0a7a37760748a919c6e7afd4df321fb47970a094736518",
+    "samples/n16777216-triton-t1-b512-p3.csv": "3e52eec87c23e2bdc8709d41fc8b046635b42d013d8af2c4a26adf9f1363adb8"
+  },
+  "log_sha256": {
+    "logs/n16777216-hip-v0-p1.log": "8bad5ca5d1d8be486ec33fcaf70a49d8d8a9f99214b38f32fec65a92558b6d78",
+    "logs/n16777216-hip-v0-p2.log": "c0120bbd9345a4a9094208f00ad2a13107182fe2b5159c352d29a63370825968",
+    "logs/n16777216-hip-v0-p3.log": "9051839aed3e8ee7289dcc7ae1fa113cada3822254a311d9d70e1adee3709fe3",
+    "logs/n16777216-hip-v1-contiguous-p1.log": "82e871ee8859523bd0c27781654861d4427723d84f763cd930d42c6a3a1d3fee",
+    "logs/n16777216-hip-v1-contiguous-p2.log": "56372143ca5e0824e0b7c6f6ebe9673e6798d6cf789c8791a09f29aa78636a26",
+    "logs/n16777216-hip-v1-contiguous-p3.log": "c74647c5d378bcbe8b6a62d4c9e0a6fceba36c80f0fd381aba754df4a1b276c3",
+    "logs/n16777216-hip-v1-strided-p1.log": "b46a2ccd2950e6ced218a2a95e627e25ac2c4e8be6412a64e181b9d00a1035d8",
+    "logs/n16777216-hip-v1-strided-p2.log": "cde3cf5bd9b0ddbe5a8deb05191de744f238f1dd388a4790bf17512a676b1718",
+    "logs/n16777216-hip-v1-strided-p3.log": "d4e63461c768621769251c78b5e86d5e9252751151811a2579a532579627adbe",
+    "logs/n16777216-hip-v2-g2048-p1.log": "db38dd391629ccfb3efa5061ebdd1c19eff1266aeb2a3a68c8eb077ae4d2c270",
+    "logs/n16777216-hip-v2-g2048-p2.log": "5154df4ed03b3c5b935533d755af6df6aac084c0512ef3a4a0cd2cb5d0a833ec",
+    "logs/n16777216-hip-v2-g2048-p3.log": "78ed906ee39d3f9d5033543757c52c95e96b78a4d78ec4cae6e727dea97c8108",
+    "logs/n16777216-hip-v2-g256-p1.log": "34eda7abce80c7307d427e9659ed1a69e729c2e608cd24c3389a6d7604992785",
+    "logs/n16777216-hip-v2-g256-p2.log": "e7a72e4a15a3aade724e9d9b4224905a0df8b612b2c19bfea2de5425edc6fc88",
+    "logs/n16777216-hip-v2-g256-p3.log": "528919e0586ba7be2094fd707752a6b01be72834eb8207116de14c578043911b",
+    "logs/n16777216-hip-v2-g65536-p1.log": "59d29bb384b934eaa94bcef2340b07085498a2dfe99f55f7635e6405d17de368",
+    "logs/n16777216-hip-v2-g65536-p2.log": "798c9a355ac9c968577a2404af7cf9c5978350eee8aab4ea5d79b88ec12121aa",
+    "logs/n16777216-hip-v2-g65536-p3.log": "8c8da2cb785587ab076966f299ead62922c9b33d3430f81b712bf98bd6f7f0b8",
+    "logs/n16777216-hip-v3-g256-p1.log": "fe89ff83b914048dc2fd089ae8fd5821d57d16159d0c55afc3d85b9316b0dd1a",
+    "logs/n16777216-hip-v3-g256-p2.log": "476d28938a351a35c1a904392cb108872917d333120884536082b7ea8027a686",
+    "logs/n16777216-hip-v3-g256-p3.log": "fab74e7aeab81ac9caac9e9a7dbabba36c4464b4599e645d154b844a6a4d3fad",
+    "logs/n16777216-triton-t0-b256-p1.log": "907a667e839b195cb78b15413bbde4bc6260c9911a3e05fabceb950aa6f4944e",
+    "logs/n16777216-triton-t0-b256-p2.log": "ebe7c1beb17669d93e1e9381b65f723dd9237d0fc0543c73bf49a52bd040ae39",
+    "logs/n16777216-triton-t0-b256-p3.log": "05b5c6f17fe9fd516503835c63cd71bd58f9daf78d5bfc55be3085fc29435771",
+    "logs/n16777216-triton-t1-b1024-p1.log": "c593f57af9cdcabe8cdd60f0fc2a8248dc5b740bebddc4c490efb5691e1412f5",
+    "logs/n16777216-triton-t1-b1024-p2.log": "5da55f6faed1bfe7280a29dae3f0e98e66000c72ee9f8181330709250b1d8e2c",
+    "logs/n16777216-triton-t1-b1024-p3.log": "dedd9b198c72bd71dbc94aed86d55b9f059cb31c736f04fba146a3638de41f29",
+    "logs/n16777216-triton-t1-b2048-p1.log": "2ca2e7fb659008561c8311622b9db3de01ccf7d7972e6add53cf6b01983c551d",
+    "logs/n16777216-triton-t1-b2048-p2.log": "d94bac22fc8c1ff41b13cf27da67692bca6abee94d49dd70e1569bd38fe4e9c9",
+    "logs/n16777216-triton-t1-b2048-p3.log": "8ef1cdb85ab6c13ba6a4249ab6a60cb66e5d7d477530dcf1e77a516de46753eb",
+    "logs/n16777216-triton-t1-b512-p1.log": "8db8b5aeee2eb8f5fcd73cf3f237888e80a882832ff383ab75b22b6f1aaf08c3",
+    "logs/n16777216-triton-t1-b512-p2.log": "08a57d008693764a980a130aaa63d24480d5c046b1f1522af098f0274558ade1",
+    "logs/n16777216-triton-t1-b512-p3.log": "d992bd003269739e181b24fde73b83a79512383c3584efd2689eb7ee6869a780"
+  },
+  "analysis": {
+    "summarizer_sha256": "a913963e38ca478ed1ad6c89cec835950f9b22214e39229fd0ca7e79bca01023",
+    "identity_check": "frozen source and binary; runtime ENV; expected matrix and metadata; prior sample/log hashes"
+  },
+  "statistics": {
+    "within_process": "median of event samples",
+    "across_processes": "median of process medians; min/max of process medians",
+    "range_is_confidence_interval": false,
+    "sample_count": 1650
+  },
+  "artifacts_sha256": {
+    "README.md": "77c79806e975844af5c074599519432fc735c43bb32ea25772fffd931e530ce4",
+    "commands.jsonl": "1c061ccec1715c1ccc4de6036757102023238356fa671415f763d22415e589fd",
+    "configs/hip-v0/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v0/benchmark-p1.stdout.log": "8bad5ca5d1d8be486ec33fcaf70a49d8d8a9f99214b38f32fec65a92558b6d78",
+    "configs/hip-v0/failed-profile-runtime-registration/profile.stderr.log": "91b3026c1abce843868ba1402dd1811271e87e3dea9f20616f41d95c3dd2db20",
+    "configs/hip-v0/failed-profile-runtime-registration/profile.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v0/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v0/inspect.stdout.log": "168f2d67b015e4fa88b70e188cb4c3ed6e47a2c1e33bee2f2ecf1c5a465215b3",
+    "configs/hip-v0/profile/hip-v0_domain_stats.csv": "7952777f827700dcc46526a43da6a7d166e5da6df000ea86b4a726348aea2e3a",
+    "configs/hip-v0/profile/hip-v0_hip_api_stats.csv": "5f7e70b20173aa4bd5cd6a82f306678a4b6e71f0975dc87f3d83f2097ca64cb4",
+    "configs/hip-v0/profile/hip-v0_kernel_stats.csv": "e92e9133e846d1b8e8f2706809eb35bd96f07463b2222d883201bdebd8484fc5",
+    "configs/hip-v0/profile/hip-v0_kernel_trace.csv": "1980a8b351d72ffbe2c11cad94c630f850868dd5c1405b952e899e8e99ae0c28",
+    "configs/hip-v0/profile.stderr.log": "a8a2cf68e56618b89a7715f0e5ed0721075c92758b5b49ac36da515bf586f698",
+    "configs/hip-v0/profile.stdout.log": "74b21bffb28a127cbe7bfdb8da8719a170b60269c759ccd42614dbd76ee397c3",
+    "configs/hip-v1-contiguous/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v1-contiguous/benchmark-p1.stdout.log": "82e871ee8859523bd0c27781654861d4427723d84f763cd930d42c6a3a1d3fee",
+    "configs/hip-v1-contiguous/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v1-contiguous/inspect.stdout.log": "932866c951ce4edb6e09da359d6d0a0f85e293231149d31a1ce450896f533419",
+    "configs/hip-v1-contiguous/profile/hip-v1-contiguous_domain_stats.csv": "cc7552405da6bde4e4638836bf0724f4d7915873a85216696c3aa4235cc07d89",
+    "configs/hip-v1-contiguous/profile/hip-v1-contiguous_hip_api_stats.csv": "e7983a6ed259c380195824634f7fca493d4ba96e47c987b4478475f7808c7f4d",
+    "configs/hip-v1-contiguous/profile/hip-v1-contiguous_kernel_stats.csv": "82612b7f5b72f3fdb69ba22d7b0977c255f78b456ea28087e8f12f277ebbfc38",
+    "configs/hip-v1-contiguous/profile/hip-v1-contiguous_kernel_trace.csv": "1a2968754db9498964e40c476b85cc2b26f26f32a2d5f653edfed18864bdda4b",
+    "configs/hip-v1-contiguous/profile.stderr.log": "8d0e9cbf3f8b7962593a338a902c63036dbc6544fceb89f2c4f3aba7f17b1d72",
+    "configs/hip-v1-contiguous/profile.stdout.log": "8f79977c0e8bf2e053d07955be880c6d519d598e4be98a07c0686b354af7224a",
+    "configs/hip-v1-strided/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v1-strided/benchmark-p1.stdout.log": "b46a2ccd2950e6ced218a2a95e627e25ac2c4e8be6412a64e181b9d00a1035d8",
+    "configs/hip-v1-strided/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v1-strided/inspect.stdout.log": "5e61ca382fc3552eac0d393b2d5026c59e93f610cef5a2d5f4e98c30157000f6",
+    "configs/hip-v1-strided/profile/hip-v1-strided_domain_stats.csv": "701fde5b8553f8db797dad06c3286e27548c9f6b65262b836ed88fef4ccd6457",
+    "configs/hip-v1-strided/profile/hip-v1-strided_hip_api_stats.csv": "61f7f6946ac46d1760bcfe15ca2bb8552119b2264ed36464fbb10f677c7fbe6c",
+    "configs/hip-v1-strided/profile/hip-v1-strided_kernel_stats.csv": "335379fe859b30d8cd9d8e5fec6742dc58e816144e877c1eb1222270459c47ee",
+    "configs/hip-v1-strided/profile/hip-v1-strided_kernel_trace.csv": "988bead65532ebb5340d05cf5068478fec0d096cb5b791a93f8ca3a948a3de30",
+    "configs/hip-v1-strided/profile.stderr.log": "850e6a6adec620bc8e910ad1e20f72757f66a8ca98319e46381aa013a2a3b315",
+    "configs/hip-v1-strided/profile.stdout.log": "a504f083036c86e8899a74664fa9e928ecc3fea096de8927b4e6d0585819486c",
+    "configs/hip-v2-g2048/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v2-g2048/benchmark-p1.stdout.log": "db38dd391629ccfb3efa5061ebdd1c19eff1266aeb2a3a68c8eb077ae4d2c270",
+    "configs/hip-v2-g2048/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v2-g2048/inspect.stdout.log": "e486ccf469bd33dcb25a6f8bc1423de7960c120b0d424be52e86a77114a33f11",
+    "configs/hip-v2-g2048/profile/hip-v2-g2048_domain_stats.csv": "fa048cc37d3d3522fc9861c8b13d503028253633b43538f76cba254c3f3457f2",
+    "configs/hip-v2-g2048/profile/hip-v2-g2048_hip_api_stats.csv": "4946e455896f4c3c9fc283228a874ef24634ede853954771e0ee5ed60e158fcc",
+    "configs/hip-v2-g2048/profile/hip-v2-g2048_kernel_stats.csv": "d87917da65096173c3a5c4bc4c84686c8624e311286b464db8c7010d4f941a2a",
+    "configs/hip-v2-g2048/profile/hip-v2-g2048_kernel_trace.csv": "01a14cc6aed740cfc5265cd4d537904f3bb04f01dc1590752a0b9249c0711120",
+    "configs/hip-v2-g2048/profile.stderr.log": "bd04b67b5def932489de860d4aa31dc21b5802bcbb50287b2b90f105ea6aa7f1",
+    "configs/hip-v2-g2048/profile.stdout.log": "d83ee4eb7bbaa2ee51a0245e1fc0bf4938db414494528802837cb2723c57371d",
+    "configs/hip-v2-g256/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v2-g256/benchmark-p1.stdout.log": "34eda7abce80c7307d427e9659ed1a69e729c2e608cd24c3389a6d7604992785",
+    "configs/hip-v2-g256/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v2-g256/inspect.stdout.log": "fca52aff9b4a085d25e4dbcce7414b1747b7242eb2335e29b347dcf2ffdb5de0",
+    "configs/hip-v2-g256/profile/hip-v2-g256_domain_stats.csv": "b182f82bda92c96ed8e7f819aa5aadfcdc9785a8da25d81961ec9ca49a48d85d",
+    "configs/hip-v2-g256/profile/hip-v2-g256_hip_api_stats.csv": "c1e1a44be86a30c8aaf148afc626cad23535c2d0968fa06e5516fba35983da50",
+    "configs/hip-v2-g256/profile/hip-v2-g256_kernel_stats.csv": "3260e064ace6260a49587d2fee5ba970eb9b316502b67ada373f258b623c10ed",
+    "configs/hip-v2-g256/profile/hip-v2-g256_kernel_trace.csv": "ce8935981b7764ace547c4798f651a7ccbc6362b1fbbfaf75a349602cb2039d2",
+    "configs/hip-v2-g256/profile.stderr.log": "355880897e5348aa760e1ed8ea6f65c64f6bbfae6ba4d1020c020b1e04ae498c",
+    "configs/hip-v2-g256/profile.stdout.log": "1bd98b93625d52f569c28210dcbd50cba8a2cadf1e08aa757314de56ea065570",
+    "configs/hip-v2-g65536/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v2-g65536/benchmark-p1.stdout.log": "59d29bb384b934eaa94bcef2340b07085498a2dfe99f55f7635e6405d17de368",
+    "configs/hip-v2-g65536/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v2-g65536/inspect.stdout.log": "d53cdd293aab12dbf76fd52ef8881b7cc05b6719c89cbef1c8b1abe401fee022",
+    "configs/hip-v2-g65536/profile/hip-v2-g65536_domain_stats.csv": "bdd8daa134bbdb5a8fac882ca44d7daf56128c44e21e5f78cc3c8cd1e3ddec3d",
+    "configs/hip-v2-g65536/profile/hip-v2-g65536_hip_api_stats.csv": "664e0dc05bed55f1de7d50528a117fed58983e7d2aaeeac4cc2a0e526d8c76e2",
+    "configs/hip-v2-g65536/profile/hip-v2-g65536_kernel_stats.csv": "65dec622bfb3c7f6cb701d0eee521a1b387a5aecd2aecff01c2666c17c22c41e",
+    "configs/hip-v2-g65536/profile/hip-v2-g65536_kernel_trace.csv": "fcc26bba9530b141de60c117eceda3521ee072dd953ac4a7d334423730ad105d",
+    "configs/hip-v2-g65536/profile.stderr.log": "b4ffc5804b2b5b4398d4078f5af1d368dcc4633f9251c504c5eb2acfabcb8c36",
+    "configs/hip-v2-g65536/profile.stdout.log": "681dffb1f139cd01e95e4784b0df7889440443cd1824df26d2e50719b90d5b7d",
+    "configs/hip-v3-g256/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v3-g256/benchmark-p1.stdout.log": "fe89ff83b914048dc2fd089ae8fd5821d57d16159d0c55afc3d85b9316b0dd1a",
+    "configs/hip-v3-g256/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/hip-v3-g256/inspect.stdout.log": "fcde4155ab6b6b082d76d6802ac8ede096f22686d762fa53a77a38bd4c2ccf02",
+    "configs/hip-v3-g256/profile/hip-v3-g256_domain_stats.csv": "d96d31850081f56b60674d27c8e44b5af08a5a3ac4c324cadfa8164c4d0a946c",
+    "configs/hip-v3-g256/profile/hip-v3-g256_hip_api_stats.csv": "0d4580bbc5245b7ba25d6855396ac22f2cb5b49ebc606920f2a5ea7ad159c3d4",
+    "configs/hip-v3-g256/profile/hip-v3-g256_kernel_stats.csv": "7a4fc50118f391c2510e4716127da82e75b57b26f750961dd0eec81589d747cc",
+    "configs/hip-v3-g256/profile/hip-v3-g256_kernel_trace.csv": "9f2d7fe7f320ad4676eb2a021b81cf73a47b19c73a385e4df0e5915b7ed6f3a8",
+    "configs/hip-v3-g256/profile.stderr.log": "f5fd4752b631f5b3ab53be7707792ae2aa4db8054c88f3d38f9b3bd48b233f2d",
+    "configs/hip-v3-g256/profile.stdout.log": "839f7328d7f38fb0785cb748fa6cbbe58a519f9120bf32a98acd72667c75fa3d",
+    "configs/triton-t0-b256/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t0-b256/benchmark-p1.stdout.log": "907a667e839b195cb78b15413bbde4bc6260c9911a3e05fabceb950aa6f4944e",
+    "configs/triton-t0-b256/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t0-b256/inspect.stdout.log": "8d8a3943e025d6f5eb066a890bb1a8f3296dd973b70dc9a3644a8a3b652e7725",
+    "configs/triton-t0-b256/profile/triton-t0-b256_domain_stats.csv": "0654d2f628be13194971c2d41b04bb61828d8457de97ce8eeee34954f0f8c3f0",
+    "configs/triton-t0-b256/profile/triton-t0-b256_hip_api_stats.csv": "146509e5d85b5472ff51ae01a1fea78f502bf4df24433320027fbd335fe882b4",
+    "configs/triton-t0-b256/profile/triton-t0-b256_kernel_stats.csv": "d9a9b28ab68deda344414f716406add38bb60c56117b8e7cb5c4fc23c667f035",
+    "configs/triton-t0-b256/profile/triton-t0-b256_kernel_trace.csv": "dbeac6f87ecc5e689c2750539be4adeb9d17e1fd257c931ecbac04862f9cc251",
+    "configs/triton-t0-b256/profile.stderr.log": "252319db5425e09bae6a32dce59df76f5d491e25df52953360bc78db341f3081",
+    "configs/triton-t0-b256/profile.stdout.log": "bc31b754e52cf3f1cccafbc73d3fb7e1078cb4d86b06b4f0297b686c79a3983f",
+    "configs/triton-t1-b1024/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t1-b1024/benchmark-p1.stdout.log": "c593f57af9cdcabe8cdd60f0fc2a8248dc5b740bebddc4c490efb5691e1412f5",
+    "configs/triton-t1-b1024/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t1-b1024/inspect.stdout.log": "63e7ce5a823a089bdba8337e2e1dfe5eb0aa3706f1b722c1e8d8a079def4d66d",
+    "configs/triton-t1-b1024/profile/triton-t1-b1024_domain_stats.csv": "82ce3e63010aaaef4a67e8a3e70b1c6b6bcf06c92d18cfef86ade04c3eeabe41",
+    "configs/triton-t1-b1024/profile/triton-t1-b1024_hip_api_stats.csv": "114f7b723753b3051de0e756d0fa530923a1518cb87aad32fefeb0b3905bd117",
+    "configs/triton-t1-b1024/profile/triton-t1-b1024_kernel_stats.csv": "ffc532237cb290e9e296fe6b70cf1f8f72f989e0ab0c708319025f574f132981",
+    "configs/triton-t1-b1024/profile/triton-t1-b1024_kernel_trace.csv": "02101494d52cc1c4edb861778b6ee573a84aafdf2b6ad08338fb170bca538a85",
+    "configs/triton-t1-b1024/profile.stderr.log": "7de1544d143159b31efae93c43517b54da226b4ebd5325e668a5722e0fd6ce78",
+    "configs/triton-t1-b1024/profile.stdout.log": "dcb42e74ca1f6e28dc1cf05e59998e5ef79315e82b6dcff00cdcd2d4cb03423f",
+    "configs/triton-t1-b2048/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t1-b2048/benchmark-p1.stdout.log": "2ca2e7fb659008561c8311622b9db3de01ccf7d7972e6add53cf6b01983c551d",
+    "configs/triton-t1-b2048/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t1-b2048/inspect.stdout.log": "f6cec1fff73792266bdeddb6ac6be22c7dcdc277d9c0f52e1e760eb91aadf7ff",
+    "configs/triton-t1-b2048/profile/triton-t1-b2048_domain_stats.csv": "53f081d7266e2cd2b568b48ab7a254798fe45f45b2fef1aaa5bd70ae9060e4d1",
+    "configs/triton-t1-b2048/profile/triton-t1-b2048_hip_api_stats.csv": "0bd939fd48cc5d97f0ddc5fe71ce6246b9e764c28c9e5da3c3c77ac0ae9456cb",
+    "configs/triton-t1-b2048/profile/triton-t1-b2048_kernel_stats.csv": "c62c996a608e11420d8a31a91f454e5a93b0308ede1878330a1c15b77fb42f47",
+    "configs/triton-t1-b2048/profile/triton-t1-b2048_kernel_trace.csv": "184ca14ecc45ccf5cd1d769809310137c5a54d26eb5815ed10059aaba2a7561d",
+    "configs/triton-t1-b2048/profile.stderr.log": "7416a194a7cbbb3a0ee96dc6b9bc68a56620815b7e5507e8468b0c4dd5c3f937",
+    "configs/triton-t1-b2048/profile.stdout.log": "5c932f2e8a3d9f1abd564eb1216749022f29dae368a9c1431ea8855c0eed5394",
+    "configs/triton-t1-b512/benchmark-p1.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t1-b512/benchmark-p1.stdout.log": "8db8b5aeee2eb8f5fcd73cf3f237888e80a882832ff383ab75b22b6f1aaf08c3",
+    "configs/triton-t1-b512/inspect.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configs/triton-t1-b512/inspect.stdout.log": "6b74e660546115057ed561255c088cf741ec4b72381ec760ee84d1e979d3364d",
+    "configs/triton-t1-b512/profile/triton-t1-b512_domain_stats.csv": "30f1f07d9711b5ede28202d06e4fb0c62d05fd647af79687946a4847a3a24835",
+    "configs/triton-t1-b512/profile/triton-t1-b512_hip_api_stats.csv": "ed9cf89bba4fa0d4f3cff1519aa41847682b78a6ea22f4540e8d69ed34d4c95c",
+    "configs/triton-t1-b512/profile/triton-t1-b512_kernel_stats.csv": "592401c61f3bc1de7fca8224ca5ac096fc0482adf7e4b491a5b13c21d7217226",
+    "configs/triton-t1-b512/profile/triton-t1-b512_kernel_trace.csv": "04ccdddd7cd7aafed7014bdd60446e613b4048687abb6031e09909d10c8001e3",
+    "configs/triton-t1-b512/profile.stderr.log": "df907c3a40e12915340eacd035988e678be6366f85b71bf1d896807d6a1206b0",
+    "configs/triton-t1-b512/profile.stdout.log": "0eeac848b5878031bbf0eca5286107307aa00b7e6ae54017b88c522f5e49f63a",
+    "process-summary.csv": "74e23b2b252b08a2c4e2c65d5b301db7eb3bde975cca0d60175474d1f1e58a78",
+    "profile-summary.csv": "973f1d445e94dacac0db50721f0e70975a0be7e6a9c6415ee58772ac0f0286b8",
+    "source/capture_walkthrough.py": "d39f95927be26a1a3917f9932a69dfcb7a516e619fdca69d23c2f6d17eb4a714",
+    "source/finish_profiles.py": "42b023748ce762d67f37fbbaac78003c55a03ec1b520063f59c982f50f13d055",
+    "source/inspect_trace.py": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b",
+    "source/vector_add_hip.hip": "73e1af89d25a91fb35ee78198ce74c93d617a9ac5a0852ff74d20abd2184aa80",
+    "source/vector_add_triton.py": "831525557254b8cf17965403972491e6b95cac63dc1c9a343af49366752fa893",
+    "summary.csv": "330fdbddad1356928a16fcb829ae8923473459b86bf72d91104f26ace5176259",
+    "summary.json": "dc0967ac944f0ce1ef86b4621ffd25040f01fa78b9596c2216175cc36e3f0f1f"
+  },
+  "walkthrough_export": {
+    "raw_manifest_sha256": "dc240236f3b9e4be4bdd69e88fba2876a81321d4d550411a07d2179ac6a52d0e",
+    "exporter_sha256": "71b9a4566efeba9c95d8742cb2e409401378bbf230cc7762c174b729cb47e475",
+    "captured_outputs": {
+      "configs/hip-v0/benchmark-p1.stdout.log": {
+        "raw_file": "configs/hip-v0/benchmark-p1.stdout.log",
+        "raw_sha256": "8bad5ca5d1d8be486ec33fcaf70a49d8d8a9f99214b38f32fec65a92558b6d78",
+        "published_sha256": "8bad5ca5d1d8be486ec33fcaf70a49d8d8a9f99214b38f32fec65a92558b6d78",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v0/benchmark-p1.stderr.log": {
+        "raw_file": "configs/hip-v0/benchmark-p1.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v0/profile.stdout.log": {
+        "raw_file": "configs/hip-v0/profile.stdout.log",
+        "raw_sha256": "74b21bffb28a127cbe7bfdb8da8719a170b60269c759ccd42614dbd76ee397c3",
+        "published_sha256": "74b21bffb28a127cbe7bfdb8da8719a170b60269c759ccd42614dbd76ee397c3",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v0/profile.stderr.log": {
+        "raw_file": "configs/hip-v0/profile.stderr.log",
+        "raw_sha256": "a8a2cf68e56618b89a7715f0e5ed0721075c92758b5b49ac36da515bf586f698",
+        "published_sha256": "a8a2cf68e56618b89a7715f0e5ed0721075c92758b5b49ac36da515bf586f698",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v0/inspect.stdout.log": {
+        "raw_file": "configs/hip-v0/inspect.stdout.log",
+        "raw_sha256": "168f2d67b015e4fa88b70e188cb4c3ed6e47a2c1e33bee2f2ecf1c5a465215b3",
+        "published_sha256": "168f2d67b015e4fa88b70e188cb4c3ed6e47a2c1e33bee2f2ecf1c5a465215b3",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v0/inspect.stderr.log": {
+        "raw_file": "configs/hip-v0/inspect.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v0/profile/hip-v0_kernel_trace.csv": {
+        "raw_file": "configs/hip-v0/profile/hip-v0_kernel_trace.csv",
+        "raw_sha256": "1980a8b351d72ffbe2c11cad94c630f850868dd5c1405b952e899e8e99ae0c28",
+        "published_sha256": "1980a8b351d72ffbe2c11cad94c630f850868dd5c1405b952e899e8e99ae0c28",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v0/profile/hip-v0_kernel_stats.csv": {
+        "raw_file": "configs/hip-v0/profile/hip-v0_kernel_stats.csv",
+        "raw_sha256": "e92e9133e846d1b8e8f2706809eb35bd96f07463b2222d883201bdebd8484fc5",
+        "published_sha256": "e92e9133e846d1b8e8f2706809eb35bd96f07463b2222d883201bdebd8484fc5",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v0/profile/hip-v0_hip_api_stats.csv": {
+        "raw_file": "configs/hip-v0/profile/hip-v0_hip_api_stats.csv",
+        "raw_sha256": "5f7e70b20173aa4bd5cd6a82f306678a4b6e71f0975dc87f3d83f2097ca64cb4",
+        "published_sha256": "5f7e70b20173aa4bd5cd6a82f306678a4b6e71f0975dc87f3d83f2097ca64cb4",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v0/profile/hip-v0_domain_stats.csv": {
+        "raw_file": "configs/hip-v0/profile/hip-v0_domain_stats.csv",
+        "raw_sha256": "7952777f827700dcc46526a43da6a7d166e5da6df000ea86b4a726348aea2e3a",
+        "published_sha256": "7952777f827700dcc46526a43da6a7d166e5da6df000ea86b4a726348aea2e3a",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v0/failed-profile-runtime-registration/profile.stderr.log": {
+        "raw_file": "configs/hip-v0/failed-profile-runtime-registration/profile.stderr.log",
+        "raw_sha256": "0070606e94373f64e89a5bbd94247dc310f363751e8ba24ffea6c06d9b21ed8e",
+        "published_sha256": "91b3026c1abce843868ba1402dd1811271e87e3dea9f20616f41d95c3dd2db20",
+        "path_prefixes_replaced": true
+      },
+      "configs/hip-v0/failed-profile-runtime-registration/profile.stdout.log": {
+        "raw_file": "configs/hip-v0/failed-profile-runtime-registration/profile.stdout.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v1-contiguous/benchmark-p1.stdout.log": {
+        "raw_file": "configs/hip-v1-contiguous/benchmark-p1.stdout.log",
+        "raw_sha256": "82e871ee8859523bd0c27781654861d4427723d84f763cd930d42c6a3a1d3fee",
+        "published_sha256": "82e871ee8859523bd0c27781654861d4427723d84f763cd930d42c6a3a1d3fee",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v1-contiguous/benchmark-p1.stderr.log": {
+        "raw_file": "configs/hip-v1-contiguous/benchmark-p1.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v1-contiguous/profile.stdout.log": {
+        "raw_file": "configs/hip-v1-contiguous/profile.stdout.log",
+        "raw_sha256": "8f79977c0e8bf2e053d07955be880c6d519d598e4be98a07c0686b354af7224a",
+        "published_sha256": "8f79977c0e8bf2e053d07955be880c6d519d598e4be98a07c0686b354af7224a",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v1-contiguous/profile.stderr.log": {
+        "raw_file": "configs/hip-v1-contiguous/profile.stderr.log",
+        "raw_sha256": "8d0e9cbf3f8b7962593a338a902c63036dbc6544fceb89f2c4f3aba7f17b1d72",
+        "published_sha256": "8d0e9cbf3f8b7962593a338a902c63036dbc6544fceb89f2c4f3aba7f17b1d72",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v1-contiguous/inspect.stdout.log": {
+        "raw_file": "configs/hip-v1-contiguous/inspect.stdout.log",
+        "raw_sha256": "932866c951ce4edb6e09da359d6d0a0f85e293231149d31a1ce450896f533419",
+        "published_sha256": "932866c951ce4edb6e09da359d6d0a0f85e293231149d31a1ce450896f533419",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v1-contiguous/inspect.stderr.log": {
+        "raw_file": "configs/hip-v1-contiguous/inspect.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v1-contiguous/profile/hip-v1-contiguous_kernel_trace.csv": {
+        "raw_file": "configs/hip-v1-contiguous/profile/hip-v1-contiguous_kernel_trace.csv",
+        "raw_sha256": "1a2968754db9498964e40c476b85cc2b26f26f32a2d5f653edfed18864bdda4b",
+        "published_sha256": "1a2968754db9498964e40c476b85cc2b26f26f32a2d5f653edfed18864bdda4b",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v1-contiguous/profile/hip-v1-contiguous_kernel_stats.csv": {
+        "raw_file": "configs/hip-v1-contiguous/profile/hip-v1-contiguous_kernel_stats.csv",
+        "raw_sha256": "82612b7f5b72f3fdb69ba22d7b0977c255f78b456ea28087e8f12f277ebbfc38",
+        "published_sha256": "82612b7f5b72f3fdb69ba22d7b0977c255f78b456ea28087e8f12f277ebbfc38",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v1-contiguous/profile/hip-v1-contiguous_hip_api_stats.csv": {
+        "raw_file": "configs/hip-v1-contiguous/profile/hip-v1-contiguous_hip_api_stats.csv",
+        "raw_sha256": "e7983a6ed259c380195824634f7fca493d4ba96e47c987b4478475f7808c7f4d",
+        "published_sha256": "e7983a6ed259c380195824634f7fca493d4ba96e47c987b4478475f7808c7f4d",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v1-contiguous/profile/hip-v1-contiguous_domain_stats.csv": {
+        "raw_file": "configs/hip-v1-contiguous/profile/hip-v1-contiguous_domain_stats.csv",
+        "raw_sha256": "cc7552405da6bde4e4638836bf0724f4d7915873a85216696c3aa4235cc07d89",
+        "published_sha256": "cc7552405da6bde4e4638836bf0724f4d7915873a85216696c3aa4235cc07d89",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v1-strided/benchmark-p1.stdout.log": {
+        "raw_file": "configs/hip-v1-strided/benchmark-p1.stdout.log",
+        "raw_sha256": "b46a2ccd2950e6ced218a2a95e627e25ac2c4e8be6412a64e181b9d00a1035d8",
+        "published_sha256": "b46a2ccd2950e6ced218a2a95e627e25ac2c4e8be6412a64e181b9d00a1035d8",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v1-strided/benchmark-p1.stderr.log": {
+        "raw_file": "configs/hip-v1-strided/benchmark-p1.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v1-strided/profile.stdout.log": {
+        "raw_file": "configs/hip-v1-strided/profile.stdout.log",
+        "raw_sha256": "a504f083036c86e8899a74664fa9e928ecc3fea096de8927b4e6d0585819486c",
+        "published_sha256": "a504f083036c86e8899a74664fa9e928ecc3fea096de8927b4e6d0585819486c",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v1-strided/profile.stderr.log": {
+        "raw_file": "configs/hip-v1-strided/profile.stderr.log",
+        "raw_sha256": "850e6a6adec620bc8e910ad1e20f72757f66a8ca98319e46381aa013a2a3b315",
+        "published_sha256": "850e6a6adec620bc8e910ad1e20f72757f66a8ca98319e46381aa013a2a3b315",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v1-strided/inspect.stdout.log": {
+        "raw_file": "configs/hip-v1-strided/inspect.stdout.log",
+        "raw_sha256": "5e61ca382fc3552eac0d393b2d5026c59e93f610cef5a2d5f4e98c30157000f6",
+        "published_sha256": "5e61ca382fc3552eac0d393b2d5026c59e93f610cef5a2d5f4e98c30157000f6",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v1-strided/inspect.stderr.log": {
+        "raw_file": "configs/hip-v1-strided/inspect.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v1-strided/profile/hip-v1-strided_kernel_trace.csv": {
+        "raw_file": "configs/hip-v1-strided/profile/hip-v1-strided_kernel_trace.csv",
+        "raw_sha256": "988bead65532ebb5340d05cf5068478fec0d096cb5b791a93f8ca3a948a3de30",
+        "published_sha256": "988bead65532ebb5340d05cf5068478fec0d096cb5b791a93f8ca3a948a3de30",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v1-strided/profile/hip-v1-strided_kernel_stats.csv": {
+        "raw_file": "configs/hip-v1-strided/profile/hip-v1-strided_kernel_stats.csv",
+        "raw_sha256": "335379fe859b30d8cd9d8e5fec6742dc58e816144e877c1eb1222270459c47ee",
+        "published_sha256": "335379fe859b30d8cd9d8e5fec6742dc58e816144e877c1eb1222270459c47ee",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v1-strided/profile/hip-v1-strided_hip_api_stats.csv": {
+        "raw_file": "configs/hip-v1-strided/profile/hip-v1-strided_hip_api_stats.csv",
+        "raw_sha256": "61f7f6946ac46d1760bcfe15ca2bb8552119b2264ed36464fbb10f677c7fbe6c",
+        "published_sha256": "61f7f6946ac46d1760bcfe15ca2bb8552119b2264ed36464fbb10f677c7fbe6c",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v1-strided/profile/hip-v1-strided_domain_stats.csv": {
+        "raw_file": "configs/hip-v1-strided/profile/hip-v1-strided_domain_stats.csv",
+        "raw_sha256": "701fde5b8553f8db797dad06c3286e27548c9f6b65262b836ed88fef4ccd6457",
+        "published_sha256": "701fde5b8553f8db797dad06c3286e27548c9f6b65262b836ed88fef4ccd6457",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g65536/benchmark-p1.stdout.log": {
+        "raw_file": "configs/hip-v2-g65536/benchmark-p1.stdout.log",
+        "raw_sha256": "59d29bb384b934eaa94bcef2340b07085498a2dfe99f55f7635e6405d17de368",
+        "published_sha256": "59d29bb384b934eaa94bcef2340b07085498a2dfe99f55f7635e6405d17de368",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g65536/benchmark-p1.stderr.log": {
+        "raw_file": "configs/hip-v2-g65536/benchmark-p1.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g65536/profile.stdout.log": {
+        "raw_file": "configs/hip-v2-g65536/profile.stdout.log",
+        "raw_sha256": "681dffb1f139cd01e95e4784b0df7889440443cd1824df26d2e50719b90d5b7d",
+        "published_sha256": "681dffb1f139cd01e95e4784b0df7889440443cd1824df26d2e50719b90d5b7d",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g65536/profile.stderr.log": {
+        "raw_file": "configs/hip-v2-g65536/profile.stderr.log",
+        "raw_sha256": "b4ffc5804b2b5b4398d4078f5af1d368dcc4633f9251c504c5eb2acfabcb8c36",
+        "published_sha256": "b4ffc5804b2b5b4398d4078f5af1d368dcc4633f9251c504c5eb2acfabcb8c36",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g65536/inspect.stdout.log": {
+        "raw_file": "configs/hip-v2-g65536/inspect.stdout.log",
+        "raw_sha256": "d53cdd293aab12dbf76fd52ef8881b7cc05b6719c89cbef1c8b1abe401fee022",
+        "published_sha256": "d53cdd293aab12dbf76fd52ef8881b7cc05b6719c89cbef1c8b1abe401fee022",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g65536/inspect.stderr.log": {
+        "raw_file": "configs/hip-v2-g65536/inspect.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g65536/profile/hip-v2-g65536_kernel_trace.csv": {
+        "raw_file": "configs/hip-v2-g65536/profile/hip-v2-g65536_kernel_trace.csv",
+        "raw_sha256": "fcc26bba9530b141de60c117eceda3521ee072dd953ac4a7d334423730ad105d",
+        "published_sha256": "fcc26bba9530b141de60c117eceda3521ee072dd953ac4a7d334423730ad105d",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g65536/profile/hip-v2-g65536_kernel_stats.csv": {
+        "raw_file": "configs/hip-v2-g65536/profile/hip-v2-g65536_kernel_stats.csv",
+        "raw_sha256": "65dec622bfb3c7f6cb701d0eee521a1b387a5aecd2aecff01c2666c17c22c41e",
+        "published_sha256": "65dec622bfb3c7f6cb701d0eee521a1b387a5aecd2aecff01c2666c17c22c41e",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g65536/profile/hip-v2-g65536_hip_api_stats.csv": {
+        "raw_file": "configs/hip-v2-g65536/profile/hip-v2-g65536_hip_api_stats.csv",
+        "raw_sha256": "664e0dc05bed55f1de7d50528a117fed58983e7d2aaeeac4cc2a0e526d8c76e2",
+        "published_sha256": "664e0dc05bed55f1de7d50528a117fed58983e7d2aaeeac4cc2a0e526d8c76e2",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g65536/profile/hip-v2-g65536_domain_stats.csv": {
+        "raw_file": "configs/hip-v2-g65536/profile/hip-v2-g65536_domain_stats.csv",
+        "raw_sha256": "bdd8daa134bbdb5a8fac882ca44d7daf56128c44e21e5f78cc3c8cd1e3ddec3d",
+        "published_sha256": "bdd8daa134bbdb5a8fac882ca44d7daf56128c44e21e5f78cc3c8cd1e3ddec3d",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g2048/benchmark-p1.stdout.log": {
+        "raw_file": "configs/hip-v2-g2048/benchmark-p1.stdout.log",
+        "raw_sha256": "db38dd391629ccfb3efa5061ebdd1c19eff1266aeb2a3a68c8eb077ae4d2c270",
+        "published_sha256": "db38dd391629ccfb3efa5061ebdd1c19eff1266aeb2a3a68c8eb077ae4d2c270",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g2048/benchmark-p1.stderr.log": {
+        "raw_file": "configs/hip-v2-g2048/benchmark-p1.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g2048/profile.stdout.log": {
+        "raw_file": "configs/hip-v2-g2048/profile.stdout.log",
+        "raw_sha256": "d83ee4eb7bbaa2ee51a0245e1fc0bf4938db414494528802837cb2723c57371d",
+        "published_sha256": "d83ee4eb7bbaa2ee51a0245e1fc0bf4938db414494528802837cb2723c57371d",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g2048/profile.stderr.log": {
+        "raw_file": "configs/hip-v2-g2048/profile.stderr.log",
+        "raw_sha256": "bd04b67b5def932489de860d4aa31dc21b5802bcbb50287b2b90f105ea6aa7f1",
+        "published_sha256": "bd04b67b5def932489de860d4aa31dc21b5802bcbb50287b2b90f105ea6aa7f1",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g2048/inspect.stdout.log": {
+        "raw_file": "configs/hip-v2-g2048/inspect.stdout.log",
+        "raw_sha256": "e486ccf469bd33dcb25a6f8bc1423de7960c120b0d424be52e86a77114a33f11",
+        "published_sha256": "e486ccf469bd33dcb25a6f8bc1423de7960c120b0d424be52e86a77114a33f11",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g2048/inspect.stderr.log": {
+        "raw_file": "configs/hip-v2-g2048/inspect.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g2048/profile/hip-v2-g2048_kernel_trace.csv": {
+        "raw_file": "configs/hip-v2-g2048/profile/hip-v2-g2048_kernel_trace.csv",
+        "raw_sha256": "01a14cc6aed740cfc5265cd4d537904f3bb04f01dc1590752a0b9249c0711120",
+        "published_sha256": "01a14cc6aed740cfc5265cd4d537904f3bb04f01dc1590752a0b9249c0711120",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g2048/profile/hip-v2-g2048_kernel_stats.csv": {
+        "raw_file": "configs/hip-v2-g2048/profile/hip-v2-g2048_kernel_stats.csv",
+        "raw_sha256": "d87917da65096173c3a5c4bc4c84686c8624e311286b464db8c7010d4f941a2a",
+        "published_sha256": "d87917da65096173c3a5c4bc4c84686c8624e311286b464db8c7010d4f941a2a",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g2048/profile/hip-v2-g2048_hip_api_stats.csv": {
+        "raw_file": "configs/hip-v2-g2048/profile/hip-v2-g2048_hip_api_stats.csv",
+        "raw_sha256": "4946e455896f4c3c9fc283228a874ef24634ede853954771e0ee5ed60e158fcc",
+        "published_sha256": "4946e455896f4c3c9fc283228a874ef24634ede853954771e0ee5ed60e158fcc",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g2048/profile/hip-v2-g2048_domain_stats.csv": {
+        "raw_file": "configs/hip-v2-g2048/profile/hip-v2-g2048_domain_stats.csv",
+        "raw_sha256": "fa048cc37d3d3522fc9861c8b13d503028253633b43538f76cba254c3f3457f2",
+        "published_sha256": "fa048cc37d3d3522fc9861c8b13d503028253633b43538f76cba254c3f3457f2",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g256/benchmark-p1.stdout.log": {
+        "raw_file": "configs/hip-v2-g256/benchmark-p1.stdout.log",
+        "raw_sha256": "34eda7abce80c7307d427e9659ed1a69e729c2e608cd24c3389a6d7604992785",
+        "published_sha256": "34eda7abce80c7307d427e9659ed1a69e729c2e608cd24c3389a6d7604992785",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g256/benchmark-p1.stderr.log": {
+        "raw_file": "configs/hip-v2-g256/benchmark-p1.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g256/profile.stdout.log": {
+        "raw_file": "configs/hip-v2-g256/profile.stdout.log",
+        "raw_sha256": "1bd98b93625d52f569c28210dcbd50cba8a2cadf1e08aa757314de56ea065570",
+        "published_sha256": "1bd98b93625d52f569c28210dcbd50cba8a2cadf1e08aa757314de56ea065570",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g256/profile.stderr.log": {
+        "raw_file": "configs/hip-v2-g256/profile.stderr.log",
+        "raw_sha256": "355880897e5348aa760e1ed8ea6f65c64f6bbfae6ba4d1020c020b1e04ae498c",
+        "published_sha256": "355880897e5348aa760e1ed8ea6f65c64f6bbfae6ba4d1020c020b1e04ae498c",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g256/inspect.stdout.log": {
+        "raw_file": "configs/hip-v2-g256/inspect.stdout.log",
+        "raw_sha256": "fca52aff9b4a085d25e4dbcce7414b1747b7242eb2335e29b347dcf2ffdb5de0",
+        "published_sha256": "fca52aff9b4a085d25e4dbcce7414b1747b7242eb2335e29b347dcf2ffdb5de0",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g256/inspect.stderr.log": {
+        "raw_file": "configs/hip-v2-g256/inspect.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g256/profile/hip-v2-g256_kernel_trace.csv": {
+        "raw_file": "configs/hip-v2-g256/profile/hip-v2-g256_kernel_trace.csv",
+        "raw_sha256": "ce8935981b7764ace547c4798f651a7ccbc6362b1fbbfaf75a349602cb2039d2",
+        "published_sha256": "ce8935981b7764ace547c4798f651a7ccbc6362b1fbbfaf75a349602cb2039d2",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g256/profile/hip-v2-g256_kernel_stats.csv": {
+        "raw_file": "configs/hip-v2-g256/profile/hip-v2-g256_kernel_stats.csv",
+        "raw_sha256": "3260e064ace6260a49587d2fee5ba970eb9b316502b67ada373f258b623c10ed",
+        "published_sha256": "3260e064ace6260a49587d2fee5ba970eb9b316502b67ada373f258b623c10ed",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g256/profile/hip-v2-g256_hip_api_stats.csv": {
+        "raw_file": "configs/hip-v2-g256/profile/hip-v2-g256_hip_api_stats.csv",
+        "raw_sha256": "c1e1a44be86a30c8aaf148afc626cad23535c2d0968fa06e5516fba35983da50",
+        "published_sha256": "c1e1a44be86a30c8aaf148afc626cad23535c2d0968fa06e5516fba35983da50",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v2-g256/profile/hip-v2-g256_domain_stats.csv": {
+        "raw_file": "configs/hip-v2-g256/profile/hip-v2-g256_domain_stats.csv",
+        "raw_sha256": "b182f82bda92c96ed8e7f819aa5aadfcdc9785a8da25d81961ec9ca49a48d85d",
+        "published_sha256": "b182f82bda92c96ed8e7f819aa5aadfcdc9785a8da25d81961ec9ca49a48d85d",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v3-g256/benchmark-p1.stdout.log": {
+        "raw_file": "configs/hip-v3-g256/benchmark-p1.stdout.log",
+        "raw_sha256": "fe89ff83b914048dc2fd089ae8fd5821d57d16159d0c55afc3d85b9316b0dd1a",
+        "published_sha256": "fe89ff83b914048dc2fd089ae8fd5821d57d16159d0c55afc3d85b9316b0dd1a",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v3-g256/benchmark-p1.stderr.log": {
+        "raw_file": "configs/hip-v3-g256/benchmark-p1.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v3-g256/profile.stdout.log": {
+        "raw_file": "configs/hip-v3-g256/profile.stdout.log",
+        "raw_sha256": "839f7328d7f38fb0785cb748fa6cbbe58a519f9120bf32a98acd72667c75fa3d",
+        "published_sha256": "839f7328d7f38fb0785cb748fa6cbbe58a519f9120bf32a98acd72667c75fa3d",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v3-g256/profile.stderr.log": {
+        "raw_file": "configs/hip-v3-g256/profile.stderr.log",
+        "raw_sha256": "f5fd4752b631f5b3ab53be7707792ae2aa4db8054c88f3d38f9b3bd48b233f2d",
+        "published_sha256": "f5fd4752b631f5b3ab53be7707792ae2aa4db8054c88f3d38f9b3bd48b233f2d",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v3-g256/inspect.stdout.log": {
+        "raw_file": "configs/hip-v3-g256/inspect.stdout.log",
+        "raw_sha256": "fcde4155ab6b6b082d76d6802ac8ede096f22686d762fa53a77a38bd4c2ccf02",
+        "published_sha256": "fcde4155ab6b6b082d76d6802ac8ede096f22686d762fa53a77a38bd4c2ccf02",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v3-g256/inspect.stderr.log": {
+        "raw_file": "configs/hip-v3-g256/inspect.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v3-g256/profile/hip-v3-g256_kernel_trace.csv": {
+        "raw_file": "configs/hip-v3-g256/profile/hip-v3-g256_kernel_trace.csv",
+        "raw_sha256": "9f2d7fe7f320ad4676eb2a021b81cf73a47b19c73a385e4df0e5915b7ed6f3a8",
+        "published_sha256": "9f2d7fe7f320ad4676eb2a021b81cf73a47b19c73a385e4df0e5915b7ed6f3a8",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v3-g256/profile/hip-v3-g256_kernel_stats.csv": {
+        "raw_file": "configs/hip-v3-g256/profile/hip-v3-g256_kernel_stats.csv",
+        "raw_sha256": "7a4fc50118f391c2510e4716127da82e75b57b26f750961dd0eec81589d747cc",
+        "published_sha256": "7a4fc50118f391c2510e4716127da82e75b57b26f750961dd0eec81589d747cc",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v3-g256/profile/hip-v3-g256_hip_api_stats.csv": {
+        "raw_file": "configs/hip-v3-g256/profile/hip-v3-g256_hip_api_stats.csv",
+        "raw_sha256": "0d4580bbc5245b7ba25d6855396ac22f2cb5b49ebc606920f2a5ea7ad159c3d4",
+        "published_sha256": "0d4580bbc5245b7ba25d6855396ac22f2cb5b49ebc606920f2a5ea7ad159c3d4",
+        "path_prefixes_replaced": false
+      },
+      "configs/hip-v3-g256/profile/hip-v3-g256_domain_stats.csv": {
+        "raw_file": "configs/hip-v3-g256/profile/hip-v3-g256_domain_stats.csv",
+        "raw_sha256": "d96d31850081f56b60674d27c8e44b5af08a5a3ac4c324cadfa8164c4d0a946c",
+        "published_sha256": "d96d31850081f56b60674d27c8e44b5af08a5a3ac4c324cadfa8164c4d0a946c",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t0-b256/benchmark-p1.stdout.log": {
+        "raw_file": "configs/triton-t0-b256/benchmark-p1.stdout.log",
+        "raw_sha256": "907a667e839b195cb78b15413bbde4bc6260c9911a3e05fabceb950aa6f4944e",
+        "published_sha256": "907a667e839b195cb78b15413bbde4bc6260c9911a3e05fabceb950aa6f4944e",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t0-b256/benchmark-p1.stderr.log": {
+        "raw_file": "configs/triton-t0-b256/benchmark-p1.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t0-b256/profile.stdout.log": {
+        "raw_file": "configs/triton-t0-b256/profile.stdout.log",
+        "raw_sha256": "bc31b754e52cf3f1cccafbc73d3fb7e1078cb4d86b06b4f0297b686c79a3983f",
+        "published_sha256": "bc31b754e52cf3f1cccafbc73d3fb7e1078cb4d86b06b4f0297b686c79a3983f",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t0-b256/profile.stderr.log": {
+        "raw_file": "configs/triton-t0-b256/profile.stderr.log",
+        "raw_sha256": "252319db5425e09bae6a32dce59df76f5d491e25df52953360bc78db341f3081",
+        "published_sha256": "252319db5425e09bae6a32dce59df76f5d491e25df52953360bc78db341f3081",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t0-b256/inspect.stdout.log": {
+        "raw_file": "configs/triton-t0-b256/inspect.stdout.log",
+        "raw_sha256": "8d8a3943e025d6f5eb066a890bb1a8f3296dd973b70dc9a3644a8a3b652e7725",
+        "published_sha256": "8d8a3943e025d6f5eb066a890bb1a8f3296dd973b70dc9a3644a8a3b652e7725",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t0-b256/inspect.stderr.log": {
+        "raw_file": "configs/triton-t0-b256/inspect.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t0-b256/profile/triton-t0-b256_kernel_trace.csv": {
+        "raw_file": "configs/triton-t0-b256/profile/triton-t0-b256_kernel_trace.csv",
+        "raw_sha256": "dbeac6f87ecc5e689c2750539be4adeb9d17e1fd257c931ecbac04862f9cc251",
+        "published_sha256": "dbeac6f87ecc5e689c2750539be4adeb9d17e1fd257c931ecbac04862f9cc251",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t0-b256/profile/triton-t0-b256_kernel_stats.csv": {
+        "raw_file": "configs/triton-t0-b256/profile/triton-t0-b256_kernel_stats.csv",
+        "raw_sha256": "d9a9b28ab68deda344414f716406add38bb60c56117b8e7cb5c4fc23c667f035",
+        "published_sha256": "d9a9b28ab68deda344414f716406add38bb60c56117b8e7cb5c4fc23c667f035",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t0-b256/profile/triton-t0-b256_hip_api_stats.csv": {
+        "raw_file": "configs/triton-t0-b256/profile/triton-t0-b256_hip_api_stats.csv",
+        "raw_sha256": "146509e5d85b5472ff51ae01a1fea78f502bf4df24433320027fbd335fe882b4",
+        "published_sha256": "146509e5d85b5472ff51ae01a1fea78f502bf4df24433320027fbd335fe882b4",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t0-b256/profile/triton-t0-b256_domain_stats.csv": {
+        "raw_file": "configs/triton-t0-b256/profile/triton-t0-b256_domain_stats.csv",
+        "raw_sha256": "0654d2f628be13194971c2d41b04bb61828d8457de97ce8eeee34954f0f8c3f0",
+        "published_sha256": "0654d2f628be13194971c2d41b04bb61828d8457de97ce8eeee34954f0f8c3f0",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b512/benchmark-p1.stdout.log": {
+        "raw_file": "configs/triton-t1-b512/benchmark-p1.stdout.log",
+        "raw_sha256": "8db8b5aeee2eb8f5fcd73cf3f237888e80a882832ff383ab75b22b6f1aaf08c3",
+        "published_sha256": "8db8b5aeee2eb8f5fcd73cf3f237888e80a882832ff383ab75b22b6f1aaf08c3",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b512/benchmark-p1.stderr.log": {
+        "raw_file": "configs/triton-t1-b512/benchmark-p1.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b512/profile.stdout.log": {
+        "raw_file": "configs/triton-t1-b512/profile.stdout.log",
+        "raw_sha256": "0eeac848b5878031bbf0eca5286107307aa00b7e6ae54017b88c522f5e49f63a",
+        "published_sha256": "0eeac848b5878031bbf0eca5286107307aa00b7e6ae54017b88c522f5e49f63a",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b512/profile.stderr.log": {
+        "raw_file": "configs/triton-t1-b512/profile.stderr.log",
+        "raw_sha256": "df907c3a40e12915340eacd035988e678be6366f85b71bf1d896807d6a1206b0",
+        "published_sha256": "df907c3a40e12915340eacd035988e678be6366f85b71bf1d896807d6a1206b0",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b512/inspect.stdout.log": {
+        "raw_file": "configs/triton-t1-b512/inspect.stdout.log",
+        "raw_sha256": "6b74e660546115057ed561255c088cf741ec4b72381ec760ee84d1e979d3364d",
+        "published_sha256": "6b74e660546115057ed561255c088cf741ec4b72381ec760ee84d1e979d3364d",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b512/inspect.stderr.log": {
+        "raw_file": "configs/triton-t1-b512/inspect.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b512/profile/triton-t1-b512_kernel_trace.csv": {
+        "raw_file": "configs/triton-t1-b512/profile/triton-t1-b512_kernel_trace.csv",
+        "raw_sha256": "04ccdddd7cd7aafed7014bdd60446e613b4048687abb6031e09909d10c8001e3",
+        "published_sha256": "04ccdddd7cd7aafed7014bdd60446e613b4048687abb6031e09909d10c8001e3",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b512/profile/triton-t1-b512_kernel_stats.csv": {
+        "raw_file": "configs/triton-t1-b512/profile/triton-t1-b512_kernel_stats.csv",
+        "raw_sha256": "592401c61f3bc1de7fca8224ca5ac096fc0482adf7e4b491a5b13c21d7217226",
+        "published_sha256": "592401c61f3bc1de7fca8224ca5ac096fc0482adf7e4b491a5b13c21d7217226",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b512/profile/triton-t1-b512_hip_api_stats.csv": {
+        "raw_file": "configs/triton-t1-b512/profile/triton-t1-b512_hip_api_stats.csv",
+        "raw_sha256": "ed9cf89bba4fa0d4f3cff1519aa41847682b78a6ea22f4540e8d69ed34d4c95c",
+        "published_sha256": "ed9cf89bba4fa0d4f3cff1519aa41847682b78a6ea22f4540e8d69ed34d4c95c",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b512/profile/triton-t1-b512_domain_stats.csv": {
+        "raw_file": "configs/triton-t1-b512/profile/triton-t1-b512_domain_stats.csv",
+        "raw_sha256": "30f1f07d9711b5ede28202d06e4fb0c62d05fd647af79687946a4847a3a24835",
+        "published_sha256": "30f1f07d9711b5ede28202d06e4fb0c62d05fd647af79687946a4847a3a24835",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b1024/benchmark-p1.stdout.log": {
+        "raw_file": "configs/triton-t1-b1024/benchmark-p1.stdout.log",
+        "raw_sha256": "c593f57af9cdcabe8cdd60f0fc2a8248dc5b740bebddc4c490efb5691e1412f5",
+        "published_sha256": "c593f57af9cdcabe8cdd60f0fc2a8248dc5b740bebddc4c490efb5691e1412f5",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b1024/benchmark-p1.stderr.log": {
+        "raw_file": "configs/triton-t1-b1024/benchmark-p1.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b1024/profile.stdout.log": {
+        "raw_file": "configs/triton-t1-b1024/profile.stdout.log",
+        "raw_sha256": "dcb42e74ca1f6e28dc1cf05e59998e5ef79315e82b6dcff00cdcd2d4cb03423f",
+        "published_sha256": "dcb42e74ca1f6e28dc1cf05e59998e5ef79315e82b6dcff00cdcd2d4cb03423f",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b1024/profile.stderr.log": {
+        "raw_file": "configs/triton-t1-b1024/profile.stderr.log",
+        "raw_sha256": "7de1544d143159b31efae93c43517b54da226b4ebd5325e668a5722e0fd6ce78",
+        "published_sha256": "7de1544d143159b31efae93c43517b54da226b4ebd5325e668a5722e0fd6ce78",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b1024/inspect.stdout.log": {
+        "raw_file": "configs/triton-t1-b1024/inspect.stdout.log",
+        "raw_sha256": "63e7ce5a823a089bdba8337e2e1dfe5eb0aa3706f1b722c1e8d8a079def4d66d",
+        "published_sha256": "63e7ce5a823a089bdba8337e2e1dfe5eb0aa3706f1b722c1e8d8a079def4d66d",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b1024/inspect.stderr.log": {
+        "raw_file": "configs/triton-t1-b1024/inspect.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b1024/profile/triton-t1-b1024_kernel_trace.csv": {
+        "raw_file": "configs/triton-t1-b1024/profile/triton-t1-b1024_kernel_trace.csv",
+        "raw_sha256": "02101494d52cc1c4edb861778b6ee573a84aafdf2b6ad08338fb170bca538a85",
+        "published_sha256": "02101494d52cc1c4edb861778b6ee573a84aafdf2b6ad08338fb170bca538a85",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b1024/profile/triton-t1-b1024_kernel_stats.csv": {
+        "raw_file": "configs/triton-t1-b1024/profile/triton-t1-b1024_kernel_stats.csv",
+        "raw_sha256": "ffc532237cb290e9e296fe6b70cf1f8f72f989e0ab0c708319025f574f132981",
+        "published_sha256": "ffc532237cb290e9e296fe6b70cf1f8f72f989e0ab0c708319025f574f132981",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b1024/profile/triton-t1-b1024_hip_api_stats.csv": {
+        "raw_file": "configs/triton-t1-b1024/profile/triton-t1-b1024_hip_api_stats.csv",
+        "raw_sha256": "114f7b723753b3051de0e756d0fa530923a1518cb87aad32fefeb0b3905bd117",
+        "published_sha256": "114f7b723753b3051de0e756d0fa530923a1518cb87aad32fefeb0b3905bd117",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b1024/profile/triton-t1-b1024_domain_stats.csv": {
+        "raw_file": "configs/triton-t1-b1024/profile/triton-t1-b1024_domain_stats.csv",
+        "raw_sha256": "82ce3e63010aaaef4a67e8a3e70b1c6b6bcf06c92d18cfef86ade04c3eeabe41",
+        "published_sha256": "82ce3e63010aaaef4a67e8a3e70b1c6b6bcf06c92d18cfef86ade04c3eeabe41",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b2048/benchmark-p1.stdout.log": {
+        "raw_file": "configs/triton-t1-b2048/benchmark-p1.stdout.log",
+        "raw_sha256": "2ca2e7fb659008561c8311622b9db3de01ccf7d7972e6add53cf6b01983c551d",
+        "published_sha256": "2ca2e7fb659008561c8311622b9db3de01ccf7d7972e6add53cf6b01983c551d",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b2048/benchmark-p1.stderr.log": {
+        "raw_file": "configs/triton-t1-b2048/benchmark-p1.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b2048/profile.stdout.log": {
+        "raw_file": "configs/triton-t1-b2048/profile.stdout.log",
+        "raw_sha256": "5c932f2e8a3d9f1abd564eb1216749022f29dae368a9c1431ea8855c0eed5394",
+        "published_sha256": "5c932f2e8a3d9f1abd564eb1216749022f29dae368a9c1431ea8855c0eed5394",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b2048/profile.stderr.log": {
+        "raw_file": "configs/triton-t1-b2048/profile.stderr.log",
+        "raw_sha256": "7416a194a7cbbb3a0ee96dc6b9bc68a56620815b7e5507e8468b0c4dd5c3f937",
+        "published_sha256": "7416a194a7cbbb3a0ee96dc6b9bc68a56620815b7e5507e8468b0c4dd5c3f937",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b2048/inspect.stdout.log": {
+        "raw_file": "configs/triton-t1-b2048/inspect.stdout.log",
+        "raw_sha256": "f6cec1fff73792266bdeddb6ac6be22c7dcdc277d9c0f52e1e760eb91aadf7ff",
+        "published_sha256": "f6cec1fff73792266bdeddb6ac6be22c7dcdc277d9c0f52e1e760eb91aadf7ff",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b2048/inspect.stderr.log": {
+        "raw_file": "configs/triton-t1-b2048/inspect.stderr.log",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b2048/profile/triton-t1-b2048_kernel_trace.csv": {
+        "raw_file": "configs/triton-t1-b2048/profile/triton-t1-b2048_kernel_trace.csv",
+        "raw_sha256": "184ca14ecc45ccf5cd1d769809310137c5a54d26eb5815ed10059aaba2a7561d",
+        "published_sha256": "184ca14ecc45ccf5cd1d769809310137c5a54d26eb5815ed10059aaba2a7561d",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b2048/profile/triton-t1-b2048_kernel_stats.csv": {
+        "raw_file": "configs/triton-t1-b2048/profile/triton-t1-b2048_kernel_stats.csv",
+        "raw_sha256": "c62c996a608e11420d8a31a91f454e5a93b0308ede1878330a1c15b77fb42f47",
+        "published_sha256": "c62c996a608e11420d8a31a91f454e5a93b0308ede1878330a1c15b77fb42f47",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b2048/profile/triton-t1-b2048_hip_api_stats.csv": {
+        "raw_file": "configs/triton-t1-b2048/profile/triton-t1-b2048_hip_api_stats.csv",
+        "raw_sha256": "0bd939fd48cc5d97f0ddc5fe71ce6246b9e764c28c9e5da3c3c77ac0ae9456cb",
+        "published_sha256": "0bd939fd48cc5d97f0ddc5fe71ce6246b9e764c28c9e5da3c3c77ac0ae9456cb",
+        "path_prefixes_replaced": false
+      },
+      "configs/triton-t1-b2048/profile/triton-t1-b2048_domain_stats.csv": {
+        "raw_file": "configs/triton-t1-b2048/profile/triton-t1-b2048_domain_stats.csv",
+        "raw_sha256": "53f081d7266e2cd2b568b48ab7a254798fe45f45b2fef1aaa5bd70ae9060e4d1",
+        "published_sha256": "53f081d7266e2cd2b568b48ab7a254798fe45f45b2fef1aaa5bd70ae9060e4d1",
+        "path_prefixes_replaced": false
+      },
+      "source/capture_walkthrough.py": {
+        "raw_file": "source/capture_walkthrough.py",
+        "raw_sha256": "d39f95927be26a1a3917f9932a69dfcb7a516e619fdca69d23c2f6d17eb4a714",
+        "published_sha256": "d39f95927be26a1a3917f9932a69dfcb7a516e619fdca69d23c2f6d17eb4a714",
+        "path_prefixes_replaced": false
+      },
+      "source/inspect_trace.py": {
+        "raw_file": "source/inspect_trace.py",
+        "raw_sha256": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b",
+        "published_sha256": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b",
+        "path_prefixes_replaced": false
+      },
+      "source/vector_add_hip.hip": {
+        "raw_file": "source/vector_add_hip.hip",
+        "raw_sha256": "73e1af89d25a91fb35ee78198ce74c93d617a9ac5a0852ff74d20abd2184aa80",
+        "published_sha256": "73e1af89d25a91fb35ee78198ce74c93d617a9ac5a0852ff74d20abd2184aa80",
+        "path_prefixes_replaced": false
+      },
+      "source/vector_add_triton.py": {
+        "raw_file": "source/vector_add_triton.py",
+        "raw_sha256": "831525557254b8cf17965403972491e6b95cac63dc1c9a343af49366752fa893",
+        "published_sha256": "831525557254b8cf17965403972491e6b95cac63dc1c9a343af49366752fa893",
+        "path_prefixes_replaced": false
+      },
+      "source/finish_profiles.py": {
+        "raw_file": "source/finish_profiles.py",
+        "raw_sha256": "42b023748ce762d67f37fbbaac78003c55a03ec1b520063f59c982f50f13d055",
+        "published_sha256": "42b023748ce762d67f37fbbaac78003c55a03ec1b520063f59c982f50f13d055",
+        "path_prefixes_replaced": false
+      },
+      "commands.jsonl": {
+        "raw_file": "commands.jsonl",
+        "raw_sha256": "700bf7faa9ba6579371aef82ea07fbdafda911e3dbd32c5b9226f660f5be5c76",
+        "published_sha256": "1c061ccec1715c1ccc4de6036757102023238356fa671415f763d22415e589fd",
+        "path_prefixes_replaced": true
+      }
+    },
+    "path_normalization": [
+      {
+        "original_prefix_sha256": "631f4c11c1dd006d6d6d3827d93a07b3a8000ea720bc2fd6c49202ff8f5f8b17",
+        "replacement": "<experiment-root>"
+      },
+      {
+        "original_prefix_sha256": "e7c29a058f996f091c88ce34ad564699ee62a6c433b0c84b4bb1dbfb4a73567d",
+        "replacement": "<environment-part-root>"
+      }
+    ],
+    "measurement_values_changed": false,
+    "profile_event_results_in_benchmark": false
+  }
+}

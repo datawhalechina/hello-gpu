@@ -1,0 +1,2 @@
+ENV gpu="AMD Radeon RX 9070 XT" torch=2.13.0+rocm10.0.0 hip=7.15.26333 triton=3.8.0
+RESULT config_id=triton-p128 implementation=triton-two-stage runtime=triton shape=1025 dtype=float32 block=1024 grid=2 num_warps=4 input=weighted warmup=0 repeat=1 seed=20260920 process=1 stages=2 scope=gpu-event-full-operator correct=OK precheck=OK postcheck=OK partial_check=OK median_ms=0.073421001 result=0.71875 reference=0.71875 max_abs_error=0

@@ -1,0 +1,3 @@
+Ubuntu 24.04.5 LTS
+torch 2.13.0+rocm10.0.0 triton 3.8.0 rocm 10.0.0 HIP 7.15.26333
+AMD Radeon RX 9070 XT gfx1201

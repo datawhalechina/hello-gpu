@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="460" viewBox="0 0 720 460" role="img" aria-labelledby="title desc">
+  <title id="title">同一份工作单，由多个线程各执行一遍</title>
+  <desc id="desc">Kernel 是共同的取数、相加和写回规则。三个线程分别读取 1 与 10、2 与 20、3 与 30，得到 11、22、33。每个线程都完成完整的操作流程。这里是手算示例，没有线程编号。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#607870"/></marker>
+  </defs>
+  <rect width="720" height="460" rx="12" fill="#fcfbf7"/>
+  <g font-family="PingFang SC, Microsoft YaHei, Noto Sans CJK SC, sans-serif" text-anchor="middle" fill="#273b35">
+    <rect x="24" y="22" width="672" height="106" rx="10" fill="#fff4dc" stroke="#dbc590" stroke-width="2"/>
+    <text x="360" y="64" font-size="30" font-weight="600">共同的工作单：Kernel</text>
+    <text x="360" y="104" font-size="27">取出一对数 → 相加 → 写回结果</text>
+    <g fill="none" stroke="#607870" stroke-width="2.5" marker-end="url(#arrow)">
+      <path d="M 128 132 V 170"/><path d="M 360 132 V 170"/><path d="M 592 132 V 170"/>
+    </g>
+    <g transform="translate(24 180)">
+      <rect width="208" height="220" rx="10" fill="#fff" stroke="#cbd6d1" stroke-width="2"/>
+      <text x="104" y="38" font-size="28" font-weight="600">一个线程</text>
+      <rect x="20" y="62" width="68" height="50" rx="6" fill="#eaf2f8"/><rect x="120" y="62" width="68" height="50" rx="6" fill="#fcf0e3"/>
+      <text x="54" y="97" font-size="32" fill="#2f6e9e">1</text><text x="104" y="96" font-size="28">+</text><text x="154" y="97" font-size="32" fill="#a56228">10</text>
+      <path d="M 104 120 V 140" fill="none" stroke="#607870" stroke-width="2" marker-end="url(#arrow)"/>
+      <text x="104" y="176" font-size="34" font-weight="600" fill="#347b52">11</text>
+      <text x="104" y="205" font-size="23" fill="#607870">写回结果</text>
+    </g>
+    <g transform="translate(256 180)">
+      <rect width="208" height="220" rx="10" fill="#fff" stroke="#cbd6d1" stroke-width="2"/>
+      <text x="104" y="38" font-size="28" font-weight="600">一个线程</text>
+      <rect x="20" y="62" width="68" height="50" rx="6" fill="#eaf2f8"/><rect x="120" y="62" width="68" height="50" rx="6" fill="#fcf0e3"/>
+      <text x="54" y="97" font-size="32" fill="#2f6e9e">2</text><text x="104" y="96" font-size="28">+</text><text x="154" y="97" font-size="32" fill="#a56228">20</text>
+      <path d="M 104 120 V 140" fill="none" stroke="#607870" stroke-width="2" marker-end="url(#arrow)"/>
+      <text x="104" y="176" font-size="34" font-weight="600" fill="#347b52">22</text>
+      <text x="104" y="205" font-size="23" fill="#607870">写回结果</text>
+    </g>
+    <g transform="translate(488 180)">
+      <rect width="208" height="220" rx="10" fill="#fff" stroke="#cbd6d1" stroke-width="2"/>
+      <text x="104" y="38" font-size="28" font-weight="600">一个线程</text>
+      <rect x="20" y="62" width="68" height="50" rx="6" fill="#eaf2f8"/><rect x="120" y="62" width="68" height="50" rx="6" fill="#fcf0e3"/>
+      <text x="54" y="97" font-size="32" fill="#2f6e9e">3</text><text x="104" y="96" font-size="28">+</text><text x="154" y="97" font-size="32" fill="#a56228">30</text>
+      <path d="M 104 120 V 140" fill="none" stroke="#607870" stroke-width="2" marker-end="url(#arrow)"/>
+      <text x="104" y="176" font-size="34" font-weight="600" fill="#347b52">33</text>
+      <text x="104" y="205" font-size="23" fill="#607870">写回结果</text>
+    </g>
+    <text x="360" y="436" font-size="24" fill="#607870">同样的操作，各自的数据 · 手算示例</text>
+  </g>
+</svg>

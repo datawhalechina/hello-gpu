@@ -1,0 +1,10 @@
+Activated ROCm uv environment:
+  PROJECT:    <operation-root>/code/part2-kernels
+  VENV:       <operation-root>/code/part2-kernels/.venv
+  ROCM_PATH:  <existing-part-environment>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel
+  Python:     <operation-root>/code/part2-kernels/.venv/bin/python
+  ROCm SDK:   10.0.0
+Python 3.12.3
+继续使用结果目录：chapter8/results/walkthrough-bW89n8
+ENV runtime=hip gpu="AMD Radeon RX 9070 XT" arch=gfx1201 multi_processor_count=32 wave_size=32
+RESULT operator=vector-add implementation=hip-v0 runtime=hip shape=17 dtype=float32 block=256 grid=1 warmup=0 repeat=1 seed=20260920 timed=1 correct=OK precheck=OK postcheck=OK min_ms=0.021520 median_ms=0.021520 mean_ms=0.021520 effective_bandwidth_gbs=0.009480 max_abs_error=0

@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "purpose": "Verify the chapter reader commands and correctness in the measured environment; do not use these operation-check timings as published benchmark results.",
+  "started_at": "2026-09-20T06:11:37.456402+00:00",
+  "finished_at": "2026-09-20T06:12:29.567114+00:00",
+  "hardware": "Radeon RX 9070 XT / gfx1201",
+  "platform": "native Ubuntu 24.04.5",
+  "rocm_sdk": "10.0.0",
+  "chapter": 10,
+  "all_passed": true,
+  "records": [
+    {
+      "label": "environment",
+      "started_at": "2026-09-20T06:11:37.459106+00:00",
+      "command": "python - <<'END'\nimport platform,torch,triton\nfrom importlib.metadata import version\nprint(platform.freedesktop_os_release()['PRETTY_NAME'])\nprint('torch',torch.__version__,'triton',triton.__version__,'rocm',version('rocm'),'HIP',torch.version.hip)\nprint(torch.cuda.get_device_name(),torch.cuda.get_device_properties(0).gcnArchName)\nassert '9070 XT' in torch.cuda.get_device_name()\nassert torch.cuda.get_device_properties(0).gcnArchName=='gfx1201'\nassert version('rocm')=='10.0.0'\nEND",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "environment.log",
+      "log_sha256": "7e853d7d9f5efa4216bf9e68678ae41064c6b666751b9d64ca801c546a748d4e"
+    },
+    {
+      "label": "ch10-new-run",
+      "started_at": "2026-09-20T06:11:47.079626+00:00",
+      "command": "RUN=$(mktemp -d chapter10/results/walkthrough-XXXXXX) && mkdir \"$RUN/build\" && printf \"%s\\n\" \"$RUN\"",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch10-new-run.log",
+      "log_sha256": "74b1b119188032bf16a188ccd8ca6189e4067b92ad5786e61e41738097ba34f5"
+    },
+    {
+      "label": "ch10-compile",
+      "started_at": "2026-09-20T06:11:47.085408+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\nif [[ ! -x \"$RUN/build/softmax_hip\" ]]; then\n  hipcc --offload-arch=gfx1201 -O3 -std=c++17 \\\n    chapter10/softmax_hip.hip -o \"$RUN/build/softmax_hip\"\nfi",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch10-compile.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "ch10-compile-reuse",
+      "started_at": "2026-09-20T06:11:48.471540+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\nif [[ ! -x \"$RUN/build/softmax_hip\" ]]; then\n  hipcc --offload-arch=gfx1201 -O3 -std=c++17 \\\n    chapter10/softmax_hip.hip -o \"$RUN/build/softmax_hip\"\nfi",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch10-compile-reuse.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "ch10-restore-terminal",
+      "started_at": "2026-09-20T06:11:48.473266+00:00",
+      "command": "source ./activate-rocm.sh >/dev/null && read -r -p \"粘贴上次输出的结果目录：\" RUN && test -n \"$RUN\" && test -d \"$RUN/build\" && printf \"继续使用结果目录：%s\\n\" \"$RUN\"",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch10-restore-terminal.log",
+      "log_sha256": "c1f977b0424ba93637b3ad35232e3a7884445a2c724118b554645a89e6d6c0ba"
+    },
+    {
+      "label": "ch10-00-benchmark-command-operation",
+      "started_at": "2026-09-20T06:11:48.718646+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\ntest ! -e \"$RUN/n4096x1024-hip-fused-b256-p1.csv\" && \\\n\"$RUN/build/softmax_hip\" \\\n  --block 256 --version fused --rows 4096 \\\n  --cols 1024 --warmup 10 --repeat 50 \\\n  --seed 20260920 --config-id hip-fused-b256 --samples \"$RUN/n4096x1024-hip-fused-b256-p1.csv\" \\\n  --process 1",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch10-00-benchmark-command-operation.log",
+      "log_sha256": "58f7cb1bacd177ed7dcc3f865f6d62006e07b0bae70e984f3f499306a2f63012"
+    },
+    {
+      "label": "ch10-00-repeat-protected",
+      "started_at": "2026-09-20T06:11:48.845219+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\ntest ! -e \"$RUN/n4096x1024-hip-fused-b256-p1.csv\" && \\\n\"$RUN/build/softmax_hip\" \\\n  --block 256 --version fused --rows 4096 \\\n  --cols 1024 --warmup 10 --repeat 50 \\\n  --seed 20260920 --config-id hip-fused-b256 --samples \"$RUN/n4096x1024-hip-fused-b256-p1.csv\" \\\n  --process 1",
+      "cwd": "code/part2-kernels",
+      "returncode": 1,
+      "expected_returncode": 1,
+      "log": "ch10-00-repeat-protected.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "ch10-01-benchmark-command-operation",
+      "started_at": "2026-09-20T06:11:48.847052+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\ntest ! -e \"$RUN/n4096x1024-triton-b4-p1.csv\" && \\\npython chapter10/softmax_triton.py \\\n  --t0-warps 4 --t1-warps 4 --t1-block 1024 \\\n  --version t0 --rows 4096 --cols 1024 \\\n  --warmup 10 --repeat 50 --seed 20260920 \\\n  --config-id triton-b4 --samples \"$RUN/n4096x1024-triton-b4-p1.csv\" --process 1",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch10-01-benchmark-command-operation.log",
+      "log_sha256": "c6794da710dcbb3b117877e481f908130195227e655160fec02726c14cbf54bf"
+    },
+    {
+      "label": "ch10-01-repeat-protected",
+      "started_at": "2026-09-20T06:11:51.093362+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\ntest ! -e \"$RUN/n4096x1024-triton-b4-p1.csv\" && \\\npython chapter10/softmax_triton.py \\\n  --t0-warps 4 --t1-warps 4 --t1-block 1024 \\\n  --version t0 --rows 4096 --cols 1024 \\\n  --warmup 10 --repeat 50 --seed 20260920 \\\n  --config-id triton-b4 --samples \"$RUN/n4096x1024-triton-b4-p1.csv\" --process 1",
+      "cwd": "code/part2-kernels",
+      "returncode": 1,
+      "expected_returncode": 1,
+      "log": "ch10-01-repeat-protected.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "ch10-02-correctness-command-operation",
+      "started_at": "2026-09-20T06:11:51.095252+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\n\"$RUN/build/softmax_hip\" \\\n  --block 256 --version fused --rows 3 \\\n  --cols 1025 --warmup 0 --repeat 1 \\\n  --seed 20260920 --config-id hip-fused-b256",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch10-02-correctness-command-operation.log",
+      "log_sha256": "a39d86c32316ade243468bb27f1422dd488556d9105393c68c266a8c491f66c8"
+    },
+    {
+      "label": "ch10-03-correctness-command-operation",
+      "started_at": "2026-09-20T06:11:51.154121+00:00",
+      "command": "test -d \"${RUN:?请先准备本章环境与结果目录}/build\" && \\\npython chapter10/softmax_triton.py \\\n  --t0-warps 4 --t1-warps 4 --t1-block 2048 \\\n  --version t0 --rows 3 --cols 1025 \\\n  --warmup 0 --repeat 1 --seed 20260920 \\\n  --config-id triton-b4",
+      "cwd": "code/part2-kernels",
+      "returncode": 0,
+      "expected_returncode": 0,
+      "log": "ch10-03-correctness-command-operation.log",
+      "log_sha256": "f6311a7784b3bfbd054f1ebff438aad931eb22c2f800810da9dfe14d71a784de"
+    }
+  ],
+  "source_sha256": {
+    "uv.lock": "269fa97856dc59dfdb3c724d9b58eb4d3d4e380f25ecc41fccb8e63daaf79993",
+    "pyproject.toml": "cccd4cadeabd153b617741349385ccac784615409660d4c7814d6c52605cdece",
+    "chapter10/softmax_triton.py": "563968117db997dc066566c60dff49194d9c28900b69a819a77fd9c195b2cf67",
+    "chapter10/plot_rounds.py": "d5eaa0fb6a1146d36f3a1af0ef6bd7d84aa7908c5c166d1c577601fb7ea36224",
+    "chapter10/verify_rounds.py": "fffc5f3b0edaf328bb2bce9488c7030fa776c8a8ddb7bd4e02d401aff62c6c1e",
+    "chapter10/rounds_identity.py": "1a08872efee1bbc396f157b9f126aacff41aa8ae788e08c352fbabcdf702c0a2",
+    "chapter10/softmax_hip.hip": "12975c9d5b4246da0388002b55c1d2883724239fdde25476267174d12b6dc55c",
+    "chapter10/run_rounds.py": "a39266e02a891710832f040fcf5a6f5c96a9242341a6f71abb6b7fa994636043",
+    "chapter10/summarize_rounds.py": "b4dc2ab15de348e75b9d7ca86ecdf5bfdd026ea1bd088f452f1efc1302399d51"
+  },
+  "original_operation_manifest_sha256": "9f21c021e9cf0dadacb7f8d23151dd3e8708140cc869009357c339af476d4e8a",
+  "uv_sync_locked": {
+    "exit_code": 0,
+    "raw_log_sha256": "771a4c8559a41d4cf2356200fa9c841d9204764cf5d3bc226edfa1df4552b5c6"
+  },
+  "output_paths": "Chapter-relative RUN directories. The CLI blocks are copied from the chapter; output samples have not replaced the original published experiment.",
+  "gpu_settings_changed": false,
+  "git_on_experiment_host": false,
+  "artifacts_sha256": {
+    "README.md": "6be5c1a5ff437cafc7f781801b2bffcd6513ed89ac4bb84b356be1266fbad83e",
+    "ch10-00-benchmark-command-operation.log": "58f7cb1bacd177ed7dcc3f865f6d62006e07b0bae70e984f3f499306a2f63012",
+    "ch10-00-repeat-protected.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ch10-01-benchmark-command-operation.log": "c6794da710dcbb3b117877e481f908130195227e655160fec02726c14cbf54bf",
+    "ch10-01-repeat-protected.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ch10-02-correctness-command-operation.log": "a39d86c32316ade243468bb27f1422dd488556d9105393c68c266a8c491f66c8",
+    "ch10-03-correctness-command-operation.log": "f6311a7784b3bfbd054f1ebff438aad931eb22c2f800810da9dfe14d71a784de",
+    "ch10-compile-reuse.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ch10-compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ch10-new-run.log": "74b1b119188032bf16a188ccd8ca6189e4067b92ad5786e61e41738097ba34f5",
+    "ch10-restore-terminal.log": "c1f977b0424ba93637b3ad35232e3a7884445a2c724118b554645a89e6d6c0ba",
+    "environment.log": "7e853d7d9f5efa4216bf9e68678ae41064c6b666751b9d64ca801c546a748d4e",
+    "reader-plot.log": "03922752f7251a31dd534e4b0fbfc9a1d6577ee7f8729c6472a77113cc06e89c"
+  },
+  "reader_plot_validation": {
+    "chapter": 10,
+    "argv": [
+      "python",
+      "chapter10/plot_rounds.py",
+      "--evidence",
+      "chapter10/results/reader-plot-fixture/rounds/summary",
+      "--out-dir",
+      "chapter10/results/reader-plot-fixture/figures/main",
+      "--round",
+      "cooperative",
+      "--round",
+      "fusion",
+      "--round",
+      "warps",
+      "--round",
+      "tile"
+    ],
+    "returncode": 0,
+    "log": "reader-plot.log",
+    "new_gpu_measurement": false,
+    "source": "CPU-only subset of original measured main records; no new main/profile/validation collection",
+    "figures": 8,
+    "log_sha256": "03922752f7251a31dd534e4b0fbfc9a1d6577ee7f8729c6472a77113cc06e89c",
+    "validation_environment": "same native Ubuntu ROCm10 Part2 Python environment; plotting is CPU-only"
+  }
+}

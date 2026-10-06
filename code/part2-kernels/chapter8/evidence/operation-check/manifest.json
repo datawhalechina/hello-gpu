@@ -1,0 +1,30 @@
+{
+  "collection": "chapter8-operation-check-20260920",
+  "scope": "reader session and output-preservation checks; one tiny correctness invocation; no publication benchmark",
+  "source_identity": "identity.json",
+  "artifacts_sha256": {
+    "README.md": "87b4af2ab0e0b2fa7a512f7c3f64bbd3b126e8ba25345169e5eef7ac0b19e73f",
+    "commands/01-new-terminal-new-run.sh": "a590b8683e8a7a9da9ed053ab67c22aa88a1080c80e484051dc85fb993ceef5a",
+    "commands/02-new-terminal-resume-and-compile.sh": "21824bc58e7f98869470f30fc93780f9e01064e2ebb6335fb770fd5377f16a20",
+    "commands/03-reuse-binary.sh": "21824bc58e7f98869470f30fc93780f9e01064e2ebb6335fb770fd5377f16a20",
+    "commands/04-one-small-correctness-check.sh": "022f3bfd5f4f4ec55c177b4466383ad736af0a7d28a9bf21d17466fd883796ad",
+    "commands/05-existing-samples-preserved.sh": "022f3bfd5f4f4ec55c177b4466383ad736af0a7d28a9bf21d17466fd883796ad",
+    "commands/06-interactive-new-terminal-resume.sh": "c9dbf195bd971e529fa6abbb1792ee9acaf727e01308ab4b02d94b895f31fd34",
+    "commands.jsonl": "b665bcfca501fca791597a171039441e7f5d1cb7c9f1e83a3dd7148724c01c1b",
+    "identity.json": "373f01cb8f55d9c2be948e2151fc6cab46e2e03823e2eff42c3452d5ecd2d7d4",
+    "logs/01-new-terminal-new-run.stderr.log": "486fc6d9f688b9c71a2e548cc44602554b66278727ef3e7d80357f6bdb830aa6",
+    "logs/01-new-terminal-new-run.stdout.log": "553dbfb5e96b54e73d739ca5bf6f88bb4e667f037038e34a8fa784ed4f8088ed",
+    "logs/02-new-terminal-resume-and-compile.stderr.log": "2d9a1018945c9f1efa649f8887ffb7866188c26634c63735e65416f84d581fbe",
+    "logs/02-new-terminal-resume-and-compile.stdout.log": "3012e103d0dba846f631e54d239fe2e54d0cbd178d51b8f82003386097206a0a",
+    "logs/03-reuse-binary.stderr.log": "18c2ce591d8e01ceea864218a6fca7811ef145bad088592ec6da1c282fc7dfc1",
+    "logs/03-reuse-binary.stdout.log": "3d3a8c004822a32d0cff507a2b7a1701ea9e5e152a62eeaf2562cccd90543f47",
+    "logs/04-one-small-correctness-check.stderr.log": "626d816beaed9e6eb3be7583a52b8ed5bb546d0736353e96cdb426ca4f1c2406",
+    "logs/04-one-small-correctness-check.stdout.log": "edd27655cd7c5027bb2be4468d91699510edc539e3cd7e5c236b3d5e416ac3e4",
+    "logs/05-existing-samples-preserved.stderr.log": "626d816beaed9e6eb3be7583a52b8ed5bb546d0736353e96cdb426ca4f1c2406",
+    "logs/05-existing-samples-preserved.stdout.log": "b3b7c7441099d36b61a4534676cc822c160919d262a16761688c1e5179bbe135",
+    "logs/06-interactive-new-terminal-resume.stderr.log": "4e771ee636902b5a1d063353cc1ab2fb4f949e1ea2f2c27768735c1973915c73",
+    "logs/06-interactive-new-terminal-resume.stdout.log": "bca626890b33765a087938c7e364426e2576236404fe7a97eb5d462972a5e1e2",
+    "publication-files.json": "f2c88eb8baa139308b36e7b85d0eeb51a05f8a8b4a8c6cc49ebf7f5354f1a0d5",
+    "small-correctness.samples.csv": "6ab10866c809c63179b7908709dd41023dba93160b00269dceebca01d3af9d85"
+  }
+}

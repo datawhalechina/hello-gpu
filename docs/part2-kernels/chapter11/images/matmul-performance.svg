@@ -2455,7 +2455,7 @@ z
    </g>
   </g>
   <g id="text_19">
-   <!-- AMD Radeon RX 9070 XT | ROCm 7.13 | 原生 Ubuntu 24.04 | 512 × 512 × 512 FP32 -->
+   <!-- AMD Radeon RX 9070 XT | 原生 Ubuntu 24.04 | 512 × 512 × 512 FP32 -->
    <g style="fill: #5b6675" transform="translate(23.04 47.9) scale(0.13 -0.13)">
     <defs>
      <path id="PingFangSC-Regular-24" d="M 1798 4570
@@ -2605,48 +2605,6 @@ L 838 5504
 L 410 5504
 z
 " transform="scale(0.015625)"/>
-     <path id="PingFangSC-Regular-32" d="M 2458 4659
-C 1766 4659 1229 4429 832 3968
-C 454 3533 269 2970 269 2278
-C 269 1594 454 1030 832 595
-C 1229 141 1766 -90 2451 -90
-C 3136 -90 3680 141 4077 595
-C 4448 1030 4640 1587 4640 2278
-C 4640 2976 4448 3539 4077 3974
-C 3680 4435 3136 4659 2458 4659
-z
-M 2458 4192
-C 2982 4192 3392 4019 3686 3667
-C 3968 3322 4115 2861 4115 2278
-C 4115 1702 3968 1248 3686 902
-C 3392 557 2976 378 2451 378
-C 1926 378 1510 557 1216 915
-C 934 1261 794 1715 794 2278
-C 794 2848 934 3302 1216 3648
-C 1517 4013 1933 4192 2458 4192
-z
-" transform="scale(0.015625)"/>
-     <path id="PingFangSC-Regular-26" d="M 2432 4659
-C 1728 4659 1178 4422 794 3936
-C 442 3501 269 2944 269 2266
-C 269 1587 435 1037 781 614
-C 1158 147 1702 -90 2413 -90
-C 2899 -90 3322 51 3674 326
-C 4051 621 4288 1037 4390 1568
-L 3885 1568
-C 3795 1171 3610 870 3341 666
-C 3085 474 2778 378 2413 378
-C 1875 378 1472 557 1190 909
-C 922 1242 794 1696 794 2266
-C 794 2835 928 3290 1197 3635
-C 1485 4006 1894 4192 2426 4192
-C 2784 4192 3085 4109 3334 3936
-C 3590 3757 3757 3501 3821 3168
-L 4326 3168
-C 4262 3622 4058 3987 3712 4256
-C 3366 4525 2938 4659 2432 4659
-z
-" transform="scale(0.015625)"/>
      <path id="PingFangSC-Regular-73b" d="M 1939 3917
 L 1939 1472
 L 3558 1472
@@ -2782,56 +2740,44 @@ z
     <use xlink:href="#PingFangSC-Regular-3" transform="translate(1201.390625 0)"/>
     <use xlink:href="#PingFangSC-Regular-5f" transform="translate(1234.6875 0)"/>
     <use xlink:href="#PingFangSC-Regular-3" transform="translate(1254.1875 0)"/>
-    <use xlink:href="#PingFangSC-Regular-35" transform="translate(1287.484375 0)"/>
-    <use xlink:href="#PingFangSC-Regular-32" transform="translate(1355.078125 0)"/>
-    <use xlink:href="#PingFangSC-Regular-26" transform="translate(1431.78125 0)"/>
-    <use xlink:href="#PingFangSC-Regular-50" transform="translate(1504.578125 0)"/>
-    <use xlink:href="#PingFangSC-Regular-3" transform="translate(1590.078125 0)"/>
-    <use xlink:href="#PingFangSC-Regular-1a" transform="translate(1623.375 0)"/>
-    <use xlink:href="#PingFangSC-Regular-11" transform="translate(1678.078125 0)"/>
-    <use xlink:href="#PingFangSC-Regular-14" transform="translate(1704.484375 0)"/>
-    <use xlink:href="#PingFangSC-Regular-16" transform="translate(1744.578125 0)"/>
-    <use xlink:href="#PingFangSC-Regular-3" transform="translate(1804.578125 0)"/>
-    <use xlink:href="#PingFangSC-Regular-5f" transform="translate(1837.875 0)"/>
-    <use xlink:href="#PingFangSC-Regular-3" transform="translate(1857.375 0)"/>
-    <use xlink:href="#PingFangSC-Regular-73b" transform="translate(1890.671875 0)"/>
-    <use xlink:href="#PingFangSC-Regular-129e" transform="translate(1990.671875 0)"/>
-    <use xlink:href="#PingFangSC-Regular-3" transform="translate(2090.671875 0)"/>
-    <use xlink:href="#PingFangSC-Regular-38" transform="translate(2123.96875 0)"/>
-    <use xlink:href="#PingFangSC-Regular-45" transform="translate(2195.375 0)"/>
-    <use xlink:href="#PingFangSC-Regular-58" transform="translate(2253.96875 0)"/>
-    <use xlink:href="#PingFangSC-Regular-51" transform="translate(2309.96875 0)"/>
-    <use xlink:href="#PingFangSC-Regular-57" transform="translate(2365.875 0)"/>
-    <use xlink:href="#PingFangSC-Regular-58" transform="translate(2401.375 0)"/>
-    <use xlink:href="#PingFangSC-Regular-3" transform="translate(2457.375 0)"/>
-    <use xlink:href="#PingFangSC-Regular-15" transform="translate(2490.671875 0)"/>
-    <use xlink:href="#PingFangSC-Regular-17" transform="translate(2550.671875 0)"/>
-    <use xlink:href="#PingFangSC-Regular-11" transform="translate(2610.671875 0)"/>
-    <use xlink:href="#PingFangSC-Regular-13" transform="translate(2637.078125 0)"/>
-    <use xlink:href="#PingFangSC-Regular-17" transform="translate(2697.078125 0)"/>
-    <use xlink:href="#PingFangSC-Regular-3" transform="translate(2757.078125 0)"/>
-    <use xlink:href="#PingFangSC-Regular-5f" transform="translate(2790.375 0)"/>
-    <use xlink:href="#PingFangSC-Regular-3" transform="translate(2809.875 0)"/>
-    <use xlink:href="#PingFangSC-Regular-18" transform="translate(2843.171875 0)"/>
-    <use xlink:href="#PingFangSC-Regular-14" transform="translate(2903.171875 0)"/>
-    <use xlink:href="#PingFangSC-Regular-15" transform="translate(2943.265625 0)"/>
-    <use xlink:href="#PingFangSC-Regular-3" transform="translate(3003.265625 0)"/>
-    <use xlink:href="#PingFangSC-Regular-9a" transform="translate(3036.5625 0)"/>
-    <use xlink:href="#PingFangSC-Regular-3" transform="translate(3097.0625 0)"/>
-    <use xlink:href="#PingFangSC-Regular-18" transform="translate(3130.359375 0)"/>
-    <use xlink:href="#PingFangSC-Regular-14" transform="translate(3190.359375 0)"/>
-    <use xlink:href="#PingFangSC-Regular-15" transform="translate(3230.453125 0)"/>
-    <use xlink:href="#PingFangSC-Regular-3" transform="translate(3290.453125 0)"/>
-    <use xlink:href="#PingFangSC-Regular-9a" transform="translate(3323.75 0)"/>
-    <use xlink:href="#PingFangSC-Regular-3" transform="translate(3384.25 0)"/>
-    <use xlink:href="#PingFangSC-Regular-18" transform="translate(3417.546875 0)"/>
-    <use xlink:href="#PingFangSC-Regular-14" transform="translate(3477.546875 0)"/>
-    <use xlink:href="#PingFangSC-Regular-15" transform="translate(3517.640625 0)"/>
-    <use xlink:href="#PingFangSC-Regular-3" transform="translate(3577.640625 0)"/>
-    <use xlink:href="#PingFangSC-Regular-29" transform="translate(3610.9375 0)"/>
-    <use xlink:href="#PingFangSC-Regular-33" transform="translate(3668.640625 0)"/>
-    <use xlink:href="#PingFangSC-Regular-16" transform="translate(3732.84375 0)"/>
-    <use xlink:href="#PingFangSC-Regular-15" transform="translate(3792.84375 0)"/>
+    <use xlink:href="#PingFangSC-Regular-73b" transform="translate(1287.484375 0)"/>
+    <use xlink:href="#PingFangSC-Regular-129e" transform="translate(1387.484375 0)"/>
+    <use xlink:href="#PingFangSC-Regular-3" transform="translate(1487.484375 0)"/>
+    <use xlink:href="#PingFangSC-Regular-38" transform="translate(1520.78125 0)"/>
+    <use xlink:href="#PingFangSC-Regular-45" transform="translate(1592.1875 0)"/>
+    <use xlink:href="#PingFangSC-Regular-58" transform="translate(1650.78125 0)"/>
+    <use xlink:href="#PingFangSC-Regular-51" transform="translate(1706.78125 0)"/>
+    <use xlink:href="#PingFangSC-Regular-57" transform="translate(1762.6875 0)"/>
+    <use xlink:href="#PingFangSC-Regular-58" transform="translate(1798.1875 0)"/>
+    <use xlink:href="#PingFangSC-Regular-3" transform="translate(1854.1875 0)"/>
+    <use xlink:href="#PingFangSC-Regular-15" transform="translate(1887.484375 0)"/>
+    <use xlink:href="#PingFangSC-Regular-17" transform="translate(1947.484375 0)"/>
+    <use xlink:href="#PingFangSC-Regular-11" transform="translate(2007.484375 0)"/>
+    <use xlink:href="#PingFangSC-Regular-13" transform="translate(2033.890625 0)"/>
+    <use xlink:href="#PingFangSC-Regular-17" transform="translate(2093.890625 0)"/>
+    <use xlink:href="#PingFangSC-Regular-3" transform="translate(2153.890625 0)"/>
+    <use xlink:href="#PingFangSC-Regular-5f" transform="translate(2187.1875 0)"/>
+    <use xlink:href="#PingFangSC-Regular-3" transform="translate(2206.6875 0)"/>
+    <use xlink:href="#PingFangSC-Regular-18" transform="translate(2239.984375 0)"/>
+    <use xlink:href="#PingFangSC-Regular-14" transform="translate(2299.984375 0)"/>
+    <use xlink:href="#PingFangSC-Regular-15" transform="translate(2340.078125 0)"/>
+    <use xlink:href="#PingFangSC-Regular-3" transform="translate(2400.078125 0)"/>
+    <use xlink:href="#PingFangSC-Regular-9a" transform="translate(2433.375 0)"/>
+    <use xlink:href="#PingFangSC-Regular-3" transform="translate(2493.875 0)"/>
+    <use xlink:href="#PingFangSC-Regular-18" transform="translate(2527.171875 0)"/>
+    <use xlink:href="#PingFangSC-Regular-14" transform="translate(2587.171875 0)"/>
+    <use xlink:href="#PingFangSC-Regular-15" transform="translate(2627.265625 0)"/>
+    <use xlink:href="#PingFangSC-Regular-3" transform="translate(2687.265625 0)"/>
+    <use xlink:href="#PingFangSC-Regular-9a" transform="translate(2720.5625 0)"/>
+    <use xlink:href="#PingFangSC-Regular-3" transform="translate(2781.0625 0)"/>
+    <use xlink:href="#PingFangSC-Regular-18" transform="translate(2814.359375 0)"/>
+    <use xlink:href="#PingFangSC-Regular-14" transform="translate(2874.359375 0)"/>
+    <use xlink:href="#PingFangSC-Regular-15" transform="translate(2914.453125 0)"/>
+    <use xlink:href="#PingFangSC-Regular-3" transform="translate(2974.453125 0)"/>
+    <use xlink:href="#PingFangSC-Regular-29" transform="translate(3007.75 0)"/>
+    <use xlink:href="#PingFangSC-Regular-33" transform="translate(3065.453125 0)"/>
+    <use xlink:href="#PingFangSC-Regular-16" transform="translate(3129.65625 0)"/>
+    <use xlink:href="#PingFangSC-Regular-15" transform="translate(3189.65625 0)"/>
    </g>
   </g>
   <g id="text_20">

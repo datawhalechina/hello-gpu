@@ -92,7 +92,7 @@ $$
 
 两个维度的结论一致：**block 配置对 MoE decode 吞吐有 ~1.4x 的影响，且最优不在默认值**。RPB=4 或 num_warps=2 都能把 214 t/s 提到 290-310 t/s，成本为零（只改配置不改算法）。注意两张扫描是两次独立测量，各自带默认配置行，两次默认值（214.60 与 214.52）的微小差异在噪声范围内。
 
-这组数据给 Agent 优化（第 19.5-19.6 节）提供了第一个抓手：decode 性能不是「算法没选对」，而是「访存没吃饱」——优化方向是让 GEMV 的加载更饱和，而不是换更好的 GEMM。这也呼应第 11.12.5 节：decode 形状算术强度低（I < 10），属于访存受限类，tile/num_warps 的选择要以占用率和访存吞吐为先。
+这组数据给 Agent 优化（第 19.5-19.6 节）提供了第一个抓手：decode 性能不是「算法没选对」，而是「访存没吃饱」——优化方向是让 GEMV 的加载更饱和，而不是换更好的 GEMM。配置选择依赖具体形状，可以结合[第 11 章的形状迁移实验](../../part2-kernels/chapter11/index.md#matmul-boundaries)理解；这里的 decode 结论仍限于本章的输入、实现与测量条件。
 
 ## 19.5 Agent 优化 KV cache 访问
 
@@ -202,6 +202,6 @@ prefill 的结论也不同：Q4 7022 t/s vs Q8 3088 t/s——**Q4 在 prefill �
 
 - llama.cpp ROCm 构建与 GGUF 量化格式（官方 README 的 ROCm 构建说明与 GGUF 文档）
 - [第 17 章 多轮优化实战](../../part3-agent/chapter17/index.md) — FA Decode 的 M=1 注意力优化轨迹，decode 的另一半算子
-- [第 11.12 节 tile 形状怎么选](../../part2-kernels/chapter11/index.md) — 访存受限 shape 的配置选择规则
+- [第 11 章：尾部与形状迁移](../../part2-kernels/chapter11/index.md#matmul-boundaries) — 比较不同输入形状下的固定配置，判断结论的适用范围
 - llama.cpp `llama-bench` 工具与 `LLAMA_MMVQ_NWARPS` / `LLAMA_MMVQ_RPB` 环境变量——本章 RPB/nwarps 扫描所用的实验协议
 - [第 15 章 工具封装](../../part3-agent/chapter15/index.md) — 把本章的受控实验协议封装成 Agent 可调用的工具

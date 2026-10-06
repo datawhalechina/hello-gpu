@@ -1,0 +1,8 @@
+kernel_name="vector_add_kernel"
+csv_rows=17 target_rows=16 skipped_rows=6 kept_rows=10
+sort=Start_Timestamp_ascending
+first_start_ns=908170313989815 first_end_ns=908170314521377 first_duration_ns=531562
+kernel_min_us=333.881000 kernel_median_us=334.301000 kernel_max_us=531.562000
+grid_work_items_xyz=1048576x1x1 workgroup_size_xyz=128x1x1 workgroups_xyz=8192x1x1
+workgroups_total=8192
+vgpr_count=40 sgpr_count=128 lds_bytes=0 scratch_bytes=0

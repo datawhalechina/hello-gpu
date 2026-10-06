@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "collection": "chapter8-pmc-walkthrough-20260920",
+  "parent_walkthrough_manifest_sha256": "dc240236f3b9e4be4bdd69e88fba2876a81321d4d550411a07d2179ac6a52d0e",
+  "binary_sha256": "9fc283682aed5da6cdffe2479c70f78399eda3861ae20ccf1796fd8c7c02a71c",
+  "source_sha256": "73e1af89d25a91fb35ee78198ce74c93d617a9ac5a0852ff74d20abd2184aa80",
+  "scope": "independent per-dispatch PMC capture; not benchmark; no power or environment change",
+  "counter_check_reference": "../pmc/pmc-check-global-device-{waves,l2,fetch}.stdout.log",
+  "path_normalization": "explicit private path prefixes only; no omitted lines or changed numerical values",
+  "artifacts_sha256": {
+    "commands.jsonl": "fcbf62ea8ba32e555d79bb2d70dad61b8a4d73a6b2fafcda111613757cb55762",
+    "capture-manifest.json": "674e02ba767f6c58007e1c208bb9d0f80269002bfca3a462821f5e0ac5989a60",
+    "publication-files.json": "85187f6a87d6bcbff9430fa1645b8dc2b09ef1ea5e603f116dbdfc26c8cd53c7",
+    "README.md": "787cf565ae35fb39a1e4ba77fb63678c72844b2ceae16983491946c414a152b7",
+    "counter-summary.json": "9a388c996ea57f66710d4a43840d8af4e46184e6ade6e04754fd729c503aedfc",
+    "pmc/pmc-waves.stdout.log": "deca492464f560f3dea98460ce353a46636b0d486894d2169310c9ddfecf0800",
+    "pmc/pmc-fetch.stdout.log": "49ff8a16af3e49e977a56defa6eb702e8e0a05aa2f65d556ee59c3774a822fb7",
+    "pmc/pmc-l2.stderr.log": "ae94116dafa048820aeeeb46ef9f6036735f480fc7e2d14b448308c548f5d3e6",
+    "pmc/waves_counter_collection.csv": "4762c91832f432f7df7d605ea7c27e737030e3b45242f225e3bde8e8e4f7775b",
+    "pmc/fetch_counter_collection.csv": "fd48e8b6acd2621c9d580caf44870faaf33cd1f6230c32a8cf7658ccfc346a6d",
+    "pmc/pmc-waves.stderr.log": "b3de92eec441d127c23da4d93bc20dcb2a9430d752e13e840096380e0bd93450",
+    "pmc/pmc-fetch.stderr.log": "b9a8fe9920e966fd9a0181502574acd9bdcb562735c6105110bd3d2a187acb1d",
+    "pmc/pmc-l2.stdout.log": "c3691b760137b2c89475fc7577dade4c44bda284911bab724f6c0815424c0087",
+    "pmc/l2_counter_collection.csv": "5886b3f9392462a2de9dcf7f730162ca5ce8168b273f170cd22dad5ca6199b57"
+  }
+}

@@ -1,0 +1,4 @@
++ hipcc --offload-arch=gfx1201 -O3 -std=c++17 -gline-tables-only chapter8/vector_add_hip.hip -o chapter8/results/walkthrough-20260920/att-verified/build/vector_add_hip_debug
++ rocprofv3 --att --att-library-path <environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/lib <environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/lib --att-simd-select 0 --att-shader-engine-mask 0x1 --att-buffer-size 67108864 --kernel-include-regex vector_add_v0 --kernel-iteration-range 7 --output-format csv --output-directory chapter8/results/walkthrough-20260920/att-verified/trace --output-file baseline -- chapter8/results/walkthrough-20260920/att-verified/build/vector_add_hip_debug --version v0 --size 16777216 --block 256 --warmup 5 --repeat 1 --seed 20260920
++ python chapter8/validate_att.py chapter8/results/walkthrough-20260920/att-verified/trace
++ set +x

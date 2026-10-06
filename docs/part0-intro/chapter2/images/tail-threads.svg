@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="430" viewBox="0 0 800 430" role="img" aria-labelledby="title desc">
+  <title id="title">最后一块中，多出来的两个线程跳过数组读写</title>
+  <desc id="desc">手算示意：数组长度为 10，每块四个线程。块 2 的局部线程 0、1 算出下标 8、9，箭头指向数组最后两个元素；局部线程 2、3 算出 10、11，数组在下标 9 后结束，右侧没有数组元素，两个线程跳过读写。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 1 9 5 0 9Z" fill="#377554"/>
+    </marker>
+  </defs>
+  <rect width="800" height="430" rx="12" fill="#fcfbf7"/>
+  <g font-family="PingFang SC, Microsoft YaHei, Noto Sans CJK SC, sans-serif" fill="#27323a" text-anchor="middle">
+    <text x="400" y="43" font-size="30" font-weight="600">块 2 中的四个线程</text>
+    <rect x="28" y="64" width="744" height="130" rx="10" fill="#fff6de" stroke="#d8c696" stroke-width="2"/>
+    <g font-size="28">
+      <rect x="60" y="80" width="140" height="98" rx="7" fill="#fff" stroke="#aecbb7" stroke-width="2"/>
+      <rect x="240" y="80" width="140" height="98" rx="7" fill="#fff" stroke="#aecbb7" stroke-width="2"/>
+      <rect x="420" y="80" width="140" height="98" rx="7" fill="#fff" stroke="#d2c5bc" stroke-width="2"/>
+      <rect x="600" y="80" width="140" height="98" rx="7" fill="#fff" stroke="#d2c5bc" stroke-width="2"/>
+      <text x="130" y="119">组内 0</text><text x="310" y="119">组内 1</text>
+      <text x="490" y="119">组内 2</text><text x="670" y="119">组内 3</text>
+      <text x="130" y="158" fill="#377554">idx = 8</text><text x="310" y="158" fill="#377554">idx = 9</text>
+      <text x="490" y="158" fill="#a45d28">idx = 10</text><text x="670" y="158" fill="#a45d28">idx = 11</text>
+    </g>
+    <g fill="none" stroke-width="3">
+      <path d="M130 198V264" stroke="#377554" marker-end="url(#arrow)"/>
+      <path d="M310 198V264" stroke="#377554" marker-end="url(#arrow)"/>
+      <path d="M490 198V254M670 198V254" stroke="#a45d28" stroke-dasharray="7 6"/>
+    </g>
+    <rect x="40" y="278" width="360" height="70" rx="5" fill="#eaf4ec" stroke="#aecbb7" stroke-width="2"/>
+    <path d="M220 278V348" stroke="#aecbb7" stroke-width="2"/>
+    <text x="130" y="326" font-size="36">8</text><text x="310" y="326" font-size="36">9</text>
+    <path d="M407 268V357" stroke="#59646b" stroke-width="3"/>
+    <g stroke="#a45d28" stroke-width="3.5" stroke-linecap="round">
+      <path d="m478 280 24 24m0-24-24 24M658 280l24 24m0-24-24 24"/>
+    </g>
+    <g fill="#a45d28" font-size="26">
+      <text x="490" y="340">无对应元素</text><text x="670" y="340">无对应元素</text>
+      <text x="580" y="399" font-size="28">跳过数组读写</text>
+    </g>
+    <text x="220" y="399" font-size="28" fill="#377554">数组在下标 9 处结束</text>
+  </g>
+</svg>

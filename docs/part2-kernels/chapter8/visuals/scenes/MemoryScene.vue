@@ -1,18 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { easeInOutCubic, easeOutBack, easeOutCubic, lerp, seg, segE } from '../easing'
-import { MEASURED_BANDWIDTH } from './data'
+import { easeInOutCubic, lerp, seg, segE } from '../easing'
 
 /**
  * 8.4.3 合并访存受控对照（8-lane 教学缩略）：
  * 双面板同轮对比——lane 的地址飞落进 32B 教学分桶，连续每轮 1 组、跨步每轮 4 组；
- * 结尾给出累计落点与 9070 XT 实测带宽（数据溯源见 8.6.2 / curated evidence）。
+ * 只展示地址分组；独立测量结果由紧邻正文的性能图呈现。
  */
 const props = defineProps<{ step: number; local: number }>()
 
 const LANES = Array.from({ length: 8 }, (_, index) => index)
 const CELLS = Array.from({ length: 32 }, (_, index) => index)
-const MEASURED = MEASURED_BANDWIDTH
 
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
 
@@ -112,7 +110,6 @@ function panelIndex(key: 'c' | 's'): number {
 
 function panelOpacity(key: 'c' | 's'): number {
   if (props.step === 0) return segE(props.local, panelIndex(key) * 250, 420 + panelIndex(key) * 250)
-  if (props.step === 6) return 1 - 0.85 * segE(props.local, 0, 350)
   return 1
 }
 
@@ -182,9 +179,9 @@ function counterText(kind: 'c' | 's'): string {
   if (props.step === 0) return '等待第 1 轮…'
   if (props.step <= 4) {
     const round = props.step - 1
-    return `本轮 ${groupsThisRound(kind, round)} 组 · 累计 ${cumGroups(kind, round)} 组`
+    return `本轮 ${groupsThisRound(kind, round)} 组 · 累计 ${cumGroups(kind, round)} 组次`
   }
-  return `4 轮累计 ${cumGroups(kind, 3)} 组`
+  return `4 轮累计 ${cumGroups(kind, 3)} 组次`
 }
 
 function formulaText(key: 'c' | 's'): string {
@@ -221,15 +218,6 @@ const tokens = computed(() => {
   return out
 })
 
-/* ---------- 结尾实测条 ---------- */
-
-const barsO = computed(() => (props.step === 6 ? segE(props.local, 150, 450) : 0))
-const barContiguousW = computed(() => 440 * easeOutCubic(seg(props.local, 450, 1350)))
-const barStridedW = computed(() => 440 * (MEASURED.strided / MEASURED.contiguous) * easeOutCubic(seg(props.local, 650, 1550)))
-const badgeS = computed(() => {
-  const p = seg(props.local, 1600, 2000)
-  return p <= 0 ? 0 : lerp(0.5, 1, easeOutBack(p))
-})
 </script>
 
 <template>
@@ -327,29 +315,8 @@ const badgeS = computed(() => {
       />
     </g>
 
-    <!-- ============ 结尾：9070 XT 实测带宽 ============ -->
-    <g :opacity="barsO">
-      <text x="360" y="292" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="600" fill="var(--ej-ink)">
-        9070 XT 实测 · 逻辑有效带宽（hip-v1 两版对照）
-      </text>
-
-      <text x="82" y="316" text-anchor="end" dominant-baseline="central" font-size="11.5" fill="var(--ej-ink-soft)">连续 v1</text>
-      <rect x="90" y="303" :width="barContiguousW" height="26" rx="6" fill="var(--ej-a-soft)" stroke="var(--ej-a)" stroke-width="1.2" />
-      <text :x="90 + barContiguousW + 10" y="316" dominant-baseline="central" font-size="12.5" font-weight="700" fill="var(--ej-a)">{{ MEASURED.contiguous.toFixed(1) }} GB/s</text>
-
-      <text x="82" y="356" text-anchor="end" dominant-baseline="central" font-size="11.5" fill="var(--ej-ink-soft)">跨步 v1</text>
-      <rect x="90" y="343" :width="barStridedW" height="26" rx="6" fill="var(--ej-b-soft)" stroke="var(--ej-b)" stroke-width="1.2" />
-      <text :x="90 + barStridedW + 10" y="356" dominant-baseline="central" font-size="12.5" font-weight="700" fill="var(--ej-b)">{{ MEASURED.strided.toFixed(1) }} GB/s</text>
-
-      <g :transform="`translate(648 356) scale(${badgeS})`">
-        <circle r="26" fill="var(--ej-active-soft)" stroke="var(--ej-active)" stroke-width="1.4" />
-        <text y="-5" text-anchor="middle" dominant-baseline="central" font-size="12.5" font-weight="700" fill="var(--ej-active)">≈ {{ MEASURED.ratio }}</text>
-        <text y="16" text-anchor="middle" font-size="8" fill="var(--ej-ink-soft)">带宽差距</text>
-      </g>
-
-      <text x="360" y="404" text-anchor="middle" dominant-baseline="central" font-size="10" fill="var(--ej-ink-faint)">
-        N = 16,777,216 · 口径与原始数据见 8.6.2 与 curated evidence
-      </text>
-    </g>
+    <text x="360" y="273" text-anchor="middle" font-size="10" fill="var(--ej-ink-faint)">
+      两边最终覆盖相同的 32 个元素；真实时间由下一张实测图比较。
+    </text>
   </g>
 </template>

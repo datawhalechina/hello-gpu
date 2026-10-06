@@ -1,0 +1,67 @@
+[
+  {
+    "name": "rocm-sdk-device-gfx1201",
+    "version": "10.0.0",
+    "location": "<environment-part-root>/.venv/lib/python3.12/site-packages"
+  },
+  {
+    "name": "rocm-bootstrap",
+    "version": "0.1.0",
+    "location": "<environment-part-root>/.venv/lib/python3.12/site-packages"
+  },
+  {
+    "name": "rocm-sdk-core",
+    "version": "10.0.0",
+    "location": "<environment-part-root>/.venv/lib/python3.12/site-packages"
+  },
+  {
+    "name": "rocm-sdk-libraries",
+    "version": "10.0.0",
+    "location": "<environment-part-root>/.venv/lib/python3.12/site-packages"
+  },
+  {
+    "name": "rocm-sdk-devel",
+    "version": "10.0.0",
+    "location": "<environment-part-root>/.venv/lib/python3.12/site-packages"
+  },
+  {
+    "name": "rocm",
+    "version": "10.0.0",
+    "location": "<environment-part-root>/.venv/lib/python3.12/site-packages"
+  },
+  {
+    "name": "torchvision",
+    "version": "0.28.0+rocm10.0.0",
+    "location": "<environment-part-root>/.venv/lib/python3.12/site-packages"
+  },
+  {
+    "name": "torchaudio",
+    "version": "2.11.0.2+rocm10.0.0",
+    "location": "<environment-part-root>/.venv/lib/python3.12/site-packages"
+  },
+  {
+    "name": "amd-torchvision-device-gfx1201",
+    "version": "0.28.0+rocm10.0.0",
+    "location": "<environment-part-root>/.venv/lib/python3.12/site-packages"
+  },
+  {
+    "name": "triton",
+    "version": "3.8.0+git4cff872c.rocm10.0.0",
+    "location": "<environment-part-root>/.venv/lib/python3.12/site-packages"
+  },
+  {
+    "name": "amd-torch-device-gfx12-0",
+    "version": "2.13.0+rocm10.0.0",
+    "location": "<environment-part-root>/.venv/lib/python3.12/site-packages"
+  },
+  {
+    "name": "amd-torch-device-gfx1201",
+    "version": "2.13.0+rocm10.0.0",
+    "location": "<environment-part-root>/.venv/lib/python3.12/site-packages"
+  },
+  {
+    "name": "torch",
+    "version": "2.13.0+rocm10.0.0",
+    "location": "<environment-part-root>/.venv/lib/python3.12/site-packages"
+  }
+]

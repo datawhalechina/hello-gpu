@@ -137,6 +137,7 @@ export function useSceneClock(durations: Ref<number[]>) {
 
   /** 直接跳到时间轴某点（拖动擦洗）。 */
   function seek(t: number) {
+    tween = null
     time.value = Math.max(0, Math.min(t, total.value))
   }
 
@@ -144,7 +145,9 @@ export function useSceneClock(durations: Ref<number[]>) {
   function glideTo(target: number) {
     const to = Math.max(0, Math.min(target, total.value))
     playing.value = false
+    tween = null
     if (reducedMotion.value || Math.abs(to - time.value) < 60) {
+      stopLoop()
       time.value = to
       return
     }

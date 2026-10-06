@@ -1,0 +1,2 @@
+ENV runtime=triton gpu="AMD Radeon RX 9070 XT" torch=2.13.0+rocm10.0.0 torch_hip=7.15.26333 triton=3.8.0
+RESULT operator=vector-add implementation=triton-t1 runtime=triton shape=16777216 dtype=float32 block=1024 grid=16384 num_warps=4 warmup=5 repeat=10 seed=20260920 timed=1 correct=OK precheck=OK postcheck=OK min_ms=0.339801 median_ms=0.359422 mean_ms=1.333167 effective_bandwidth_gbs=560.140638 max_abs_error=0

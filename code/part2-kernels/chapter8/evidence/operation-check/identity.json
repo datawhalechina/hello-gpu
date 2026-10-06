@@ -1,0 +1,86 @@
+{
+  "collection": "chapter8-operation-check-20260920",
+  "actual_run": "chapter8/results/walkthrough-bW89n8",
+  "source_sha256": {
+    "pyproject.toml": "cccd4cadeabd153b617741349385ccac784615409660d4c7814d6c52605cdece",
+    "uv.lock": "269fa97856dc59dfdb3c724d9b58eb4d3d4e380f25ecc41fccb8e63daaf79993",
+    "activate-rocm.sh": "29e39304b6998faf03dc75943afe32b18b69639f1e6a82589b85ba5b45cda5d3",
+    "chapter8/vector_add_hip.hip": "73e1af89d25a91fb35ee78198ce74c93d617a9ac5a0852ff74d20abd2184aa80"
+  },
+  "binary": {
+    "sha256": "409d97464d0fc621e37b90c29eb861e38684521afaee5447fcbabc658a2461b4",
+    "mtime_ns": 1789869204872715594
+  },
+  "samples": {
+    "sha256": "6ab10866c809c63179b7908709dd41023dba93160b00269dceebca01d3af9d85",
+    "mtime_ns": 1789869205524591753
+  },
+  "correct": {
+    "operator": "vector-add",
+    "implementation": "hip-v0",
+    "runtime": "hip",
+    "shape": "17",
+    "dtype": "float32",
+    "block": "256",
+    "grid": "1",
+    "warmup": "0",
+    "repeat": "1",
+    "seed": "20260920",
+    "timed": "1",
+    "correct": "OK",
+    "precheck": "OK",
+    "postcheck": "OK",
+    "min_ms": "0.021520",
+    "median_ms": "0.021520",
+    "mean_ms": "0.021520",
+    "effective_bandwidth_gbs": "0.009480",
+    "max_abs_error": "0"
+  },
+  "validation": {
+    "separate_shell_processes": 6,
+    "fresh_run_created": true,
+    "restored_run_exists": true,
+    "first_compile": true,
+    "second_compile_skipped": true,
+    "binary_sha_and_mtime_unchanged": true,
+    "one_small_correctness_invocation": true,
+    "repeated_sample_command_skipped": true,
+    "samples_sha_and_mtime_unchanged": true,
+    "publication_benchmarks_run": false,
+    "interactive_read_restored_original_run": true
+  },
+  "environment_note": "Existing ROCm 10.0 part venv reused through a symlink in a separate experiment mirror; identical pyproject/lock/activation files; no kernel/source edits.",
+  "completed_at": "2026-09-20T01:53:25.860212+00:00",
+  "artifacts_sha256": {
+    "commands.jsonl": "d8e9231db03d3f33e1e185978b95ec91fc282fc8373418ec7a9f26c12a77d6b0",
+    "logs/01-new-terminal-new-run.stderr.log": "486fc6d9f688b9c71a2e548cc44602554b66278727ef3e7d80357f6bdb830aa6",
+    "logs/05-existing-samples-preserved.stderr.log": "626d816beaed9e6eb3be7583a52b8ed5bb546d0736353e96cdb426ca4f1c2406",
+    "logs/06-interactive-new-terminal-resume.stdout.log": "4db5ffc853fc3a03d5ca82ed0c0eac71fecf922df91cf0c4de943c960a400bd4",
+    "logs/05-existing-samples-preserved.stdout.log": "e1de83cfa4833b6c1d331359937917ce90200b7850767f82b093a0d135f350bc",
+    "logs/06-interactive-new-terminal-resume.stderr.log": "4e771ee636902b5a1d063353cc1ab2fb4f949e1ea2f2c27768735c1973915c73",
+    "logs/04-one-small-correctness-check.stderr.log": "626d816beaed9e6eb3be7583a52b8ed5bb546d0736353e96cdb426ca4f1c2406",
+    "logs/03-reuse-binary.stderr.log": "18c2ce591d8e01ceea864218a6fca7811ef145bad088592ec6da1c282fc7dfc1",
+    "logs/02-new-terminal-resume-and-compile.stderr.log": "2d9a1018945c9f1efa649f8887ffb7866188c26634c63735e65416f84d581fbe",
+    "logs/04-one-small-correctness-check.stdout.log": "6ebcb2d9687d326546e5953c910c67d8a43748a76126c66a603f9a6b4023456f",
+    "logs/01-new-terminal-new-run.stdout.log": "95d0df69b6391a7d258fd74e0c07ddb83126797ed86c220fc8f0fb10a10e4374",
+    "logs/02-new-terminal-resume-and-compile.stdout.log": "5150d885d332c9dd39b0f994cf493009520d4b933d4ba52f0ed5546dac388ef1",
+    "logs/03-reuse-binary.stdout.log": "02f3fd2730ddb0e89cd2dc485590695e84bf7daa917625c384dc3256a80934f3",
+    "commands/05-existing-samples-preserved.sh": "022f3bfd5f4f4ec55c177b4466383ad736af0a7d28a9bf21d17466fd883796ad",
+    "commands/01-new-terminal-new-run.sh": "a590b8683e8a7a9da9ed053ab67c22aa88a1080c80e484051dc85fb993ceef5a",
+    "commands/03-reuse-binary.sh": "21824bc58e7f98869470f30fc93780f9e01064e2ebb6335fb770fd5377f16a20",
+    "commands/06-interactive-new-terminal-resume.sh": "c9dbf195bd971e529fa6abbb1792ee9acaf727e01308ab4b02d94b895f31fd34",
+    "commands/02-new-terminal-resume-and-compile.sh": "21824bc58e7f98869470f30fc93780f9e01064e2ebb6335fb770fd5377f16a20",
+    "commands/04-one-small-correctness-check.sh": "022f3bfd5f4f4ec55c177b4466383ad736af0a7d28a9bf21d17466fd883796ad",
+    "small-correctness.samples.csv": "6ab10866c809c63179b7908709dd41023dba93160b00269dceebca01d3af9d85"
+  },
+  "environment": {
+    "os": "Ubuntu 24.04.5 LTS",
+    "kernel": "7.0.0-31-generic",
+    "python": "3.12.3",
+    "rocm_sdk": "10.0.0",
+    "torch": "2.13.0+rocm10.0.0",
+    "triton": "3.8.0+git4cff872c.rocm10.0.0",
+    "execution": "native Ubuntu",
+    "gpu": "AMD Radeon RX 9070 XT"
+  }
+}

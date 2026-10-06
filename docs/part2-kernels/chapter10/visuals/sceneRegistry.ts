@@ -1,112 +1,28 @@
 import type { Component } from 'vue'
 import type { SceneMeta } from '../../../components/animation/sceneTypes'
+import { BARRIER_DURATIONS } from '../softmax-model'
 import FusedRowScene from './scenes/FusedRowScene.vue'
 import ThreeKernelScene from './scenes/ThreeKernelScene.vue'
-
 export type SoftmaxScenario = 'fused-row' | 'three-kernel'
-
-export interface RegisteredScene {
-  meta: SceneMeta
-  component: Component
-}
-
+export interface RegisteredScene { meta: SceneMeta; component: Component; static?: boolean }
+const barrierSteps = [
+  { label: '最大值就位', title: 'shared[0] 保存最大值，读者尚未取得副本', narration: '沿用输入 [1000,1001,1002]，最大值树已经完成。这里只观察同一 block 的线程 0 和线程 32，它们属于不同 wave；其余 254 个线程省略。' },
+  { label: '各自读取', title: '读出副本，原来的 shared[0] 保持 1002', narration: '两个代表线程先后取得 maximum=1002 的副本。画面结束时，本例整个 block 的读者都已读完；在此之前，任何线程都不能抢先将 shared[0] 改作 sum。' },
+  { label: '全组同步', title: '所有线程共同经过读者屏障', narration: '全 block 到达这道 __syncthreads()，才能继续写下一轮共享数据。前面的树屏障保证最大值已写好，这道屏障保证所有线程已读完；它们保护的是不同的依赖。' },
+  { label: '允许覆盖', title: '线程 0 写局部 sum，maximum 的副本仍为 1002', narration: '本例只有 3 列、block=256，因此线程 0 只负责第 0 列。它算出 exp(1000−1002)≈0.1353，再写到 shared[0]。共享槽的用途变了，各线程自己的 maximum 副本继续保留，供后续运算使用。' }
+]
 export const softmaxScenes: Record<SoftmaxScenario, RegisteredScene> = {
   'fused-row': {
     component: FusedRowScene,
     meta: {
-      eyebrow: '10.5.2 · HIP · 一 block 一行',
-      title: 'LDS 复用的时间线：max 树、读者屏障、sum 树',
-      viewBox: '0 0 720 400',
-      steps: [
-        {
-          label: '跨步扫描',
-          title: 'lane 沿列跨步，先求局部 max',
-          narration: 'block 的 4 个线程沿列跨步：t0–t2 分别读到 1000、1001、1002；t3 没有有效列，局部 max 停留在初值 −∞——单位元参与归约但不改变结果。',
-          duration: 4000
-        },
-        {
-          label: '写入 LDS',
-          title: '每个线程写入自己的局部 max',
-          narration: 'shared[0..3] = [1000, 1001, 1002, −∞]。先完成协作写入并同步，下一步才能读取其他线程的槽位。',
-          duration: 4200
-        },
-        {
-          label: '最大值就位',
-          title: 'stride=2 → 1：shared[0] = 1002',
-          narration: '第一轮合并前后半区，第二轮合并两个部分最大值，得到 1002。各线程读取最大值后，还要再同步，才能安全地复用 LDS。',
-          duration: 3600
-        },
-        {
-          label: '读者屏障',
-          title: '所有线程读完 maximum，LDS 才能改作 sum 空间',
-          narration: '这是 2026-09-11 修复的缺陷：如果一个 wavefront 先覆盖 shared[0]，另一个尚未读取最大值的 wavefront 就会拿错数据。复用共享存储要同时照顾写者和读者。',
-          duration: 4600
-        },
-        {
-          label: 'sum 树',
-          title: '复用同一块 LDS 求分母',
-          narration: '各线程重算 p = e^(x−m) 写回 LDS：0.1353、0.3679、1、0。树归约两轮后 shared[0] = 1.5032，即整行的分母。',
-          duration: 4600
-        },
-        {
-          label: '写回',
-          title: '最后一遍输入：重算 exp 并归一化',
-          narration: 'output = expf(x − maximum) / denominator：得到 0.0900、0.2447、0.6652。源码扫描输入三次、重算指数两次，换来免掉全局 exp_tmp。',
-          duration: 4200
-        },
-        {
-          label: '实测',
-          title: '9070 XT：融合约为 baseline 的六分之一',
-          narration: 'hip-baseline-3kernel 0.744 ms，hip-fused-block-lds 0.116 ms；中间数组 exp_tmp（16 MiB）被整体省去。数据来自 2026-07-19 curated evidence。',
-          duration: 5000
-        }
-      ]
+      eyebrow: 'HIP · 同一共享槽的两种用途', title: '读完最大值，才能覆盖共享槽',
+      viewBox: '0 0 720 476', mobileViewBox: '0 0 400 620',
+      note: '只跟踪 shared[0] 与两个代表读者；其余线程也须经过全 block 屏障。副本表示局部变量，动画节奏不是实际调度或耗时。',
+      steps: barrierSteps.map((step, i) => ({ ...step, duration: BARRIER_DURATIONS[i] }))
     }
   },
   'three-kernel': {
-    component: ThreeKernelScene,
-    meta: {
-      eyebrow: '10.5.1 · HIP · baseline 三 kernel',
-      title: '中间结果放在全局数组里的代价',
-      viewBox: '0 0 720 500',
-      steps: [
-        {
-          label: '三个 kernel',
-          title: '一条用全局数组串起来的链',
-          narration: '行最大值 → 指数与行和 → 归一化。三个 dispatch 之间传递的不是寄存器，而是 row_max、exp_tmp、row_sum 三个全局数组。',
-          duration: 3800
-        },
-        {
-          label: 'dispatch 1',
-          title: '一线程一行，写出 row_max',
-          narration: '每个线程串行扫一整行求最大值。相邻线程处理相邻行，读取地址相隔 columns 个元素——这与读取相邻列的映射完全不同。',
-          duration: 3800
-        },
-        {
-          label: 'dispatch 2',
-          title: '指数物化进 exp_tmp',
-          narration: '第二次 dispatch 读 X 与 row_max，把每个元素的指数写进 exp_tmp，同时累计 row_sum。4096×1024 的 exp_tmp 占 16 MiB 显存。',
-          duration: 3800
-        },
-        {
-          label: 'dispatch 3',
-          title: '归一化写回 Y',
-          narration: '一线程一元素：output[index] = exponentials[index] / row_sum[index / columns]。exp_tmp 被整读一遍。',
-          duration: 3800
-        },
-        {
-          label: '往返代价',
-          title: 'exp_tmp 写一次读一次 = 32 MiB',
-          narration: '按每个数组写一次、读一次计算，仅 exp_tmp 就有 32 MiB 逻辑访问，外加两次 dispatch 的启动与往返。这是算法读写数，不是硬件事务计数。',
-          duration: 4000
-        },
-        {
-          label: '融合对照',
-          title: '把整行交给同一组执行单元',
-          narration: '融合路线在同一 block 内完成 max → exp → sum → normalize：实测 0.744 → 0.116 ms。执行时间线见下一张动画。',
-          duration: 4600
-        }
-      ]
-    }
+    component: ThreeKernelScene, static: true,
+    meta: { eyebrow: 'HIP · 三次调用的存储交接', title: '同一行通过全局数组交接', viewBox: '0 0 720 640', mobileViewBox: '0 0 400 640', steps: [] }
   }
 }
