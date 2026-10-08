@@ -1,0 +1,53 @@
+{
+  "gpu": "AMD Radeon RX 9070 XT",
+  "architecture": "gfx1201",
+  "rocm_sdk": "10.0.0",
+  "rocprofiler_sdk": "1.3.5",
+  "native_os": "Ubuntu 24.04.5 LTS",
+  "kernel": "7.0.0-31-generic",
+  "available": [
+    "rocprofv3 kernel/HIP trace",
+    "rocprofv3 CSV stats",
+    "rocprofv3 pftrace",
+    "rocprofv3-avail",
+    "per-dispatch PMC subset",
+    "ATT trace and decoder",
+    "llvm-objdump in SDK"
+  ],
+  "not_discovered_on_path": [
+    "rocprof-compute",
+    "rocprofiler-compute",
+    "rocprofiler-systems"
+  ],
+  "library_only": [
+    "roctracer"
+  ],
+  "att": {
+    "trace": true,
+    "decode": true,
+    "viewer_opened": false,
+    "perfcounters": false,
+    "dispatch": 8,
+    "target_iteration": 7,
+    "shader_engine_mask": "0x1",
+    "simd_id": 0,
+    "buffer_bytes": 67108864,
+    "target_cu": "tool default; not overridden",
+    "stats_original_name": "stats_ui_output_agent_3208_dispatch_8.csv",
+    "note": "A selected subset of waves on one selected shader engine, not all GPU waves.",
+    "decoded_output_validated": true,
+    "validation_report": {
+      "dispatch": 8,
+      "kernel": "vector_add_v0",
+      "instruction_rows": 29,
+      "json_files": 4134,
+      "stats": "stats_ui_output_agent_3208_dispatch_8.csv",
+      "ui": "ui_output_agent_3208_dispatch_8"
+    },
+    "validation_tests": 13
+  },
+  "power_mode": "auto; unchanged",
+  "packages_installed_during_audit": false,
+  "native_trace_filtering": false,
+  "trace_filter_note": "Kernel include / iteration options filter counter and ATT collection, not kernel trace CSV or stats."
+}

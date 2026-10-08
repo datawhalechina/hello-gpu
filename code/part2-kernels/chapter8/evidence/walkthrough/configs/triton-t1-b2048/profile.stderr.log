@@ -1,0 +1,19 @@
+W0920 08:17:32.010878 1402203 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.001075 sec
+W0920 08:17:32.011063 1402203 simple_timer.cpp:55] [rocprofv3] 'python chapter8/vector_add_triton.py --version t1 --size 16777216 --block 2048 --warmup 5 --repeat 10 --seed 20260920 --config-id triton-t1-b2048 --process 1' ::     0.000000 sec
+W0920 08:17:32.206664 1402203 tool.cpp:3348] HIP (compiler) version 7.15.0 initialized (instance=0)
+W0920 08:17:33.067973 1402203 tool.cpp:3348] HIP (runtime) version 7.15.0 initialized (instance=0)
+W0920 08:17:33.074098 1402203 tool.cpp:3348] HSA version 1.21.0 initialized (instance=0)
+W0920 08:17:33.423933 1402203 queue_controller.cpp:170] [queue-intercept] device-memory ring-buffer requested but profiling requires system-memory InterceptQueue; falling back to system-memory ring for agent 595855312 (priority and CU-mask from the descriptor are not preserved)
+W0920 08:17:33.526777 1402263 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.001023 sec
+W0920 08:17:33.526941 1402263 simple_timer.cpp:55] [rocprofv3] '/bin/sh /sbin/ldconfig -p' ::     0.000000 sec
+E0920 08:17:34.602277 1402203 output_stream.cpp:110] Opened result file: chapter8/results/walkthrough-20260920/configs/triton-t1-b2048/profile/triton-t1-b2048_kernel_stats.csv
+E0920 08:17:34.602472 1402203 output_stream.cpp:110] Opened result file: chapter8/results/walkthrough-20260920/configs/triton-t1-b2048/profile/triton-t1-b2048_kernel_trace.csv
+E0920 08:17:34.623736 1402203 output_stream.cpp:110] Opened result file: chapter8/results/walkthrough-20260920/configs/triton-t1-b2048/profile/triton-t1-b2048_hip_api_stats.csv
+E0920 08:17:34.623948 1402203 output_stream.cpp:110] Opened result file: chapter8/results/walkthrough-20260920/configs/triton-t1-b2048/profile/triton-t1-b2048_hip_api_trace.csv
+E0920 08:17:34.715478 1402203 output_stream.cpp:110] Opened result file: chapter8/results/walkthrough-20260920/configs/triton-t1-b2048/profile/triton-t1-b2048_agent_info.csv
+E0920 08:17:34.715613 1402203 output_stream.cpp:110] Opened result file: chapter8/results/walkthrough-20260920/configs/triton-t1-b2048/profile/triton-t1-b2048_domain_stats.csv
+[170.766]       perfetto.cc:47314 Configured tracing session 1, #sources:1, duration:0 ms, #buffers:1, total buffer size:1048576 KB, total sessions:1, uid:0 session name: ""
+E0920 08:17:35.384481 1402203 output_stream.cpp:110] Opened result file: chapter8/results/walkthrough-20260920/configs/triton-t1-b2048/profile/triton-t1-b2048_results.pftrace
+[171.472]       perfetto.cc:48889 Tracing session 1 ended, total sessions:0
+W0920 08:17:35.432395 1402203 simple_timer.cpp:55] [rocprofv3] output generation ::     0.849732 sec
+W0920 08:17:35.432548 1402203 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.850157 sec

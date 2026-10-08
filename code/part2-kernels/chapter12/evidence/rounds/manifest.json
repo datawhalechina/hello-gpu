@@ -1,0 +1,524 @@
+{
+  "schema_version": 1,
+  "experiment": "chapter12-controlled-attention-rounds",
+  "started_at": "2026-09-19T18:30:58.523326+00:00",
+  "hardware": "AMD Radeon RX 9070 XT",
+  "software": {
+    "rocm": "10.0.0",
+    "hip": "7.15.26333",
+    "torch": "2.13.0+rocm10.0.0",
+    "triton": "3.8.0+git4cff872c.rocm10.0.0"
+  },
+  "platform": {
+    "os_pretty_name": "Ubuntu 24.04.5 LTS",
+    "kernel": "7.0.0-31-generic",
+    "execution": "native"
+  },
+  "environment": {
+    "gpu": "AMD Radeon RX 9070 XT",
+    "architecture": "gfx1201",
+    "rocm_sdk": "10.0.0",
+    "hip": "7.15.26333",
+    "gpu_exclusive": false,
+    "profiler_during_benchmark": false
+  },
+  "source_sha256": {
+    "attention_hip.hip": "0e66b4246af72b6bc077f654838f52c914dee12c1c7bc2110ec247979947bf94",
+    "attention_triton.py": "68ce5312f4daacfa72b4f6a37b79c98cd646485f4086418c93230339c33b89f6",
+    "run_rounds.py": "93cb577d4ef01df9bc208271210f5ff5c26e85e88636989084d242688e5e8d7b",
+    "summarize_rounds.py": "5252f3312721a4fea14ab6b70a18ecdfee2fbbf795d4d0d10f827c235a205dd6",
+    "rounds_identity.py": "23a80fb7c678212e181efd795aa6ca5806ed42292b8d96c0d52c9c4f65af4af3",
+    "collect_environment.sh": "e0a6a7fa4d61d78bf5b8c6c4d424ffc922a320b86499c3e5fd1017c5139ba11b",
+    "resolve_rocprofv3.py": "6057fa1c79cd769712bbc30006af63a4e1cf0a74b7de7e2d11eae868d3889c96"
+  },
+  "benchmark": {
+    "shape": "128x64",
+    "dtype": "float32",
+    "input": "dyadic",
+    "reference": "fp64-attention-to-fp32",
+    "seed": 20260920,
+    "warmup": 10,
+    "repeat": 50,
+    "processes": 3,
+    "independent_runs": 3,
+    "scope": "gpu-event-full-operator",
+    "atol": 2e-05,
+    "rtol": 0.0002,
+    "cache": "reuse arrays; no cache flush",
+    "timing": "synchronize after each event interval; entire 3-kernel or 1-kernel operator",
+    "correctness": "output/scores/P NaN prefill before precheck, full precheck and postcheck; finite, elementwise atol+rtol*abs(FP64 reference castFP32)"
+  },
+  "configurations": [
+    {
+      "id": "hip-materialized-b256",
+      "runtime": "hip",
+      "version": "materialized",
+      "block": 256,
+      "kernels": [
+        "scores_kernel",
+        "softmax_rows_kernel",
+        "probability_value_kernel"
+      ]
+    },
+    {
+      "id": "hip-online-b256",
+      "runtime": "hip",
+      "version": "online",
+      "block": 256,
+      "kernels": [
+        "online_attention_kernel"
+      ]
+    },
+    {
+      "id": "triton-materialized-k32",
+      "runtime": "triton",
+      "version": "materialized",
+      "block_k": 32,
+      "num_warps": 4,
+      "kernels": [
+        "materialized_scores_kernel",
+        "materialized_softmax_kernel",
+        "materialized_pv_kernel"
+      ]
+    },
+    {
+      "id": "triton-online-k16",
+      "runtime": "triton",
+      "version": "online",
+      "block_k": 16,
+      "num_warps": 4,
+      "kernels": [
+        "online_attention_kernel"
+      ]
+    },
+    {
+      "id": "triton-online-k32",
+      "runtime": "triton",
+      "version": "online",
+      "block_k": 32,
+      "num_warps": 4,
+      "kernels": [
+        "online_attention_kernel"
+      ]
+    },
+    {
+      "id": "triton-online-k64",
+      "runtime": "triton",
+      "version": "online",
+      "block_k": 64,
+      "num_warps": 4,
+      "kernels": [
+        "online_attention_kernel"
+      ]
+    }
+  ],
+  "edge_cases": [
+    {
+      "shape": "1x1",
+      "input": "dyadic"
+    },
+    {
+      "shape": "17x31",
+      "input": "dyadic"
+    },
+    {
+      "shape": "33x65",
+      "input": "dyadic"
+    },
+    {
+      "shape": "65x64",
+      "input": "dyadic"
+    },
+    {
+      "shape": "65x64",
+      "input": "rising-max"
+    },
+    {
+      "shape": "129x64",
+      "input": "rising-max"
+    }
+  ],
+  "execution_order": [
+    {
+      "shape": "128x64",
+      "process": 1,
+      "configs": [
+        "hip-materialized-b256",
+        "hip-online-b256",
+        "triton-materialized-k32",
+        "triton-online-k16",
+        "triton-online-k32",
+        "triton-online-k64"
+      ]
+    },
+    {
+      "shape": "128x64",
+      "process": 2,
+      "configs": [
+        "triton-materialized-k32",
+        "triton-online-k16",
+        "triton-online-k32",
+        "triton-online-k64",
+        "hip-materialized-b256",
+        "hip-online-b256"
+      ]
+    },
+    {
+      "shape": "128x64",
+      "process": 3,
+      "configs": [
+        "triton-online-k32",
+        "triton-online-k64",
+        "hip-materialized-b256",
+        "hip-online-b256",
+        "triton-materialized-k32",
+        "triton-online-k16"
+      ]
+    },
+    {
+      "shape": "256x64",
+      "process": 1,
+      "configs": [
+        "hip-materialized-b256",
+        "hip-online-b256",
+        "triton-materialized-k32",
+        "triton-online-k16",
+        "triton-online-k32",
+        "triton-online-k64"
+      ]
+    },
+    {
+      "shape": "256x64",
+      "process": 2,
+      "configs": [
+        "triton-materialized-k32",
+        "triton-online-k16",
+        "triton-online-k32",
+        "triton-online-k64",
+        "hip-materialized-b256",
+        "hip-online-b256"
+      ]
+    },
+    {
+      "shape": "256x64",
+      "process": 3,
+      "configs": [
+        "triton-online-k32",
+        "triton-online-k64",
+        "hip-materialized-b256",
+        "hip-online-b256",
+        "triton-materialized-k32",
+        "triton-online-k16"
+      ]
+    },
+    {
+      "shape": "128x65",
+      "process": 1,
+      "configs": [
+        "hip-materialized-b256",
+        "hip-online-b256",
+        "triton-materialized-k32",
+        "triton-online-k16",
+        "triton-online-k32",
+        "triton-online-k64"
+      ]
+    },
+    {
+      "shape": "128x65",
+      "process": 2,
+      "configs": [
+        "triton-materialized-k32",
+        "triton-online-k16",
+        "triton-online-k32",
+        "triton-online-k64",
+        "hip-materialized-b256",
+        "hip-online-b256"
+      ]
+    },
+    {
+      "shape": "128x65",
+      "process": 3,
+      "configs": [
+        "triton-online-k32",
+        "triton-online-k64",
+        "hip-materialized-b256",
+        "hip-online-b256",
+        "triton-materialized-k32",
+        "triton-online-k16"
+      ]
+    }
+  ],
+  "build": {
+    "command": [
+      "hipcc",
+      "--offload-arch=gfx1201",
+      "-O3",
+      "-std=c++17",
+      "-save-temps",
+      "../source/attention_hip.hip",
+      "-o",
+      "attention_hip"
+    ],
+    "binary_sha256": "e60840b473ca11f461fd48735ddb43a0da2580d27a7648fd7a365869730e5e97"
+  },
+  "updated_at": "2026-09-19T18:34:20.968407+00:00",
+  "identity_checks": [
+    {
+      "phase": "profile",
+      "checked_at": "2026-09-19T18:32:59.500631+00:00",
+      "environment": {
+        "gpu": "AMD Radeon RX 9070 XT",
+        "architecture": "gfx1201",
+        "rocm_sdk": "10.0.0",
+        "hip": "7.15.26333",
+        "torch": "2.13.0+rocm10.0.0",
+        "triton": "3.8.0+git4cff872c.rocm10.0.0",
+        "os_pretty_name": "Ubuntu 24.04.5 LTS",
+        "kernel": "7.0.0-31-generic"
+      },
+      "source_reference": {
+        "source_sha256": {
+          "attention_hip.hip": "0e66b4246af72b6bc077f654838f52c914dee12c1c7bc2110ec247979947bf94",
+          "attention_triton.py": "68ce5312f4daacfa72b4f6a37b79c98cd646485f4086418c93230339c33b89f6",
+          "run_rounds.py": "93cb577d4ef01df9bc208271210f5ff5c26e85e88636989084d242688e5e8d7b",
+          "summarize_rounds.py": "5252f3312721a4fea14ab6b70a18ecdfee2fbbf795d4d0d10f827c235a205dd6",
+          "rounds_identity.py": "23a80fb7c678212e181efd795aa6ca5806ed42292b8d96c0d52c9c4f65af4af3",
+          "collect_environment.sh": "e0a6a7fa4d61d78bf5b8c6c4d424ffc922a320b86499c3e5fd1017c5139ba11b",
+          "resolve_rocprofv3.py": "6057fa1c79cd769712bbc30006af63a4e1cf0a74b7de7e2d11eae868d3889c96"
+        },
+        "binary_sha256": "e60840b473ca11f461fd48735ddb43a0da2580d27a7648fd7a365869730e5e97"
+      }
+    },
+    {
+      "phase": "validation",
+      "checked_at": "2026-09-19T18:33:26.945906+00:00",
+      "environment": {
+        "gpu": "AMD Radeon RX 9070 XT",
+        "architecture": "gfx1201",
+        "rocm_sdk": "10.0.0",
+        "hip": "7.15.26333",
+        "torch": "2.13.0+rocm10.0.0",
+        "triton": "3.8.0+git4cff872c.rocm10.0.0",
+        "os_pretty_name": "Ubuntu 24.04.5 LTS",
+        "kernel": "7.0.0-31-generic"
+      },
+      "source_reference": {
+        "source_sha256": {
+          "attention_hip.hip": "0e66b4246af72b6bc077f654838f52c914dee12c1c7bc2110ec247979947bf94",
+          "attention_triton.py": "68ce5312f4daacfa72b4f6a37b79c98cd646485f4086418c93230339c33b89f6",
+          "run_rounds.py": "93cb577d4ef01df9bc208271210f5ff5c26e85e88636989084d242688e5e8d7b",
+          "summarize_rounds.py": "5252f3312721a4fea14ab6b70a18ecdfee2fbbf795d4d0d10f827c235a205dd6",
+          "rounds_identity.py": "23a80fb7c678212e181efd795aa6ca5806ed42292b8d96c0d52c9c4f65af4af3",
+          "collect_environment.sh": "e0a6a7fa4d61d78bf5b8c6c4d424ffc922a320b86499c3e5fd1017c5139ba11b",
+          "resolve_rocprofv3.py": "6057fa1c79cd769712bbc30006af63a4e1cf0a74b7de7e2d11eae868d3889c96"
+        },
+        "binary_sha256": "e60840b473ca11f461fd48735ddb43a0da2580d27a7648fd7a365869730e5e97"
+      }
+    }
+  ],
+  "profile": {
+    "warmup": 5,
+    "repeat": 10,
+    "precheck_dispatches": 1,
+    "tool_kind": "bundled",
+    "sdk": "10.0.0"
+  },
+  "validation_selection": {
+    "shapes": [
+      "256x64",
+      "128x65"
+    ],
+    "config_ids": [
+      "hip-materialized-b256",
+      "hip-online-b256",
+      "triton-materialized-k32",
+      "triton-online-k16",
+      "triton-online-k32",
+      "triton-online-k64"
+    ],
+    "rule": "all six measured configurations; sequence length and dimension tail validation"
+  },
+  "sample_sha256": {
+    "samples/n128x64-hip-materialized-b256-p1.csv": "bf94907dc4540c4c53bc3f97b473d87d4f65c6e4f3044445e03483eb84a6c19b",
+    "samples/n128x64-hip-materialized-b256-p2.csv": "4acdb38236beeefc495a8ad4c780f08d00ef87b9d22a21f1b61e514e49400c20",
+    "samples/n128x64-hip-materialized-b256-p3.csv": "cef3f92686bc7b441d74f993b27b445986cafde256656a3eadbd1c35e5fc9f25",
+    "samples/n128x64-hip-online-b256-p1.csv": "8fe596847f3cc1c329768fc555a4a5b14e8a3e1a4b2ede2e7fa44b138cb795ab",
+    "samples/n128x64-hip-online-b256-p2.csv": "a8035aefe96915d5d2034e1056650f2b7210db830478e2ab7cb5fabff0a1215d",
+    "samples/n128x64-hip-online-b256-p3.csv": "5ce5f876b4960749fa6d82afdcbdee369da40fd6ee45d883e108428391326de3",
+    "samples/n128x64-triton-materialized-k32-p1.csv": "6bc271428bd773d3fee7e9f49db2c725c86ce0dcf3c6a9e77b9653a04b517955",
+    "samples/n128x64-triton-materialized-k32-p2.csv": "78a91e01e70e2ecbb5073c400a3c202ec45fa9767f24f6d8eb240a2922d5887e",
+    "samples/n128x64-triton-materialized-k32-p3.csv": "74896b5fdef132d89ac0bcb8a07e583250b49594f4a615203050ae3ff9eefaec",
+    "samples/n128x64-triton-online-k16-p1.csv": "a7ed9800cb3a00eab5db60604237415df5ebf104e3cf00d82ed65dc8108f89b5",
+    "samples/n128x64-triton-online-k16-p2.csv": "2d6d76c8eada7a1cac5c1d85c1aa423cc05ca62f0bf2177647d4d2ff28f19fff",
+    "samples/n128x64-triton-online-k16-p3.csv": "216a2016a07b14ab02afc926ac55b5f35b23b51a672af2944c734d7e6b6e360d",
+    "samples/n128x64-triton-online-k32-p1.csv": "5b4ecfacef3175f9c00a0307d7a148488fd9f077fa2a3dd3197afccb3b69c89d",
+    "samples/n128x64-triton-online-k32-p2.csv": "ecd628afa8c15cde5d21817fd0498526d84892c9aa8496365e23763a34c86bb7",
+    "samples/n128x64-triton-online-k32-p3.csv": "0530181cabe9750353b9fe84269824ba67bea5df069ad20f4c7dcdda774d250f",
+    "samples/n128x64-triton-online-k64-p1.csv": "aac8034d7a3c12ef1358c25fd2bcd991420f3d2354bdbf525a48911acd6afab8",
+    "samples/n128x64-triton-online-k64-p2.csv": "245564f6f21e5fb7fe176d4a58664b4862036f89b93931e4a73764e5154a6f2c",
+    "samples/n128x64-triton-online-k64-p3.csv": "cd089f542e6544350718beb61c6029f38ffc2ab0f2790a10d289f1bfc21a5751",
+    "samples/n128x65-hip-materialized-b256-p1.csv": "ee237d0b20795363fcb59f9058f6531c503dc0cd65ed1a73b89c2054883f6c34",
+    "samples/n128x65-hip-materialized-b256-p2.csv": "4f25861aab5e5dcb3e681ae676e1e351cd83e01bd19a57e1dd56958ff78eb503",
+    "samples/n128x65-hip-materialized-b256-p3.csv": "713001f996a88a9fd72f8b5cffeaa68a1e778ab40206ba84354a2c7398cc2299",
+    "samples/n128x65-hip-online-b256-p1.csv": "c7942225e00fe90f1d5a9b6e53650d85e5e79f5fea1de9c14350fda2c1eef8cc",
+    "samples/n128x65-hip-online-b256-p2.csv": "0574b521f92bdc3f2e3230878acc68d5049d65ac4d988e04990af58f3f54b124",
+    "samples/n128x65-hip-online-b256-p3.csv": "0c28f39355b4c30f3b80e3394aed1ce6ef46197fe941b918dc895c6c1488f5b9",
+    "samples/n128x65-triton-materialized-k32-p1.csv": "67385cc7cbd4a77c6770a9de45d89b399580a7451cb5390f6055ff7eddd2cddb",
+    "samples/n128x65-triton-materialized-k32-p2.csv": "1c145e75227ccc089c4aadd691acd4483aae30361d0465e18e0440a0c2ee6fe0",
+    "samples/n128x65-triton-materialized-k32-p3.csv": "d0a15790c7eb59b2f7b23d1cd278ab0a69821df70d0c73d224053fe4faa8d513",
+    "samples/n128x65-triton-online-k16-p1.csv": "1f19dd4d83c68cfc51dcdaefea7c282e8cb6b5215562e96dade06088ed183e0b",
+    "samples/n128x65-triton-online-k16-p2.csv": "20c5cb1056cc1ebaa7a882556d5461e6a2a07f750dbeee35478e0f5e1792994e",
+    "samples/n128x65-triton-online-k16-p3.csv": "e280df448aed703bf7d51a82f6178d2891044a1ecda228fe84ecc3ee3d6c32fd",
+    "samples/n128x65-triton-online-k32-p1.csv": "0fb56ad1e9d528ac4523c8db560ea6ac0d6173d19c61d1a0089a765cdf7c7192",
+    "samples/n128x65-triton-online-k32-p2.csv": "38271b20f9cf1c249a4527d04dea2d69da14845d91c2378c2e99ad92c3de21b6",
+    "samples/n128x65-triton-online-k32-p3.csv": "2c1b627640110438a64995070ae926ff031e2a96210429e0c670041917a0c9de",
+    "samples/n128x65-triton-online-k64-p1.csv": "b8fffd79400555d537615d12359404b070ad57a309df3810e3c082d0d663a3ce",
+    "samples/n128x65-triton-online-k64-p2.csv": "fd5d1fa774758972f44092c27158c4fd74e72f636262e0201e009b084ef89add",
+    "samples/n128x65-triton-online-k64-p3.csv": "019a5b46012dbc7bd43fafe51ea75d9d4368f5a4ea97dd33206aa3f03609fd98",
+    "samples/n256x64-hip-materialized-b256-p1.csv": "08655c9382c703dff0e5ecd90b94f6bb2bc4e4d6c6c3b8b59c4b88145b984dc8",
+    "samples/n256x64-hip-materialized-b256-p2.csv": "ac9bc23134328853f59da8e81258f05cf855242afa433a496a89ffb9a568ab7d",
+    "samples/n256x64-hip-materialized-b256-p3.csv": "1c5bb6884b2ec7eca0ae6a18a68be39620d40c44a079bfa1085b0a23e64b2d56",
+    "samples/n256x64-hip-online-b256-p1.csv": "879cf6ccdc43d450acc7f85fa5b3d6ab49c7be60b69c643680001b79c2307fe5",
+    "samples/n256x64-hip-online-b256-p2.csv": "0b6b6cbb3722829971f212c0bc942844833ef716d0f1b17e029e1ba62ebae71c",
+    "samples/n256x64-hip-online-b256-p3.csv": "df58d332aab11e7616735a26df0017f09fcfb6fcab4931e015880cdcb77cfbc4",
+    "samples/n256x64-triton-materialized-k32-p1.csv": "1835f7456ec39a64f807515b2bacab13ed41bb309eb359bf73cd73545ec88e33",
+    "samples/n256x64-triton-materialized-k32-p2.csv": "0eef659f3839828e570395b4d4c31d10043c9bcd9fcc57a795f7ae3876c8c0bc",
+    "samples/n256x64-triton-materialized-k32-p3.csv": "12657b0cb0cd8ee560af9c5d9c17babb9024bef03ebe35720067b624e6b91f00",
+    "samples/n256x64-triton-online-k16-p1.csv": "cb3af00924e9eceaf92b533fe89b2734a7655a010a20fe26c3d4aed3b7565286",
+    "samples/n256x64-triton-online-k16-p2.csv": "651863733c7d082331ea76dd228c19ef5233980528cbd99f75c35ab2fb0a2cf0",
+    "samples/n256x64-triton-online-k16-p3.csv": "63838533beda54c0539c8953410cc146e19fea943490070541cbd1d620036815",
+    "samples/n256x64-triton-online-k32-p1.csv": "7ac9bbc0364f1c8e4c5dfc0056467d9fe9b4150e2482a1f9c21d85ef2d592b29",
+    "samples/n256x64-triton-online-k32-p2.csv": "5225319a10585e1b2ac5ddd69528e1427bacbbe510e4621706b365d7db2e28cf",
+    "samples/n256x64-triton-online-k32-p3.csv": "fd57e82f5a0dd3d44f96be6c42a81ef9bd1ea73b04dcf5554035aa7a7025b006",
+    "samples/n256x64-triton-online-k64-p1.csv": "b66d830076d431b29383115180eb8698a8e423b35805532a5c43a4f2cc858e12",
+    "samples/n256x64-triton-online-k64-p2.csv": "1840522aa5f08875e5a2382a2e382976c17c083c1559417f234599962c05f7dd",
+    "samples/n256x64-triton-online-k64-p3.csv": "9043b8f05f3b77078a4e827d25f2a4603e7aa00899ae2cb05379187c1aa1fcd3"
+  },
+  "log_sha256": {
+    "logs/n128x64-hip-materialized-b256-p1.log": "7c23168892c93d7b25b93471580c9288f0554bde6a520405d7f3e286faa85734",
+    "logs/n128x64-hip-materialized-b256-p2.log": "a4929d292908c76dbb410cf0962684bebf8197ea93182cfb315e0249246896e5",
+    "logs/n128x64-hip-materialized-b256-p3.log": "dcebe3e7ef2fe10b6d7bfc882152b177bbf26c17238c6e446cb895bab18bca7f",
+    "logs/n128x64-hip-online-b256-p1.log": "cd383a4790d6452b8c9c978ee73a128588a1adab65881eecfd101829ca5917e1",
+    "logs/n128x64-hip-online-b256-p2.log": "99989288842430478b7d411e3f71aa1fa1adc6ce65dc701efeadaac903daea13",
+    "logs/n128x64-hip-online-b256-p3.log": "ac4e8aa7d5268ecfd20fdbb2279b5d9a3c2ee4de597e9a957ab5f9dcf5e331e8",
+    "logs/n128x64-triton-materialized-k32-p1.log": "7fdf515c5f361d87409abcc95e2cdaaee317de980f9ce239495ee48187a37e4f",
+    "logs/n128x64-triton-materialized-k32-p2.log": "09d7b468d6e290fd266017bd25eabde11e6bcfa951623f1ae0b5f465c94faa94",
+    "logs/n128x64-triton-materialized-k32-p3.log": "de64c456ca18f86a69d4ec69f29cbddaa74a3da38d931f49c9197112ae922862",
+    "logs/n128x64-triton-online-k16-p1.log": "2d3950bd363806859d90cbb72358cfa010bfcb064ec996478620059c46c9d010",
+    "logs/n128x64-triton-online-k16-p2.log": "40c5dd6bd3433cfdf5f95482e57726be94cb8b25c3a272346f17f5a06444b5cc",
+    "logs/n128x64-triton-online-k16-p3.log": "e6ae08efd628c16e0505974a83edf14e5dd6037e05ff850821ee88320f9bbbe0",
+    "logs/n128x64-triton-online-k32-p1.log": "c069d72ebbb9015ddfc0984d6fec7a1039dbffbe07869091f07488572b46ac6b",
+    "logs/n128x64-triton-online-k32-p2.log": "8faafc70efe3a0c52eb7f264a47490a6cecd73dac4e51d7043fd921fc0b4ec78",
+    "logs/n128x64-triton-online-k32-p3.log": "2f06a5bf2d2292e59b2524928fb01a2380ec7d9222dce5ef27e28274b648a210",
+    "logs/n128x64-triton-online-k64-p1.log": "94bb1de7aeaa04030a701467110389d62825d4bcdfdd2eca0f73c177e3a27ce1",
+    "logs/n128x64-triton-online-k64-p2.log": "00d5a129972de7638486da5debbcbacbfafcd236dcef4fea33a84d8b6ff5522e",
+    "logs/n128x64-triton-online-k64-p3.log": "7a7ff7201e4cc42cd02bc8e2da3c783759b2431bb8f47c3b823813eacd4bfa96",
+    "logs/n128x65-hip-materialized-b256-p1.log": "5a58fe424060a29221d8b65d407a57836321edfba175526240fc92cef199ee72",
+    "logs/n128x65-hip-materialized-b256-p2.log": "a1f4f63c9e8f5b5d30239aed2b9797f13005ccdb78f79add9306585ba08c5b16",
+    "logs/n128x65-hip-materialized-b256-p3.log": "652b8d114554d0085f951b8116666d28fd857667ff4b4c8134f9ed7bec1e0e4d",
+    "logs/n128x65-hip-online-b256-p1.log": "fe3a55284d85bed753ea02ca7403b8c1b5a0fb5f2e86f7c307bb27ad603e410e",
+    "logs/n128x65-hip-online-b256-p2.log": "a55ab7186b9f892bdae65deb98f9c13809ec806e0de8f58f03209e5d08f27532",
+    "logs/n128x65-hip-online-b256-p3.log": "e0dbdedecd236765264839ae21fab5967730b3a0558379129c582fc9667bde39",
+    "logs/n128x65-triton-materialized-k32-p1.log": "f513cdc61adfd2a95dba9c596150db22c20bdfb7feac14eadc055ab824a15301",
+    "logs/n128x65-triton-materialized-k32-p2.log": "a1a3eb1a8775db2ae6eb5fe051ca3953f0e7d3c1f6c1060113171bc07f8d0fde",
+    "logs/n128x65-triton-materialized-k32-p3.log": "f85c2d0cd75f3b3fb7dd1eb7af341107cadb2ee5877a7deeb0916b1cd3bfe502",
+    "logs/n128x65-triton-online-k16-p1.log": "57095a1185a4e0a8514d6ca8fabf861a2b03b171afd5ec8f357c74d962c72697",
+    "logs/n128x65-triton-online-k16-p2.log": "eb76a179ee72b8b8b9a4bfedc100730b84f30038bd96d8f88fe38c039ab0d958",
+    "logs/n128x65-triton-online-k16-p3.log": "421c3a421df5fcd842a2166f68776714ab6be9314c868979b8e7e4dcb6f51676",
+    "logs/n128x65-triton-online-k32-p1.log": "5a5f6fd7ca4a4795e463df6884a31e9b75bfb793f83a4d74d83e9621647f404b",
+    "logs/n128x65-triton-online-k32-p2.log": "edcf68d63a2e0295604d7570a9079c47f084fa83db549022f1e25db187b3b9c5",
+    "logs/n128x65-triton-online-k32-p3.log": "a748433c09bc50fc7b8ccc949ba3635904924c9a5bb33d9939285af82ab482c7",
+    "logs/n128x65-triton-online-k64-p1.log": "4dcee18a86c6c477361ebc54450df8e9dd3d29b9d3af9697734e561bfb7914b1",
+    "logs/n128x65-triton-online-k64-p2.log": "76e040ecf1d6ee169d40eae0bccc72c50a63f7cbd5a2fa889445ab082d1a76d1",
+    "logs/n128x65-triton-online-k64-p3.log": "38c30a6d3d1337450fd8b66fc7555ab1c59c89c2eb7c78d7aa0bc85645b82ec0",
+    "logs/n256x64-hip-materialized-b256-p1.log": "454f6dc98578b5ec70e5bc88be83461fe179f70679617b256f42f968d979ee80",
+    "logs/n256x64-hip-materialized-b256-p2.log": "f7c7002f6d00cf6b5e76fae8695cba511fba74585284980745b0dd3a989bb72b",
+    "logs/n256x64-hip-materialized-b256-p3.log": "f5611873b5f7f1c7cac5d841b360e5f92675e65829345ae5a29d9f7f250385f3",
+    "logs/n256x64-hip-online-b256-p1.log": "3be460dd529d03d442a61a3c8ddbb6dfe4c91533dc97be1964d6519593e905dd",
+    "logs/n256x64-hip-online-b256-p2.log": "05689233d092d11f21922b13a09e917316496544f51a6ddbc0b4ad67656ee802",
+    "logs/n256x64-hip-online-b256-p3.log": "d73e7869dce5484917b9e601e509e27e4d2956170768571ee2e31f88d67e1e6f",
+    "logs/n256x64-triton-materialized-k32-p1.log": "e5becb62caa88fb45cd38fcb93047a73050e77f6d4724f9e693ae2f814436772",
+    "logs/n256x64-triton-materialized-k32-p2.log": "ce6df8c680409e4b4d5f4e50062f10faccc3c2a0365fb04d0a82fc989e1d3c68",
+    "logs/n256x64-triton-materialized-k32-p3.log": "ccc3ae1cb1534ea0037a6b98908b7aca90d567150d0f6496247761ea17b412f0",
+    "logs/n256x64-triton-online-k16-p1.log": "33bb7cf11a48fd786d6945f26a5d0b5c787fb43bc1dbc1fdc8379508d8dbd9b9",
+    "logs/n256x64-triton-online-k16-p2.log": "17fedc3d0b6a89f6255c412c499efa76ca6e0c36d5bafc1ae8b9d733f84ad404",
+    "logs/n256x64-triton-online-k16-p3.log": "ca02f5f2477de7114a666bd5b6744275aedad21dc8cb2f0f5cb4cea10dd94174",
+    "logs/n256x64-triton-online-k32-p1.log": "614cd1f54c8cf2117ff1050451ac16195a9dfb51c14ad363f98d238b16d6fe8a",
+    "logs/n256x64-triton-online-k32-p2.log": "1ed72aa2e3082d7dc65afe6d2e1fb83e5fc600712b914461b5ece0bcf8f32f4a",
+    "logs/n256x64-triton-online-k32-p3.log": "42b497daa4a0f50e694aa0baee2b9a5b173beeb518ad9a6a3ae3efb0d8e1c2b7",
+    "logs/n256x64-triton-online-k64-p1.log": "b0022214b8dbedb2f3326b19fdfff2f42c9e39aa3e8645f37ebb3d1c3adde6cf",
+    "logs/n256x64-triton-online-k64-p2.log": "2a68e94b18411ff97e700e63e3eecda0c82cf0589a7da615af512fb0cb00ffec",
+    "logs/n256x64-triton-online-k64-p3.log": "840ce2573a9bd3e352a4112011d2e7523fc1d9ab521dd832ccd22d5b79f25772",
+    "logs/edge-dyadic-1x1-hip-materialized-b256.log": "4891da5aefa1d54e7ff6612763739152eb20b992d6775958037f919f47bfbf4f",
+    "logs/edge-dyadic-1x1-hip-online-b256.log": "07b3d9c3299e0b304bca0dffc690f0c70d0d8ca27d64d69ceaa26f0be8dbfed7",
+    "logs/edge-dyadic-1x1-triton-materialized-k32.log": "f42b2bf4d0526c286355e9c52b73d911e2acb723d68b417dfb5de843cbeb08d9",
+    "logs/edge-dyadic-1x1-triton-online-k16.log": "d8aa530c146b6a7b951ef7bab7070c7e666a3338ba153c8d885cabd1efae57a6",
+    "logs/edge-dyadic-1x1-triton-online-k32.log": "011f5224d9f08ea4e287f2e748b8b768970f809307386d21cff15e7f4e40849d",
+    "logs/edge-dyadic-1x1-triton-online-k64.log": "d84da7972d8a7ccd9682512f1f22c3e024b2d5292435b154ffb8efa30818047e",
+    "logs/edge-dyadic-17x31-hip-materialized-b256.log": "98f5dc9717b8e07ac88816d8cdbe29d5afa2ade726bcd3572ff2da2245b9a4bd",
+    "logs/edge-dyadic-17x31-hip-online-b256.log": "255d16064564897a1ce671d8497dea53069d04f7370ced6c75050373291375f5",
+    "logs/edge-dyadic-17x31-triton-materialized-k32.log": "7eb91356a72b6e65f37d43a0662e9ad493ab6c6044cd312dc7a9e4062a2d425b",
+    "logs/edge-dyadic-17x31-triton-online-k16.log": "1916e4e4a5c4da460a1a50360cee75fe05f278652a253f2d71c697d53d29bac2",
+    "logs/edge-dyadic-17x31-triton-online-k32.log": "cd90b04a9b70df3941cd8219b9ee969c60c7eb7a45f076b3556420a7c3168f1f",
+    "logs/edge-dyadic-17x31-triton-online-k64.log": "7d34fb6a61abd76ed433288518d63bd791c7bf3bfb7116254ba15df45ee3810e",
+    "logs/edge-dyadic-33x65-hip-materialized-b256.log": "82a27e1bdf7e11ec43306fd82e47ad15d74eedea6bddc12819674586585e7c4f",
+    "logs/edge-dyadic-33x65-hip-online-b256.log": "1c545463c91491a2b2153ab4878019332266b5a861012bedd823d5e67d0bc19c",
+    "logs/edge-dyadic-33x65-triton-materialized-k32.log": "84a8b2b2d0a6b9f9815a7002a37b5b45d625685fe60b7d30ff6148821540b4b0",
+    "logs/edge-dyadic-33x65-triton-online-k16.log": "f5c31152aa1066e779cd86b0faae9183ccc6cdf33c652bd135181e1d51a61423",
+    "logs/edge-dyadic-33x65-triton-online-k32.log": "f38b95ecd426b816ad7ed39d4ca14efdec9a2f56ca48f2266ab60deeee5f1d80",
+    "logs/edge-dyadic-33x65-triton-online-k64.log": "ae34d04b6d813887a6c53b66156498698832751814ea733324b3c5c0d5ef9fed",
+    "logs/edge-dyadic-65x64-hip-materialized-b256.log": "f3ec3b354ee75489e09c405a44bd8eabd8191084961db291a9f271f3d7295b2d",
+    "logs/edge-dyadic-65x64-hip-online-b256.log": "1e1e51d5f30db1d8527e495f7991cb223de9cacd2d5bab98969a64b27aca3c8f",
+    "logs/edge-dyadic-65x64-triton-materialized-k32.log": "9bcaf6756c294103bc7d2aba64eaf33e8efc288a79d8ec81f80266cf8a41a8eb",
+    "logs/edge-dyadic-65x64-triton-online-k16.log": "ce6dd7e03dfb04e6b9788f57cb44244e99de7f0d499f90359ced2e7d5377022d",
+    "logs/edge-dyadic-65x64-triton-online-k32.log": "340a18060c76a12203cf5c978fcba2059860b851b2b260b3dc1520a3aed587c9",
+    "logs/edge-dyadic-65x64-triton-online-k64.log": "8a343c4a692ebffe2f18645ecccc81816df29687facd3d0e6460e95b173791a9",
+    "logs/edge-rising-max-65x64-hip-materialized-b256.log": "1a6d34ae03bab4db9f56fab0fbf2c46663ceaa0ed391463762298b7a23e14a05",
+    "logs/edge-rising-max-65x64-hip-online-b256.log": "3915ed42c6f7ae9296fd647bb42ad174bf9b94cc593ed0c086aac2e55fac80ec",
+    "logs/edge-rising-max-65x64-triton-materialized-k32.log": "ef56c410500e4e281c42c89d224cb7c2be62a0f96ea18c63a04c3fe662369ac0",
+    "logs/edge-rising-max-65x64-triton-online-k16.log": "155a6026f77868848ba1138ad87964d1c9d4fce4a5a27c2e3296b67f4e8dfc63",
+    "logs/edge-rising-max-65x64-triton-online-k32.log": "20c48028a4373f135669007a5227120567a3e606e8a7621e50448e4c568c6199",
+    "logs/edge-rising-max-65x64-triton-online-k64.log": "908f6fef9693a469e16c6780b23af92211e078ae83c767eda5857e9ccc5c38f4",
+    "logs/edge-rising-max-129x64-hip-materialized-b256.log": "2753fefadf9320c8dd903a0f27000f000abfa4a1a406e3170755de2d8ecc3d91",
+    "logs/edge-rising-max-129x64-hip-online-b256.log": "24b6cf8fc3a5049053a736bddf663d7079b66d8f1fe1ab70cdc2676d6a766c47",
+    "logs/edge-rising-max-129x64-triton-materialized-k32.log": "d317d4f0c4f67a4d97ebb06878ac9cf305720f8f79f8b9d6ae22981a4db1c6ee",
+    "logs/edge-rising-max-129x64-triton-online-k16.log": "65c4cc8227d2cd54fb56c33f72aab0fe53730f78261286eecf8db27910610357",
+    "logs/edge-rising-max-129x64-triton-online-k32.log": "02d270f5539707399d68d27991909e5c903ce8dba6c8a3d84c871716bf469adb",
+    "logs/edge-rising-max-129x64-triton-online-k64.log": "9c931a7be205bbde789da5b5c9e202d018a47d6e7171968870cd9a2af340a263",
+    "logs/profile-hip-materialized-b256.log": "e8e27347c1a8ee42f670beb5da02082b459f683ba534c21f6b3e15f85d38605d",
+    "logs/profile-hip-online-b256.log": "97e84d90889d7670c924ebd6a8d95d7c4083cc02f4015aeca15bcdfd21a24947",
+    "logs/profile-triton-materialized-k32.log": "85630730479113a89b3fe7d9f222a832f055aee37d322b79cb0a90b7313e49df",
+    "logs/profile-triton-online-k16.log": "f955007d6a1609fe65187aa527c4016977bed8b916dbc4193fa668a4d26cff53",
+    "logs/profile-triton-online-k32.log": "4896b3c223aa6fe9a533a530aa67209d3c214beb6e381f7b24d8bf9a7ca615d5",
+    "logs/profile-triton-online-k64.log": "078f88956e1d194331400145bdc4a9b7d0ff543293fa3c53203ab84fa8748a7c"
+  },
+  "profile_sha256": {
+    "profiles/hip-materialized-b256_kernel_trace.csv": "95bc36b1775a34591d27ca222cde013b2334654e5f19defc07a87a43f7f4ad6d",
+    "profiles/hip-online-b256_kernel_trace.csv": "2f43f0b5811990117fd2473cd9661f6a7b0b40d06a7e6d6b0e658006bc44ed5a",
+    "profiles/triton-materialized-k32_kernel_trace.csv": "aedfa30d238ffea1f900c916bdb16ff035a1f3975c807acf403d69ade266bed2",
+    "profiles/triton-online-k16_kernel_trace.csv": "60f116469fe5bdede20f902a5c09d4bda06b2c46e72f70dc34cda5b9438fa620",
+    "profiles/triton-online-k32_kernel_trace.csv": "ce68393b367d9f010350d1f65fdfd506c2a0f3fc691c2540c70384c37a798dab",
+    "profiles/triton-online-k64_kernel_trace.csv": "61cd0ac4f2a8ef10876b08b683f298712b07d7d617046de964cd8e64558f6d09"
+  },
+  "correctness_checks": {
+    "small_checks": 36,
+    "correct": "OK"
+  },
+  "analysis": {
+    "summarizer_sha256": "5252f3312721a4fea14ab6b70a18ecdfee2fbbf795d4d0d10f827c235a205dd6",
+    "identity_check": "frozen source/binary; actual ENV; full matrix/metadata; correctness; trace grid/count; prior raw hashes"
+  },
+  "statistics": {
+    "within_process": "median of event samples",
+    "across_processes": "median of process medians; min/max of process medians",
+    "range_is_confidence_interval": false,
+    "sample_count": 2700
+  },
+  "artifacts_sha256": {
+    "summary.csv": "0a2f80bc5d749e233792c1abe3744189a36e0b30f6d8704b13884ad1e7c7d434",
+    "process-summary.csv": "98ebd84f5f750e286ff2bb8770214449efb937992395cd70c54b228b08bc869c",
+    "summary.json": "a2b806874f53647ef78c6e138658f044db5d21979e65efbadfc6e8439a7192c4",
+    "profile-summary.csv": "884d0a6b4bd9bfbf8a9ecbfa8c1f1f38e8d191c606cf8270274f3b2fc5b4cf62",
+    "confirmation.json": "75fbe45da2a3a3f00268a1f11deee197b8fe28a64b3dff986624f52efb8c73e3"
+  }
+}

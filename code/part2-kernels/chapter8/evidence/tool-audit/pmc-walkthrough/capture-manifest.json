@@ -1,0 +1,56 @@
+{
+  "collection": "chapter8-pmc-walkthrough-20260920",
+  "capture_command_completed_at": [
+    "2026-09-20T00:28:05.771682+00:00",
+    "2026-09-20T00:28:06.389677+00:00",
+    "2026-09-20T00:28:07.006477+00:00"
+  ],
+  "manifest_written_at": "2026-09-20T00:29:08.291970+00:00",
+  "parent_manifest_sha256": "dc240236f3b9e4be4bdd69e88fba2876a81321d4d550411a07d2179ac6a52d0e",
+  "binary_sha256": "9fc283682aed5da6cdffe2479c70f78399eda3861ae20ccf1796fd8c7c02a71c",
+  "source_sha256": "73e1af89d25a91fb35ee78198ce74c93d617a9ac5a0852ff74d20abd2184aa80",
+  "capture_source_sha256": "d3dd767b9b73d8d0337723361cae0d322227330ed53ae7694dbc5fb7b6af9b0a",
+  "benchmark_unchanged": true,
+  "environment_reference": "manifest.json",
+  "configuration": {
+    "version": "v0",
+    "size": 16777216,
+    "block": 256,
+    "warmup": 5,
+    "repeat": 10,
+    "seed": 20260920,
+    "kernel_include_regex": "vector_add_v0",
+    "kernel_iteration_range": "7-16"
+  },
+  "scope": "independent per-dispatch PMC capture; not benchmark; no power or environment change",
+  "counters": {
+    "waves": [
+      "SQ_WAVES_sum",
+      "GRBM_GUI_ACTIVE"
+    ],
+    "l2": [
+      "GL2C_HIT_sum",
+      "GL2C_MISS_sum"
+    ],
+    "fetch": [
+      "FetchSize"
+    ]
+  },
+  "metadata_note": "All three commands completed successfully; manifest assembled after correcting a relative-vs-absolute path error in post-capture hashing. No GPU command repeated.",
+  "artifacts_sha256": {
+    "source/capture_pmc_walkthrough.py": "d3dd767b9b73d8d0337723361cae0d322227330ed53ae7694dbc5fb7b6af9b0a",
+    "pmc-walkthrough-commands.jsonl": "0d1da1ee99c02a9c841dbd15cf2051d689b0dc1e716d2f7428842fad7565bcdc",
+    "pmc-waves.stdout.log": "deca492464f560f3dea98460ce353a46636b0d486894d2169310c9ddfecf0800",
+    "pmc-waves.stderr.log": "b3de92eec441d127c23da4d93bc20dcb2a9430d752e13e840096380e0bd93450",
+    "pmc-waves/baseline_counter_collection.csv": "4762c91832f432f7df7d605ea7c27e737030e3b45242f225e3bde8e8e4f7775b",
+    "pmc-waves/baseline_agent_info.csv": "cdab8675e0580be24065daea957ae58f3d5a6f8b8f1052ce023b266fc2e3b358",
+    "pmc-l2.stdout.log": "c3691b760137b2c89475fc7577dade4c44bda284911bab724f6c0815424c0087",
+    "pmc-l2.stderr.log": "ae94116dafa048820aeeeb46ef9f6036735f480fc7e2d14b448308c548f5d3e6",
+    "pmc-l2/baseline_counter_collection.csv": "5886b3f9392462a2de9dcf7f730162ca5ce8168b273f170cd22dad5ca6199b57",
+    "pmc-l2/baseline_agent_info.csv": "cdab8675e0580be24065daea957ae58f3d5a6f8b8f1052ce023b266fc2e3b358",
+    "pmc-fetch.stdout.log": "49ff8a16af3e49e977a56defa6eb702e8e0a05aa2f65d556ee59c3774a822fb7",
+    "pmc-fetch.stderr.log": "b9a8fe9920e966fd9a0181502574acd9bdcb562735c6105110bd3d2a187acb1d",
+    "pmc-fetch/baseline_counter_collection.csv": "fd48e8b6acd2621c9d580caf44870faaf33cd1f6230c32a8cf7658ccfc346a6d",
+    "pmc-fetch/baseline_agent_info.csv": "cdab8675e0580be24065daea957ae58f3d5a6f8b8f1052ce023b266fc2e3b358"
+  }
+}

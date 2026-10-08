@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="380" viewBox="0 0 800 380" role="img" aria-labelledby="title desc">
+  <title id="title">块 1 的组内线程 2 对应数组下标 6</title>
+  <desc id="desc">手算示意：本例每块负责连续四个数组位置。块 1 的组内线程编号是 0、1、2、3，对应数组下标 4、5、6、7。蓝色箭头只突出线程 2 到下标 6 的对应关系，不表示执行顺序。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 1 9 5 0 9Z" fill="#2f6e9e"/>
+    </marker>
+  </defs>
+  <rect width="800" height="380" rx="12" fill="#fcfbf7"/>
+  <g font-family="PingFang SC, Microsoft YaHei, Noto Sans CJK SC, sans-serif" fill="#27323a" text-anchor="middle">
+    <text x="556" y="46" font-size="28" fill="#59646b">块内线程编号</text>
+    <rect x="28" y="65" width="744" height="108" rx="10" fill="#eaf4ec" stroke="#aecbb7" stroke-width="2"/>
+    <text x="124" y="131" font-size="32" font-weight="600">块 1</text>
+    <g font-size="38">
+      <rect x="390" y="82" width="80" height="74" rx="7" fill="#fff" stroke="#cbd1d3" stroke-width="2"/>
+      <rect x="474" y="82" width="80" height="74" rx="7" fill="#fff" stroke="#cbd1d3" stroke-width="2"/>
+      <rect x="558" y="82" width="80" height="74" rx="7" fill="#eaf2f8" stroke="#2f6e9e" stroke-width="3"/>
+      <rect x="642" y="82" width="80" height="74" rx="7" fill="#fff" stroke="#cbd1d3" stroke-width="2"/>
+      <text x="430" y="132">0</text><text x="514" y="132">1</text>
+      <text x="598" y="132" fill="#2f6e9e" font-weight="650">2</text><text x="682" y="132">3</text>
+    </g>
+    <path d="M598 176V246" fill="none" stroke="#2f6e9e" stroke-width="4" marker-end="url(#arrow)"/>
+    <text x="54" y="228" text-anchor="start" font-size="28" fill="#59646b">数组下标</text>
+    <g font-size="34">
+      <rect x="54" y="258" width="80" height="66" rx="5" fill="#f0f2f2" stroke="#cbd1d3" stroke-width="2"/>
+      <rect x="138" y="258" width="80" height="66" rx="5" fill="#f0f2f2" stroke="#cbd1d3" stroke-width="2"/>
+      <rect x="222" y="258" width="80" height="66" rx="5" fill="#f0f2f2" stroke="#cbd1d3" stroke-width="2"/>
+      <rect x="306" y="258" width="80" height="66" rx="5" fill="#f0f2f2" stroke="#cbd1d3" stroke-width="2"/>
+      <rect x="390" y="258" width="80" height="66" rx="5" fill="#eaf4ec" stroke="#aecbb7" stroke-width="2"/>
+      <rect x="474" y="258" width="80" height="66" rx="5" fill="#eaf4ec" stroke="#aecbb7" stroke-width="2"/>
+      <rect x="558" y="258" width="80" height="66" rx="5" fill="#eaf2f8" stroke="#2f6e9e" stroke-width="3"/>
+      <rect x="642" y="258" width="80" height="66" rx="5" fill="#eaf4ec" stroke="#aecbb7" stroke-width="2"/>
+      <g fill="#59646b"><text x="94" y="304">0</text><text x="178" y="304">1</text><text x="262" y="304">2</text><text x="346" y="304">3</text></g>
+      <text x="430" y="304">4</text><text x="514" y="304">5</text>
+      <text x="598" y="304" fill="#2f6e9e" font-weight="650">6</text><text x="682" y="304">7</text>
+      <text x="756" y="304" fill="#59646b">…</text>
+    </g>
+    <path d="M430 326V340" fill="none" stroke="#377554" stroke-width="2"/>
+    <text x="430" y="368" font-size="26" fill="#377554">本块从 4 开始</text>
+  </g>
+</svg>

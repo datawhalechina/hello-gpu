@@ -1,15 +1,17 @@
 """Chapter 10: stable row-wise Softmax, one Triton program per row.
 
 Performance numbers from this script belong in the tutorial only after a run
-on the documented ROCm machine. The host code checks a PyTorch FP32 reference
+on the documented ROCm machine. The host code checks a CPU FP64 Softmax reference rounded to FP32
 before and after timing and prints machine-readable RESULT lines.
 """
 
 from __future__ import annotations
 
 import argparse
+import csv
 import statistics
 from dataclasses import dataclass
+from pathlib import Path
 
 import torch
 import triton
@@ -61,6 +63,7 @@ class Implementation:
 @dataclass(frozen=True)
 class Validation:
     correct: bool
+    finite: bool
     max_absolute_error: float
     max_row_sum_error: float
 
@@ -70,6 +73,7 @@ class Timing:
     minimum_ms: float
     median_ms: float
     mean_ms: float
+    samples: tuple[float, ...]
 
 
 def next_power_of_two(value: int) -> int:
@@ -91,7 +95,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--t1-warps", type=int, default=8)
     parser.add_argument("--warmup", type=int, default=10)
     parser.add_argument("--repeat", type=int, default=50)
-    parser.add_argument("--seed", type=int, default=20260719)
+    parser.add_argument("--seed", type=int, default=20260920)
+    parser.add_argument("--samples", type=Path)
+    parser.add_argument("--config-id", default="")
+    parser.add_argument("--process", type=int, default=1)
     args = parser.parse_args()
 
     if args.rows <= 0 or args.cols <= 0:
@@ -113,6 +120,14 @@ def parse_args() -> argparse.Namespace:
         parser.error("warp counts must be one of 1, 2, 4, or 8")
     if args.warmup < 0 or args.repeat <= 0:
         parser.error("--warmup must be non-negative and --repeat positive")
+    if args.samples and (args.version == "all" or not args.config_id):
+        parser.error("--samples requires one version and a --config-id")
+    if not 0 <= args.seed <= 0xFFFFFFFF:
+        parser.error("seed must fit uint32")
+    if any(c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_." for c in args.config_id):
+        parser.error("invalid config-id")
+    if args.process <= 0:
+        parser.error("--process must be positive")
     return args
 
 
@@ -169,7 +184,7 @@ def validate(output: torch.Tensor, reference: torch.Tensor) -> Validation:
     difference = torch.abs(actual - reference)
     max_absolute_error = float(difference.amax().item())
     max_row_sum_error = float(
-        torch.abs(actual.sum(dim=1) - 1.0).amax().item()
+        torch.abs(actual.double().sum(dim=1) - 1.0).amax().item()
     )
     finite = bool(torch.isfinite(actual).all().item())
     return Validation(
@@ -178,6 +193,7 @@ def validate(output: torch.Tensor, reference: torch.Tensor) -> Validation:
             and max_absolute_error <= ABSOLUTE_TOLERANCE
             and max_row_sum_error <= ROW_SUM_TOLERANCE
         ),
+        finite=finite,
         max_absolute_error=max_absolute_error,
         max_row_sum_error=max_row_sum_error,
     )
@@ -209,6 +225,7 @@ def benchmark(
         minimum_ms=min(times_ms),
         median_ms=statistics.median(times_ms),
         mean_ms=statistics.fmean(times_ms),
+        samples=tuple(times_ms),
     )
 
 
@@ -241,10 +258,13 @@ def print_result(
         f" block={implementation.block_size}"
         f" num_warps={implementation.num_warps}"
         " programs_per_row=1"
+        " launches=1"
         f" warmup={args.warmup}"
         f" repeat={args.repeat}"
         f" seed={args.seed}"
-        " timing=gpu-event"
+        " timing=gpu-event scope=gpu-event-full-operator input=shifted-dyadic reference=fp64-softmax-to-fp32"
+        f" config_id={args.config_id}"
+        f" output_finite={'OK' if validation.finite else 'FAIL'}"
         f" timed={int(timing is not None)}"
         f" correct={status}"
         f" precheck={precheck}"
@@ -270,12 +290,13 @@ def main() -> int:
     )
 
     host_input = make_host_input(args.rows, args.cols, args.seed)
-    reference = torch.softmax(host_input, dim=1)
+    reference = torch.softmax(host_input.double(), dim=1).float()
     device_input = host_input.to(device="cuda")
     output = torch.empty_like(device_input)
 
     all_correct = True
     for implementation in selected_implementations(args):
+        output.fill_(float("nan"))
         launch(implementation, device_input, output)
         torch.cuda.synchronize()
         precheck = validate(output, reference)
@@ -308,6 +329,17 @@ def main() -> int:
             postcheck="OK" if postcheck.correct else "FAIL",
         )
         all_correct = all_correct and postcheck.correct
+        if postcheck.correct and args.samples:
+            with args.samples.open("w", newline="") as file:
+                writer = csv.writer(file)
+                writer.writerow(("config_id", "implementation", "runtime", "shape", "dtype",
+                                 "block", "num_warps", "launches", "warmup", "repeat", "seed",
+                                 "process", "scope", "input", "sample", "ms"))
+                for sample, ms in enumerate(timing.samples):
+                    writer.writerow((args.config_id, implementation.name, "triton",
+                                     f"{args.rows}x{args.cols}", "float32", implementation.block_size,
+                                     implementation.num_warps, 1, args.warmup, args.repeat, args.seed,
+                                     args.process, "gpu-event-full-operator", "shifted-dyadic", sample, ms))
 
     return 0 if all_correct else 1
 

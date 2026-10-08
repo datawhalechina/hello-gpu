@@ -1,0 +1,119 @@
+ROCm 10.0 / gfx1201: selected code-object evidence
+Collected: 2026-09-19 UTC; AMD clang 23.0.0git / HIP 7.15.26333.
+Source SHA-256: af8c75f965ba0b96fa6a8c0b7057989d86ac459040ef61c001910933f87dedbd
+GPU code-object SHA-256: 0b90b623327446b98c8a0e76f7ebe82d5ade099d51a127826ea1a4c531087345
+Commands (existing -save-temps artifact; no recompilation):
+  "${ROCM_PATH}/lib/llvm/bin/llvm-objdump" -d --mcpu=gfx1201 reduction_mapping-hip-amdgcn-amd-amdhsa-gfx1201.out
+  "${ROCM_PATH}/lib/llvm/bin/llvm-readelf" --notes reduction_mapping-hip-amdgcn-amd-amdhsa-gfx1201.out
+
+Selected metadata from llvm-readelf (all three partial kernels):
+    .group_segment_fixed_size: 0
+    .name:           _ZN12_GLOBAL__N_127mapping_interleaved_partialEPKfmPf
+    .private_segment_fixed_size: 0
+    .sgpr_count:     10
+    .sgpr_spill_count: 0
+    .vgpr_count:     4
+    .vgpr_spill_count: 0
+    .wavefront_size: 32
+
+    .group_segment_fixed_size: 0
+    .name:           _ZN12_GLOBAL__N_125mapping_compacted_partialEPKfmPf
+    .private_segment_fixed_size: 0
+    .sgpr_count:     10
+    .sgpr_spill_count: 0
+    .vgpr_count:     4
+    .vgpr_spill_count: 0
+    .wavefront_size: 32
+
+    .group_segment_fixed_size: 0
+    .name:           _ZN12_GLOBAL__N_126mapping_sequential_partialEPKfmPf
+    .private_segment_fixed_size: 0
+    .sgpr_count:     10
+    .sgpr_spill_count: 0
+    .vgpr_count:     4
+    .vgpr_spill_count: 0
+    .wavefront_size: 32
+
+[interleaved]
+v0=thread; s5=stride; s4=2*stride. The remainder predicate becomes (thread & (2*stride-1)) == 0. No division/remainder sequence appears in this loop.
+The restore-EXEC/barrier block is printed first because the reduction body branches back to it.
+	s_wait_alu depctr_sa_sdst(0)                               // 000000002DB4: BF88FF9E
+	s_or_b32 exec_lo, exec_lo, s6                              // 000000002DB8: 8C7E067E
+	s_wait_loadcnt_dscnt 0x0                                   // 000000002DBC: BFC80000
+	s_barrier_signal -1                                        // 000000002DC0: BE804EC1
+	s_cmp_ge_u32 s4, s2                                        // 000000002DC4: BF090204
+	s_mov_b32 s5, s4                                           // 000000002DC8: BE850004
+	s_barrier_wait 0xffff                                      // 000000002DCC: BF94FFFF
+	global_inv scope:SCOPE_SE                                  // 000000002DD0: EE0AC07C 00040000 00000000
+	s_cbranch_scc1 21                                          // 000000002DDC: BFA20015 <_ZN12_GLOBAL__N_127mapping_interleaved_partialEPKfmPf+0x134>
+	s_wait_alu depctr_sa_sdst(0)                               // 000000002DE0: BF88FF9E
+	s_lshl_b32 s4, s5, 1                                       // 000000002DE4: 84048105
+	s_wait_alu depctr_sa_sdst(0)                               // 000000002DE8: BF88FF9E
+	s_add_co_i32 s6, s4, -1                                    // 000000002DEC: 8106C104
+	s_wait_alu depctr_sa_sdst(0)                               // 000000002DF0: BF88FF9E
+	v_and_b32_e32 v1, s6, v0                                   // 000000002DF4: 36020006
+	s_mov_b32 s6, exec_lo                                      // 000000002DF8: BE86007E
+	s_delay_alu instid0(VALU_DEP_1)                            // 000000002DFC: BF870001
+	v_cmpx_eq_u32_e32 0, v1                                    // 000000002E00: 7D940280
+	s_cbranch_execz 65515                                      // 000000002E04: BFA5FFEB <_ZN12_GLOBAL__N_127mapping_interleaved_partialEPKfmPf+0xb4>
+	v_lshl_add_u32 v1, s5, 2, v2                               // 000000002E08: D6460001 04090405
+	ds_load_b32 v1, v1                                         // 000000002E10: D8D80000 01000001
+	ds_load_b32 v3, v2                                         // 000000002E18: D8D80000 03000002
+	s_wait_dscnt 0x0                                           // 000000002E20: BFC60000
+	v_add_f32_e32 v1, v1, v3                                   // 000000002E24: 06020701
+	ds_store_b32 v2, v1                                        // 000000002E28: D8340000 00000102
+	s_branch 65504                                             // 000000002E30: BFA0FFE0 <_ZN12_GLOBAL__N_127mapping_interleaved_partialEPKfmPf+0xb4>
+
+[compacted]
+v0=thread; s5=stride; s4=2*stride. v_mul_lo_u32 computes j; v_lshl_add_u32 forms byte addresses. This is a different address/predicate sequence, not a removal of hardware division.
+The restore-EXEC/barrier block is printed first because the reduction body branches back to it.
+	s_or_b32 exec_lo, exec_lo, s6                              // 000000002FB4: 8C7E067E
+	s_wait_loadcnt_dscnt 0x0                                   // 000000002FB8: BFC80000
+	s_barrier_signal -1                                        // 000000002FBC: BE804EC1
+	s_cmp_ge_u32 s4, s2                                        // 000000002FC0: BF090204
+	s_mov_b32 s5, s4                                           // 000000002FC4: BE850004
+	s_barrier_wait 0xffff                                      // 000000002FC8: BF94FFFF
+	global_inv scope:SCOPE_SE                                  // 000000002FCC: EE0AC07C 00040000 00000000
+	s_cbranch_scc1 24                                          // 000000002FD8: BFA20018 <_ZN12_GLOBAL__N_125mapping_compacted_partialEPKfmPf+0x13c>
+	s_wait_alu depctr_sa_sdst(0)                               // 000000002FDC: BF88FF9E
+	s_lshl_b32 s4, s5, 1                                       // 000000002FE0: 84048105
+	s_mov_b32 s6, exec_lo                                      // 000000002FE4: BE86007E
+	s_wait_alu depctr_sa_sdst(0)                               // 000000002FE8: BF88FF9E
+	v_mul_lo_u32 v1, s4, v0                                    // 000000002FEC: D72C0001 02020004
+	s_delay_alu instid0(VALU_DEP_1)                            // 000000002FF4: BF870001
+	v_cmpx_gt_u32_e64 s2, v1                                   // 000000002FF8: D4CC007E 02020202
+	s_cbranch_execz 65516                                      // 000000003000: BFA5FFEC <_ZN12_GLOBAL__N_125mapping_compacted_partialEPKfmPf+0xb4>
+	v_lshl_add_u32 v1, v1, 2, 0                                // 000000003004: D6460001 02010501
+	s_delay_alu instid0(VALU_DEP_1)                            // 00000000300C: BF870001
+	v_lshl_add_u32 v2, s5, 2, v1                               // 000000003010: D6460002 04050405
+	ds_load_b32 v2, v2                                         // 000000003018: D8D80000 02000002
+	ds_load_b32 v3, v1                                         // 000000003020: D8D80000 03000001
+	s_wait_dscnt 0x0                                           // 000000003028: BFC60000
+	v_add_f32_e32 v2, v2, v3                                   // 00000000302C: 06040702
+	ds_store_b32 v1, v2                                        // 000000003030: D8340000 00000201
+	s_branch 65502                                             // 000000003038: BFA0FFDE <_ZN12_GLOBAL__N_125mapping_compacted_partialEPKfmPf+0xb4>
+
+[sequential]
+v0=thread; s2=stride; v2=4*thread. The predicate compares thread with stride, and the partner byte address is v2+4*stride.
+The restore-EXEC/barrier block is printed first because the reduction body branches back to it.
+	s_or_b32 exec_lo, exec_lo, s4                              // 0000000031BC: 8C7E047E
+	s_wait_loadcnt_dscnt 0x0                                   // 0000000031C0: BFC80000
+	s_barrier_signal -1                                        // 0000000031C4: BE804EC1
+	s_lshr_b32 s2, s2, 1                                       // 0000000031C8: 85028102
+	s_barrier_wait 0xffff                                      // 0000000031CC: BF94FFFF
+	global_inv scope:SCOPE_SE                                  // 0000000031D0: EE0AC07C 00040000 00000000
+	s_cbranch_scc0 16                                          // 0000000031DC: BFA10010 <_ZN12_GLOBAL__N_126mapping_sequential_partialEPKfmPf+0x120>
+	s_mov_b32 s4, exec_lo                                      // 0000000031E0: BE84007E
+	s_wait_alu depctr_sa_sdst(0)                               // 0000000031E4: BF88FF9E
+	v_cmpx_gt_u32_e64 s2, v0                                   // 0000000031E8: D4CC007E 02020002
+	s_cbranch_execz 65522                                      // 0000000031F0: BFA5FFF2 <_ZN12_GLOBAL__N_126mapping_sequential_partialEPKfmPf+0xbc>
+	v_lshl_add_u32 v1, s2, 2, v2                               // 0000000031F4: D6460001 04090402
+	ds_load_b32 v1, v1                                         // 0000000031FC: D8D80000 01000001
+	ds_load_b32 v3, v2                                         // 000000003204: D8D80000 03000002
+	s_wait_dscnt 0x0                                           // 00000000320C: BFC60000
+	v_add_f32_e32 v1, v1, v3                                   // 000000003210: 06020701
+	ds_store_b32 v2, v1                                        // 000000003214: D8340000 00000102
+	s_branch 65511                                             // 00000000321C: BFA0FFE7 <_ZN12_GLOBAL__N_126mapping_sequential_partialEPKfmPf+0xbc>
+
+Reading limit: cmpx instructions update EXEC; s_cbranch_execz skips the body for an empty mask; s_or_b32 restores exec_lo before the common barrier. These excerpts establish generated control/address instructions, not measured active-lane utilization or the share of elapsed time caused by each instruction.
+LDS is dynamically requested at launch (1024 B/block). Metadata group_segment_fixed_size=0 is not total LDS usage.

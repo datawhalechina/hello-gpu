@@ -1,0 +1,10 @@
+config_id,shape,stage,kernel,scope,trace_dispatches,excluded_precheck_warmup,timed_dispatches,trace_median_ms,trace_min_ms,trace_max_ms,Grid_Size_X,Grid_Size_Y,Grid_Size_Z,Workgroup_Size_X,Workgroup_Size_Y,Workgroup_Size_Z,VGPR_Count,SGPR_Count,LDS_Block_Size,Scratch_Size
+hip-serial-b256,4096x1024,1,rmsnorm_serial_kernel,rocprofv3-kernel-trace,16,6,10,0.666423,0.643683,0.728764,4096,1,1,256,1,1,16,128,0,0
+hip-block-b256,4096x1024,1,rmsnorm_block_kernel,rocprofv3-kernel-trace,16,6,10,0.06634100000000001,0.06616,0.076881,1048576,1,1,256,1,1,16,128,0,0
+hip-block-b128,4096x1024,1,rmsnorm_block_kernel,rocprofv3-kernel-trace,16,6,10,0.06362000000000001,0.0622,0.259522,524288,1,1,128,1,1,16,128,0,0
+hip-block-b64,4096x1024,1,rmsnorm_block_kernel,rocprofv3-kernel-trace,16,6,10,0.05344,0.052721,0.056681,262144,1,1,64,1,1,16,128,0,0
+triton-r1-w4,4096x1024,1,rmsnorm_kernel,rocprofv3-kernel-trace,16,6,10,0.0324405,0.0318,0.03692,524288,1,1,128,1,1,24,128,0,0
+triton-r1-w8,4096x1024,1,rmsnorm_kernel,rocprofv3-kernel-trace,16,6,10,0.03228,0.03116,0.042201,1048576,1,1,256,1,1,16,128,0,0
+triton-r1-w4,4096x128,1,rmsnorm_kernel,rocprofv3-kernel-trace,16,6,10,0.009139999999999999,0.009,0.03156,524288,1,1,128,1,1,16,128,0,0
+triton-r2-w4,4096x128,1,rmsnorm_rows_kernel,rocprofv3-kernel-trace,16,6,10,0.00868,0.006641,0.02196,262144,1,1,128,1,1,16,128,0,0
+triton-r4-w4,4096x128,1,rmsnorm_rows_kernel,rocprofv3-kernel-trace,16,6,10,0.00708,0.0052,0.0212,131072,1,1,128,1,1,16,128,0,0

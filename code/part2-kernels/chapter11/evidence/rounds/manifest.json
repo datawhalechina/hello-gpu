@@ -1,0 +1,588 @@
+{
+  "schema_version": 1,
+  "experiment": "chapter11-controlled-matmul-rounds",
+  "started_at": "2026-09-19T18:14:02.148114+00:00",
+  "hardware": "AMD Radeon RX 9070 XT",
+  "software": {
+    "rocm": "10.0.0",
+    "hip": "7.15.26333",
+    "torch": "2.13.0+rocm10.0.0",
+    "triton": "3.8.0+git4cff872c.rocm10.0.0"
+  },
+  "platform": {
+    "os_pretty_name": "Ubuntu 24.04.5 LTS",
+    "kernel": "7.0.0-31-generic",
+    "execution": "native"
+  },
+  "environment": {
+    "gpu": "AMD Radeon RX 9070 XT",
+    "architecture": "gfx1201",
+    "rocm_sdk": "10.0.0",
+    "hip": "7.15.26333",
+    "gpu_exclusive": false,
+    "profiler_during_benchmark": false
+  },
+  "source_sha256": {
+    "matmul_hip.hip": "9e037d9363c4ca210c0baca7f338cacfbc5cd610bb6496ad68cad767e0bbd84e",
+    "matmul_triton.py": "e67b82c1087c285fb240b46f4000b7c7a23f4fce2d3eb4c4a8ccac26b1b090fa",
+    "run_rounds.py": "6a469976158dcd48d6aa8c53732c62388e27e7a33b56b343865015cbe201158b",
+    "summarize_rounds.py": "d6a12d023fa4939da5da35b18250dce1a241f8327c678687fccdec3fe0ce36d6",
+    "rounds_identity.py": "2ab71ca31a786faa73d3368a59746f19bfad5da30e37fab8124190db2c68ea9f",
+    "collect_environment.sh": "e0a6a7fa4d61d78bf5b8c6c4d424ffc922a320b86499c3e5fd1017c5139ba11b",
+    "resolve_rocprofv3.py": "6057fa1c79cd769712bbc30006af63a4e1cf0a74b7de7e2d11eae868d3889c96"
+  },
+  "benchmark": {
+    "shape": "1024x1024x1024",
+    "dtype": "float32",
+    "input": "dyadic-modular-v1",
+    "reference": "cpu-fp64-to-fp32",
+    "atol": 0.0001,
+    "rtol": 0.0001,
+    "seed": 20260920,
+    "warmup": 10,
+    "repeat": 50,
+    "processes": 3,
+    "independent_runs": 3,
+    "scope": "gpu-event-full-operator",
+    "cache": "reuse arrays; no cache flush",
+    "timing": "pre-create events, enqueue timed intervals, then synchronize; no JIT/allocation/copy/reference/check in timing",
+    "correctness": "NaN output prefill, complete pre/post check, finite and abs_error <= atol+rtol*abs(reference)"
+  },
+  "configurations": [
+    {
+      "id": "hip-naive-t16",
+      "runtime": "hip",
+      "version": "naive",
+      "tile": 16,
+      "kernels": [
+        "matmul_naive"
+      ]
+    },
+    {
+      "id": "hip-tiled-t16",
+      "runtime": "hip",
+      "version": "tiled",
+      "tile": 16,
+      "kernels": [
+        "matmul_tiled"
+      ]
+    },
+    {
+      "id": "hip-tiled-t8",
+      "runtime": "hip",
+      "version": "tiled",
+      "tile": 8,
+      "kernels": [
+        "matmul_tiled"
+      ]
+    },
+    {
+      "id": "hip-tiled-t32",
+      "runtime": "hip",
+      "version": "tiled",
+      "tile": 32,
+      "kernels": [
+        "matmul_tiled"
+      ]
+    },
+    {
+      "id": "triton-b32x32-g1",
+      "runtime": "triton",
+      "version": "baseline",
+      "block_m": 32,
+      "block_n": 32,
+      "block_k": 32,
+      "num_warps": 4,
+      "group_m": 1,
+      "kernels": [
+        "matmul_kernel"
+      ]
+    },
+    {
+      "id": "triton-b32x64-g1",
+      "runtime": "triton",
+      "version": "baseline",
+      "block_m": 32,
+      "block_n": 64,
+      "block_k": 32,
+      "num_warps": 4,
+      "group_m": 1,
+      "kernels": [
+        "matmul_kernel"
+      ]
+    },
+    {
+      "id": "triton-b64x32-g1",
+      "runtime": "triton",
+      "version": "baseline",
+      "block_m": 64,
+      "block_n": 32,
+      "block_k": 32,
+      "num_warps": 4,
+      "group_m": 1,
+      "kernels": [
+        "matmul_kernel"
+      ]
+    },
+    {
+      "id": "triton-b64x32-g4",
+      "runtime": "triton",
+      "version": "grouped",
+      "block_m": 64,
+      "block_n": 32,
+      "block_k": 32,
+      "num_warps": 4,
+      "group_m": 4,
+      "kernels": [
+        "matmul_kernel"
+      ]
+    },
+    {
+      "id": "triton-b64x32-g8",
+      "runtime": "triton",
+      "version": "grouped",
+      "block_m": 64,
+      "block_n": 32,
+      "block_k": 32,
+      "num_warps": 4,
+      "group_m": 8,
+      "kernels": [
+        "matmul_kernel"
+      ]
+    }
+  ],
+  "edge_shapes": [
+    "129x128x128",
+    "128x129x128",
+    "128x128x129"
+  ],
+  "execution_order": [
+    {
+      "shape": "1024x1024x1024",
+      "process": 1,
+      "configs": [
+        "hip-naive-t16",
+        "hip-tiled-t16",
+        "hip-tiled-t8",
+        "hip-tiled-t32",
+        "triton-b32x32-g1",
+        "triton-b32x64-g1",
+        "triton-b64x32-g1"
+      ]
+    },
+    {
+      "shape": "1024x1024x1024",
+      "process": 2,
+      "configs": [
+        "hip-tiled-t8",
+        "hip-tiled-t32",
+        "triton-b32x32-g1",
+        "triton-b32x64-g1",
+        "triton-b64x32-g1",
+        "hip-naive-t16",
+        "hip-tiled-t16"
+      ]
+    },
+    {
+      "shape": "1024x1024x1024",
+      "process": 3,
+      "configs": [
+        "triton-b32x32-g1",
+        "triton-b32x64-g1",
+        "triton-b64x32-g1",
+        "hip-naive-t16",
+        "hip-tiled-t16",
+        "hip-tiled-t8",
+        "hip-tiled-t32"
+      ]
+    },
+    {
+      "shape": "1024x1024x1024",
+      "process": 1,
+      "configs": [
+        "triton-b64x32-g4",
+        "triton-b64x32-g8"
+      ]
+    },
+    {
+      "shape": "1024x1024x1024",
+      "process": 2,
+      "configs": [
+        "triton-b64x32-g8",
+        "triton-b64x32-g4"
+      ]
+    },
+    {
+      "shape": "1024x1024x1024",
+      "process": 3,
+      "configs": [
+        "triton-b64x32-g4",
+        "triton-b64x32-g8"
+      ]
+    },
+    {
+      "shape": "256x1024x512",
+      "process": 1,
+      "configs": [
+        "hip-naive-t16",
+        "hip-tiled-t16",
+        "triton-b32x32-g1",
+        "triton-b64x32-g1",
+        "triton-b64x32-g4"
+      ]
+    },
+    {
+      "shape": "256x1024x512",
+      "process": 2,
+      "configs": [
+        "hip-tiled-t16",
+        "triton-b32x32-g1",
+        "triton-b64x32-g1",
+        "triton-b64x32-g4",
+        "hip-naive-t16"
+      ]
+    },
+    {
+      "shape": "256x1024x512",
+      "process": 3,
+      "configs": [
+        "triton-b32x32-g1",
+        "triton-b64x32-g1",
+        "triton-b64x32-g4",
+        "hip-naive-t16",
+        "hip-tiled-t16"
+      ]
+    },
+    {
+      "shape": "1024x256x512",
+      "process": 1,
+      "configs": [
+        "hip-naive-t16",
+        "hip-tiled-t16",
+        "triton-b32x32-g1",
+        "triton-b64x32-g1",
+        "triton-b64x32-g4"
+      ]
+    },
+    {
+      "shape": "1024x256x512",
+      "process": 2,
+      "configs": [
+        "hip-tiled-t16",
+        "triton-b32x32-g1",
+        "triton-b64x32-g1",
+        "triton-b64x32-g4",
+        "hip-naive-t16"
+      ]
+    },
+    {
+      "shape": "1024x256x512",
+      "process": 3,
+      "configs": [
+        "triton-b32x32-g1",
+        "triton-b64x32-g1",
+        "triton-b64x32-g4",
+        "hip-naive-t16",
+        "hip-tiled-t16"
+      ]
+    }
+  ],
+  "build": {
+    "command": [
+      "hipcc",
+      "--offload-arch=gfx1201",
+      "-O3",
+      "-std=c++17",
+      "-save-temps",
+      "../source/matmul_hip.hip",
+      "-o",
+      "matmul_hip"
+    ],
+    "binary_sha256": "5a0130ab37a8ef2ae05f12a601567082f158d01919463ce8fe0580a9f4ea2545"
+  },
+  "tile_selection": {
+    "rule": "lowest median of three process medians among primary group1 Triton tiles",
+    "candidates": [
+      "triton-b32x32-g1",
+      "triton-b32x64-g1",
+      "triton-b64x32-g1"
+    ],
+    "selected_config_id": "triton-b64x32-g1",
+    "block_m": 64,
+    "block_n": 32,
+    "group_scan_ids": [
+      "triton-b64x32-g1",
+      "triton-b64x32-g4",
+      "triton-b64x32-g8"
+    ],
+    "group1_reuses_primary_measurement": true
+  },
+  "updated_at": "2026-09-19T18:18:13.621541+00:00",
+  "identity_checks": [
+    {
+      "phase": "profile",
+      "checked_at": "2026-09-19T18:16:16.484111+00:00",
+      "environment": {
+        "gpu": "AMD Radeon RX 9070 XT",
+        "architecture": "gfx1201",
+        "rocm_sdk": "10.0.0",
+        "hip": "7.15.26333",
+        "torch": "2.13.0+rocm10.0.0",
+        "triton": "3.8.0+git4cff872c.rocm10.0.0",
+        "os_pretty_name": "Ubuntu 24.04.5 LTS",
+        "kernel": "7.0.0-31-generic"
+      },
+      "source_reference": {
+        "source_sha256": {
+          "matmul_hip.hip": "9e037d9363c4ca210c0baca7f338cacfbc5cd610bb6496ad68cad767e0bbd84e",
+          "matmul_triton.py": "e67b82c1087c285fb240b46f4000b7c7a23f4fce2d3eb4c4a8ccac26b1b090fa",
+          "run_rounds.py": "6a469976158dcd48d6aa8c53732c62388e27e7a33b56b343865015cbe201158b",
+          "summarize_rounds.py": "d6a12d023fa4939da5da35b18250dce1a241f8327c678687fccdec3fe0ce36d6",
+          "rounds_identity.py": "2ab71ca31a786faa73d3368a59746f19bfad5da30e37fab8124190db2c68ea9f",
+          "collect_environment.sh": "e0a6a7fa4d61d78bf5b8c6c4d424ffc922a320b86499c3e5fd1017c5139ba11b",
+          "resolve_rocprofv3.py": "6057fa1c79cd769712bbc30006af63a4e1cf0a74b7de7e2d11eae868d3889c96"
+        },
+        "binary_sha256": "5a0130ab37a8ef2ae05f12a601567082f158d01919463ce8fe0580a9f4ea2545"
+      }
+    },
+    {
+      "phase": "validation",
+      "checked_at": "2026-09-19T18:17:31.121714+00:00",
+      "environment": {
+        "gpu": "AMD Radeon RX 9070 XT",
+        "architecture": "gfx1201",
+        "rocm_sdk": "10.0.0",
+        "hip": "7.15.26333",
+        "torch": "2.13.0+rocm10.0.0",
+        "triton": "3.8.0+git4cff872c.rocm10.0.0",
+        "os_pretty_name": "Ubuntu 24.04.5 LTS",
+        "kernel": "7.0.0-31-generic"
+      },
+      "source_reference": {
+        "source_sha256": {
+          "matmul_hip.hip": "9e037d9363c4ca210c0baca7f338cacfbc5cd610bb6496ad68cad767e0bbd84e",
+          "matmul_triton.py": "e67b82c1087c285fb240b46f4000b7c7a23f4fce2d3eb4c4a8ccac26b1b090fa",
+          "run_rounds.py": "6a469976158dcd48d6aa8c53732c62388e27e7a33b56b343865015cbe201158b",
+          "summarize_rounds.py": "d6a12d023fa4939da5da35b18250dce1a241f8327c678687fccdec3fe0ce36d6",
+          "rounds_identity.py": "2ab71ca31a786faa73d3368a59746f19bfad5da30e37fab8124190db2c68ea9f",
+          "collect_environment.sh": "e0a6a7fa4d61d78bf5b8c6c4d424ffc922a320b86499c3e5fd1017c5139ba11b",
+          "resolve_rocprofv3.py": "6057fa1c79cd769712bbc30006af63a4e1cf0a74b7de7e2d11eae868d3889c96"
+        },
+        "binary_sha256": "5a0130ab37a8ef2ae05f12a601567082f158d01919463ce8fe0580a9f4ea2545"
+      }
+    }
+  ],
+  "profile": {
+    "warmup": 5,
+    "repeat": 10,
+    "precheck_dispatches": 1,
+    "tool_kind": "bundled",
+    "sdk": "10.0.0"
+  },
+  "selected_candidates": {
+    "hip_tile": "hip-tiled-t16",
+    "triton_tile": "triton-b64x32-g1",
+    "triton_group": "triton-b64x32-g4",
+    "rule": "within-route measured median, not a global optimum"
+  },
+  "validation_selection": {
+    "shapes": [
+      "256x1024x512",
+      "1024x256x512"
+    ],
+    "config_ids": [
+      "hip-naive-t16",
+      "hip-tiled-t16",
+      "triton-b32x32-g1",
+      "triton-b64x32-g1",
+      "triton-b64x32-g4"
+    ],
+    "rule": "route baselines, controlled intermediate and selected tiles/groups; duplicates removed"
+  },
+  "sample_sha256": {
+    "samples/n1024x1024x1024-hip-naive-t16-p1.csv": "29e0a25f091fd9a377eebb364ae432da4a2fa3412f2d97a6e1810e991b780b78",
+    "samples/n1024x1024x1024-hip-naive-t16-p2.csv": "1958034191e4628db5cd0870eec335723768d7cadcc9dda808be450d7a8ac944",
+    "samples/n1024x1024x1024-hip-naive-t16-p3.csv": "6e3a7317ebb9f2b45c3116fb7fd29d99406a18c8f994b00c1a7d01c70cf9c6e5",
+    "samples/n1024x1024x1024-hip-tiled-t16-p1.csv": "1f090999066251726dfddc5402a73caad137ada15ebd695f2856a3f01d6b74dc",
+    "samples/n1024x1024x1024-hip-tiled-t16-p2.csv": "93b71ea63935e61f571b00a1a720cb44c91e50a278c1f24655794d279da07bdc",
+    "samples/n1024x1024x1024-hip-tiled-t16-p3.csv": "f551691c0d34b1008f4d23f7042f12d74ff41acac5cf54fb2640887212d1dedc",
+    "samples/n1024x1024x1024-hip-tiled-t32-p1.csv": "76d7f4d044a053315beee3930aadf314bb901a616656b40937bd3ef72f9f237d",
+    "samples/n1024x1024x1024-hip-tiled-t32-p2.csv": "b52b743dcac3b2c4e092095971b6e9082580112987c3082b7d588eccf91fe2d9",
+    "samples/n1024x1024x1024-hip-tiled-t32-p3.csv": "4dc6dd6b7e413f665b3a8a66a18cb8a03955e8116aa715c1c9a74239738c0672",
+    "samples/n1024x1024x1024-hip-tiled-t8-p1.csv": "bd3bf0af51223813c31c8523594fde19f9a18df6d3c35e4b0b7c718d10eda3df",
+    "samples/n1024x1024x1024-hip-tiled-t8-p2.csv": "fe24460d7ec017a6a68aa6aa0b286443d6274b5ff3ba387781ddd01975dcc783",
+    "samples/n1024x1024x1024-hip-tiled-t8-p3.csv": "f83c01e391d90030820361467f0e14ae1228a89407ed2b1cee601c0d9fbf69dd",
+    "samples/n1024x1024x1024-triton-b32x32-g1-p1.csv": "0069c1d926a8bb76b438cffca097b9515eeb10fb0b1935ac8c2ca8d55ccf431e",
+    "samples/n1024x1024x1024-triton-b32x32-g1-p2.csv": "57c922092276a0e2a6d59f36c15b0cfb08d9e108e5415277a2683c45493dddcf",
+    "samples/n1024x1024x1024-triton-b32x32-g1-p3.csv": "fe2a39de698e8115866331546b0e14069e2fa908a974e8ae8bb95bc44c3b638d",
+    "samples/n1024x1024x1024-triton-b32x64-g1-p1.csv": "6f04d74a6b56269faadebaf839ddb839fa2cdd0758238d438ab1e17742158389",
+    "samples/n1024x1024x1024-triton-b32x64-g1-p2.csv": "93ee416ebd49920f56fd06536ef72ae3027b369e7c62947192b077348bc0cddd",
+    "samples/n1024x1024x1024-triton-b32x64-g1-p3.csv": "8b740ad3e979c5bab2c0e840ec639152b48f5d950841ada738d62731d682ce65",
+    "samples/n1024x1024x1024-triton-b64x32-g1-p1.csv": "dd554177a6455843c22eddb5e3ac2f83691e7e525fd3954b776492926782ad8f",
+    "samples/n1024x1024x1024-triton-b64x32-g1-p2.csv": "1938d7064a33c1a7581e0f90ed557f7474ab296c44edafa851dbe50dc1f1808a",
+    "samples/n1024x1024x1024-triton-b64x32-g1-p3.csv": "5213cb7a550cf00bd9e45699f067b9714d41c57991901f88de00415d9aa702a2",
+    "samples/n1024x1024x1024-triton-b64x32-g4-p1.csv": "10dd62338afbdc3a4d6d3e170101dcf094d792105a2ed8974c55f028e8638645",
+    "samples/n1024x1024x1024-triton-b64x32-g4-p2.csv": "e113e1882e86f9b69b057f2ce83e2d3d4c0bb06518889e5411c1463c1414955c",
+    "samples/n1024x1024x1024-triton-b64x32-g4-p3.csv": "ccd43a708c39e3391d05b8b3c7a4e66f991cece70c940f41c2c9e715df69a32e",
+    "samples/n1024x1024x1024-triton-b64x32-g8-p1.csv": "12eaa737869054a0909de414591518fff245c7b837255e83482cc7b837e00adb",
+    "samples/n1024x1024x1024-triton-b64x32-g8-p2.csv": "57da6915454b4bbe064d97a45943645ad6f28630ae3b818496b59eb7d416f347",
+    "samples/n1024x1024x1024-triton-b64x32-g8-p3.csv": "8b4f197edeff940b06e43be6ea4e03e9152c572a1209e06d2ab8ee6cfef4f75f",
+    "samples/n1024x256x512-hip-naive-t16-p1.csv": "ae50558336948ca677d97c325502bcd406237e815fc04ea3a23ec252aa4c2c3a",
+    "samples/n1024x256x512-hip-naive-t16-p2.csv": "efadfab62fac5b2080657d3b3d9d26a32dfdeb27c22099e12c98c04206f02413",
+    "samples/n1024x256x512-hip-naive-t16-p3.csv": "de32f1e48ac665d8f1ed71a3529d56c2035a0911de4bf9740d80f509ff611a85",
+    "samples/n1024x256x512-hip-tiled-t16-p1.csv": "d8c0b15167211fab4d98073c8443fe4f24791312985b46f43cd7996ff87787d1",
+    "samples/n1024x256x512-hip-tiled-t16-p2.csv": "de2ec0abc90c59ac9a4ae884b0c99418b15a378eabcf97f7ffa6e8d1022caafe",
+    "samples/n1024x256x512-hip-tiled-t16-p3.csv": "9b38f62e3ef232943a2412747873420985aa6acd6285df5d75435eebde0c003e",
+    "samples/n1024x256x512-triton-b32x32-g1-p1.csv": "cfc5310ede5417b472657446668769783983aa388adcbd902fa0302612b539ea",
+    "samples/n1024x256x512-triton-b32x32-g1-p2.csv": "1b50a99503c5aad2fb4f96e6c8156a7b8a2293e8829d92f4a0df9e87f75ce855",
+    "samples/n1024x256x512-triton-b32x32-g1-p3.csv": "9d754dd24f84dd1be99718d27ff29ac232311c78db7209773c14a41b9c43e2df",
+    "samples/n1024x256x512-triton-b64x32-g1-p1.csv": "823dd95aa15a9822c5615b9da502e46e96e32aa22e3148d4f754f43ee7932af2",
+    "samples/n1024x256x512-triton-b64x32-g1-p2.csv": "3b63eb2917730db4e4bff8969685b891676f63ddc00726bd500b6921193d9a08",
+    "samples/n1024x256x512-triton-b64x32-g1-p3.csv": "6dba60f5acbfdaf396e36867d292d0a462231fd79e36ce515c7b39f1023e8f62",
+    "samples/n1024x256x512-triton-b64x32-g4-p1.csv": "280ea50e997dae1b74ac8794f79f84d7b07c9253684fd30bd3e97269b1e89eb6",
+    "samples/n1024x256x512-triton-b64x32-g4-p2.csv": "4db906687d4e756ccb6efba1be28a85188585e82ae7329383ec181d2d48e810c",
+    "samples/n1024x256x512-triton-b64x32-g4-p3.csv": "f6cb9c96f973831be595103e0720b788d0fbfefb35b98838495fb60c1b0dd8e7",
+    "samples/n256x1024x512-hip-naive-t16-p1.csv": "d98d997bf28d860f9fb671ccb5ca1e38f5f2ca17f8bfa2519fcbdc9211344968",
+    "samples/n256x1024x512-hip-naive-t16-p2.csv": "59b56599e9530d02856fd1987c9ae2ef2371c9f62d6e5e36d618d0d86d9f3b9e",
+    "samples/n256x1024x512-hip-naive-t16-p3.csv": "16a802f08f09b0d41e3d9d724af6e7af6db4d33415982fb62f527b4ec254dfaf",
+    "samples/n256x1024x512-hip-tiled-t16-p1.csv": "5ca216bf0e50eaaac94026b0f90760cc1133759630d04cf61afab52a112be856",
+    "samples/n256x1024x512-hip-tiled-t16-p2.csv": "faae67e85ed4a273bfe65f6063b2f59d64128564cb012bee9df2f268fb2dba07",
+    "samples/n256x1024x512-hip-tiled-t16-p3.csv": "d8657dcbc50280344b30b101d493d012be6dd4a99016161d849c6fd41910bb1f",
+    "samples/n256x1024x512-triton-b32x32-g1-p1.csv": "455ffb41fadba7509c72c600e6157a098e881dbf8c6e1867166e98754499fb63",
+    "samples/n256x1024x512-triton-b32x32-g1-p2.csv": "52f2fb2750f4f1dfdc645dcfd24298dd7f34f65eac5eaf93d2bc30404d5c6273",
+    "samples/n256x1024x512-triton-b32x32-g1-p3.csv": "746e04f186e49a4490a69889b17f947bd5f42ee0b691545163d6f9f1a09a221b",
+    "samples/n256x1024x512-triton-b64x32-g1-p1.csv": "bcdaf479dec01a380d5e4aa1f6278e8e8ca9d852f7933d9a7929118bb2ad1c29",
+    "samples/n256x1024x512-triton-b64x32-g1-p2.csv": "829b315972ab2de7014b4de6643e1a63c465c35e368f886534f17636a36c1135",
+    "samples/n256x1024x512-triton-b64x32-g1-p3.csv": "08ceef7dc960e56fc1636e4f72973736557197ab74eca7ee4060ed90145fccb0",
+    "samples/n256x1024x512-triton-b64x32-g4-p1.csv": "3f30ac8ac4cddc038ff8c57928eb28169276bfab8b927a2bcf5813a855389c62",
+    "samples/n256x1024x512-triton-b64x32-g4-p2.csv": "02e2463e80b8a0984b39839ca9446740b91dc418b3d7dc1c7caebea4d049dfa1",
+    "samples/n256x1024x512-triton-b64x32-g4-p3.csv": "3242b92088fc1f889afe9a1d8ad2bcb100177cce5e886d72b78c23adbadfc50f"
+  },
+  "log_sha256": {
+    "logs/n1024x1024x1024-hip-naive-t16-p1.log": "735271cb937c88b42f216115ccde3715d45c9fcfdf7e12f43826a526ae4ecde6",
+    "logs/n1024x1024x1024-hip-naive-t16-p2.log": "3dcdb8241cd7ef71334c25addfe26ecda365c2204e1509ecab374c875b9e4be4",
+    "logs/n1024x1024x1024-hip-naive-t16-p3.log": "da4113d32742d4b5214f0332d5407ed97f7856da641eb2b8643a486ec525ae54",
+    "logs/n1024x1024x1024-hip-tiled-t16-p1.log": "0a8b5a5f6890575c782e5567a7bad445ad26c8a62a6115cc7616f453994b4f2f",
+    "logs/n1024x1024x1024-hip-tiled-t16-p2.log": "71a4cb38acc0d32617d4df9e414571fc1fefb37d9948d2c7eac935c8fa0f23f4",
+    "logs/n1024x1024x1024-hip-tiled-t16-p3.log": "6313f49bc238c7cb512bc6db1c78256b74e015ba8108d7e3b995797ee543450f",
+    "logs/n1024x1024x1024-hip-tiled-t32-p1.log": "922a26c08e59c07b91e0bdb9270b2734bcfedd9cf78aa48731379fb1c5eac997",
+    "logs/n1024x1024x1024-hip-tiled-t32-p2.log": "46117bac4be2c2cb0013bc902e2e7dcf7e5a0bf38aae51d196d9dfaff2cf7c73",
+    "logs/n1024x1024x1024-hip-tiled-t32-p3.log": "9af19e49da1dda6d413b13b39cf986c08062b2aae6c87aba31cc718937284228",
+    "logs/n1024x1024x1024-hip-tiled-t8-p1.log": "21804c01ab5016f5074bcf195ef9a4ff3c2fa676b73037ce73522713eb43b7b8",
+    "logs/n1024x1024x1024-hip-tiled-t8-p2.log": "787515ebc2722ecf43bb4ee67f570ce8ff40e1d1d54f01e9626788820f36cd5e",
+    "logs/n1024x1024x1024-hip-tiled-t8-p3.log": "5e3556b9482bbad6acc54b94d0570d00cf5bf44551eb9c12bafad94289a3de4c",
+    "logs/n1024x1024x1024-triton-b32x32-g1-p1.log": "774c43a049d8f636475acbde4648eff7e014cdd3e3b21fb49cdae9ff38b9b821",
+    "logs/n1024x1024x1024-triton-b32x32-g1-p2.log": "e9dad190d372708cf01852f7bf871091062159e2b072348be657bd52e03bed9a",
+    "logs/n1024x1024x1024-triton-b32x32-g1-p3.log": "83937f096b1ebd93f980e5d356a577225581c8e1074e685971767ceb0a20732d",
+    "logs/n1024x1024x1024-triton-b32x64-g1-p1.log": "e62816b5fc36fed3b817407c829dc26573dad4c5d36ed2f20b79b4a55a466046",
+    "logs/n1024x1024x1024-triton-b32x64-g1-p2.log": "1ca844edf97509968b9a48877b2ea7e410c3983425e3e3e349a3d0fc313036b0",
+    "logs/n1024x1024x1024-triton-b32x64-g1-p3.log": "150db74c320d522e92ee52cee125a409de922ebce97f481df99e732f09a087b5",
+    "logs/n1024x1024x1024-triton-b64x32-g1-p1.log": "af104ef348cc7bf5f4ceceebbf45cf2c1739e17f3e4771ea15378ac5030a4dc2",
+    "logs/n1024x1024x1024-triton-b64x32-g1-p2.log": "38624068da265034d2236bc1aecd1c2848956c551bcb48ceba2d8e5da4a59347",
+    "logs/n1024x1024x1024-triton-b64x32-g1-p3.log": "35a75176feb8dcbfd7e06d6d8a52c5a6e7ecb41e214a881cd7c3266ebb906b2b",
+    "logs/n1024x1024x1024-triton-b64x32-g4-p1.log": "5106ec7d4d6d0c72cb97fad0e349b03bd3594a1ee022dafc7cbe6ba1b751fb43",
+    "logs/n1024x1024x1024-triton-b64x32-g4-p2.log": "79d3038a613ebb3ba93d9b93b3843ea304f5b224c72f785955c522ccfe65f5b0",
+    "logs/n1024x1024x1024-triton-b64x32-g4-p3.log": "c92d9b2a8cc3ba6dd2712c76c32180f2acd008ebc2cfc06b0f5ca27b6eb58930",
+    "logs/n1024x1024x1024-triton-b64x32-g8-p1.log": "5746ee589ec54e35a1ccd16adf8d4382c8ef5a2b592cd5a7a3359e57ee012fd9",
+    "logs/n1024x1024x1024-triton-b64x32-g8-p2.log": "27bc4d5a6dc6fadb50360032617a7df8f8ddbd456eda87297a81c9b30696e012",
+    "logs/n1024x1024x1024-triton-b64x32-g8-p3.log": "070052697e46146c38b690441d61058b9c86c29bd6e905693b1aff7080b4706e",
+    "logs/n1024x256x512-hip-naive-t16-p1.log": "cd67bc1f035705e7a7204eea78e7f5607ba81ae568c2667141b5141b0ed8e296",
+    "logs/n1024x256x512-hip-naive-t16-p2.log": "a56c0d0cf6c46e388392cd2458dc7d03c1f998d95ae69295663784b479c1ff2a",
+    "logs/n1024x256x512-hip-naive-t16-p3.log": "d12ec9e07dc23cd15cde7524dcfdac004f629d0afe58156cd4e91693dedf8e6e",
+    "logs/n1024x256x512-hip-tiled-t16-p1.log": "92bcbdddbedbf9530a06153706d2df441400e5eac406985830c218313ccfda9b",
+    "logs/n1024x256x512-hip-tiled-t16-p2.log": "9385768715dd7fe17dde7acc2f57beb69520f693c2035b1563d38e1be8c51c11",
+    "logs/n1024x256x512-hip-tiled-t16-p3.log": "de75f2fe94eb58a231dffa5175ce56d2c0737a74ca39ed364120dee71705343c",
+    "logs/n1024x256x512-triton-b32x32-g1-p1.log": "9e807b3780a608edb923a29514e9a1b82d847dd9d40d3b08eee5773b11686407",
+    "logs/n1024x256x512-triton-b32x32-g1-p2.log": "bd100752e722ae9be2fc0926948de3d56fb192c509cea4aa1c240a99c2ec0f02",
+    "logs/n1024x256x512-triton-b32x32-g1-p3.log": "08b03d0b7daabf8dea22aadff3aae042bd92c29563584fbe9264449a49f7831b",
+    "logs/n1024x256x512-triton-b64x32-g1-p1.log": "39fd6b889da7f1c23c30586ba9bf85ae0c4c2428d0d54621e3c2dbc71d478d74",
+    "logs/n1024x256x512-triton-b64x32-g1-p2.log": "dce45801ad5a17ce4db793722f26c42546cca0c9fcbace68a18f46b18f051c45",
+    "logs/n1024x256x512-triton-b64x32-g1-p3.log": "734c916b5c6e54ad530c28a194517ca6586e58d19997643859428589c1294a17",
+    "logs/n1024x256x512-triton-b64x32-g4-p1.log": "eb2415e95bb64b9e3348f6825253927b2488c5b307fa70211bb8ee7a11e892f2",
+    "logs/n1024x256x512-triton-b64x32-g4-p2.log": "f85cafb689e21c75743534a51a9335bc75a514d12a7de6f87bd5ca649dc2e37d",
+    "logs/n1024x256x512-triton-b64x32-g4-p3.log": "8118fc47fe3e2c98e20c82931a1b89e03a582a0c2d87da6bb06e2b88b17ef832",
+    "logs/n256x1024x512-hip-naive-t16-p1.log": "f9dcf38a18484277b6015e2dc5ad5d6a1ed5a9d19b7f293eabf947ac1f05c6f8",
+    "logs/n256x1024x512-hip-naive-t16-p2.log": "fbda03702f966a2881a603af780cde03d788db84cd5401170a495c31679b4a09",
+    "logs/n256x1024x512-hip-naive-t16-p3.log": "acec8b80917e28f38c88a1a61ac631755ab4cb5bbdce7e53e3307cf3eb407b1d",
+    "logs/n256x1024x512-hip-tiled-t16-p1.log": "24d2cf23e92e48c21654fbbf14065551d2204ffa59d9ee89ffbc29128a120769",
+    "logs/n256x1024x512-hip-tiled-t16-p2.log": "d243aa7537a60ec44fbc03d28ff1526975f2dff405d3f955dc9e4f2abc456324",
+    "logs/n256x1024x512-hip-tiled-t16-p3.log": "0d3e03636adf2b10631f788c2572805aad1b5a49ee6db2d7d96989fef3d50892",
+    "logs/n256x1024x512-triton-b32x32-g1-p1.log": "27d27cf91a13e9a182189ff5996394aa3707a6d0aa221162d301976c200fb6aa",
+    "logs/n256x1024x512-triton-b32x32-g1-p2.log": "f2fb03fdf9c5e8925cd361673a295e341f1ffa3196207394db1797ede188c177",
+    "logs/n256x1024x512-triton-b32x32-g1-p3.log": "01a81e4576823288d45b9dd07326ec1c7c1b797f798e3c935a658e835a6a05d6",
+    "logs/n256x1024x512-triton-b64x32-g1-p1.log": "db4cf7756184924a4cc594bf2bbd1b9c119dc286d20ce57fea3bb9749e9d9730",
+    "logs/n256x1024x512-triton-b64x32-g1-p2.log": "9b8d7f38b0702cdf8ba531162f5763623b082a71bbea66fc13a426ed25fceb05",
+    "logs/n256x1024x512-triton-b64x32-g1-p3.log": "a4e725cc149f213c03143aa53756bb8e6f49d514f83c849279eb017a8a2b0217",
+    "logs/n256x1024x512-triton-b64x32-g4-p1.log": "2c59a7f58c4ec57da63474fe435877115da1a65d82207ebd6fa8d0692ba6ccf9",
+    "logs/n256x1024x512-triton-b64x32-g4-p2.log": "1856939590b2578574b243530086ac675d87da775d0cd18b6c683e40bee06d39",
+    "logs/n256x1024x512-triton-b64x32-g4-p3.log": "37de90a51fef9fe1e74c856fa2bfcc523e0309da454946e5b1955133acfb910a",
+    "logs/edge-129x128x128-hip-naive-t16.log": "c57d43c311cd1ce7c16dd1c77a7d0ba68eda6d2d5b3569e057c9d2241f813b6e",
+    "logs/edge-129x128x128-hip-tiled-t16.log": "0653c7e89249585827277efc19daa560221fedb9932575b73e25da8804694820",
+    "logs/edge-129x128x128-hip-tiled-t8.log": "1a0662ddc605eb475b9b46d557e2bda88822997a1d67811c4114923e128d3bcc",
+    "logs/edge-129x128x128-hip-tiled-t32.log": "b84b10a9b6d812caac132eec70a3ebe3093c0e03552fdfb8736dff1069f94d64",
+    "logs/edge-129x128x128-triton-b32x32-g1.log": "737175ab233d102e7e45d3b6ceaf0094be961834c57a059ba9436ff40cad56c4",
+    "logs/edge-129x128x128-triton-b32x64-g1.log": "1c426dfa44f554d0091190df2a48467f08bc5307eee13a14fee2eea97ac851e3",
+    "logs/edge-129x128x128-triton-b64x32-g1.log": "fe860b2161fcef2cd1c9f6b7745ed0e5f4b655c943583556640df47ac9b0ff10",
+    "logs/edge-129x128x128-triton-b64x32-g4.log": "a67b8a4c73ff2a7ef172aeb0aa0b7e651cedac76bbf6027e5b658fbda0e89712",
+    "logs/edge-129x128x128-triton-b64x32-g8.log": "fa22a0b8c737d9b021801e77d96146d0744f76e779354f7abc0ff2274dbf1712",
+    "logs/edge-128x129x128-hip-naive-t16.log": "dc0f6ea471a5315d91c1548142a6186cb37f4f51385f18d7bda5ce02bc3dc085",
+    "logs/edge-128x129x128-hip-tiled-t16.log": "d3c6b7b373ee1db3263f81a37ed66b87feeadb03041dfc959e0a302e7cb8efb0",
+    "logs/edge-128x129x128-hip-tiled-t8.log": "a11264e0b514312d420d687c753486bb9293bcbac907e9eaf601af70d150356b",
+    "logs/edge-128x129x128-hip-tiled-t32.log": "4949a9cb5cbc9c6f985171b803c50773312041a49ba5914fc8a9407bcf8d3ec3",
+    "logs/edge-128x129x128-triton-b32x32-g1.log": "82ca9ba01335e07418f2e5eb547082b95111d9e4c02d634e86594dd36392e0e8",
+    "logs/edge-128x129x128-triton-b32x64-g1.log": "770afb1bcad767f026a193ec4162b77d2cb0e3a3b376d4b2c9e3a03474373f4d",
+    "logs/edge-128x129x128-triton-b64x32-g1.log": "d7a7fb2f200efb135dfaedceb8c73b0c1282946bd5e9bec18431402311999c9a",
+    "logs/edge-128x129x128-triton-b64x32-g4.log": "9be618fe589e49892def17e855d71187794a8e601814d3cf40a5a99878f31ab3",
+    "logs/edge-128x129x128-triton-b64x32-g8.log": "c4102919344520e92c1666cea0f2b7ee2aa91a64528732bcbf2b93a52822bf16",
+    "logs/edge-128x128x129-hip-naive-t16.log": "777fa2ff888ad1a720ed75ebfd3b457b3be43e1ea1fb8ed4eb5779682f512564",
+    "logs/edge-128x128x129-hip-tiled-t16.log": "d79cbdfed8155b89c4e5dd228558144327c0eb1d789e25299a7aa40dcd41480d",
+    "logs/edge-128x128x129-hip-tiled-t8.log": "5a42f5b88ca25c03b70eb09ec9649cfcef377d4d3f0f39ad3f9ae6bbf1c798ee",
+    "logs/edge-128x128x129-hip-tiled-t32.log": "c9ff9d48da7b097aa63dfb0b50c5c01dff8dc37f4272808662f3e0e537931107",
+    "logs/edge-128x128x129-triton-b32x32-g1.log": "59ac64b0e97e91108e5f9a5ab61bb748d2e329fff220fb423b01d0af223e205d",
+    "logs/edge-128x128x129-triton-b32x64-g1.log": "51f443a7dc90527a43eb12eadfd11ab9531555f1f117667dbc6aa80c74483352",
+    "logs/edge-128x128x129-triton-b64x32-g1.log": "9857b36586a5a934462941e1315b92bbb598fa46ad41986c91fd85d66474bbe0",
+    "logs/edge-128x128x129-triton-b64x32-g4.log": "b5ad08340082bdae7988cfa13de31c764b2c817f560e6eb10dc30b5c6178b72c",
+    "logs/edge-128x128x129-triton-b64x32-g8.log": "f875f1b7dfaa9b7d29cba796e76974ac13b71239618ecdd1b3886f3ddf7be7a5",
+    "logs/profile-hip-naive-t16.log": "987d38e19f09078dace549ef60dcbbd2485c98b810c483c903c93efae6389c40",
+    "logs/profile-hip-tiled-t16.log": "6b78737c6028424302ee7cb6999c9941bc7f1bf66b5fd4fc7681ebd7a418411b",
+    "logs/profile-hip-tiled-t8.log": "066b7c4f87f82606298545ee61433b64aacbf3ab6d25cd87ee1d3361629172db",
+    "logs/profile-hip-tiled-t32.log": "3c9ad7401833998ef4559255906be738a841aff8a44911ada4596402ef632e17",
+    "logs/profile-triton-b32x32-g1.log": "f345b72f9ae4e12b79dcd610c8ef1bda94654aa908228048f44d284c47499607",
+    "logs/profile-triton-b32x64-g1.log": "9465c0a3d94ca10d411ee780f6dacd325942882b8fee1cf47c0502da1f7a3b62",
+    "logs/profile-triton-b64x32-g1.log": "58c3b668a0e0487959412bd826395c1fae66c986225221174d240615565a0938",
+    "logs/profile-triton-b64x32-g4.log": "9489ec6a5a5516f678343e8533c369ffbbb1616ca1f082e6cae3f3ab563f0b5d",
+    "logs/profile-triton-b64x32-g8.log": "28c3d1e7319f71990c0247713f68756d391d6634d825274f5e72cd6f96ab61d0"
+  },
+  "profile_sha256": {
+    "profiles/hip-naive-t16_kernel_trace.csv": "94d9a6757859120ab5d24b2bea45a76a4a3e730095164a95c6473a278234bbfb",
+    "profiles/hip-tiled-t16_kernel_trace.csv": "0dfb0a4a4104b38948ed5e5da4841bfadd38ab19726410725bbf0e7ae2f85948",
+    "profiles/hip-tiled-t8_kernel_trace.csv": "3a3de326c8dff86205bd0515381f0dc4ba18ab90aca179546bf7e32043a0f5b7",
+    "profiles/hip-tiled-t32_kernel_trace.csv": "d6dfd9c65ea7a2213b495ef5e1912284eda17990d5282ce118a7aef928540ac0",
+    "profiles/triton-b32x32-g1_kernel_trace.csv": "f5fd40121345c23115dd17630240535e0a1a926d5f1ad38abe9bbfc0bdc853f3",
+    "profiles/triton-b32x64-g1_kernel_trace.csv": "ee2651748a7ac70d33ce427342176dc11df71bd18b95c68551c3ece9c27f9981",
+    "profiles/triton-b64x32-g1_kernel_trace.csv": "e4d464a00e214a6254902db28725f5cc3515c91306f27ba92194d24670e097ec",
+    "profiles/triton-b64x32-g4_kernel_trace.csv": "6ae61a76452d6ba784bdee9ca65174fa1a0a1760f6d735cc6297d69497b59401",
+    "profiles/triton-b64x32-g8_kernel_trace.csv": "1371967d8322bb1667672671d9e5fc5425fcc31e08989bc6e4cd3f826f0d2a6e"
+  },
+  "correctness_checks": {
+    "small_checks": 27,
+    "correct": "OK"
+  },
+  "analysis": {
+    "summarizer_sha256": "d6a12d023fa4939da5da35b18250dce1a241f8327c678687fccdec3fe0ce36d6",
+    "identity_check": "frozen source/binary; actual ENV; full matrix/metadata; correctness; trace grid/count; prior raw hashes"
+  },
+  "statistics": {
+    "within_process": "median of event samples",
+    "across_processes": "median of process medians; min/max of process medians",
+    "range_is_confidence_interval": false,
+    "sample_count": 2850
+  },
+  "artifacts_sha256": {
+    "summary.csv": "1453cb262c572ff9e2eb12c03d71a62bf4bf078a2c707896c17547296d0ec009",
+    "process-summary.csv": "b5589769814e83d2975abb8b973b009abb0e12292acea836af616148f457e646",
+    "summary.json": "25b585920502e52bbea1d41bb552037646607772d3b72b5807955345b0e9ca2a",
+    "profile-summary.csv": "5d8b7cab9ab2c29f077692411d6f9efa3e1545d1297b369ce5da341d290d36cc",
+    "confirmation.json": "da3fce05d2f3dd8c7c3850762dba392425374c3279bc076b28c372a219980e99"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "source_sha256": {
+    "vector_add_hip.hip": "73e1af89d25a91fb35ee78198ce74c93d617a9ac5a0852ff74d20abd2184aa80",
+    "vector_add_triton.py": "831525557254b8cf17965403972491e6b95cac63dc1c9a343af49366752fa893"
+  },
+  "binary_sha256": "08b84ac929c1dec4ce79b0a4871a4b26068a226568f9160e838e03fd938c8409",
+  "frozen_run": "<frozen-rounds-root>/code/part2-kernels/chapter8/results/rocm10-20260920",
+  "benchmark_shape": 16777216,
+  "warmup": 5,
+  "repeat": 10
+}

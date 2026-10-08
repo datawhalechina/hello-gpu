@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="574" viewBox="0 0 800 574" role="img" aria-labelledby="title desc">
+<title id="title">同样 128 次加法在 8 个 wavefront 中的分布</title>
+<desc id="desc">block 为 256 个线程，wavefront 为 32 个线程。邻接配对第一轮 stride 等于 1：B 版的 8 个 wavefront 各有 16 个 lane 做加法；C 版的 wave 0 到 3 各有 32 个 lane 做加法，wave 4 到 7 整组跳过加法。两种安排均为 128 次加法，全部线程仍须到达 block 屏障。</desc>
+<defs><pattern id="partial" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M-2 2L2-2M0 8L8 0M6 10L10 6" stroke="#d5b688" stroke-width="1"/></pattern></defs>
+<rect width="800" height="574" rx="12" fill="#fcfbf7"/>
+<g font-family="PingFang SC, Microsoft YaHei, Noto Sans CJK SC, sans-serif" fill="#27323a">
+<text x="32" y="43" font-size="28" font-weight="600">第一轮：256 个线程，128 次加法</text>
+<text x="32" y="86" font-size="24" font-weight="600">B · 8 个 wavefront 都有一半 lane 做加法</text>
+<text x="32" y="302" font-size="24" font-weight="600">C · 4 个 wavefront 全做，4 个全部跳过</text>
+
+<rect x="32" y="105" width="176" height="70" rx="6" fill="#f8efe1" stroke="#b58547"/>
+<text x="46" y="133" font-size="22">wave 0</text>
+<text x="194" y="159" text-anchor="end" font-size="27" font-weight="600" fill="#835820">16 / 32</text>
+<rect x="142" y="115" width="48" height="12" rx="2" fill="url(#partial)" stroke="#b58547"/>
+<rect x="218" y="105" width="176" height="70" rx="6" fill="#f8efe1" stroke="#b58547"/>
+<text x="232" y="133" font-size="22">wave 1</text>
+<text x="380" y="159" text-anchor="end" font-size="27" font-weight="600" fill="#835820">16 / 32</text>
+<rect x="328" y="115" width="48" height="12" rx="2" fill="url(#partial)" stroke="#b58547"/>
+<rect x="404" y="105" width="176" height="70" rx="6" fill="#f8efe1" stroke="#b58547"/>
+<text x="418" y="133" font-size="22">wave 2</text>
+<text x="566" y="159" text-anchor="end" font-size="27" font-weight="600" fill="#835820">16 / 32</text>
+<rect x="514" y="115" width="48" height="12" rx="2" fill="url(#partial)" stroke="#b58547"/>
+<rect x="590" y="105" width="176" height="70" rx="6" fill="#f8efe1" stroke="#b58547"/>
+<text x="604" y="133" font-size="22">wave 3</text>
+<text x="752" y="159" text-anchor="end" font-size="27" font-weight="600" fill="#835820">16 / 32</text>
+<rect x="700" y="115" width="48" height="12" rx="2" fill="url(#partial)" stroke="#b58547"/>
+<rect x="32" y="187" width="176" height="70" rx="6" fill="#f8efe1" stroke="#b58547"/>
+<text x="46" y="215" font-size="22">wave 4</text>
+<text x="194" y="241" text-anchor="end" font-size="27" font-weight="600" fill="#835820">16 / 32</text>
+<rect x="142" y="197" width="48" height="12" rx="2" fill="url(#partial)" stroke="#b58547"/>
+<rect x="218" y="187" width="176" height="70" rx="6" fill="#f8efe1" stroke="#b58547"/>
+<text x="232" y="215" font-size="22">wave 5</text>
+<text x="380" y="241" text-anchor="end" font-size="27" font-weight="600" fill="#835820">16 / 32</text>
+<rect x="328" y="197" width="48" height="12" rx="2" fill="url(#partial)" stroke="#b58547"/>
+<rect x="404" y="187" width="176" height="70" rx="6" fill="#f8efe1" stroke="#b58547"/>
+<text x="418" y="215" font-size="22">wave 6</text>
+<text x="566" y="241" text-anchor="end" font-size="27" font-weight="600" fill="#835820">16 / 32</text>
+<rect x="514" y="197" width="48" height="12" rx="2" fill="url(#partial)" stroke="#b58547"/>
+<rect x="590" y="187" width="176" height="70" rx="6" fill="#f8efe1" stroke="#b58547"/>
+<text x="604" y="215" font-size="22">wave 7</text>
+<text x="752" y="241" text-anchor="end" font-size="27" font-weight="600" fill="#835820">16 / 32</text>
+<rect x="700" y="197" width="48" height="12" rx="2" fill="url(#partial)" stroke="#b58547"/>
+<rect x="32" y="321" width="176" height="70" rx="6" fill="#e5f1e8" stroke="#629578"/>
+<text x="46" y="349" font-size="22">wave 0</text>
+<text x="194" y="375" text-anchor="end" font-size="27" font-weight="600" fill="#286341">32 / 32</text>
+<text x="181" y="348" text-anchor="middle" font-size="22" fill="#286341">+</text>
+<rect x="218" y="321" width="176" height="70" rx="6" fill="#e5f1e8" stroke="#629578"/>
+<text x="232" y="349" font-size="22">wave 1</text>
+<text x="380" y="375" text-anchor="end" font-size="27" font-weight="600" fill="#286341">32 / 32</text>
+<text x="367" y="348" text-anchor="middle" font-size="22" fill="#286341">+</text>
+<rect x="404" y="321" width="176" height="70" rx="6" fill="#e5f1e8" stroke="#629578"/>
+<text x="418" y="349" font-size="22">wave 2</text>
+<text x="566" y="375" text-anchor="end" font-size="27" font-weight="600" fill="#286341">32 / 32</text>
+<text x="553" y="348" text-anchor="middle" font-size="22" fill="#286341">+</text>
+<rect x="590" y="321" width="176" height="70" rx="6" fill="#e5f1e8" stroke="#629578"/>
+<text x="604" y="349" font-size="22">wave 3</text>
+<text x="752" y="375" text-anchor="end" font-size="27" font-weight="600" fill="#286341">32 / 32</text>
+<text x="739" y="348" text-anchor="middle" font-size="22" fill="#286341">+</text>
+<rect x="32" y="403" width="176" height="70" rx="6" fill="#f0f2f2" stroke="#a8b1b4" stroke-dasharray="4 3"/>
+<text x="46" y="431" font-size="22">wave 4</text>
+<text x="194" y="457" text-anchor="end" font-size="27" font-weight="600" fill="#657078">0 / 32</text>
+<text x="181" y="430" text-anchor="middle" font-size="22" fill="#657078">−</text>
+<rect x="218" y="403" width="176" height="70" rx="6" fill="#f0f2f2" stroke="#a8b1b4" stroke-dasharray="4 3"/>
+<text x="232" y="431" font-size="22">wave 5</text>
+<text x="380" y="457" text-anchor="end" font-size="27" font-weight="600" fill="#657078">0 / 32</text>
+<text x="367" y="430" text-anchor="middle" font-size="22" fill="#657078">−</text>
+<rect x="404" y="403" width="176" height="70" rx="6" fill="#f0f2f2" stroke="#a8b1b4" stroke-dasharray="4 3"/>
+<text x="418" y="431" font-size="22">wave 6</text>
+<text x="566" y="457" text-anchor="end" font-size="27" font-weight="600" fill="#657078">0 / 32</text>
+<text x="553" y="430" text-anchor="middle" font-size="22" fill="#657078">−</text>
+<rect x="590" y="403" width="176" height="70" rx="6" fill="#f0f2f2" stroke="#a8b1b4" stroke-dasharray="4 3"/>
+<text x="604" y="431" font-size="22">wave 7</text>
+<text x="752" y="457" text-anchor="end" font-size="27" font-weight="600" fill="#657078">0 / 32</text>
+<text x="739" y="430" text-anchor="middle" font-size="22" fill="#657078">−</text>
+<text x="400" y="512" text-anchor="middle" font-size="22" fill="#59646b">数值表示本轮做加法的 lane 数 / 每组 lane 数</text>
+<text x="400" y="553" text-anchor="middle" font-size="24" fill="#2f6e9e">灰色只跳过加法 · 全部线程仍须到达 block 屏障</text>
+</g></svg>

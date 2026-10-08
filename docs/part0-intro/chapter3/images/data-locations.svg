@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="640" viewBox="0 0 700 640" role="img" aria-labelledby="title desc">
+  <title id="title">一次加法涉及的数据位置与计算部件</title>
+  <desc id="desc">用途示意：输入数组 a、b 和输出数组 c 存放在同一个数组区域。当前指令使用的输入值和中间结果存放在临时位置；独立的加法部件使用这些值执行运算。图只区分存储用途与计算用途，不表示芯片物理布局、容量、距离或实际寄存器分配。</desc>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 9 5 0 9Z" fill="#2f6e9e"/></marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 9 5 0 9Z" fill="#a35d27"/></marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 9 5 0 9Z" fill="#377554"/></marker>
+    <marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 9 5 0 9Z" fill="#59646b"/></marker>
+  </defs>
+  <rect width="700" height="640" rx="12" fill="#fcfbf7"/>
+  <g font-family="PingFang SC, Microsoft YaHei, Noto Sans CJK SC, sans-serif" fill="#27323a" text-anchor="middle">
+    <text x="32" y="48" font-size="30" font-weight="600" text-anchor="start">一次加法涉及哪些位置</text>
+    <rect x="32" y="95" width="636" height="214" rx="10" fill="#fff" stroke="#a7afad" stroke-width="2"/>
+    <text x="350" y="137" font-size="28" font-weight="600">存放输入和输出数组</text>
+    <rect x="54" y="163" width="168" height="114" rx="10" fill="#eaf2f8" stroke="#8fb4cf" stroke-width="2"/>
+    <text x="138" y="205" font-size="34" fill="#2f6e9e" font-weight="600">a</text>
+    <text x="138" y="250" font-size="26">输入数组</text>
+    <rect x="266" y="163" width="168" height="114" rx="10" fill="#fff0e1" stroke="#d9ad83" stroke-width="2"/>
+    <text x="350" y="205" font-size="34" fill="#a35d27" font-weight="600">b</text>
+    <text x="350" y="250" font-size="26">输入数组</text>
+    <rect x="478" y="163" width="168" height="114" rx="10" fill="#eaf4ec" stroke="#aecbb7" stroke-width="2"/>
+    <text x="562" y="205" font-size="34" fill="#377554" font-weight="600">c</text>
+    <text x="562" y="250" font-size="26">输出数组</text>
+    <rect x="32" y="383" width="350" height="163" rx="10" fill="#fff" stroke="#a7afad" stroke-width="2"/>
+    <text x="207" y="426" font-size="28" font-weight="600">存放临时值</text>
+    <text x="207" y="472" font-size="26" fill="#59646b">当前使用的输入值</text>
+    <text x="207" y="513" font-size="26" fill="#59646b">计算产生的中间结果</text>
+    <rect x="485" y="383" width="183" height="163" rx="10" fill="#eaf4ec" stroke="#aecbb7" stroke-width="2"/>
+    <text x="576" y="426" font-size="28" fill="#377554" font-weight="600">执行加法</text>
+    <text x="576" y="508" font-size="58" fill="#377554">+</text>
+    <path d="M184 317V375" fill="none" stroke="#59646b" stroke-width="3.5" stroke-linejoin="round" marker-end="url(#arrow-muted)"/>
+    <path d="M232 375V317" fill="none" stroke="#59646b" stroke-width="3.5" stroke-linejoin="round" marker-end="url(#arrow-muted)"/>
+    <text x="390" y="352" font-size="24" fill="#59646b">读取 / 写回</text>
+    <path d="M388 460H475" fill="none" stroke="#377554" stroke-width="3.5" stroke-linejoin="round" marker-end="url(#arrow-green)"/>
+    <text x="433" y="442" font-size="24" fill="#377554">输入</text>
+    <path d="M476 508H388" fill="none" stroke="#377554" stroke-width="3.5" stroke-linejoin="round" marker-end="url(#arrow-green)"/>
+    <text x="433" y="537" font-size="24" fill="#377554">结果</text>
+    <text x="350" y="596" font-size="24" fill="#59646b">位置和用途示意，不表示芯片布局或大小</text>
+  </g>
+</svg>

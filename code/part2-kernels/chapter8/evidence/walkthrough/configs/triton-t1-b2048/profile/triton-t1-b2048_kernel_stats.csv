@@ -1,0 +1,3 @@
+"Name","Calls","TotalDurationNs","AverageNs","Percentage","MinNs","MaxNs","StdDev"
+"vector_add_kernel",16,8926314,557894.625000,99.32,333881,2945731,643922.889165
+"void at::native::vectorized_elementwise_kernel<4, at::native::FillFunctor<float>, std::array<char*, 1ul> >(int, at::native::FillFunctor<float>, std::array<char*, 1ul>)",1,61441,61441.000000,0.6836,61441,61441,0.00000000e+00

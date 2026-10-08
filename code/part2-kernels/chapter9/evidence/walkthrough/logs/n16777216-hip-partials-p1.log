@@ -1,0 +1,2 @@
+ENV gpu="AMD Radeon RX 9070 XT" arch=gfx1201 wave_size=32 multi_processor_count=32
+RESULT config_id=hip-partials implementation=hip-partials runtime=hip shape=16777216 dtype=float32 block=256 grid=65536 num_warps=0 input=random warmup=10 repeat=50 seed=20260920 stages=2 scope=gpu-event-full-operator correct=OK precheck=OK postcheck=OK partial_check=OK median_ms=0.480828002 result=1815.5 reference=1815.5 max_abs_error=0

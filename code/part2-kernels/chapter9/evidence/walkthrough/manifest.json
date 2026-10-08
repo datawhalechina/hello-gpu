@@ -1,0 +1,1271 @@
+{
+  "schema_version": 1,
+  "collection": "chapter9-existing-main-p1-terminal-export",
+  "new_gpu_measurement": false,
+  "scope": "Unmodified terminal logs from process 1 of the measured main-shape matrix; not a new benchmark or aggregate statistic.",
+  "parent_manifest": {
+    "path": "../rounds/manifest.json",
+    "sha256": "51311a3a81e14831efa9fb186953f3a8010cb2041a4e7ee5808ac2a0f5e370bb",
+    "experiment": "chapter9-controlled-reduction-rounds",
+    "started_at": "2026-09-19T17:33:43.806373+00:00"
+  },
+  "raw_run": {
+    "path": "results/rocm10-20260920",
+    "manifest_sha256": "fd9b6db2559668e9e59b030bb8b903c419fde904cdd27deb0176cd6ac29bb6c4",
+    "commands_jsonl_sha256": "d355fdd3fb32e5157cd6eb7695c514bacf7d175af243b75e040c1237ce4d1c2e"
+  },
+  "current_runtime_sha256": {
+    "reduction_rounds.hip": "422b9c8d11e7d96a81fdbf4ed6835be660d6c55d3fbd562845e7e8cde9771d15",
+    "reduction_rounds_triton.py": "dffd7f4e7a893fc0369ce06f6e99727e9037b9f9653814739102b77731030edd"
+  },
+  "measured_source_sha256": {
+    "reduction_rounds.hip": "422b9c8d11e7d96a81fdbf4ed6835be660d6c55d3fbd562845e7e8cde9771d15",
+    "reduction_rounds_triton.py": "dffd7f4e7a893fc0369ce06f6e99727e9037b9f9653814739102b77731030edd",
+    "run_rounds.py": "9a0dd48461f912f9564e7488bd10e5a652615722b4e1f428d74976e46d477666",
+    "summarize_rounds.py": "40f7bf084227a9e35f2ccfad2a9842418e048c6cd765fe5be3900503ce96a006",
+    "collect_environment.sh": "e0a6a7fa4d61d78bf5b8c6c4d424ffc922a320b86499c3e5fd1017c5139ba11b",
+    "resolve_rocprofv3.py": "6057fa1c79cd769712bbc30006af63a4e1cf0a74b7de7e2d11eae868d3889c96"
+  },
+  "measured_hip_binary_sha256": "8af340fd47d06fb0b6a950f4e141760545cf30b729844d47d9b9657541958513",
+  "environment_record": {
+    "gpu": "AMD Radeon RX 9070 XT",
+    "rocm_sdk": "10.0.0",
+    "hip": "7.15.26333",
+    "gpu_exclusive": false,
+    "profiler_during_benchmark": false,
+    "background_note": "Desktop and existing contexts retained; see GPU state logs."
+  },
+  "software_record": {
+    "rocm": "10.0.0",
+    "hip": "7.15.26333",
+    "torch": "2.13.0+rocm10.0.0",
+    "triton": "3.8.0+git4cff872c.rocm10.0.0"
+  },
+  "platform_record": {
+    "os_pretty_name": "Ubuntu 24.04.5 LTS",
+    "kernel": "7.0.0-31-generic",
+    "execution": "native"
+  },
+  "environment_provenance": "Original measurement manifest; not captured at export.",
+  "benchmark_conditions": {
+    "shape": 16777216,
+    "size": 16777216,
+    "dtype": "float32",
+    "input": "random",
+    "seed": 20260920,
+    "warmup": 10,
+    "repeat": 50,
+    "processes": 3,
+    "independent_runs": 3,
+    "scope": "gpu-event-full-operator",
+    "atomic_scope": "required output clear and atomic kernel",
+    "staged_scope": "first stage and fixed final kernel",
+    "cache": "reuse arrays within process; no cache flush",
+    "order": "rotate configurations across process passes",
+    "correctness": "exact comparison against FP64; staged versions check every partial and final; atomic versions final only; precheck and postcheck, not per sample"
+  },
+  "path_normalization": {
+    "logs": "none; byte-identical copies",
+    "argv": "explicitly normalized representation, not original argv bytes",
+    "original_private_path_sha256": {
+      "<MEASURED_RUN>": "a0468f92d771b025a2e4d427b9b6756754e6fef45cd55b2335b4e6dc0b691ae7",
+      "<ENVIRONMENT_PYTHON>": "7263b70981a463b6c8582f51fd928d198e1526525a35ffcea972c853b16a102c"
+    },
+    "raw_argv_sha256_format": "UTF-8 JSON array, ensure_ascii=False, separators=(comma,colon)"
+  },
+  "measurements": [
+    {
+      "config_id": "hip-block-atomic",
+      "shape": 16777216,
+      "process": 1,
+      "configuration": {
+        "id": "hip-block-atomic",
+        "runtime": "hip",
+        "version": "block-atomic",
+        "block": 256,
+        "first_kernel": "reduction_block_atomic"
+      },
+      "source_log": "results/rocm10-20260920/logs/n16777216-hip-block-atomic-p1.log",
+      "published_log": "logs/n16777216-hip-block-atomic-p1.log",
+      "raw_sha256": "b4b4309da20164c21057bdbeafacca4ae4434bfa62f3d120027ea1b83bf7631c",
+      "published_sha256": "b4b4309da20164c21057bdbeafacca4ae4434bfa62f3d120027ea1b83bf7631c",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 115,
+        "recorded_at": "2026-09-19T17:34:33.415930+00:00",
+        "raw_argv_sha256": "286fae275a2549894b27bdc075bba12ad6800e57af39c605a82ce74cc64b6389",
+        "argv_path_normalized": [
+          "<MEASURED_RUN>/build/reduction_rounds",
+          "--version",
+          "block-atomic",
+          "--size",
+          "16777216",
+          "--block",
+          "256",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--input",
+          "random",
+          "--config-id",
+          "hip-block-atomic",
+          "--samples",
+          "<MEASURED_RUN>/samples/n16777216-hip-block-atomic-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "hip-partials",
+      "shape": 16777216,
+      "process": 1,
+      "configuration": {
+        "id": "hip-partials",
+        "runtime": "hip",
+        "version": "partials",
+        "block": 256,
+        "first_kernel": "reduction_partials",
+        "final_kernel": "reduction_final"
+      },
+      "source_log": "results/rocm10-20260920/logs/n16777216-hip-partials-p1.log",
+      "published_log": "logs/n16777216-hip-partials-p1.log",
+      "raw_sha256": "79b673bb436e7b75fa4e36ad192dfeaf8a44dd36a3feb450fc326bcb3f4aa22b",
+      "published_sha256": "79b673bb436e7b75fa4e36ad192dfeaf8a44dd36a3feb450fc326bcb3f4aa22b",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 116,
+        "recorded_at": "2026-09-19T17:34:33.837878+00:00",
+        "raw_argv_sha256": "3099f39368dc3f2ba5a8da69a9463517fd6f2b86c1df69f8e8c575656867f260",
+        "argv_path_normalized": [
+          "<MEASURED_RUN>/build/reduction_rounds",
+          "--version",
+          "partials",
+          "--size",
+          "16777216",
+          "--block",
+          "256",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--input",
+          "random",
+          "--config-id",
+          "hip-partials",
+          "--samples",
+          "<MEASURED_RUN>/samples/n16777216-hip-partials-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "hip-local-lds-g65536",
+      "shape": 16777216,
+      "process": 1,
+      "configuration": {
+        "id": "hip-local-lds-g65536",
+        "runtime": "hip",
+        "version": "local-lds",
+        "block": 256,
+        "grid": 65536,
+        "first_kernel": "reduction_local_lds",
+        "final_kernel": "reduction_final"
+      },
+      "source_log": "results/rocm10-20260920/logs/n16777216-hip-local-lds-g65536-p1.log",
+      "published_log": "logs/n16777216-hip-local-lds-g65536-p1.log",
+      "raw_sha256": "c7098582e7c3b6f6c27001065cd9776243e550d2c44ce4f49fdbc85fcefd8077",
+      "published_sha256": "c7098582e7c3b6f6c27001065cd9776243e550d2c44ce4f49fdbc85fcefd8077",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 117,
+        "recorded_at": "2026-09-19T17:34:34.023986+00:00",
+        "raw_argv_sha256": "5457352e671e472aa4d294fbd760f8c280cab683626747bc0a60a424db35d861",
+        "argv_path_normalized": [
+          "<MEASURED_RUN>/build/reduction_rounds",
+          "--version",
+          "local-lds",
+          "--grid",
+          "65536",
+          "--size",
+          "16777216",
+          "--block",
+          "256",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--input",
+          "random",
+          "--config-id",
+          "hip-local-lds-g65536",
+          "--samples",
+          "<MEASURED_RUN>/samples/n16777216-hip-local-lds-g65536-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "hip-local-lds-g1024",
+      "shape": 16777216,
+      "process": 1,
+      "configuration": {
+        "id": "hip-local-lds-g1024",
+        "runtime": "hip",
+        "version": "local-lds",
+        "block": 256,
+        "grid": 1024,
+        "first_kernel": "reduction_local_lds",
+        "final_kernel": "reduction_final"
+      },
+      "source_log": "results/rocm10-20260920/logs/n16777216-hip-local-lds-g1024-p1.log",
+      "published_log": "logs/n16777216-hip-local-lds-g1024-p1.log",
+      "raw_sha256": "e28b8b1b82cd5a9c16f338266515376b97e74ad5ca121d371458ab39597ad0e6",
+      "published_sha256": "e28b8b1b82cd5a9c16f338266515376b97e74ad5ca121d371458ab39597ad0e6",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 118,
+        "recorded_at": "2026-09-19T17:34:34.208707+00:00",
+        "raw_argv_sha256": "dc81354b69c76b7afd732d32e9eb28a8aed1a7726b9dcf2d8f749beafea6fdde",
+        "argv_path_normalized": [
+          "<MEASURED_RUN>/build/reduction_rounds",
+          "--version",
+          "local-lds",
+          "--grid",
+          "1024",
+          "--size",
+          "16777216",
+          "--block",
+          "256",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--input",
+          "random",
+          "--config-id",
+          "hip-local-lds-g1024",
+          "--samples",
+          "<MEASURED_RUN>/samples/n16777216-hip-local-lds-g1024-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "hip-local-lds-g256",
+      "shape": 16777216,
+      "process": 1,
+      "configuration": {
+        "id": "hip-local-lds-g256",
+        "runtime": "hip",
+        "version": "local-lds",
+        "block": 256,
+        "grid": 256,
+        "first_kernel": "reduction_local_lds",
+        "final_kernel": "reduction_final"
+      },
+      "source_log": "results/rocm10-20260920/logs/n16777216-hip-local-lds-g256-p1.log",
+      "published_log": "logs/n16777216-hip-local-lds-g256-p1.log",
+      "raw_sha256": "6477bb52b7981e2ce5bd4501100c37667b5b1b85de79e69502b5e1d178da260d",
+      "published_sha256": "6477bb52b7981e2ce5bd4501100c37667b5b1b85de79e69502b5e1d178da260d",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 119,
+        "recorded_at": "2026-09-19T17:34:34.369739+00:00",
+        "raw_argv_sha256": "7067c4737664190c845ca1b953ffe86e1f95d6935200d3a11b95370f3b4f3fc7",
+        "argv_path_normalized": [
+          "<MEASURED_RUN>/build/reduction_rounds",
+          "--version",
+          "local-lds",
+          "--grid",
+          "256",
+          "--size",
+          "16777216",
+          "--block",
+          "256",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--input",
+          "random",
+          "--config-id",
+          "hip-local-lds-g256",
+          "--samples",
+          "<MEASURED_RUN>/samples/n16777216-hip-local-lds-g256-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "hip-local-wave-g256",
+      "shape": 16777216,
+      "process": 1,
+      "configuration": {
+        "id": "hip-local-wave-g256",
+        "runtime": "hip",
+        "version": "local-wave",
+        "block": 256,
+        "grid": 256,
+        "first_kernel": "reduction_local_wave",
+        "final_kernel": "reduction_final"
+      },
+      "source_log": "results/rocm10-20260920/logs/n16777216-hip-local-wave-g256-p1.log",
+      "published_log": "logs/n16777216-hip-local-wave-g256-p1.log",
+      "raw_sha256": "61ac95ad269f524345b05fd479bfceb201eb0b44dcc8eee0fc21a6b30faa4839",
+      "published_sha256": "61ac95ad269f524345b05fd479bfceb201eb0b44dcc8eee0fc21a6b30faa4839",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 120,
+        "recorded_at": "2026-09-19T17:34:34.526585+00:00",
+        "raw_argv_sha256": "b327e9a2e58117dffa2c931271adfca6623d28600859a04231fbcddf028394c1",
+        "argv_path_normalized": [
+          "<MEASURED_RUN>/build/reduction_rounds",
+          "--version",
+          "local-wave",
+          "--grid",
+          "256",
+          "--size",
+          "16777216",
+          "--block",
+          "256",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--input",
+          "random",
+          "--config-id",
+          "hip-local-wave-g256",
+          "--samples",
+          "<MEASURED_RUN>/samples/n16777216-hip-local-wave-g256-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "triton-p1024",
+      "shape": 16777216,
+      "process": 1,
+      "configuration": {
+        "id": "triton-p1024",
+        "runtime": "triton",
+        "block": 1024,
+        "programs": 1024,
+        "first_kernel": "round_partial_kernel",
+        "final_kernel": "round_final_kernel"
+      },
+      "source_log": "results/rocm10-20260920/logs/n16777216-triton-p1024-p1.log",
+      "published_log": "logs/n16777216-triton-p1024-p1.log",
+      "raw_sha256": "eea1b82e1c10b9c02ff71d8ba36f1452398550a71c9d05532c3d632cd0c74b02",
+      "published_sha256": "eea1b82e1c10b9c02ff71d8ba36f1452398550a71c9d05532c3d632cd0c74b02",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 121,
+        "recorded_at": "2026-09-19T17:34:34.686652+00:00",
+        "raw_argv_sha256": "bc5c130cb2a850dab297508d8ec004fce2cc5ba2373bb8689bbd3499143ffe66",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/reduction_rounds_triton.py",
+          "--programs",
+          "1024",
+          "--size",
+          "16777216",
+          "--block",
+          "1024",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--input",
+          "random",
+          "--config-id",
+          "triton-p1024",
+          "--samples",
+          "<MEASURED_RUN>/samples/n16777216-triton-p1024-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "triton-p512",
+      "shape": 16777216,
+      "process": 1,
+      "configuration": {
+        "id": "triton-p512",
+        "runtime": "triton",
+        "block": 1024,
+        "programs": 512,
+        "first_kernel": "round_partial_kernel",
+        "final_kernel": "round_final_kernel"
+      },
+      "source_log": "results/rocm10-20260920/logs/n16777216-triton-p512-p1.log",
+      "published_log": "logs/n16777216-triton-p512-p1.log",
+      "raw_sha256": "6de34e8d5993f8838fe9db239c76a8d07d7468e4080352425607c1ab316a7123",
+      "published_sha256": "6de34e8d5993f8838fe9db239c76a8d07d7468e4080352425607c1ab316a7123",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 122,
+        "recorded_at": "2026-09-19T17:34:37.063263+00:00",
+        "raw_argv_sha256": "4516b2cd550441af879d80dafed2ac921497f66dbccabc2342ca7db9b1aa78e8",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/reduction_rounds_triton.py",
+          "--programs",
+          "512",
+          "--size",
+          "16777216",
+          "--block",
+          "1024",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--input",
+          "random",
+          "--config-id",
+          "triton-p512",
+          "--samples",
+          "<MEASURED_RUN>/samples/n16777216-triton-p512-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "triton-p256",
+      "shape": 16777216,
+      "process": 1,
+      "configuration": {
+        "id": "triton-p256",
+        "runtime": "triton",
+        "block": 1024,
+        "programs": 256,
+        "first_kernel": "round_partial_kernel",
+        "final_kernel": "round_final_kernel"
+      },
+      "source_log": "results/rocm10-20260920/logs/n16777216-triton-p256-p1.log",
+      "published_log": "logs/n16777216-triton-p256-p1.log",
+      "raw_sha256": "d5573b6b70257adf1c1b63e9cbebf33e741d31fb13a03dff0f2647f3070a22f5",
+      "published_sha256": "d5573b6b70257adf1c1b63e9cbebf33e741d31fb13a03dff0f2647f3070a22f5",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 123,
+        "recorded_at": "2026-09-19T17:34:39.378972+00:00",
+        "raw_argv_sha256": "68c0671acc42d6b4c35da8f690bd73fe1ff1703680038d9b7e557bdb9460af9a",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/reduction_rounds_triton.py",
+          "--programs",
+          "256",
+          "--size",
+          "16777216",
+          "--block",
+          "1024",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--input",
+          "random",
+          "--config-id",
+          "triton-p256",
+          "--samples",
+          "<MEASURED_RUN>/samples/n16777216-triton-p256-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "triton-p128",
+      "shape": 16777216,
+      "process": 1,
+      "configuration": {
+        "id": "triton-p128",
+        "runtime": "triton",
+        "block": 1024,
+        "programs": 128,
+        "first_kernel": "round_partial_kernel",
+        "final_kernel": "round_final_kernel"
+      },
+      "source_log": "results/rocm10-20260920/logs/n16777216-triton-p128-p1.log",
+      "published_log": "logs/n16777216-triton-p128-p1.log",
+      "raw_sha256": "27996395a73e89e7599612b21bb91ec499ae234d2c229b8544394859496a672b",
+      "published_sha256": "27996395a73e89e7599612b21bb91ec499ae234d2c229b8544394859496a672b",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 124,
+        "recorded_at": "2026-09-19T17:34:41.680747+00:00",
+        "raw_argv_sha256": "b8c10289320c73d393cc79f7f85132527b7ff435ff73e470a08d0f4f15da3afa",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/reduction_rounds_triton.py",
+          "--programs",
+          "128",
+          "--size",
+          "16777216",
+          "--block",
+          "1024",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--input",
+          "random",
+          "--config-id",
+          "triton-p128",
+          "--samples",
+          "<MEASURED_RUN>/samples/n16777216-triton-p128-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    }
+  ],
+  "available_trace_inventory": [
+    {
+      "config_id": "hip-block-atomic",
+      "shape": 16777216,
+      "source_trace": "results/rocm10-20260920/profiles/hip-block-atomic_kernel_trace.csv",
+      "raw_sha256": "4410d744cd64e8a2d3b2180322b7081cfe569cabc6569096c0646fd4d950a0d0",
+      "kernel_names": [
+        "reduction_block_atomic"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-hip-block-atomic.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    },
+    {
+      "config_id": "hip-partials",
+      "shape": 16777216,
+      "source_trace": "results/rocm10-20260920/profiles/hip-partials_kernel_trace.csv",
+      "raw_sha256": "99b9a517b120ec240e2b1949be92cc3c97678e70e7e329ad8ebf2af93bb29aaf",
+      "kernel_names": [
+        "reduction_partials",
+        "reduction_final"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-hip-partials.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    },
+    {
+      "config_id": "hip-local-lds-g65536",
+      "shape": 16777216,
+      "source_trace": "results/rocm10-20260920/profiles/hip-local-lds-g65536_kernel_trace.csv",
+      "raw_sha256": "c2cf7cd9fda043665b106fda342dc077291b30379bac725dd90a15fde568c857",
+      "kernel_names": [
+        "reduction_local_lds",
+        "reduction_final"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-hip-local-lds-g65536.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    },
+    {
+      "config_id": "hip-local-lds-g1024",
+      "shape": 16777216,
+      "source_trace": "results/rocm10-20260920/profiles/hip-local-lds-g1024_kernel_trace.csv",
+      "raw_sha256": "2050cc822aaa2162c9bf8e0025db482daa88f2e8fd7156f11f863b1a97d6eafc",
+      "kernel_names": [
+        "reduction_local_lds",
+        "reduction_final"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-hip-local-lds-g1024.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    },
+    {
+      "config_id": "hip-local-lds-g256",
+      "shape": 16777216,
+      "source_trace": "results/rocm10-20260920/profiles/hip-local-lds-g256_kernel_trace.csv",
+      "raw_sha256": "687993f46a3ea029be102a41c56f175c2caa565faebd42d996f2e038dfd602c7",
+      "kernel_names": [
+        "reduction_local_lds",
+        "reduction_final"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-hip-local-lds-g256.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    },
+    {
+      "config_id": "hip-local-wave-g256",
+      "shape": 16777216,
+      "source_trace": "results/rocm10-20260920/profiles/hip-local-wave-g256_kernel_trace.csv",
+      "raw_sha256": "81e5819fd37612cad9b1d7e8ecf6283c6654c81d480a1ccff008973cd19b534e",
+      "kernel_names": [
+        "reduction_local_wave",
+        "reduction_final"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-hip-local-wave-g256.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    },
+    {
+      "config_id": "triton-p1024",
+      "shape": 16777216,
+      "source_trace": "results/rocm10-20260920/profiles/triton-p1024_kernel_trace.csv",
+      "raw_sha256": "82d7d52da1f9a5bb120ff625c39af239feeb2bdc32a1f4d86ed112a8e7bc767b",
+      "kernel_names": [
+        "round_partial_kernel",
+        "round_final_kernel"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-triton-p1024.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    },
+    {
+      "config_id": "triton-p512",
+      "shape": 16777216,
+      "source_trace": "results/rocm10-20260920/profiles/triton-p512_kernel_trace.csv",
+      "raw_sha256": "80e62ef541892389b10d5a2fddc8a20721593e12c0226f764f186817fd9b8474",
+      "kernel_names": [
+        "round_partial_kernel",
+        "round_final_kernel"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-triton-p512.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    },
+    {
+      "config_id": "triton-p256",
+      "shape": 16777216,
+      "source_trace": "results/rocm10-20260920/profiles/triton-p256_kernel_trace.csv",
+      "raw_sha256": "9d99aeeed744a001e090e6c0ad86bbe392851e65e563c31c5cbdaf17525816cc",
+      "kernel_names": [
+        "round_partial_kernel",
+        "round_final_kernel"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-triton-p256.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    },
+    {
+      "config_id": "triton-p128",
+      "shape": 16777216,
+      "source_trace": "results/rocm10-20260920/profiles/triton-p128_kernel_trace.csv",
+      "raw_sha256": "2433076f966556c091e19a910baae94496403bd5774ef3b321baf24cd402eef9",
+      "kernel_names": [
+        "round_partial_kernel",
+        "round_final_kernel"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-triton-p128.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    }
+  ],
+  "artifacts_sha256": {
+    "README.md": "b3d2d235cf44c6f90978b994737d10f665d240b4a2775906ee77e8d1d352ddcb",
+    "logs/edge-n1025-random-hip-local-lds-g256.log": "688a8069796c27f225a08e3dfe20f7e96838353ef7991a760743d0cac50200a2",
+    "logs/edge-n1025-weighted-triton-p128.log": "93308d47130c3e58b8fe215336b8f30512c63f7b1b4e2b1c2811fa6021080025",
+    "logs/mapping-bench-16777216-p1.txt": "f65c58a6a93538d9c65bb95dab870ffc25b254a115e3d81a5c4efd4653c21345",
+    "logs/n16777216-hip-block-atomic-p1.log": "b4b4309da20164c21057bdbeafacca4ae4434bfa62f3d120027ea1b83bf7631c",
+    "logs/n16777216-hip-local-lds-g1024-p1.log": "e28b8b1b82cd5a9c16f338266515376b97e74ad5ca121d371458ab39597ad0e6",
+    "logs/n16777216-hip-local-lds-g256-p1.log": "6477bb52b7981e2ce5bd4501100c37667b5b1b85de79e69502b5e1d178da260d",
+    "logs/n16777216-hip-local-lds-g65536-p1.log": "c7098582e7c3b6f6c27001065cd9776243e550d2c44ce4f49fdbc85fcefd8077",
+    "logs/n16777216-hip-local-wave-g256-p1.log": "61ac95ad269f524345b05fd479bfceb201eb0b44dcc8eee0fc21a6b30faa4839",
+    "logs/n16777216-hip-partials-p1.log": "79b673bb436e7b75fa4e36ad192dfeaf8a44dd36a3feb450fc326bcb3f4aa22b",
+    "logs/n16777216-triton-p1024-p1.log": "eea1b82e1c10b9c02ff71d8ba36f1452398550a71c9d05532c3d632cd0c74b02",
+    "logs/n16777216-triton-p128-p1.log": "27996395a73e89e7599612b21bb91ec499ae234d2c229b8544394859496a672b",
+    "logs/n16777216-triton-p256-p1.log": "d5573b6b70257adf1c1b63e9cbebf33e741d31fb13a03dff0f2647f3070a22f5",
+    "logs/n16777216-triton-p512-p1.log": "6de34e8d5993f8838fe9db239c76a8d07d7468e4080352425607c1ab316a7123",
+    "profiles/hip-local-lds-g256_kernel_trace.csv": "687993f46a3ea029be102a41c56f175c2caa565faebd42d996f2e038dfd602c7",
+    "profiles/hip-local-lds-g65536_kernel_trace.csv": "c2cf7cd9fda043665b106fda342dc077291b30379bac725dd90a15fde568c857",
+    "reports/hip-local-lds-g256.txt": "352973eca8e051df48d5a0d7a22499f545a4335cfcb3f27e85d7ee0784bcfe57",
+    "reports/hip-local-lds-g65536.txt": "6876a9aac820c081d0f3eea14d211240c5ee69c1a81d754b79ebe49aafcd80ee",
+    "source/inspect_trace.py": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b"
+  },
+  "correctness_examples": [
+    {
+      "published_log": "logs/edge-n1025-random-hip-local-lds-g256.log",
+      "source_log": "results/rocm10-20260920/logs/edge-n1025-random-hip-local-lds-g256.log",
+      "raw_sha256": "688a8069796c27f225a08e3dfe20f7e96838353ef7991a760743d0cac50200a2",
+      "published_sha256": "688a8069796c27f225a08e3dfe20f7e96838353ef7991a760743d0cac50200a2",
+      "log_bytes_changed": false,
+      "purpose": "Correctness only: warmup=0/repeat=1, not a performance comparison",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 99,
+        "recorded_at": "2026-09-19T17:34:24.003619+00:00",
+        "raw_argv_sha256": "18ed703d31e3e9bf431ae294a8d32c74230dfc028d6140f60db8586ae813d9f2",
+        "argv_path_normalized": [
+          "<MEASURED_RUN>/build/reduction_rounds",
+          "--version",
+          "local-lds",
+          "--grid",
+          "256",
+          "--size",
+          "1025",
+          "--block",
+          "256",
+          "--warmup",
+          "0",
+          "--repeat",
+          "1",
+          "--seed",
+          "20260920",
+          "--input",
+          "random",
+          "--config-id",
+          "hip-local-lds-g256"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only executable and private run-root paths replaced; flags, parameter values and ordering unchanged."
+      }
+    },
+    {
+      "published_log": "logs/edge-n1025-weighted-triton-p128.log",
+      "source_log": "results/rocm10-20260920/logs/edge-n1025-weighted-triton-p128.log",
+      "raw_sha256": "93308d47130c3e58b8fe215336b8f30512c63f7b1b4e2b1c2811fa6021080025",
+      "published_sha256": "93308d47130c3e58b8fe215336b8f30512c63f7b1b4e2b1c2811fa6021080025",
+      "log_bytes_changed": false,
+      "purpose": "Correctness only: warmup=0/repeat=1, not a performance comparison",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 107,
+        "recorded_at": "2026-09-19T17:34:26.557817+00:00",
+        "raw_argv_sha256": "9015fc55f593b0173c8a9fe89ebfe0d168d6d010f190eb72cd5f516e928c387e",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/reduction_rounds_triton.py",
+          "--programs",
+          "128",
+          "--size",
+          "1025",
+          "--block",
+          "1024",
+          "--warmup",
+          "0",
+          "--repeat",
+          "1",
+          "--seed",
+          "20260920",
+          "--input",
+          "weighted",
+          "--config-id",
+          "triton-p128"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only executable and private run-root paths replaced; flags, parameter values and ordering unchanged."
+      }
+    }
+  ],
+  "selected_traces": [
+    {
+      "config_id": "hip-local-lds-g65536",
+      "published_trace": "profiles/hip-local-lds-g65536_kernel_trace.csv",
+      "source_trace": "results/rocm10-20260920/profiles/hip-local-lds-g65536_kernel_trace.csv",
+      "raw_sha256": "c2cf7cd9fda043665b106fda342dc077291b30379bac725dd90a15fde568c857",
+      "published_sha256": "c2cf7cd9fda043665b106fda342dc077291b30379bac725dd90a15fde568c857",
+      "trace_bytes_changed": false,
+      "actual_capture": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 150,
+        "recorded_at": "2026-09-19T17:37:40.032188+00:00",
+        "raw_argv_sha256": "e627befe15b82a7aacbce0c6a31e8bbe391362e771395915bb3634989ea3368a",
+        "argv_path_normalized": [
+          "<MEASURED_TOOL>/rocprofv3",
+          "--rocm-root",
+          "<MEASURED_TOOL>/_rocm_sdk_core",
+          "--kernel-trace",
+          "--output-directory",
+          "<MEASURED_RUN>/profiles",
+          "--output-file",
+          "hip-local-lds-g65536",
+          "--output-format",
+          "csv",
+          "--",
+          "<MEASURED_RUN>/build/reduction_rounds",
+          "--version",
+          "local-lds",
+          "--grid",
+          "65536",
+          "--size",
+          "16777216",
+          "--block",
+          "256",
+          "--warmup",
+          "5",
+          "--repeat",
+          "10",
+          "--seed",
+          "20260920",
+          "--input",
+          "random",
+          "--config-id",
+          "hip-local-lds-g65536"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only executable and private run-root paths replaced; flags, parameter values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "hip-local-lds-g256",
+      "published_trace": "profiles/hip-local-lds-g256_kernel_trace.csv",
+      "source_trace": "results/rocm10-20260920/profiles/hip-local-lds-g256_kernel_trace.csv",
+      "raw_sha256": "687993f46a3ea029be102a41c56f175c2caa565faebd42d996f2e038dfd602c7",
+      "published_sha256": "687993f46a3ea029be102a41c56f175c2caa565faebd42d996f2e038dfd602c7",
+      "trace_bytes_changed": false,
+      "actual_capture": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 152,
+        "recorded_at": "2026-09-19T17:37:40.563604+00:00",
+        "raw_argv_sha256": "d2496ccaedb131774f31894d8e86ca3d0b353b6e394ddfbbe421633d4db8b44b",
+        "argv_path_normalized": [
+          "<MEASURED_TOOL>/rocprofv3",
+          "--rocm-root",
+          "<MEASURED_TOOL>/_rocm_sdk_core",
+          "--kernel-trace",
+          "--output-directory",
+          "<MEASURED_RUN>/profiles",
+          "--output-file",
+          "hip-local-lds-g256",
+          "--output-format",
+          "csv",
+          "--",
+          "<MEASURED_RUN>/build/reduction_rounds",
+          "--version",
+          "local-lds",
+          "--grid",
+          "256",
+          "--size",
+          "16777216",
+          "--block",
+          "256",
+          "--warmup",
+          "5",
+          "--repeat",
+          "10",
+          "--seed",
+          "20260920",
+          "--input",
+          "random",
+          "--config-id",
+          "hip-local-lds-g256"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only executable and private run-root paths replaced; flags, parameter values and ordering unchanged."
+      }
+    }
+  ],
+  "trace_reanalysis": {
+    "new_gpu_measurement": false,
+    "operation": "CPU-only standard-library reanalysis of existing kernel traces",
+    "started_at": "2026-09-20T06:01:04.954579+00:00",
+    "completed_at": "2026-09-20T06:01:05.185859+00:00",
+    "environment": {
+      "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+      "python_executable": "<ENVIRONMENT_PYTHON>",
+      "os_pretty_name": "Ubuntu 24.04.5 LTS",
+      "kernel": "7.0.0-31-generic",
+      "rocm_sdk_package": "10.0.0",
+      "hip_distribution": "10.0.0"
+    },
+    "raw_record_sha256": "5faa5a9fabe15c88d441c83b0a8ae4dfd22b8caaa5ae7e7b1f3ff27df85b1e9d",
+    "report_composition": "Each recorded stdout preserved verbatim; reports with multiple kernels concatenate them in command order with one blank line between reports.",
+    "records": [
+      {
+        "config_id": "hip-local-lds-g65536",
+        "kernel": "reduction_local_lds",
+        "published_report": "reports/hip-local-lds-g65536.txt",
+        "input_sha256": "c2cf7cd9fda043665b106fda342dc077291b30379bac725dd90a15fde568c857",
+        "helper_sha256": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b",
+        "started_at": "2026-09-20T06:01:04.954579+00:00",
+        "actual_argv": [
+          "python",
+          "chapter8/inspect_trace.py",
+          "chapter9/results/rocm10-20260920/profiles/hip-local-lds-g65536_kernel_trace.csv",
+          "--kernel",
+          "reduction_local_lds",
+          "--skip",
+          "6",
+          "--take",
+          "10"
+        ],
+        "cwd": "<MEASURED_PART>",
+        "cwd_private_sha256": "94215f78e008782873f360ea6fa010cc61a3e227ce0bff719b78ed28737166d2",
+        "returncode": 0,
+        "stderr": "",
+        "stdout_sha256": "cd67107cbc426945623548ccdffeb1683ead9fc5f12ed834c2dee1b72b6cd381",
+        "analysis": {
+          "csv_rows": 36,
+          "kernel_name": "(anonymous namespace)::reduction_local_lds(float const*, unsigned long, float*)",
+          "target_rows": 16,
+          "skipped_rows": 6,
+          "kept_rows": 10,
+          "first_kept": {
+            "start_ns": 884176295478876,
+            "end_ns": 884176295890684,
+            "duration_ns": 411808
+          },
+          "kernel_time_us": {
+            "min": 410.889,
+            "median": 411.649,
+            "max": 412.529
+          },
+          "launch": {
+            "grid_work_items_xyz": [
+              16777216,
+              1,
+              1
+            ],
+            "workgroup_size_xyz": [
+              256,
+              1,
+              1
+            ],
+            "workgroups_xyz": [
+              65536,
+              1,
+              1
+            ],
+            "workgroups_total": 65536
+          },
+          "resources": {
+            "vgpr_count": 8,
+            "sgpr_count": 128,
+            "lds_bytes": 0,
+            "scratch_bytes": 0
+          }
+        },
+        "agrees_with_profile_summary": true
+      },
+      {
+        "config_id": "hip-local-lds-g65536",
+        "kernel": "reduction_final",
+        "published_report": "reports/hip-local-lds-g65536.txt",
+        "input_sha256": "c2cf7cd9fda043665b106fda342dc077291b30379bac725dd90a15fde568c857",
+        "helper_sha256": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b",
+        "started_at": "2026-09-20T06:01:04.987893+00:00",
+        "actual_argv": [
+          "python",
+          "chapter8/inspect_trace.py",
+          "chapter9/results/rocm10-20260920/profiles/hip-local-lds-g65536_kernel_trace.csv",
+          "--kernel",
+          "reduction_final",
+          "--skip",
+          "6",
+          "--take",
+          "10"
+        ],
+        "cwd": "<MEASURED_PART>",
+        "cwd_private_sha256": "94215f78e008782873f360ea6fa010cc61a3e227ce0bff719b78ed28737166d2",
+        "returncode": 0,
+        "stderr": "",
+        "stdout_sha256": "a7c8109da4f8b516bca354549c436ea117f76634c157d2cc38e313ad2dc1290d",
+        "analysis": {
+          "csv_rows": 36,
+          "kernel_name": "(anonymous namespace)::reduction_final(float const*, unsigned long, float*)",
+          "target_rows": 16,
+          "skipped_rows": 6,
+          "kept_rows": 10,
+          "first_kept": {
+            "start_ns": 884176295894885,
+            "end_ns": 884176295965606,
+            "duration_ns": 70721
+          },
+          "kernel_time_us": {
+            "min": 70.721,
+            "median": 73.042,
+            "max": 75.162
+          },
+          "launch": {
+            "grid_work_items_xyz": [
+              256,
+              1,
+              1
+            ],
+            "workgroup_size_xyz": [
+              256,
+              1,
+              1
+            ],
+            "workgroups_xyz": [
+              1,
+              1,
+              1
+            ],
+            "workgroups_total": 1
+          },
+          "resources": {
+            "vgpr_count": 8,
+            "sgpr_count": 128,
+            "lds_bytes": 0,
+            "scratch_bytes": 0
+          }
+        },
+        "agrees_with_profile_summary": true
+      },
+      {
+        "config_id": "hip-local-lds-g256",
+        "kernel": "reduction_local_lds",
+        "published_report": "reports/hip-local-lds-g256.txt",
+        "input_sha256": "687993f46a3ea029be102a41c56f175c2caa565faebd42d996f2e038dfd602c7",
+        "helper_sha256": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b",
+        "started_at": "2026-09-20T06:01:05.016081+00:00",
+        "actual_argv": [
+          "python",
+          "chapter8/inspect_trace.py",
+          "chapter9/results/rocm10-20260920/profiles/hip-local-lds-g256_kernel_trace.csv",
+          "--kernel",
+          "reduction_local_lds",
+          "--skip",
+          "6",
+          "--take",
+          "10"
+        ],
+        "cwd": "<MEASURED_PART>",
+        "cwd_private_sha256": "94215f78e008782873f360ea6fa010cc61a3e227ce0bff719b78ed28737166d2",
+        "returncode": 0,
+        "stderr": "",
+        "stdout_sha256": "6bb99232edc6cd96d1cb9da50415ea0dd362ab45a70ea3c871f4d3d57f6151bb",
+        "analysis": {
+          "csv_rows": 38,
+          "kernel_name": "(anonymous namespace)::reduction_local_lds(float const*, unsigned long, float*)",
+          "target_rows": 16,
+          "skipped_rows": 6,
+          "kept_rows": 10,
+          "first_kept": {
+            "start_ns": 884176816886195,
+            "end_ns": 884176816957316,
+            "duration_ns": 71121
+          },
+          "kernel_time_us": {
+            "min": 69.041,
+            "median": 70.301,
+            "max": 71.522
+          },
+          "launch": {
+            "grid_work_items_xyz": [
+              65536,
+              1,
+              1
+            ],
+            "workgroup_size_xyz": [
+              256,
+              1,
+              1
+            ],
+            "workgroups_xyz": [
+              256,
+              1,
+              1
+            ],
+            "workgroups_total": 256
+          },
+          "resources": {
+            "vgpr_count": 8,
+            "sgpr_count": 128,
+            "lds_bytes": 0,
+            "scratch_bytes": 0
+          }
+        },
+        "agrees_with_profile_summary": true
+      },
+      {
+        "config_id": "hip-local-lds-g256",
+        "kernel": "reduction_final",
+        "published_report": "reports/hip-local-lds-g256.txt",
+        "input_sha256": "687993f46a3ea029be102a41c56f175c2caa565faebd42d996f2e038dfd602c7",
+        "helper_sha256": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b",
+        "started_at": "2026-09-20T06:01:05.043139+00:00",
+        "actual_argv": [
+          "python",
+          "chapter8/inspect_trace.py",
+          "chapter9/results/rocm10-20260920/profiles/hip-local-lds-g256_kernel_trace.csv",
+          "--kernel",
+          "reduction_final",
+          "--skip",
+          "6",
+          "--take",
+          "10"
+        ],
+        "cwd": "<MEASURED_PART>",
+        "cwd_private_sha256": "94215f78e008782873f360ea6fa010cc61a3e227ce0bff719b78ed28737166d2",
+        "returncode": 0,
+        "stderr": "",
+        "stdout_sha256": "3918fce0ee4c724ba12c369198f63122966117eb2072ae796fad490b04fae6e4",
+        "analysis": {
+          "csv_rows": 38,
+          "kernel_name": "(anonymous namespace)::reduction_final(float const*, unsigned long, float*)",
+          "target_rows": 16,
+          "skipped_rows": 6,
+          "kept_rows": 10,
+          "first_kept": {
+            "start_ns": 884176816961596,
+            "end_ns": 884176816964836,
+            "duration_ns": 3240
+          },
+          "kernel_time_us": {
+            "min": 3.16,
+            "median": 3.22,
+            "max": 3.72
+          },
+          "launch": {
+            "grid_work_items_xyz": [
+              256,
+              1,
+              1
+            ],
+            "workgroup_size_xyz": [
+              256,
+              1,
+              1
+            ],
+            "workgroups_xyz": [
+              1,
+              1,
+              1
+            ],
+            "workgroups_total": 1
+          },
+          "resources": {
+            "vgpr_count": 8,
+            "sgpr_count": 128,
+            "lds_bytes": 0,
+            "scratch_bytes": 0
+          }
+        },
+        "agrees_with_profile_summary": true
+      }
+    ]
+  },
+  "independent_tree_example": {
+    "parent_manifest": "../tree-layout/manifest.json",
+    "parent_manifest_sha256": "0f11631a990f4b7cf76010ece2a6ae4b6a21d24fc987f9865e05e01200145fab",
+    "source_sha256": "af8c75f965ba0b96fa6a8c0b7057989d86ac459040ef61c001910933f87dedbd",
+    "source_log": "results/mapping-20260919/logs/bench-16777216-p1.txt",
+    "published_log": "logs/mapping-bench-16777216-p1.txt",
+    "raw_sha256": "f65c58a6a93538d9c65bb95dab870ffc25b254a115e3d81a5c4efd4653c21345",
+    "published_sha256": "f65c58a6a93538d9c65bb95dab870ffc25b254a115e3d81a5c4efd4653c21345",
+    "new_gpu_measurement": false,
+    "separate_experiment": true
+  }
+}

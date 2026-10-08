@@ -1,0 +1,28 @@
+GPU:0
+
+cpu_cores_count               :	0
+simd_count                    :	128
+max_waves_per_simd            :	16
+runtime_visibility            :	{'hsa': 1, 'hip': 1, 'rccl': 1, 'rocdecode': 1}
+wave_front_size               :	32
+num_xcc                       :	1
+cu_count                      :	64
+array_count                   :	8
+num_shader_banks              :	4
+simd_arrays_per_engine        :	2
+cu_per_simd_array             :	8
+simd_per_cu                   :	2
+gfx_target_version            :	120001
+max_waves_per_cu              :	32
+gpu_id                        :	28946
+workgroup_max_dim             :	{'x': 1024, 'y': 1024, 'z': 1024}
+grid_max_dim                  :	{'x': 2147483647, 'y': 65535, 'z': 65535}
+name                          :	gfx1201
+vendor_name                   :	AMD
+product_name                  :	AMD Radeon RX 9070 XT
+model_name                    :	ip discovery
+node_id                       :	1
+logical_node_id               :	1
+logical_node_type_id          :	0
+
+

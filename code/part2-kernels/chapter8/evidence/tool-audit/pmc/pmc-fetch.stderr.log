@@ -1,0 +1,9 @@
+W0920 08:04:49.030956 1393955 simple_timer.cpp:55] [rocprofv3] tool initialization ::     0.202254 sec
+W0920 08:04:49.031440 1393955 simple_timer.cpp:55] [rocprofv3] '<frozen-rounds-root>/code/part2-kernels/chapter8/results/rocm10-20260920/build/vector_add_hip --version v0 --size 16777216 --block 256 --warmup 5 --repeat 10 --seed 20260920' ::     0.000000 sec
+W0920 08:04:49.036741 1393955 tool.cpp:3348] HSA version 1.21.0 initialized (instance=0)
+W0920 08:04:49.127496 1393955 queue_controller.cpp:170] [queue-intercept] device-memory ring-buffer requested but profiling requires system-memory InterceptQueue; falling back to system-memory ring for agent 108376547032464 (priority and CU-mask from the descriptor are not preserved)
+W0920 08:04:49.246350 1393955 simple_timer.cpp:55] [rocprofv3] '<frozen-rounds-root>/code/part2-kernels/chapter8/results/rocm10-20260920/build/vector_add_hip --version v0 --size 16777216 --block 256 --warmup 5 --repeat 10 --seed 20260920' ::     0.214908 sec
+E0920 08:04:49.267212 1393955 output_stream.cpp:110] Opened result file: <audit-root>/pmc-fetch/baseline_counter_collection.csv
+E0920 08:04:49.271585 1393955 output_stream.cpp:110] Opened result file: <audit-root>/pmc-fetch/baseline_agent_info.csv
+W0920 08:04:49.272621 1393955 simple_timer.cpp:55] [rocprofv3] output generation ::     0.014976 sec
+W0920 08:04:49.272653 1393955 simple_timer.cpp:55] [rocprofv3] tool finalization ::     0.015009 sec

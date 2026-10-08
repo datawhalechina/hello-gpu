@@ -48,20 +48,20 @@ https://datawhalechina.github.io/hello-gpu/
 | **第 0 篇：入门与硬件速通** | | |
 | [第 0 章 写给读者的话](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter0/index.md) | 教程定位、为什么选 9070XT、和市面教程差异、学习路线 | 🚧 |
 | [第 1 章 环境准备](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter1/index.md) | 9070XT + 原生 Ubuntu + ROCm 10.0 验证、Windows/WSL2 边界、uv 环境、最小 smoke test | 🚧 |
-| [第 2 章 GPU 体系结构（上）：编程模型与 wavefront 执行](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter2/index.md) | 从数组加法出发，理解线程编号、工作分组、wavefront 执行与分支掩码 | ✅ |
-| [第 3 章 GPU 体系结构（下）：片上资源与数据通路](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter3/index.md) | 跟着一次加法认识寄存器、缓存与 LDS，再理解合并访存和延迟隐藏 | ✅ |
+| [第 2 章 GPU 体系结构（上）：编程模型与 wavefront 执行](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter2/index.md) | 从数组加法出发，理解计算流程、线程层级、数据索引与硬件执行 | ✅ |
+| [第 3 章 GPU 体系结构（下）：数据存储与访问](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter3/index.md) | 从一次加法理解数据位置、成组访问、共享同步与访存等待 | ✅ |
 | [第 4 章 第一个程序 + 性能分析](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part0-intro/chapter4/index.md) | 从向量加法出发，编写 HIP 程序、验证结果并学习 GPU 计时 | ✅ |
 | **第 1 篇：Profiling 实战** | | |
 | [第 5 章 benchmark 与可信计时](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part1-profiling/chapter5/index.md) | 从两种 event 计时方式理解预热、统计和有效带宽 | ✅ |
 | [第 6 章 用 rocprof 找到慢在哪里](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part1-profiling/chapter6/index.md) | 运行向量加法、读懂 kernel trace，并设计公平对照 | ✅ |
 | [第 7 章 读懂 Roofline 图](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part1-profiling/chapter7/index.md) | 从一次加法计算工作点，理解带宽与算力参考线 | ✅ |
 | **[第 2 篇：经典算子与 Kernel 实战](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/index.md)** | | |
-| [第 8 章 Element-Wise：逐元素算子](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter8/index.md) | 从数组加法和下标动画出发，理解连续访存、线程循环、向量化尾部与 Triton mask | ✅ |
-| [第 9 章 Reduction：归约算子](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter9/index.md) | 用求和树与实际部分和理解 LDS 协作、全局竞争和多阶段归约 | ✅ |
-| [第 10 章 Normalization：归一化算子](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter10/index.md) | 用一行大分数理解稳定 Softmax、行内归约与中间数据融合 | ✅ |
-| [第 11 章 GEMM-Like：矩阵乘类算子](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter11/index.md) | 从小矩阵点积与复用动画出发，学习 HIP/Triton 分块、尾部和资源取舍 | ✅ |
-| [第 12 章 Fusion：融合算子](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter12/index.md) | 从 Attention 加权和推导在线 Softmax，用具体数值理解历史状态重缩放 | ✅ |
-| [第 13 章 综合实战：Fused RMSNorm](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter13/index.md) | 从平方和、行尺度与广播出发，综合归约、融合和可解释的参数实验 | ✅ |
+| [第 8 章 Element-Wise：逐元素算子](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter8/index.md) | 从正确基线出发，实测地址排列、grid、float4 与 Triton tile，用逐轮比较决定下一步 | ✅ |
+| [第 9 章 Reduction：归约算子](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter9/index.md) | 从块内求和到完整归约，逐轮比较 HIP 合并方案与 Triton program 分工 | ✅ |
+| [第 10 章 Normalization：归一化算子](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter10/index.md) | 从稳定 Softmax 出发，分别验证行内协作、融合与 Triton 执行配置 | ✅ |
+| [第 11 章 GEMM-Like：矩阵乘类算子](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter11/index.md) | 从点积与复用出发，逐轮验证 HIP LDS、Triton tile 与 program 分组 | ✅ |
+| [第 12 章 Fusion：融合算子](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter12/index.md) | 从 Attention 物化基线出发，验证在线融合与 key 分块的收益和代价 | ✅ |
+| [第 13 章 综合实战：Fused RMSNorm](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part2-kernels/chapter13/index.md) | 从平方和与广播出发，逐轮验证行内线程数、warps 与多行 program | ✅ |
 | **第 3 篇：Agent（算子层）** | | |
 | [第 14 章 Agent 入门](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part3-agent/chapter14/index.md) | 从一次手动优化理解模型、工具与反馈循环 | ✅ |
 | [第 15 章 工具封装](https://github.com/datawhalechina/hello-gpu/blob/dev/docs/part3-agent/chapter15/index.md) | 用结构化接口连接正确性、计时、瓶颈分析与接受判定 | ✅ |

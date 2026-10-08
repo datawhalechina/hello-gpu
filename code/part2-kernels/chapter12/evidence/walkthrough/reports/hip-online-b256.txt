@@ -1,0 +1,8 @@
+kernel_name="online_attention_kernel(float const*, float const*, float const*, float*, int, int, float)"
+csv_rows=19 target_rows=16 skipped_rows=6 kept_rows=10
+sort=Start_Timestamp_ascending
+first_start_ns=887497198778368 first_end_ns=887497199001372 first_duration_ns=223004
+kernel_min_us=222.683000 kernel_median_us=222.903000 kernel_max_us=240.603000
+grid_work_items_xyz=32768x1x1 workgroup_size_xyz=256x1x1 workgroups_xyz=128x1x1
+workgroups_total=128
+vgpr_count=16 sgpr_count=128 lds_bytes=0 scratch_bytes=0

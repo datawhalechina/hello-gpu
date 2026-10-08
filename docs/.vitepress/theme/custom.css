@@ -291,14 +291,22 @@ a, button {
 
 .VPSidebar {
   left: 0 !important;
-  padding: calc(var(--vp-nav-height) + 28px) 22px 28px !important;
+  padding: calc(var(--vp-nav-height) + 28px) 22px 0 !important;
   width: var(--vp-sidebar-width) !important;
   border-right: 1px solid var(--vp-c-divider);
   background: var(--vp-sidebar-bg-color) !important;
+  scroll-padding-bottom: calc(100px + env(safe-area-inset-bottom));
+  scrollbar-gutter: stable;
 }
 
 .VPSidebar .curtain {
-  background: var(--vp-c-bg) !important;
+  display: none;
+}
+
+.VPSidebar .nav {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }
 
 .hg-sidebar-label {
@@ -380,18 +388,35 @@ a, button {
 }
 
 .hg-sidebar-colophon {
-  margin: 40px 8px 10px;
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  flex-shrink: 0;
+  margin-top: auto;
+  border-top: 1px solid var(--vp-c-divider);
+  padding: 20px 8px max(24px, env(safe-area-inset-bottom));
+  background: var(--vp-sidebar-bg-color);
   color: var(--vp-c-text-2);
   font-size: 11px;
   line-height: 1.7;
 }
 
+.hg-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 6px;
+  color: var(--vp-c-brand-1);
+}
+
+.hg-sidebar-brand svg {
+  flex-shrink: 0;
+}
+
 .hg-sidebar-colophon strong {
-  display: block;
   font-size: 14px;
   font-weight: 550;
   color: var(--vp-c-text-1);
-  margin-bottom: 5px;
 }
 
 .hg-sidebar-colophon span {

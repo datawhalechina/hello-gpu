@@ -26,5 +26,7 @@ export interface SceneMeta {
   viewBox: string
   /** Optional stacked composition for narrow screens. */
   mobileViewBox?: string
+  /** 场景自身的阅读提示；省略时沿用算法动画的默认说明。 */
+  note?: string
   steps: SceneStep[]
 }

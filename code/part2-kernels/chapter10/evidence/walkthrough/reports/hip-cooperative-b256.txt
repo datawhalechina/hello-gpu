@@ -1,0 +1,26 @@
+kernel_name="(anonymous namespace)::row_max_block(float const*, float*, unsigned long)"
+csv_rows=52 target_rows=16 skipped_rows=6 kept_rows=10
+sort=Start_Timestamp_ascending
+first_start_ns=885352907365890 first_end_ns=885352907410649 first_duration_ns=44759
+kernel_min_us=44.519000 kernel_median_us=44.759000 kernel_max_us=270.714000
+grid_work_items_xyz=1048576x1x1 workgroup_size_xyz=256x1x1 workgroups_xyz=4096x1x1
+workgroups_total=4096
+vgpr_count=8 sgpr_count=128 lds_bytes=0 scratch_bytes=0
+
+kernel_name="(anonymous namespace)::row_exp_sum_block(float const*, float const*, float*, float*, unsigned long)"
+csv_rows=52 target_rows=16 skipped_rows=6 kept_rows=10
+sort=Start_Timestamp_ascending
+first_start_ns=885352907414689 first_end_ns=885352907475607 first_duration_ns=60918
+kernel_min_us=56.679000 kernel_median_us=60.158500 kernel_max_us=60.918000
+grid_work_items_xyz=1048576x1x1 workgroup_size_xyz=256x1x1 workgroups_xyz=4096x1x1
+workgroups_total=4096
+vgpr_count=16 sgpr_count=128 lds_bytes=0 scratch_bytes=0
+
+kernel_name="(anonymous namespace)::normalize_block(float const*, float const*, float*, unsigned long)"
+csv_rows=52 target_rows=16 skipped_rows=6 kept_rows=10
+sort=Start_Timestamp_ascending
+first_start_ns=885352907481287 first_end_ns=885352907541366 first_duration_ns=60079
+kernel_min_us=36.439000 kernel_median_us=59.158500 kernel_max_us=61.118000
+grid_work_items_xyz=1048576x1x1 workgroup_size_xyz=256x1x1 workgroups_xyz=4096x1x1
+workgroups_total=4096
+vgpr_count=16 sgpr_count=128 lds_bytes=0 scratch_bytes=0

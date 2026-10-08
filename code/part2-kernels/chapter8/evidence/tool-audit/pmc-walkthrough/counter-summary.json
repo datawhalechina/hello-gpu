@@ -1,0 +1,107 @@
+[
+  {
+    "group": "waves",
+    "counter": "SQ_WAVES_sum",
+    "dispatch_count": 10,
+    "dispatch_ids": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ],
+    "min": 524288.0,
+    "median": 524288.0,
+    "max": 524288.0,
+    "interpretation": "matches launch count"
+  },
+  {
+    "group": "waves",
+    "counter": "GRBM_GUI_ACTIVE",
+    "dispatch_count": 10,
+    "dispatch_ids": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ],
+    "min": 527469.0,
+    "median": 529299.0,
+    "max": 587211.0,
+    "interpretation": "activity recorded; not frequency or occupancy proof"
+  },
+  {
+    "group": "l2",
+    "counter": "GL2C_HIT_sum",
+    "dispatch_count": 10,
+    "dispatch_ids": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ],
+    "min": 0.0,
+    "median": 0.0,
+    "max": 0.0,
+    "interpretation": "all zero; unusable as traffic/cache evidence"
+  },
+  {
+    "group": "l2",
+    "counter": "GL2C_MISS_sum",
+    "dispatch_count": 10,
+    "dispatch_ids": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ],
+    "min": 0.0,
+    "median": 0.0,
+    "max": 0.0,
+    "interpretation": "all zero; unusable as traffic/cache evidence"
+  },
+  {
+    "group": "fetch",
+    "counter": "FetchSize",
+    "dispatch_count": 10,
+    "dispatch_ids": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ],
+    "min": 0.0,
+    "median": 0.0,
+    "max": 0.0,
+    "interpretation": "all zero; unusable as traffic/cache evidence"
+  }
+]

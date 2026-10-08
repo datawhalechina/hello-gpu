@@ -1,0 +1,407 @@
+{
+  "schema_version": 1,
+  "experiment": "chapter8-vector-add-rounds",
+  "started_at": "2026-09-19T17:04:11.307265+00:00",
+  "environment": {
+    "gpu": "AMD Radeon RX 9070 XT",
+    "architecture": "gfx1201",
+    "rocm_sdk": "10.0.0",
+    "hip": "7.15.26333",
+    "torch": "2.13.0+rocm10.0.0",
+    "triton": "3.8.0+git4cff872c.rocm10.0.0",
+    "os": "Ubuntu 24.04.5 LTS",
+    "kernel": "7.0.0-31-generic",
+    "python": "3.12.3",
+    "profiler_during_benchmark": false,
+    "gpu_exclusive": false,
+    "background_note": "See gpu-state logs; desktop and other contexts are not terminated."
+  },
+  "source_sha256": {
+    "vector_add_hip.hip": "73e1af89d25a91fb35ee78198ce74c93d617a9ac5a0852ff74d20abd2184aa80",
+    "vector_add_triton.py": "831525557254b8cf17965403972491e6b95cac63dc1c9a343af49366752fa893",
+    "run_rounds.py": "68672fcffff541ba61c7f9db71a9849cd7eba8f205d162e4b35301d484ca53ac",
+    "summarize_rounds.py": "526ebf5d3df67192acb52e2136fda4998f067b3fc075dae624d2d83f4f065044",
+    "resolve_rocprofv3.py": "6057fa1c79cd769712bbc30006af63a4e1cf0a74b7de7e2d11eae868d3889c96",
+    "collect_environment.sh": "e0a6a7fa4d61d78bf5b8c6c4d424ffc922a320b86499c3e5fd1017c5139ba11b"
+  },
+  "benchmark": {
+    "shape": 16777216,
+    "warmup": 10,
+    "repeat": 50,
+    "processes": 3,
+    "seed": 20260920,
+    "dtype": "float32",
+    "scope": "gpu-event-single-kernel",
+    "cache": "same arrays reused within process; no explicit flush",
+    "order": "configuration order rotated across three independent process passes",
+    "input": "a=((17*i+seed)%2048-1024)/1024; b=((29*i+3*seed)%4096-2048)/2048",
+    "correctness": "NaN-prefilled precheck and postcheck, finite output, abs error <= 1e-6",
+    "size": 16777216,
+    "independent_runs": 3
+  },
+  "configurations": [
+    {
+      "id": "hip-v0",
+      "runtime": "hip",
+      "version": "v0",
+      "block": 256
+    },
+    {
+      "id": "hip-v1-contiguous",
+      "runtime": "hip",
+      "version": "v1-contiguous",
+      "block": 256
+    },
+    {
+      "id": "hip-v1-strided",
+      "runtime": "hip",
+      "version": "v1-strided",
+      "block": 256
+    },
+    {
+      "id": "hip-v2-g65536",
+      "runtime": "hip",
+      "version": "v2",
+      "block": 256,
+      "grid": 65536
+    },
+    {
+      "id": "hip-v2-g2048",
+      "runtime": "hip",
+      "version": "v2",
+      "block": 256,
+      "grid": 2048
+    },
+    {
+      "id": "hip-v2-g256",
+      "runtime": "hip",
+      "version": "v2",
+      "block": 256,
+      "grid": 256
+    },
+    {
+      "id": "hip-v3-g256",
+      "runtime": "hip",
+      "version": "v3",
+      "block": 256,
+      "grid": 256
+    },
+    {
+      "id": "triton-t0-b256",
+      "runtime": "triton",
+      "version": "t0",
+      "block": 256
+    },
+    {
+      "id": "triton-t1-b512",
+      "runtime": "triton",
+      "version": "t1",
+      "block": 512
+    },
+    {
+      "id": "triton-t1-b1024",
+      "runtime": "triton",
+      "version": "t1",
+      "block": 1024
+    },
+    {
+      "id": "triton-t1-b2048",
+      "runtime": "triton",
+      "version": "t1",
+      "block": 2048
+    }
+  ],
+  "execution_order": [
+    {
+      "shape": 16777216,
+      "process": 1,
+      "configs": [
+        "hip-v0",
+        "hip-v1-contiguous",
+        "hip-v1-strided",
+        "hip-v2-g65536",
+        "hip-v2-g2048",
+        "hip-v2-g256",
+        "hip-v3-g256",
+        "triton-t0-b256",
+        "triton-t1-b512",
+        "triton-t1-b1024",
+        "triton-t1-b2048"
+      ]
+    },
+    {
+      "shape": 16777216,
+      "process": 2,
+      "configs": [
+        "hip-v2-g65536",
+        "hip-v2-g2048",
+        "hip-v2-g256",
+        "hip-v3-g256",
+        "triton-t0-b256",
+        "triton-t1-b512",
+        "triton-t1-b1024",
+        "triton-t1-b2048",
+        "hip-v0",
+        "hip-v1-contiguous",
+        "hip-v1-strided"
+      ]
+    },
+    {
+      "shape": 16777216,
+      "process": 3,
+      "configs": [
+        "hip-v3-g256",
+        "triton-t0-b256",
+        "triton-t1-b512",
+        "triton-t1-b1024",
+        "triton-t1-b2048",
+        "hip-v0",
+        "hip-v1-contiguous",
+        "hip-v1-strided",
+        "hip-v2-g65536",
+        "hip-v2-g2048",
+        "hip-v2-g256"
+      ]
+    },
+    {
+      "shape": 1048576,
+      "process": 1,
+      "configs": [
+        "hip-v0",
+        "hip-v2-g65536",
+        "hip-v3-g256",
+        "triton-t0-b256"
+      ]
+    },
+    {
+      "shape": 1048576,
+      "process": 2,
+      "configs": [
+        "hip-v2-g65536",
+        "hip-v3-g256",
+        "triton-t0-b256",
+        "hip-v0"
+      ]
+    },
+    {
+      "shape": 1048576,
+      "process": 3,
+      "configs": [
+        "hip-v3-g256",
+        "triton-t0-b256",
+        "hip-v0",
+        "hip-v2-g65536"
+      ]
+    },
+    {
+      "shape": 4194304,
+      "process": 1,
+      "configs": [
+        "hip-v0",
+        "hip-v2-g65536",
+        "hip-v3-g256",
+        "triton-t0-b256"
+      ]
+    },
+    {
+      "shape": 4194304,
+      "process": 2,
+      "configs": [
+        "hip-v2-g65536",
+        "hip-v3-g256",
+        "triton-t0-b256",
+        "hip-v0"
+      ]
+    },
+    {
+      "shape": 4194304,
+      "process": 3,
+      "configs": [
+        "hip-v3-g256",
+        "triton-t0-b256",
+        "hip-v0",
+        "hip-v2-g65536"
+      ]
+    }
+  ],
+  "hardware": "AMD Radeon RX 9070 XT",
+  "software": {
+    "rocm": "10.0.0",
+    "hip": "7.15.26333",
+    "torch": "2.13.0+rocm10.0.0",
+    "triton": "3.8.0+git4cff872c.rocm10.0.0"
+  },
+  "platform": {
+    "os_pretty_name": "Ubuntu 24.04.5 LTS",
+    "execution": "native"
+  },
+  "build": {
+    "command": [
+      "hipcc",
+      "--offload-arch=gfx1201",
+      "-O3",
+      "-std=c++17",
+      "-save-temps",
+      "../source/vector_add_hip.hip",
+      "-o",
+      "vector_add_hip"
+    ],
+    "binary_sha256": "08b84ac929c1dec4ce79b0a4871a4b26068a226568f9160e838e03fd938c8409"
+  },
+  "updated_at": "2026-09-19T17:07:28.663622+00:00",
+  "profile": {
+    "warmup": 5,
+    "repeat": 10,
+    "precheck_dispatches": 1,
+    "scope": "separate rocprofv3 kernel trace, excluded from benchmark",
+    "tool_kind": "bundled",
+    "sdk": "10.0.0"
+  },
+  "validation_selection": {
+    "rule": "HIP v0, float4 g256, Triton t0, fastest main-shape v2 grid and Triton tile; duplicates removed",
+    "config_ids": [
+      "hip-v0",
+      "hip-v2-g65536",
+      "hip-v3-g256",
+      "triton-t0-b256"
+    ],
+    "shapes": [
+      1048576,
+      4194304
+    ]
+  },
+  "sample_sha256": {
+    "samples/n1048576-hip-v0-p1.csv": "c3aa5ce0b3fb0b5a9b8e26cbdeea8ca9d83f33d4d65e4ebbddc751c4aa7f6559",
+    "samples/n1048576-hip-v0-p2.csv": "ff4a3ba70075321cc9f97be675d7db4641aae5a1f97f7d4296e69a27440368fd",
+    "samples/n1048576-hip-v0-p3.csv": "9a98f91ec539c3008584aa48e64fa792a59c74f35cf597793d45b3c267b3043f",
+    "samples/n1048576-hip-v2-g65536-p1.csv": "8eca255f18393316e086af858dde2fbc9a380bc949ea2f262fbfe745e216d61b",
+    "samples/n1048576-hip-v2-g65536-p2.csv": "037b52ab5c03247befd35c9fb8f9516343cd70da147a2b14e09b083c816e6ba3",
+    "samples/n1048576-hip-v2-g65536-p3.csv": "a5f5cb59a3d46db17eb78ec0b92b3b9e398c83e95ac797c44b5aa0262a274383",
+    "samples/n1048576-hip-v3-g256-p1.csv": "6d3d8aa8e5d8d318f56bf9fb52f86858d2e3ce1a38931dd9da540a96c57943c2",
+    "samples/n1048576-hip-v3-g256-p2.csv": "c84c52caa244cffb45631cc258d41095e88230f6692c7a7362d57fe2d00cef86",
+    "samples/n1048576-hip-v3-g256-p3.csv": "71c3eaa8849f1e5f23d8d91febc9efefa445a5ba60cfe50e3023a0f5f2fc9268",
+    "samples/n1048576-triton-t0-b256-p1.csv": "8f04cf6180523de7d1974bdc3ac64f2ac37e9ff1ca3433e5f3429d146654a7d6",
+    "samples/n1048576-triton-t0-b256-p2.csv": "01731111d7c9338368a4085c82b830410f81cd893af670d687db3bb569645691",
+    "samples/n1048576-triton-t0-b256-p3.csv": "39ea05a524a4a260479f33620425bf12d465affe2f9b06c4d5d23385807ee290",
+    "samples/n16777216-hip-v0-p1.csv": "7fe3471223d2c62b0d270c94d9518feaecd02137a50e1b5a040fafa3652a7879",
+    "samples/n16777216-hip-v0-p2.csv": "66fb2456e122be11881b1b81e84d5dd27b294545907efb74a901a0a268b916d6",
+    "samples/n16777216-hip-v0-p3.csv": "f5d1d0092eb204fbc2a8a93838fea0c53b5392e4463085cb49437013a4f6b89f",
+    "samples/n16777216-hip-v1-contiguous-p1.csv": "c03559cbefee2a57216770e5f2c5f92c2638da7ded81e05c16ec3b953a5824cf",
+    "samples/n16777216-hip-v1-contiguous-p2.csv": "1c727132cf8a1521559d5a35db9c4de8fa1167a63d36de6d11648661af1ef231",
+    "samples/n16777216-hip-v1-contiguous-p3.csv": "d89410465587c13fecf939b70a75c7bc122bfccc7482180e99ebf8c8e56dbcaf",
+    "samples/n16777216-hip-v1-strided-p1.csv": "89c04ce04bfc73121fbeb3003f2a814863f969f539ab48ebf340dafa2cbe04ed",
+    "samples/n16777216-hip-v1-strided-p2.csv": "ceff51afc11573ed2f154d87cdeef4728cae1a125028987506fe5a2c0a4e80c8",
+    "samples/n16777216-hip-v1-strided-p3.csv": "d03cd1cfd2527e6d93e467491709e6af4a01d44c6dc3816ef874c995150f6162",
+    "samples/n16777216-hip-v2-g2048-p1.csv": "18a3366e73cfd0e3a9bfa3491a4d3d34a97c64d5648db620628faccf32558cf8",
+    "samples/n16777216-hip-v2-g2048-p2.csv": "58ca4e606a45143bf9e460d67dd8b489e432731cffc26f03f08ea53a5ddc841e",
+    "samples/n16777216-hip-v2-g2048-p3.csv": "87c9afa2656536ace41d9b77e9c661f1380d47494f0d56c4572a881a780937b6",
+    "samples/n16777216-hip-v2-g256-p1.csv": "45ce101c111aed690536427fa4d6aa2530dcba0dd025d163af08649482e3a21a",
+    "samples/n16777216-hip-v2-g256-p2.csv": "dc50df740dad12034569a0cf5e049d89ed7e99e5c452500a7e0aaf0f6ee75aaa",
+    "samples/n16777216-hip-v2-g256-p3.csv": "a941b1782c999b94f71a4e541ebd115633b80ce6984a89348f68bc1ebc0cf59b",
+    "samples/n16777216-hip-v2-g65536-p1.csv": "4be79aaf2a501a53b7d911d6dc54f55f56785b9bde82f8aa1d5d7cc25ac39e1f",
+    "samples/n16777216-hip-v2-g65536-p2.csv": "9701baa7ce7b5c7a31838b4527743c3b0d6e2f5bd1862d0cda63205781862687",
+    "samples/n16777216-hip-v2-g65536-p3.csv": "a35d98570dbcfa32f7b933e901c47bb2b9e81eebe5d8f565eefec38b2ee4f0f6",
+    "samples/n16777216-hip-v3-g256-p1.csv": "2d35775f7f7f32c7c537308c215836be10712a7492512b1c0109b56839b840da",
+    "samples/n16777216-hip-v3-g256-p2.csv": "95ced6bc1b3a6c741786a53a1b6638b7b99ba29435fa2bc42ac7e01c9788ec16",
+    "samples/n16777216-hip-v3-g256-p3.csv": "2f25e226d1dbe63e298a11106e5eb164544884751a434b5fdabbb49514a67cf6",
+    "samples/n16777216-triton-t0-b256-p1.csv": "e072633e630f6f6de779f5b5a4110a778d395b00c23d1d846ca6fca70e93ac6e",
+    "samples/n16777216-triton-t0-b256-p2.csv": "e9e9ae6fbeed143659347a30008de9ff122a81e3ac9ef50e800172eb87c74c81",
+    "samples/n16777216-triton-t0-b256-p3.csv": "85ea6ea08b44842f2d72675cfc91f0c0e9bf7d5d4bdd070fd4738b36fe4dc1fe",
+    "samples/n16777216-triton-t1-b1024-p1.csv": "8cbee9d8f0d95315acb5935959be687318d14361734197500aa6b26b53c45747",
+    "samples/n16777216-triton-t1-b1024-p2.csv": "15fb5e287344f7adec1db81e35ee2e79e04410ae0ea54cade7246691f14b78da",
+    "samples/n16777216-triton-t1-b1024-p3.csv": "e30d0380a2fe1fbae9dd297b8fea0992ec071e21c2b718b5b6044b7b0feda612",
+    "samples/n16777216-triton-t1-b2048-p1.csv": "4dbf8ebcb88cffd06e6e120afc376bb03d273263c315b2b5757350e13d54ea80",
+    "samples/n16777216-triton-t1-b2048-p2.csv": "dd34f89426e2c09a5f08c056a57aca2d790bf54dd30264aa340ae2dac10ba902",
+    "samples/n16777216-triton-t1-b2048-p3.csv": "93db5fc4db9fe87d7fe139552a5cb8ca6e9505ce4153735516b7d6a0a6fcd099",
+    "samples/n16777216-triton-t1-b512-p1.csv": "f1d751a2d3f8c6bce4d274b21ad9ed0f9af49a3986471884127bd8af30a1050f",
+    "samples/n16777216-triton-t1-b512-p2.csv": "0f58aa1b9410bd13df9a6740313f3d8d2cb90a7634889d0f8e93222631eb7213",
+    "samples/n16777216-triton-t1-b512-p3.csv": "85274835918fd66f03526ddfd2f4abfe3a09f5cea65109fc0b996b2bdb0520d8",
+    "samples/n4194304-hip-v0-p1.csv": "dca69e9fafb4274cd98499516c16675d180e835bb5386ef3552b04e581a74bc3",
+    "samples/n4194304-hip-v0-p2.csv": "3217c29015561ba090f501edb847def8d9475c90f155142eb98f7c5677b6688a",
+    "samples/n4194304-hip-v0-p3.csv": "5f6e879af5e0f50b8bc566c2e38e681a1eb92f78a73af16d5e8a6604c81200fe",
+    "samples/n4194304-hip-v2-g65536-p1.csv": "76d9be8b4b75ebae6de28c42bb3e49fe03aee4a90f8f4973fa5afebdd7c352aa",
+    "samples/n4194304-hip-v2-g65536-p2.csv": "86e4abf62908b70d67c6db099e10ba060cba57b54c57550c49235c7468efc923",
+    "samples/n4194304-hip-v2-g65536-p3.csv": "5630c19d61a5c91306236038b135fe269c0bcada3f24bd3107858d124d5e571a",
+    "samples/n4194304-hip-v3-g256-p1.csv": "68efa5b9d2d9ba57d1430a66649e01820c85f303e54c619a404f3e25fb7dc101",
+    "samples/n4194304-hip-v3-g256-p2.csv": "f7a8fd314db490cdb30987973bae35e621ab8b9245b3980a80e7300c1a14f851",
+    "samples/n4194304-hip-v3-g256-p3.csv": "829de347095581501399d71d9acc63dc8808ee509d94807365aa685f74fe4c90",
+    "samples/n4194304-triton-t0-b256-p1.csv": "0192eb42f3a8f9ec4806a8ff613843526bd801a7b1ca10c05078401de76aba5f",
+    "samples/n4194304-triton-t0-b256-p2.csv": "490152cd4c6843b0065f1cc400e29f2463856f40b5cad1ddfbbd704303ade216",
+    "samples/n4194304-triton-t0-b256-p3.csv": "515eefac565f555500aa1ff7a1f8ae2ff42361dcb0501de6d27fde0854fb0d1a"
+  },
+  "log_sha256": {
+    "logs/n1048576-hip-v0-p1.log": "aa43429ac58891c7c24fa4a6362d193f4189fc7a32feaaf44b00698032842b22",
+    "logs/n1048576-hip-v0-p2.log": "7cbfee7c0aae1d4fc06e4f5796c0df38f16c7a8831c33cec05344f13b9acaeee",
+    "logs/n1048576-hip-v0-p3.log": "1d02afa6f624588577226e2abb0b48ea096a2df654aaed9f33e462b4d5be2d14",
+    "logs/n1048576-hip-v2-g65536-p1.log": "d2f7acc7ddc6dc6dd11de52ccbf8c8a34dd3d3d06bcc82cab7fe007ed6ed0104",
+    "logs/n1048576-hip-v2-g65536-p2.log": "0460a8282896575b78b497c9eeeb1bdbe94dd306238e96d928bb66e9658ea934",
+    "logs/n1048576-hip-v2-g65536-p3.log": "6002d410adbc8921ac645bcf24af8b8217167ed9afe80f58d295e654d96f7fcf",
+    "logs/n1048576-hip-v3-g256-p1.log": "13d57243ca72c3b9b4d35b812fcd6df24c43fa7e15c0cc124835a01d3f16fc4d",
+    "logs/n1048576-hip-v3-g256-p2.log": "a202d437c39a7038c64581f0feede593030949e2dea75c813c5e992388b2974a",
+    "logs/n1048576-hip-v3-g256-p3.log": "c4d430a2611e41c60cc4d5227a0940b435446e638203db1dbbe41468a8be8a98",
+    "logs/n1048576-triton-t0-b256-p1.log": "c915acddb62e2ae4485e793d1f292ff117266db8e359410fdbfcb9dc1dadfb94",
+    "logs/n1048576-triton-t0-b256-p2.log": "61b1f74b04a56544b6a71c2c6899dfd0a1c3f7448feeeee410db9c8f0a403b46",
+    "logs/n1048576-triton-t0-b256-p3.log": "0f7d0d4b71ae85d14fca20ea5c22d0b256df6de05a9ee8e932e0eb7dd4571541",
+    "logs/n16777216-hip-v0-p1.log": "2c0480f55ea8b1500bc004d006337c5990d6ac80b7fbe32f2fb097465b474467",
+    "logs/n16777216-hip-v0-p2.log": "8bc56496914b06844a8603b07ed4aae3f6c900033805cc949f41683249a275ed",
+    "logs/n16777216-hip-v0-p3.log": "cbbb32572bb5d7ee36ed0410f3d9e67861910719c7f021d8dbfb476ee85263b4",
+    "logs/n16777216-hip-v1-contiguous-p1.log": "666c5c24fcc348d4e75fe589775553c44a13bcc4dcdb7082789db57cc84ed50d",
+    "logs/n16777216-hip-v1-contiguous-p2.log": "133f0e99c27d3893077032a78c02fcc32ed11abf37bf89813e7eb1d2cec0cc95",
+    "logs/n16777216-hip-v1-contiguous-p3.log": "18ecbe2d2855c004716308bef622390e1b514c103a3553e14a3d360a3e6fd312",
+    "logs/n16777216-hip-v1-strided-p1.log": "00789fdd2012035b8e541565840fc33a85ef49d83026ee6f361a5164941e0f03",
+    "logs/n16777216-hip-v1-strided-p2.log": "d5a3da856d10e4eaa98cff29721692d7ada343b7b363c3f006f28819eef3878a",
+    "logs/n16777216-hip-v1-strided-p3.log": "7df030228e7f0426b7540184e344825a9fa9fae1b35b91959b677a2207549441",
+    "logs/n16777216-hip-v2-g2048-p1.log": "afde874bd5fbc451e6869f06bd219cff79a82324703370c5fdb5d809a8857841",
+    "logs/n16777216-hip-v2-g2048-p2.log": "458979d78fb0d0fcc544491fdc816a90fb1a459820ad5ba75c9b13f9d9ae9915",
+    "logs/n16777216-hip-v2-g2048-p3.log": "0eef045f1409876d37801cea505f76f00e2f82d91025e2dc0778b168bb478881",
+    "logs/n16777216-hip-v2-g256-p1.log": "8246dbe75b203d5e0bfe10deccf27d06534bbe7817c96c9410f2711f79c71a52",
+    "logs/n16777216-hip-v2-g256-p2.log": "0f45ac7f66256db6c14182a1621d01d01097efc8bc29bceaf7a8632bd3c01b59",
+    "logs/n16777216-hip-v2-g256-p3.log": "af2db5db43ae9aafbd53aa72eb5ca49cca6e19a17ecb3eb66cb9fff48171fee0",
+    "logs/n16777216-hip-v2-g65536-p1.log": "b346a8c2e3543b2138c00fab09ba8eeccfbf5817f575518e3990bf4b8afe6a25",
+    "logs/n16777216-hip-v2-g65536-p2.log": "c711f1e85bc81a98d5cf4cb0a582736b39cccda055d3f512bcc49082b37a1136",
+    "logs/n16777216-hip-v2-g65536-p3.log": "d99eb876ce3d6f055ae09b3e87bc9a1da639f208b7e0f3a0ee297153e4e919f0",
+    "logs/n16777216-hip-v3-g256-p1.log": "672f4e96739a2b8ea01ad89b01ce47099982bf87cfc088e742c7db9c21a8ce8f",
+    "logs/n16777216-hip-v3-g256-p2.log": "6104a099c7441ec581913baaa40c20c5fe2e6f36435768aa00cab8c09c580c61",
+    "logs/n16777216-hip-v3-g256-p3.log": "db8a16835ca0439b439fcb0913f1afba7c90802f458bb33ef671533a851d3c7d",
+    "logs/n16777216-triton-t0-b256-p1.log": "3a8916d348af309b49e981710030b9ca47d8d35bc574e0490e8ae9b4cbb56c2c",
+    "logs/n16777216-triton-t0-b256-p2.log": "a2bfa82bd9263dcc5a640124e967b4b7b6f2a52fa6aa213d90c07738bb7b44b4",
+    "logs/n16777216-triton-t0-b256-p3.log": "658cd13eb7141a9d0819b29f8f95a7836b11146ee005341d1434d6c9aba9a4a8",
+    "logs/n16777216-triton-t1-b1024-p1.log": "c9a17c64b5fce15683094f082ee4cd7dd34fc0320f9f5c3b6714fef37d48e540",
+    "logs/n16777216-triton-t1-b1024-p2.log": "d11087878e1de4b5fb0469b286aa81a683874c12f913ae86ce3646ab17f4d38e",
+    "logs/n16777216-triton-t1-b1024-p3.log": "0a92350d92f373cd22acc106923f1bfc2be0797b1d563af553ac30daccb3e847",
+    "logs/n16777216-triton-t1-b2048-p1.log": "510d08dc183d3b83b2ca3d16e07c499ac77e167303c3b1ade5f6d4e50de1e906",
+    "logs/n16777216-triton-t1-b2048-p2.log": "75d6d8075ad6d3ac6e41abeff3e8459b0796cf5b8e2250ee0b59985000f044e1",
+    "logs/n16777216-triton-t1-b2048-p3.log": "14bc5e107b3819a8cbed59086f90a1c2b24a9d195984618a53f1faeb90630235",
+    "logs/n16777216-triton-t1-b512-p1.log": "7f6a0e458ca233e615602c4f9b87e1818d1490a4bdfc88dfdeb692186ff8a15d",
+    "logs/n16777216-triton-t1-b512-p2.log": "7f1eefdc62e95f864464331f187e3c0052e9fea74e4c09432cf6555c957c055d",
+    "logs/n16777216-triton-t1-b512-p3.log": "f63a1b87a4ea1661b686a80232611595407189e7ea083e37de103d6ac094998e",
+    "logs/n4194304-hip-v0-p1.log": "8620ece8f28370ba1dc71922bdb9314cd40edc6e49abc9bafb7e0b495f8f9079",
+    "logs/n4194304-hip-v0-p2.log": "40a6990c8846de8a43437d0c1430fb3c906a90ec94020239a1623d1c1c9f56d1",
+    "logs/n4194304-hip-v0-p3.log": "41f0ed8607810f4622908afe6a744acff0b2a06fd03b16cdfb296bd429e89514",
+    "logs/n4194304-hip-v2-g65536-p1.log": "30dc29ea071e7e24fe76c772bdfdfaa65cc11b1bc9bb6f7cb3de4301e56d4606",
+    "logs/n4194304-hip-v2-g65536-p2.log": "5d1bb6e1435f6f3a9bd6e7c86b1156fcf58302ae0e03165bcfe113d2a2e950ca",
+    "logs/n4194304-hip-v2-g65536-p3.log": "e3188bf4bf6082de1be2ece56942af55d9b9f5f44f7f15c57e153b1829d71a14",
+    "logs/n4194304-hip-v3-g256-p1.log": "4590a53c9759d690d4d22a38179775c2ff8af0c387ff10477b7f380140f5955c",
+    "logs/n4194304-hip-v3-g256-p2.log": "16a9e552f3671c63d173a9fd5b13645c616363c6f8b463da16e30291e8fbf48b",
+    "logs/n4194304-hip-v3-g256-p3.log": "5e58e59113fb4d814b2759a562aa6d04355a682f201cb42cc1245b5c577b3e4b",
+    "logs/n4194304-triton-t0-b256-p1.log": "6a11dee8c1c754485c7a71b06f46397766fde295f812ec12995f95c0aa4fd760",
+    "logs/n4194304-triton-t0-b256-p2.log": "5391904894a4bbf59374af133e9e7b92e18190846dcc86a29a132dc443a9336a",
+    "logs/n4194304-triton-t0-b256-p3.log": "efb2d7f0a51cb098ded5b42575e44b62132323113b33696d1847a70ca0e05c57"
+  },
+  "analysis": {
+    "summarizer_sha256": "a913963e38ca478ed1ad6c89cec835950f9b22214e39229fd0ca7e79bca01023",
+    "identity_check": "frozen source and binary; runtime ENV; expected matrix and metadata; prior sample/log hashes"
+  },
+  "statistics": {
+    "within_process": "median of event samples",
+    "across_processes": "median of process medians; min/max of process medians",
+    "range_is_confidence_interval": false,
+    "sample_count": 2850
+  },
+  "artifacts_sha256": {
+    "summary.csv": "3bdc2c76c63d383e17926f17f727c74ace13536d2a72b71df7fac1248a803e4c",
+    "process-summary.csv": "bddc0da640c5538101ef57fb6b1dec017babe12ea0e35073ec774024e3835f60",
+    "summary.json": "922832232f1266b568b1d02255d159f5f7140e0bb3d89db07e8f2bd66c671f8e",
+    "profile-summary.csv": "6566523312fee0aab71958482130dedd4923c5efa98d418a53138995764d5fbd"
+  }
+}

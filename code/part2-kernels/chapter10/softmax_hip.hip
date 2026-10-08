@@ -12,6 +12,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
+#include <fstream>
+#include <iomanip>
 #include <limits>
 #include <numeric>
 #include <string>
@@ -29,7 +31,7 @@
 
 namespace {
 
-constexpr float kDeviceNegativeInfinity = -3.402823466e+38F;
+constexpr float kDeviceNegativeInfinity = -std::numeric_limits<float>::infinity();
 constexpr double kAbsoluteTolerance = 2.0e-5;
 constexpr double kRowSumTolerance = 2.0e-5;
 
@@ -83,6 +85,60 @@ __global__ void normalize_rows(const float* __restrict__ exponentials,
     if (index < elements) {
         output[index] = exponentials[index] / row_sum[index / columns];
     }
+}
+
+// Bridge experiment: preserve three stages while assigning one block per row.
+// The max/sum trees and column-stride mapping match softmax_fused_lds.
+__global__ void row_max_block(const float* __restrict__ input,
+                             float* __restrict__ row_max,
+                             std::size_t columns) {
+    extern __shared__ float shared[];
+    const unsigned int lane = threadIdx.x;
+    const std::size_t base = static_cast<std::size_t>(blockIdx.x) * columns;
+    float local = kDeviceNegativeInfinity;
+    for (std::size_t column = lane; column < columns; column += blockDim.x)
+        local = fmaxf(local, input[base + column]);
+    shared[lane] = local;
+    __syncthreads();
+    for (unsigned int stride = blockDim.x / 2; stride > 0; stride /= 2) {
+        if (lane < stride) shared[lane] = fmaxf(shared[lane], shared[lane + stride]);
+        __syncthreads();
+    }
+    if (lane == 0) row_max[blockIdx.x] = shared[0];
+}
+
+__global__ void row_exp_sum_block(const float* __restrict__ input,
+                                 const float* __restrict__ row_max,
+                                 float* __restrict__ exponentials,
+                                 float* __restrict__ row_sum,
+                                 std::size_t columns) {
+    extern __shared__ float shared[];
+    const unsigned int lane = threadIdx.x;
+    const std::size_t base = static_cast<std::size_t>(blockIdx.x) * columns;
+    const float maximum = row_max[blockIdx.x];
+    float local = 0.0F;
+    for (std::size_t column = lane; column < columns; column += blockDim.x) {
+        const float value = expf(input[base + column] - maximum);
+        exponentials[base + column] = value;
+        local += value;
+    }
+    shared[lane] = local;
+    __syncthreads();
+    for (unsigned int stride = blockDim.x / 2; stride > 0; stride /= 2) {
+        if (lane < stride) shared[lane] += shared[lane + stride];
+        __syncthreads();
+    }
+    if (lane == 0) row_sum[blockIdx.x] = shared[0];
+}
+
+__global__ void normalize_block(const float* __restrict__ exponentials,
+                               const float* __restrict__ row_sum,
+                               float* __restrict__ output,
+                               std::size_t columns) {
+    const std::size_t base = static_cast<std::size_t>(blockIdx.x) * columns;
+    const float denominator = row_sum[blockIdx.x];
+    for (std::size_t column = threadIdx.x; column < columns; column += blockDim.x)
+        output[base + column] = exponentials[base + column] / denominator;
 }
 
 __global__ void softmax_fused_lds(const float* __restrict__ input,
@@ -143,10 +199,13 @@ struct Args {
     int block = 256;
     int warmup = 10;
     int repeat = 50;
-    std::uint64_t seed = 20260719;
+    std::uint64_t seed = 20260920;
+    std::string samples;
+    std::string config_id;
+    int process = 1;
 };
 
-enum class Kind { baseline, fused };
+enum class Kind { baseline, cooperative, fused };
 
 struct Implementation {
     const char* name;
@@ -156,6 +215,7 @@ struct Implementation {
 
 struct Validation {
     bool correct;
+    bool finite;
     double max_absolute_error;
     double max_row_sum_error;
     std::size_t first_bad_index;
@@ -165,14 +225,15 @@ struct Timing {
     double minimum_ms;
     double median_ms;
     double mean_ms;
+    std::vector<double> samples;
 };
 
 [[noreturn]] void usage_error(const std::string& message) {
     std::fprintf(
         stderr,
-        "%s\nUsage: softmax_hip [--version all|baseline|fused] "
+        "%s\nUsage: softmax_hip [--version all|baseline|cooperative|fused] "
         "[--rows N] [--cols N] [--block N] [--warmup N] "
-        "[--repeat N] [--seed N]\n",
+        "[--repeat N] [--seed N] [--samples CSV] [--config-id ID] [--process N]\n",
         message.c_str());
     std::exit(EXIT_FAILURE);
 }
@@ -203,6 +264,12 @@ Args parse_args(int argc, char** argv) {
                 args.repeat = std::stoi(next());
             } else if (option == "--seed") {
                 args.seed = std::stoull(next());
+            } else if (option == "--samples") {
+                args.samples = next();
+            } else if (option == "--config-id") {
+                args.config_id = next();
+            } else if (option == "--process") {
+                args.process = std::stoi(next());
             } else {
                 usage_error("unknown option: " + option);
             }
@@ -232,19 +299,26 @@ Args parse_args(int argc, char** argv) {
         usage_error("--warmup must be non-negative and --repeat positive");
     }
     if (args.version != "all" && args.version != "baseline" &&
-        args.version != "fused") {
+        args.version != "cooperative" && args.version != "fused") {
         usage_error("unknown version: " + args.version);
     }
+    if (!args.samples.empty() && (args.version == "all" || args.config_id.empty()))
+        usage_error("--samples requires one version and a --config-id");
+    if (args.seed > UINT32_MAX) usage_error("seed must fit uint32");
+    if (args.process <= 0 || args.config_id.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.") != std::string::npos)
+        usage_error("invalid process or config-id");
     return args;
 }
 
 std::vector<Implementation> selected_implementations(
     const std::string& version) {
     const Implementation baseline{"hip-baseline-3kernel", Kind::baseline, 3};
+    const Implementation cooperative{"hip-cooperative-3kernel", Kind::cooperative, 3};
     const Implementation fused{"hip-fused-block-lds", Kind::fused, 1};
     if (version == "all") {
-        return {baseline, fused};
+        return {baseline, cooperative, fused};
     }
+    if (version == "cooperative") return {cooperative};
     return version == "baseline" ? std::vector<Implementation>{baseline}
                                  : std::vector<Implementation>{fused};
 }
@@ -281,6 +355,15 @@ void launch(const Implementation& implementation,
         hipLaunchKernelGGL(normalize_rows, element_grid, block, 0, 0,
                            exponentials, row_sum, output,
                            elements, args.columns);
+    } else if (implementation.kind == Kind::cooperative) {
+        const dim3 row_grid(static_cast<unsigned int>(args.rows));
+        const std::size_t lds_bytes = static_cast<std::size_t>(args.block) * sizeof(float);
+        hipLaunchKernelGGL(row_max_block, row_grid, block, lds_bytes, 0,
+                           input, row_max, args.columns);
+        hipLaunchKernelGGL(row_exp_sum_block, row_grid, block, lds_bytes, 0,
+                           input, row_max, exponentials, row_sum, args.columns);
+        hipLaunchKernelGGL(normalize_block, row_grid, block, 0, 0,
+                           exponentials, row_sum, output, args.columns);
     } else {
         const dim3 row_grid(static_cast<unsigned int>(args.rows));
         const std::size_t lds_bytes =
@@ -313,21 +396,22 @@ std::vector<float> cpu_reference(const std::vector<float>& input,
                                  std::size_t rows,
                                  std::size_t columns) {
     std::vector<float> reference(input.size());
+    std::vector<double> exponentials(columns);
     for (std::size_t row = 0; row < rows; ++row) {
         const std::size_t base = row * columns;
-        float maximum = -std::numeric_limits<float>::infinity();
+        double maximum = -std::numeric_limits<double>::infinity();
         for (std::size_t column = 0; column < columns; ++column) {
-            maximum = std::max(maximum, input[base + column]);
+            maximum = std::max(maximum, double(input[base + column]));
         }
 
-        float sum = 0.0F;
+        double sum = 0.0;
         for (std::size_t column = 0; column < columns; ++column) {
-            const float value = std::exp(input[base + column] - maximum);
-            reference[base + column] = value;
+            const double value = std::exp(double(input[base + column]) - maximum);
+            exponentials[column] = value;
             sum += value;
         }
         for (std::size_t column = 0; column < columns; ++column) {
-            reference[base + column] /= sum;
+            reference[base + column] = float(exponentials[column] / sum);
         }
     }
     return reference;
@@ -337,11 +421,12 @@ Validation validate(const std::vector<float>& output,
                     const std::vector<float>& reference,
                     std::size_t rows,
                     std::size_t columns) {
-    Validation result{true, 0.0, 0.0, output.size()};
+    Validation result{true, true, 0.0, 0.0, output.size()};
     for (std::size_t row = 0; row < rows; ++row) {
         double row_sum = 0.0;
         for (std::size_t column = 0; column < columns; ++column) {
             const std::size_t index = row * columns + column;
+            result.finite = result.finite && std::isfinite(output[index]);
             row_sum += output[index];
             const double error =
                 std::abs(static_cast<double>(output[index]) - reference[index]);
@@ -394,6 +479,7 @@ Timing benchmark(const Implementation& implementation,
     HIP_CHECK(hipEventDestroy(start));
     HIP_CHECK(hipEventDestroy(end));
 
+    const std::vector<double> samples = times_ms;
     std::sort(times_ms.begin(), times_ms.end());
     const double median = times_ms.size() % 2 == 0
         ? (times_ms[times_ms.size() / 2 - 1] +
@@ -404,6 +490,7 @@ Timing benchmark(const Implementation& implementation,
         median,
         std::accumulate(times_ms.begin(), times_ms.end(), 0.0) /
             times_ms.size(),
+        samples,
     };
 }
 
@@ -418,24 +505,42 @@ void print_result(const Implementation& implementation,
         "RESULT operator=softmax implementation=%s runtime=hip "
         "shape=%zux%zu dtype=float32 block=%d launches=%d lds_bytes=%zu "
         "warmup=%d repeat=%d seed=%llu timing=gpu-event "
+        "scope=gpu-event-full-operator input=shifted-dyadic reference=fp64-softmax-to-fp32 "
         "timed=%d correct=%s precheck=%s postcheck=%s ",
         implementation.name, args.rows, args.columns, args.block,
         implementation.launches,
-        implementation.kind == Kind::fused
+        implementation.kind != Kind::baseline
             ? static_cast<std::size_t>(args.block) * sizeof(float)
             : 0,
         args.warmup, args.repeat,
         static_cast<unsigned long long>(args.seed), timing != nullptr,
         status, precheck, postcheck);
+    std::printf("config_id=%s num_warps=0 output_finite=%s ", args.config_id.c_str(), validation.finite ? "OK" : "FAIL");
     if (timing == nullptr) {
         std::printf("min_ms=NA median_ms=NA mean_ms=NA ");
     } else {
-        std::printf("min_ms=%.6f median_ms=%.6f mean_ms=%.6f ",
+        std::printf("min_ms=%.9f median_ms=%.9f mean_ms=%.9f ",
                     timing->minimum_ms, timing->median_ms, timing->mean_ms);
     }
     std::printf("max_abs_error=%.9g max_row_sum_error=%.9g\n",
                 validation.max_absolute_error,
                 validation.max_row_sum_error);
+}
+
+void save_samples(const Implementation& implementation, const Args& args,
+                  const Timing& timing) {
+    if (args.samples.empty()) return;
+    std::ofstream file(args.samples);
+    if (!file) usage_error("cannot open sample file");
+    file << "config_id,implementation,runtime,shape,dtype,block,num_warps,launches,warmup,repeat,seed,process,scope,input,sample,ms\n";
+    file << std::setprecision(17);
+    for (std::size_t i = 0; i < timing.samples.size(); ++i)
+        file << args.config_id << ',' << implementation.name << ",hip,"
+             << args.rows << 'x' << args.columns << ",float32," << args.block
+             << ",0," << implementation.launches << ',' << args.warmup << ','
+             << args.repeat << ',' << args.seed << ',' << args.process << ",gpu-event-full-operator,shifted-dyadic,"
+             << i << ',' << timing.samples[i] << '\n';
+    if (!file) usage_error("failed writing sample file");
 }
 
 }  // namespace
@@ -450,8 +555,8 @@ int main(int argc, char** argv) {
     hipDeviceProp_t properties{};
     HIP_CHECK(hipGetDevice(&device));
     HIP_CHECK(hipGetDeviceProperties(&properties, device));
-    std::printf("ENV runtime=hip gpu=\"%s\" rows=%zu cols=%zu\n",
-                properties.name, args.rows, args.columns);
+    std::printf("ENV runtime=hip gpu=\"%s\" arch=%s wave_size=%d rows=%zu cols=%zu\n",
+                properties.name, properties.gcnArchName, properties.warpSize, args.rows, args.columns);
 
     const std::vector<float> host_input = make_input(args);
     const std::vector<float> reference =
@@ -474,6 +579,10 @@ int main(int argc, char** argv) {
     bool all_correct = true;
     for (const Implementation& implementation :
          selected_implementations(args.version)) {
+        HIP_CHECK(hipMemset(device_output, 0xFF, bytes));
+        HIP_CHECK(hipMemset(device_exponentials, 0xFF, bytes));
+        HIP_CHECK(hipMemset(device_row_max, 0xFF, row_bytes));
+        HIP_CHECK(hipMemset(device_row_sum, 0xFF, row_bytes));
         launch(implementation, args, device_input, device_output,
                device_exponentials, device_row_max, device_row_sum);
         HIP_CHECK(hipDeviceSynchronize());
@@ -498,6 +607,7 @@ int main(int argc, char** argv) {
         print_result(implementation, args, &timing, postcheck,
                      "OK", postcheck.correct ? "OK" : "FAIL");
         all_correct = all_correct && postcheck.correct;
+        if (postcheck.correct) save_samples(implementation, args, timing);
     }
 
     HIP_CHECK(hipFree(device_row_sum));

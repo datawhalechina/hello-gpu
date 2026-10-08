@@ -1,0 +1,2 @@
+ENV runtime=hip gpu="AMD Radeon RX 9070 XT" arch=gfx1201 multi_processor_count=32 wave_size=32
+RESULT operator=vector-add implementation=hip-v3 runtime=hip shape=1026 dtype=float32 block=256 grid=1 warmup=0 repeat=1 seed=20260920 timed=1 correct=OK precheck=OK postcheck=OK min_ms=0.011400 median_ms=0.011400 mean_ms=0.011400 effective_bandwidth_gbs=1.080000 max_abs_error=0

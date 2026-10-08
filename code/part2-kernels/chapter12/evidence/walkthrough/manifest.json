@@ -1,0 +1,1167 @@
+{
+  "schema_version": 1,
+  "collection": "chapter12-existing-main-p1-terminal-export",
+  "new_gpu_measurement": false,
+  "scope": "Unmodified terminal logs from process 1 of the measured main-shape matrix; not a new benchmark or aggregate statistic.",
+  "parent_manifest": {
+    "path": "../rounds/manifest.json",
+    "sha256": "43b153be9e391044db34af1d8afda5bf878d23c6b308f2ff07333b0a11114d3e",
+    "experiment": "chapter12-controlled-attention-rounds",
+    "started_at": "2026-09-19T18:30:58.523326+00:00"
+  },
+  "raw_run": {
+    "path": "results/rocm10-20260920",
+    "manifest_sha256": "d44f4d889ca905edb01acdd292f69c79cfc7e21252896b78e638d0d0c30ce385",
+    "commands_jsonl_sha256": "77989e0e44700dcabee9c0ef18b0b6756fd0a297ebba51d845cc9bc3ee17407c"
+  },
+  "current_runtime_sha256": {
+    "attention_hip.hip": "0e66b4246af72b6bc077f654838f52c914dee12c1c7bc2110ec247979947bf94",
+    "attention_triton.py": "68ce5312f4daacfa72b4f6a37b79c98cd646485f4086418c93230339c33b89f6"
+  },
+  "measured_source_sha256": {
+    "attention_hip.hip": "0e66b4246af72b6bc077f654838f52c914dee12c1c7bc2110ec247979947bf94",
+    "attention_triton.py": "68ce5312f4daacfa72b4f6a37b79c98cd646485f4086418c93230339c33b89f6",
+    "run_rounds.py": "93cb577d4ef01df9bc208271210f5ff5c26e85e88636989084d242688e5e8d7b",
+    "summarize_rounds.py": "5252f3312721a4fea14ab6b70a18ecdfee2fbbf795d4d0d10f827c235a205dd6",
+    "rounds_identity.py": "23a80fb7c678212e181efd795aa6ca5806ed42292b8d96c0d52c9c4f65af4af3",
+    "collect_environment.sh": "e0a6a7fa4d61d78bf5b8c6c4d424ffc922a320b86499c3e5fd1017c5139ba11b",
+    "resolve_rocprofv3.py": "6057fa1c79cd769712bbc30006af63a4e1cf0a74b7de7e2d11eae868d3889c96"
+  },
+  "measured_hip_binary_sha256": "e60840b473ca11f461fd48735ddb43a0da2580d27a7648fd7a365869730e5e97",
+  "environment_record": {
+    "gpu": "AMD Radeon RX 9070 XT",
+    "architecture": "gfx1201",
+    "rocm_sdk": "10.0.0",
+    "hip": "7.15.26333",
+    "gpu_exclusive": false,
+    "profiler_during_benchmark": false
+  },
+  "software_record": {
+    "rocm": "10.0.0",
+    "hip": "7.15.26333",
+    "torch": "2.13.0+rocm10.0.0",
+    "triton": "3.8.0+git4cff872c.rocm10.0.0"
+  },
+  "platform_record": {
+    "os_pretty_name": "Ubuntu 24.04.5 LTS",
+    "kernel": "7.0.0-31-generic",
+    "execution": "native"
+  },
+  "environment_provenance": "Original measurement manifest; not captured at export.",
+  "benchmark_conditions": {
+    "shape": "128x64",
+    "dtype": "float32",
+    "input": "dyadic",
+    "reference": "fp64-attention-to-fp32",
+    "seed": 20260920,
+    "warmup": 10,
+    "repeat": 50,
+    "processes": 3,
+    "independent_runs": 3,
+    "scope": "gpu-event-full-operator",
+    "atol": 2e-05,
+    "rtol": 0.0002,
+    "cache": "reuse arrays; no cache flush",
+    "timing": "synchronize after each event interval; entire 3-kernel or 1-kernel operator",
+    "correctness": "output/scores/P NaN prefill before precheck, full precheck and postcheck; finite, elementwise atol+rtol*abs(FP64 reference castFP32)"
+  },
+  "path_normalization": {
+    "logs": "none; byte-identical copies",
+    "argv": "explicitly normalized representation, not original argv bytes",
+    "original_private_path_sha256": {
+      "<MEASURED_RUN>": "89730fe3a5f592192d83a71be5e6255a9b6fbf082dbbe58d9470ece806d2e745",
+      "<ENVIRONMENT_PYTHON>": "7263b70981a463b6c8582f51fd928d198e1526525a35ffcea972c853b16a102c"
+    },
+    "raw_argv_sha256_format": "UTF-8 JSON array, ensure_ascii=False, separators=(comma,colon)"
+  },
+  "measurements": [
+    {
+      "config_id": "hip-materialized-b256",
+      "shape": "128x64",
+      "process": 1,
+      "configuration": {
+        "id": "hip-materialized-b256",
+        "runtime": "hip",
+        "version": "materialized",
+        "block": 256,
+        "kernels": [
+          "scores_kernel",
+          "softmax_rows_kernel",
+          "probability_value_kernel"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n128x64-hip-materialized-b256-p1.log",
+      "published_log": "logs/n128x64-hip-materialized-b256-p1.log",
+      "raw_sha256": "7c23168892c93d7b25b93471580c9288f0554bde6a520405d7f3e286faa85734",
+      "published_sha256": "7c23168892c93d7b25b93471580c9288f0554bde6a520405d7f3e286faa85734",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 41,
+        "recorded_at": "2026-09-19T18:31:56.423940+00:00",
+        "raw_argv_sha256": "89c2f474de992a2c501cd9a6c34af9b7d3d448468ca2ccb18e72d078634d7643",
+        "argv_path_normalized": [
+          "<MEASURED_RUN>/build/attention_hip",
+          "--block",
+          "256",
+          "--version",
+          "materialized",
+          "--seq",
+          "128",
+          "--dim",
+          "64",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--input",
+          "dyadic",
+          "--config-id",
+          "hip-materialized-b256",
+          "--samples",
+          "<MEASURED_RUN>/samples/n128x64-hip-materialized-b256-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "hip-online-b256",
+      "shape": "128x64",
+      "process": 1,
+      "configuration": {
+        "id": "hip-online-b256",
+        "runtime": "hip",
+        "version": "online",
+        "block": 256,
+        "kernels": [
+          "online_attention_kernel"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n128x64-hip-online-b256-p1.log",
+      "published_log": "logs/n128x64-hip-online-b256-p1.log",
+      "raw_sha256": "cd383a4790d6452b8c9c978ee73a128588a1adab65881eecfd101829ca5917e1",
+      "published_sha256": "cd383a4790d6452b8c9c978ee73a128588a1adab65881eecfd101829ca5917e1",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 42,
+        "recorded_at": "2026-09-19T18:31:56.497826+00:00",
+        "raw_argv_sha256": "5c1441d15712618ec055340cacc4eb32551c0525f731b6d70ffc8e6638752a05",
+        "argv_path_normalized": [
+          "<MEASURED_RUN>/build/attention_hip",
+          "--block",
+          "256",
+          "--version",
+          "online",
+          "--seq",
+          "128",
+          "--dim",
+          "64",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--input",
+          "dyadic",
+          "--config-id",
+          "hip-online-b256",
+          "--samples",
+          "<MEASURED_RUN>/samples/n128x64-hip-online-b256-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "triton-materialized-k32",
+      "shape": "128x64",
+      "process": 1,
+      "configuration": {
+        "id": "triton-materialized-k32",
+        "runtime": "triton",
+        "version": "materialized",
+        "block_k": 32,
+        "num_warps": 4,
+        "kernels": [
+          "materialized_scores_kernel",
+          "materialized_softmax_kernel",
+          "materialized_pv_kernel"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n128x64-triton-materialized-k32-p1.log",
+      "published_log": "logs/n128x64-triton-materialized-k32-p1.log",
+      "raw_sha256": "7fdf515c5f361d87409abcc95e2cdaaee317de980f9ce239495ee48187a37e4f",
+      "published_sha256": "7fdf515c5f361d87409abcc95e2cdaaee317de980f9ce239495ee48187a37e4f",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 43,
+        "recorded_at": "2026-09-19T18:31:56.583638+00:00",
+        "raw_argv_sha256": "e2980dd06a3e12a99e7b20939c6268c7f8bf47458adb8bb91ef6b850bef6db15",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/attention_triton.py",
+          "--block-k",
+          "32",
+          "--num-warps",
+          "4",
+          "--version",
+          "materialized",
+          "--seq",
+          "128",
+          "--dim",
+          "64",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--input",
+          "dyadic",
+          "--config-id",
+          "triton-materialized-k32",
+          "--samples",
+          "<MEASURED_RUN>/samples/n128x64-triton-materialized-k32-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "triton-online-k16",
+      "shape": "128x64",
+      "process": 1,
+      "configuration": {
+        "id": "triton-online-k16",
+        "runtime": "triton",
+        "version": "online",
+        "block_k": 16,
+        "num_warps": 4,
+        "kernels": [
+          "online_attention_kernel"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n128x64-triton-online-k16-p1.log",
+      "published_log": "logs/n128x64-triton-online-k16-p1.log",
+      "raw_sha256": "2d3950bd363806859d90cbb72358cfa010bfcb064ec996478620059c46c9d010",
+      "published_sha256": "2d3950bd363806859d90cbb72358cfa010bfcb064ec996478620059c46c9d010",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 44,
+        "recorded_at": "2026-09-19T18:31:58.893261+00:00",
+        "raw_argv_sha256": "36356add005e83b004bcfb5437f22c93da05a46fd0e2afcd4a11485ea7504272",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/attention_triton.py",
+          "--block-k",
+          "16",
+          "--num-warps",
+          "4",
+          "--version",
+          "online",
+          "--seq",
+          "128",
+          "--dim",
+          "64",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--input",
+          "dyadic",
+          "--config-id",
+          "triton-online-k16",
+          "--samples",
+          "<MEASURED_RUN>/samples/n128x64-triton-online-k16-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "triton-online-k32",
+      "shape": "128x64",
+      "process": 1,
+      "configuration": {
+        "id": "triton-online-k32",
+        "runtime": "triton",
+        "version": "online",
+        "block_k": 32,
+        "num_warps": 4,
+        "kernels": [
+          "online_attention_kernel"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n128x64-triton-online-k32-p1.log",
+      "published_log": "logs/n128x64-triton-online-k32-p1.log",
+      "raw_sha256": "c069d72ebbb9015ddfc0984d6fec7a1039dbffbe07869091f07488572b46ac6b",
+      "published_sha256": "c069d72ebbb9015ddfc0984d6fec7a1039dbffbe07869091f07488572b46ac6b",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 45,
+        "recorded_at": "2026-09-19T18:32:01.135162+00:00",
+        "raw_argv_sha256": "e40d5194bcd5dd340326cb718cfea4d60012e1754ee4a1193f71a7da1b82413c",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/attention_triton.py",
+          "--block-k",
+          "32",
+          "--num-warps",
+          "4",
+          "--version",
+          "online",
+          "--seq",
+          "128",
+          "--dim",
+          "64",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--input",
+          "dyadic",
+          "--config-id",
+          "triton-online-k32",
+          "--samples",
+          "<MEASURED_RUN>/samples/n128x64-triton-online-k32-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "triton-online-k64",
+      "shape": "128x64",
+      "process": 1,
+      "configuration": {
+        "id": "triton-online-k64",
+        "runtime": "triton",
+        "version": "online",
+        "block_k": 64,
+        "num_warps": 4,
+        "kernels": [
+          "online_attention_kernel"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n128x64-triton-online-k64-p1.log",
+      "published_log": "logs/n128x64-triton-online-k64-p1.log",
+      "raw_sha256": "94bb1de7aeaa04030a701467110389d62825d4bcdfdd2eca0f73c177e3a27ce1",
+      "published_sha256": "94bb1de7aeaa04030a701467110389d62825d4bcdfdd2eca0f73c177e3a27ce1",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 46,
+        "recorded_at": "2026-09-19T18:32:03.367206+00:00",
+        "raw_argv_sha256": "a1d7d766b267d4c1497f12263547a1db9ae54335f31ad080c4032eaa609df39b",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/attention_triton.py",
+          "--block-k",
+          "64",
+          "--num-warps",
+          "4",
+          "--version",
+          "online",
+          "--seq",
+          "128",
+          "--dim",
+          "64",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--input",
+          "dyadic",
+          "--config-id",
+          "triton-online-k64",
+          "--samples",
+          "<MEASURED_RUN>/samples/n128x64-triton-online-k64-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    }
+  ],
+  "available_trace_inventory": [
+    {
+      "config_id": "hip-materialized-b256",
+      "shape": "128x64",
+      "source_trace": "results/rocm10-20260920/profiles/hip-materialized-b256_kernel_trace.csv",
+      "raw_sha256": "95bc36b1775a34591d27ca222cde013b2334654e5f19defc07a87a43f7f4ad6d",
+      "kernel_names": [
+        "scores_kernel",
+        "softmax_rows_kernel",
+        "probability_value_kernel"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-hip-materialized-b256.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    },
+    {
+      "config_id": "hip-online-b256",
+      "shape": "128x64",
+      "source_trace": "results/rocm10-20260920/profiles/hip-online-b256_kernel_trace.csv",
+      "raw_sha256": "2f43f0b5811990117fd2473cd9661f6a7b0b40d06a7e6d6b0e658006bc44ed5a",
+      "kernel_names": [
+        "online_attention_kernel"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-hip-online-b256.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    },
+    {
+      "config_id": "triton-materialized-k32",
+      "shape": "128x64",
+      "source_trace": "results/rocm10-20260920/profiles/triton-materialized-k32_kernel_trace.csv",
+      "raw_sha256": "aedfa30d238ffea1f900c916bdb16ff035a1f3975c807acf403d69ade266bed2",
+      "kernel_names": [
+        "materialized_scores_kernel",
+        "materialized_softmax_kernel",
+        "materialized_pv_kernel"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-triton-materialized-k32.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    },
+    {
+      "config_id": "triton-online-k16",
+      "shape": "128x64",
+      "source_trace": "results/rocm10-20260920/profiles/triton-online-k16_kernel_trace.csv",
+      "raw_sha256": "60f116469fe5bdede20f902a5c09d4bda06b2c46e72f70dc34cda5b9438fa620",
+      "kernel_names": [
+        "online_attention_kernel"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-triton-online-k16.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    },
+    {
+      "config_id": "triton-online-k32",
+      "shape": "128x64",
+      "source_trace": "results/rocm10-20260920/profiles/triton-online-k32_kernel_trace.csv",
+      "raw_sha256": "ce68393b367d9f010350d1f65fdfd506c2a0f3fc691c2540c70384c37a798dab",
+      "kernel_names": [
+        "online_attention_kernel"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-triton-online-k32.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    },
+    {
+      "config_id": "triton-online-k64",
+      "shape": "128x64",
+      "source_trace": "results/rocm10-20260920/profiles/triton-online-k64_kernel_trace.csv",
+      "raw_sha256": "61cd0ac4f2a8ef10876b08b683f298712b07d7d617046de964cd8e64558f6d09",
+      "kernel_names": [
+        "online_attention_kernel"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-triton-online-k64.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    }
+  ],
+  "artifacts_sha256": {
+    "README.md": "bce3b1f142310c494b949f99667069e8a7f5eef52b7646ca5b3c0627a7ad33a4",
+    "logs/edge-dyadic-17x31-triton-online-k32.log": "cd90b04a9b70df3941cd8219b9ee969c60c7eb7a45f076b3556420a7c3168f1f",
+    "logs/edge-dyadic-1x1-hip-online-b256.log": "07b3d9c3299e0b304bca0dffc690f0c70d0d8ca27d64d69ceaa26f0be8dbfed7",
+    "logs/edge-dyadic-1x1-triton-online-k32.log": "011f5224d9f08ea4e287f2e748b8b768970f809307386d21cff15e7f4e40849d",
+    "logs/edge-dyadic-33x65-triton-online-k32.log": "f38b95ecd426b816ad7ed39d4ca14efdec9a2f56ca48f2266ab60deeee5f1d80",
+    "logs/edge-rising-max-65x64-hip-online-b256.log": "3915ed42c6f7ae9296fd647bb42ad174bf9b94cc593ed0c086aac2e55fac80ec",
+    "logs/edge-rising-max-65x64-triton-online-k32.log": "20c48028a4373f135669007a5227120567a3e606e8a7621e50448e4c568c6199",
+    "logs/n128x64-hip-materialized-b256-p1.log": "7c23168892c93d7b25b93471580c9288f0554bde6a520405d7f3e286faa85734",
+    "logs/n128x64-hip-online-b256-p1.log": "cd383a4790d6452b8c9c978ee73a128588a1adab65881eecfd101829ca5917e1",
+    "logs/n128x64-triton-materialized-k32-p1.log": "7fdf515c5f361d87409abcc95e2cdaaee317de980f9ce239495ee48187a37e4f",
+    "logs/n128x64-triton-online-k16-p1.log": "2d3950bd363806859d90cbb72358cfa010bfcb064ec996478620059c46c9d010",
+    "logs/n128x64-triton-online-k32-p1.log": "c069d72ebbb9015ddfc0984d6fec7a1039dbffbe07869091f07488572b46ac6b",
+    "logs/n128x64-triton-online-k64-p1.log": "94bb1de7aeaa04030a701467110389d62825d4bcdfdd2eca0f73c177e3a27ce1",
+    "profiles/hip-materialized-b256_kernel_trace.csv": "95bc36b1775a34591d27ca222cde013b2334654e5f19defc07a87a43f7f4ad6d",
+    "profiles/hip-online-b256_kernel_trace.csv": "2f43f0b5811990117fd2473cd9661f6a7b0b40d06a7e6d6b0e658006bc44ed5a",
+    "reports/hip-materialized-b256.txt": "b458946d99fc139b3bcb0439af924543d35b79551e8b762364a963db46ccef11",
+    "reports/hip-online-b256.txt": "7399fc4885b5afdc334b8698f40f6d4ada08b3f33c61f4e594cd20f0eb7ef842",
+    "source/inspect_trace.py": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b"
+  },
+  "correctness_examples": [
+    {
+      "published_log": "logs/edge-dyadic-1x1-hip-online-b256.log",
+      "source_log": "results/rocm10-20260920/logs/edge-dyadic-1x1-hip-online-b256.log",
+      "raw_sha256": "07b3d9c3299e0b304bca0dffc690f0c70d0d8ca27d64d69ceaa26f0be8dbfed7",
+      "published_sha256": "07b3d9c3299e0b304bca0dffc690f0c70d0d8ca27d64d69ceaa26f0be8dbfed7",
+      "log_bytes_changed": false,
+      "purpose": "Correctness only: warmup=0/repeat=1, not a performance comparison",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 6,
+        "recorded_at": "2026-09-19T18:31:02.109224+00:00",
+        "raw_argv_sha256": "75843fab0760ffdf62875d9468d9d3b94aec53b936e29725af6308d58f5f928f",
+        "argv_path_normalized": [
+          "<MEASURED_RUN>/build/attention_hip",
+          "--block",
+          "256",
+          "--version",
+          "online",
+          "--seq",
+          "1",
+          "--dim",
+          "1",
+          "--warmup",
+          "0",
+          "--repeat",
+          "1",
+          "--seed",
+          "20260920",
+          "--input",
+          "dyadic",
+          "--config-id",
+          "hip-online-b256"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only executable and private run-root paths replaced; flags, parameter values and ordering unchanged."
+      }
+    },
+    {
+      "published_log": "logs/edge-rising-max-65x64-hip-online-b256.log",
+      "source_log": "results/rocm10-20260920/logs/edge-rising-max-65x64-hip-online-b256.log",
+      "raw_sha256": "3915ed42c6f7ae9296fd647bb42ad174bf9b94cc593ed0c086aac2e55fac80ec",
+      "published_sha256": "3915ed42c6f7ae9296fd647bb42ad174bf9b94cc593ed0c086aac2e55fac80ec",
+      "log_bytes_changed": false,
+      "purpose": "Correctness only: warmup=0/repeat=1, not a performance comparison",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 30,
+        "recorded_at": "2026-09-19T18:31:38.562574+00:00",
+        "raw_argv_sha256": "a1d7f490cd39bc5c3264be8e42c4b84990f90a4408779bd84ccf1b71cad76fd0",
+        "argv_path_normalized": [
+          "<MEASURED_RUN>/build/attention_hip",
+          "--block",
+          "256",
+          "--version",
+          "online",
+          "--seq",
+          "65",
+          "--dim",
+          "64",
+          "--warmup",
+          "0",
+          "--repeat",
+          "1",
+          "--seed",
+          "20260920",
+          "--input",
+          "rising-max",
+          "--config-id",
+          "hip-online-b256"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only executable and private run-root paths replaced; flags, parameter values and ordering unchanged."
+      }
+    },
+    {
+      "published_log": "logs/edge-dyadic-1x1-triton-online-k32.log",
+      "source_log": "results/rocm10-20260920/logs/edge-dyadic-1x1-triton-online-k32.log",
+      "raw_sha256": "011f5224d9f08ea4e287f2e748b8b768970f809307386d21cff15e7f4e40849d",
+      "published_sha256": "011f5224d9f08ea4e287f2e748b8b768970f809307386d21cff15e7f4e40849d",
+      "log_bytes_changed": false,
+      "purpose": "Correctness only: warmup=0/repeat=1, not a performance comparison",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 9,
+        "recorded_at": "2026-09-19T18:31:06.577677+00:00",
+        "raw_argv_sha256": "8b790d265a9897682a364b04d7694549c3f0471f539c177ef2ccd4d47b55e8d7",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/attention_triton.py",
+          "--block-k",
+          "32",
+          "--num-warps",
+          "4",
+          "--version",
+          "online",
+          "--seq",
+          "1",
+          "--dim",
+          "1",
+          "--warmup",
+          "0",
+          "--repeat",
+          "1",
+          "--seed",
+          "20260920",
+          "--input",
+          "dyadic",
+          "--config-id",
+          "triton-online-k32"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only executable and private run-root paths replaced; flags, parameter values and ordering unchanged."
+      }
+    },
+    {
+      "published_log": "logs/edge-rising-max-65x64-triton-online-k32.log",
+      "source_log": "results/rocm10-20260920/logs/edge-rising-max-65x64-triton-online-k32.log",
+      "raw_sha256": "20c48028a4373f135669007a5227120567a3e606e8a7621e50448e4c568c6199",
+      "published_sha256": "20c48028a4373f135669007a5227120567a3e606e8a7621e50448e4c568c6199",
+      "log_bytes_changed": false,
+      "purpose": "Correctness only: warmup=0/repeat=1, not a performance comparison",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 33,
+        "recorded_at": "2026-09-19T18:31:42.940271+00:00",
+        "raw_argv_sha256": "581c186780a6d5d1e98703e7898c8021fa125b027da5b3499e85df40257d4af4",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/attention_triton.py",
+          "--block-k",
+          "32",
+          "--num-warps",
+          "4",
+          "--version",
+          "online",
+          "--seq",
+          "65",
+          "--dim",
+          "64",
+          "--warmup",
+          "0",
+          "--repeat",
+          "1",
+          "--seed",
+          "20260920",
+          "--input",
+          "rising-max",
+          "--config-id",
+          "triton-online-k32"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only executable and private run-root paths replaced; flags, parameter values and ordering unchanged."
+      }
+    },
+    {
+      "published_log": "logs/edge-dyadic-17x31-triton-online-k32.log",
+      "source_log": "results/rocm10-20260920/logs/edge-dyadic-17x31-triton-online-k32.log",
+      "raw_sha256": "cd90b04a9b70df3941cd8219b9ee969c60c7eb7a45f076b3556420a7c3168f1f",
+      "published_sha256": "cd90b04a9b70df3941cd8219b9ee969c60c7eb7a45f076b3556420a7c3168f1f",
+      "log_bytes_changed": false,
+      "purpose": "Correctness only: warmup=0/repeat=1, not a performance comparison",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 15,
+        "recorded_at": "2026-09-19T18:31:15.596613+00:00",
+        "raw_argv_sha256": "76d04a286a3260aa290ea6c0ee1e3adee31a1bc5ea655f8ebd43eb168b615c2a",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/attention_triton.py",
+          "--block-k",
+          "32",
+          "--num-warps",
+          "4",
+          "--version",
+          "online",
+          "--seq",
+          "17",
+          "--dim",
+          "31",
+          "--warmup",
+          "0",
+          "--repeat",
+          "1",
+          "--seed",
+          "20260920",
+          "--input",
+          "dyadic",
+          "--config-id",
+          "triton-online-k32"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only executable and private run-root paths replaced; flags, parameter values and ordering unchanged."
+      }
+    },
+    {
+      "published_log": "logs/edge-dyadic-33x65-triton-online-k32.log",
+      "source_log": "results/rocm10-20260920/logs/edge-dyadic-33x65-triton-online-k32.log",
+      "raw_sha256": "f38b95ecd426b816ad7ed39d4ca14efdec9a2f56ca48f2266ab60deeee5f1d80",
+      "published_sha256": "f38b95ecd426b816ad7ed39d4ca14efdec9a2f56ca48f2266ab60deeee5f1d80",
+      "log_bytes_changed": false,
+      "purpose": "Correctness only: warmup=0/repeat=1, not a performance comparison",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 21,
+        "recorded_at": "2026-09-19T18:31:24.756346+00:00",
+        "raw_argv_sha256": "8685b0339154f66742dce908a9315662211f2176d7773e4cd1ae81931114cf4a",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/attention_triton.py",
+          "--block-k",
+          "32",
+          "--num-warps",
+          "4",
+          "--version",
+          "online",
+          "--seq",
+          "33",
+          "--dim",
+          "65",
+          "--warmup",
+          "0",
+          "--repeat",
+          "1",
+          "--seed",
+          "20260920",
+          "--input",
+          "dyadic",
+          "--config-id",
+          "triton-online-k32"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only executable and private run-root paths replaced; flags, parameter values and ordering unchanged."
+      }
+    }
+  ],
+  "selected_traces": [
+    {
+      "config_id": "hip-materialized-b256",
+      "published_trace": "profiles/hip-materialized-b256_kernel_trace.csv",
+      "source_trace": "results/rocm10-20260920/profiles/hip-materialized-b256_kernel_trace.csv",
+      "raw_sha256": "95bc36b1775a34591d27ca222cde013b2334654e5f19defc07a87a43f7f4ad6d",
+      "published_sha256": "95bc36b1775a34591d27ca222cde013b2334654e5f19defc07a87a43f7f4ad6d",
+      "trace_bytes_changed": false,
+      "actual_capture": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 59,
+        "recorded_at": "2026-09-19T18:33:00.864718+00:00",
+        "raw_argv_sha256": "03c3b301b9e15f1051fea9e3f9f766efb0eaaf82ea3e339d288931c42696e698",
+        "argv_path_normalized": [
+          "<MEASURED_TOOL>/rocprofv3",
+          "--rocm-root",
+          "<MEASURED_TOOL>/_rocm_sdk_core",
+          "--kernel-trace",
+          "--output-directory",
+          "<MEASURED_RUN>/profiles",
+          "--output-file",
+          "hip-materialized-b256",
+          "--output-format",
+          "csv",
+          "--",
+          "<MEASURED_RUN>/build/attention_hip",
+          "--block",
+          "256",
+          "--version",
+          "materialized",
+          "--seq",
+          "128",
+          "--dim",
+          "64",
+          "--warmup",
+          "5",
+          "--repeat",
+          "10",
+          "--seed",
+          "20260920",
+          "--input",
+          "dyadic",
+          "--config-id",
+          "hip-materialized-b256"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only executable and private run-root paths replaced; flags, parameter values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "hip-online-b256",
+      "published_trace": "profiles/hip-online-b256_kernel_trace.csv",
+      "source_trace": "results/rocm10-20260920/profiles/hip-online-b256_kernel_trace.csv",
+      "raw_sha256": "2f43f0b5811990117fd2473cd9661f6a7b0b40d06a7e6d6b0e658006bc44ed5a",
+      "published_sha256": "2f43f0b5811990117fd2473cd9661f6a7b0b40d06a7e6d6b0e658006bc44ed5a",
+      "trace_bytes_changed": false,
+      "actual_capture": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 60,
+        "recorded_at": "2026-09-19T18:33:01.027161+00:00",
+        "raw_argv_sha256": "1b78aa4e88b0592a49fc685cdd964ed4cb8c8b54760495d7a79de94d71ad25c6",
+        "argv_path_normalized": [
+          "<MEASURED_TOOL>/rocprofv3",
+          "--rocm-root",
+          "<MEASURED_TOOL>/_rocm_sdk_core",
+          "--kernel-trace",
+          "--output-directory",
+          "<MEASURED_RUN>/profiles",
+          "--output-file",
+          "hip-online-b256",
+          "--output-format",
+          "csv",
+          "--",
+          "<MEASURED_RUN>/build/attention_hip",
+          "--block",
+          "256",
+          "--version",
+          "online",
+          "--seq",
+          "128",
+          "--dim",
+          "64",
+          "--warmup",
+          "5",
+          "--repeat",
+          "10",
+          "--seed",
+          "20260920",
+          "--input",
+          "dyadic",
+          "--config-id",
+          "hip-online-b256"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only executable and private run-root paths replaced; flags, parameter values and ordering unchanged."
+      }
+    }
+  ],
+  "trace_reanalysis": {
+    "new_gpu_measurement": false,
+    "operation": "CPU-only standard-library reanalysis of existing kernel traces",
+    "started_at": "2026-09-20T05:01:03.595195+00:00",
+    "completed_at": "2026-09-20T05:01:03.763368+00:00",
+    "environment": {
+      "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+      "python_executable": "<ENVIRONMENT_PYTHON>",
+      "os_pretty_name": "Ubuntu 24.04.5 LTS",
+      "kernel": "7.0.0-31-generic",
+      "rocm_sdk_package": "10.0.0",
+      "hip_distribution": "10.0.0"
+    },
+    "raw_record_sha256": "bcf088a6916a971f44513ffa17c332c8f8526c95fc575d759076e253d61fea45",
+    "report_composition": "Each recorded stdout preserved verbatim; reports with multiple kernels concatenate them in command order with one blank line between reports.",
+    "records": [
+      {
+        "config_id": "hip-materialized-b256",
+        "kernel": "scores_kernel",
+        "published_report": "reports/hip-materialized-b256.txt",
+        "input_sha256": "95bc36b1775a34591d27ca222cde013b2334654e5f19defc07a87a43f7f4ad6d",
+        "helper_sha256": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b",
+        "started_at": "2026-09-20T05:01:03.650087+00:00",
+        "actual_argv": [
+          "python",
+          "chapter8/inspect_trace.py",
+          "chapter12/results/rocm10-20260920/profiles/hip-materialized-b256_kernel_trace.csv",
+          "--kernel",
+          "scores_kernel",
+          "--skip",
+          "6",
+          "--take",
+          "10"
+        ],
+        "cwd": "<MEASURED_PART>",
+        "cwd_private_sha256": "48918f8b00d2e1077eb2e1615b7f61eab8bf783a29e8c81fcad2a1562debb4bc",
+        "returncode": 0,
+        "stderr": "",
+        "stdout_sha256": "84f1dd9346d68973a8b00c320a213c9f44b731b3ae34c618091fa00f3e4c9c4c",
+        "analysis": {
+          "csv_rows": 51,
+          "kernel_name": "scores_kernel(float const*, float const*, float*, int, int, float)",
+          "target_rows": 16,
+          "skipped_rows": 6,
+          "kept_rows": 10,
+          "first_kept": {
+            "start_ns": 887497031786019,
+            "end_ns": 887497031805419,
+            "duration_ns": 19400
+          },
+          "kernel_time_us": {
+            "min": 8.04,
+            "median": 8.1405,
+            "max": 19.4
+          },
+          "launch": {
+            "grid_work_items_xyz": [
+              16384,
+              1,
+              1
+            ],
+            "workgroup_size_xyz": [
+              256,
+              1,
+              1
+            ],
+            "workgroups_xyz": [
+              64,
+              1,
+              1
+            ],
+            "workgroups_total": 64
+          },
+          "resources": {
+            "vgpr_count": 8,
+            "sgpr_count": 128,
+            "lds_bytes": 0,
+            "scratch_bytes": 0
+          }
+        },
+        "agrees_with_profile_summary": true
+      },
+      {
+        "config_id": "hip-materialized-b256",
+        "kernel": "softmax_rows_kernel",
+        "published_report": "reports/hip-materialized-b256.txt",
+        "input_sha256": "95bc36b1775a34591d27ca222cde013b2334654e5f19defc07a87a43f7f4ad6d",
+        "helper_sha256": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b",
+        "started_at": "2026-09-20T05:01:03.677363+00:00",
+        "actual_argv": [
+          "python",
+          "chapter8/inspect_trace.py",
+          "chapter12/results/rocm10-20260920/profiles/hip-materialized-b256_kernel_trace.csv",
+          "--kernel",
+          "softmax_rows_kernel",
+          "--skip",
+          "6",
+          "--take",
+          "10"
+        ],
+        "cwd": "<MEASURED_PART>",
+        "cwd_private_sha256": "48918f8b00d2e1077eb2e1615b7f61eab8bf783a29e8c81fcad2a1562debb4bc",
+        "returncode": 0,
+        "stderr": "",
+        "stdout_sha256": "0c5626f52713d2ee47c1c192df0622c4ea49b83990d248f984c38d38492066fa",
+        "analysis": {
+          "csv_rows": 51,
+          "kernel_name": "softmax_rows_kernel(float const*, float*, int)",
+          "target_rows": 16,
+          "skipped_rows": 6,
+          "kept_rows": 10,
+          "first_kept": {
+            "start_ns": 887497031809699,
+            "end_ns": 887497031814260,
+            "duration_ns": 4561
+          },
+          "kernel_time_us": {
+            "min": 4.48,
+            "median": 4.56,
+            "max": 4.64
+          },
+          "launch": {
+            "grid_work_items_xyz": [
+              32768,
+              1,
+              1
+            ],
+            "workgroup_size_xyz": [
+              256,
+              1,
+              1
+            ],
+            "workgroups_xyz": [
+              128,
+              1,
+              1
+            ],
+            "workgroups_total": 128
+          },
+          "resources": {
+            "vgpr_count": 16,
+            "sgpr_count": 128,
+            "lds_bytes": 0,
+            "scratch_bytes": 0
+          }
+        },
+        "agrees_with_profile_summary": true
+      },
+      {
+        "config_id": "hip-materialized-b256",
+        "kernel": "probability_value_kernel",
+        "published_report": "reports/hip-materialized-b256.txt",
+        "input_sha256": "95bc36b1775a34591d27ca222cde013b2334654e5f19defc07a87a43f7f4ad6d",
+        "helper_sha256": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b",
+        "started_at": "2026-09-20T05:01:03.706439+00:00",
+        "actual_argv": [
+          "python",
+          "chapter8/inspect_trace.py",
+          "chapter12/results/rocm10-20260920/profiles/hip-materialized-b256_kernel_trace.csv",
+          "--kernel",
+          "probability_value_kernel",
+          "--skip",
+          "6",
+          "--take",
+          "10"
+        ],
+        "cwd": "<MEASURED_PART>",
+        "cwd_private_sha256": "48918f8b00d2e1077eb2e1615b7f61eab8bf783a29e8c81fcad2a1562debb4bc",
+        "returncode": 0,
+        "stderr": "",
+        "stdout_sha256": "4975f3ea7fbbb90eb0b65b0a722dadef3cf778a7794094bf2d7590c15da6de2c",
+        "analysis": {
+          "csv_rows": 51,
+          "kernel_name": "probability_value_kernel(float const*, float const*, float*, int, int)",
+          "target_rows": 16,
+          "skipped_rows": 6,
+          "kept_rows": 10,
+          "first_kept": {
+            "start_ns": 887497031845800,
+            "end_ns": 887497031880681,
+            "duration_ns": 34881
+          },
+          "kernel_time_us": {
+            "min": 34.761,
+            "median": 34.921,
+            "max": 35.04
+          },
+          "launch": {
+            "grid_work_items_xyz": [
+              8192,
+              1,
+              1
+            ],
+            "workgroup_size_xyz": [
+              256,
+              1,
+              1
+            ],
+            "workgroups_xyz": [
+              32,
+              1,
+              1
+            ],
+            "workgroups_total": 32
+          },
+          "resources": {
+            "vgpr_count": 16,
+            "sgpr_count": 128,
+            "lds_bytes": 0,
+            "scratch_bytes": 0
+          }
+        },
+        "agrees_with_profile_summary": true
+      },
+      {
+        "config_id": "hip-online-b256",
+        "kernel": "online_attention_kernel",
+        "published_report": "reports/hip-online-b256.txt",
+        "input_sha256": "2f43f0b5811990117fd2473cd9661f6a7b0b40d06a7e6d6b0e658006bc44ed5a",
+        "helper_sha256": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b",
+        "started_at": "2026-09-20T05:01:03.735735+00:00",
+        "actual_argv": [
+          "python",
+          "chapter8/inspect_trace.py",
+          "chapter12/results/rocm10-20260920/profiles/hip-online-b256_kernel_trace.csv",
+          "--kernel",
+          "online_attention_kernel",
+          "--skip",
+          "6",
+          "--take",
+          "10"
+        ],
+        "cwd": "<MEASURED_PART>",
+        "cwd_private_sha256": "48918f8b00d2e1077eb2e1615b7f61eab8bf783a29e8c81fcad2a1562debb4bc",
+        "returncode": 0,
+        "stderr": "",
+        "stdout_sha256": "7399fc4885b5afdc334b8698f40f6d4ada08b3f33c61f4e594cd20f0eb7ef842",
+        "analysis": {
+          "csv_rows": 19,
+          "kernel_name": "online_attention_kernel(float const*, float const*, float const*, float*, int, int, float)",
+          "target_rows": 16,
+          "skipped_rows": 6,
+          "kept_rows": 10,
+          "first_kept": {
+            "start_ns": 887497198778368,
+            "end_ns": 887497199001372,
+            "duration_ns": 223004
+          },
+          "kernel_time_us": {
+            "min": 222.683,
+            "median": 222.903,
+            "max": 240.603
+          },
+          "launch": {
+            "grid_work_items_xyz": [
+              32768,
+              1,
+              1
+            ],
+            "workgroup_size_xyz": [
+              256,
+              1,
+              1
+            ],
+            "workgroups_xyz": [
+              128,
+              1,
+              1
+            ],
+            "workgroups_total": 128
+          },
+          "resources": {
+            "vgpr_count": 16,
+            "sgpr_count": 128,
+            "lds_bytes": 0,
+            "scratch_bytes": 0
+          }
+        },
+        "agrees_with_profile_summary": true
+      }
+    ]
+  }
+}

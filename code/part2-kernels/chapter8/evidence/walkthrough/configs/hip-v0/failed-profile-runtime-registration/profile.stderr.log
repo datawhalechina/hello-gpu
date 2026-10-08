@@ -1,0 +1,2 @@
+F0920 08:14:50.035699 1400279 registration.cpp:233] ROCPROFILER_REGISTER_LIBRARY is already set to '<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/lib/librocprofiler-sdk.so.1' (resolves to '<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/lib/librocprofiler-sdk.so.1'), not overriding with '<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/lib/librocprofiler-sdk.so.1'
+*** Check failure stack trace: ***

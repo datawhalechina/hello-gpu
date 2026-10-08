@@ -1,100 +1,30 @@
 import type { Component } from 'vue'
 import type { SceneMeta } from '../../../components/animation/sceneTypes'
-import WaveShuffleScene from './scenes/WaveShuffleScene.vue'
-import TwoStageScene from './scenes/TwoStageScene.vue'
-
-export type ReductionScenario = 'shuffle' | 'two-stage'
-
-export interface RegisteredScene {
-  meta: SceneMeta
-  component: Component
-}
-
-export const reductionScenes: Record<ReductionScenario, RegisteredScene> = {
-  shuffle: {
-    component: WaveShuffleScene,
-    meta: {
-      eyebrow: '9.4.3 · HIP · wavefront 内归约',
-      title: '__shfl_down：寄存器之间的求和树',
-      viewBox: '0 0 720 330',
-      steps: [
-        {
-          label: '8 个 lane',
-          title: '每个 lane 的寄存器里有一个输入',
-          narration: '8 个 lane 分别持有 3、1、7、0、4、1、6、2。shuffle 直接读其他 lane 的寄存器，不经过 LDS，也不需要 block 屏障。',
-          duration: 3200
-        },
-        {
-          label: 'offset=4',
-          title: 'lane 0–3 吸收 lane 4–7 的值',
-          narration: 'offset = warpSize/2 = 4：lane i 读取 lane i+4 并相加，得到 7、2、13、2。本图只继续追踪最终和依赖的前半区，并不表示其他 lane 停止执行。',
-          duration: 4200
-        },
-        {
-          label: 'offset=2',
-          title: '继续追踪 lane 0–1',
-          narration: 'offset = 2：lane 0 吸收 lane 2 得到 20，lane 1 吸收 lane 3 得到 4。寄存器交换仍在 wavefront 内部完成。',
-          duration: 3600
-        },
-        {
-          label: 'offset=1',
-          title: '最后一轮合并',
-          narration: 'offset = 1：lane 0 吸收 lane 1 的部分和。三轮短依赖之后，整段的和已经落进一个寄存器。',
-          duration: 3200
-        },
-        {
-          label: '交出结果',
-          title: 'lane 0 持有 24',
-          narration: '只有 lane 0 的结果会被采用：它随后写入 LDS 或 partials，等待 block 与第二阶段继续合并——下一张动画接上这一步。',
-          duration: 3600
-        }
-      ]
-    }
-  },
-  'two-stage': {
-    component: TwoStageScene,
-    meta: {
-      eyebrow: '9.4.3 → 9.5 · HIP · 两阶段归约',
-      title: '先压规模，再一次合并',
-      viewBox: '0 0 720 540',
-      steps: [
-        {
-          label: '第一遍读取',
-          title: '先做局部工作：每个线程认领自己的下标',
-          narration: 'first = blockIdx×4 + thread：block 0 的 4 个线程读下标 0–3，block 1 读 4–7。local 只属于当前线程，更新它不需要同步。',
-          duration: 3600
-        },
-        {
-          label: '第二遍读取',
-          title: 'grid-stride：同一个线程再走一步',
-          narration: '下标整体 +8（grid_stride = gridDim×blockDim）：线程把第二遍的输入累加进同一个 local。16 个输入现在只剩 8 个局部和。',
-          duration: 4200
-        },
-        {
-          label: '组内合并',
-          title: '每个 block 内部合成一个和',
-          narration: 'block 0 内 shuffle/LDS 树把 6、2、14、0 合成 22；block 1 把 8、2、12、4 合成 26。组内合并是第一层收敛。',
-          duration: 4600
-        },
-        {
-          label: '交出 partial',
-          title: '每组交出一个 partial',
-          narration: '每个 block 把结果写进自己独占的 partials[blockIdx.x]：[22, 26]。第一阶段到此结束，全局内存里只有一份很小的 partial 数组。',
-          duration: 3800
-        },
-        {
-          label: '跨组合并',
-          title: '第二阶段 kernel 读取 partial 数组',
-          narration: '普通 block 屏障管不到跨 block 的顺序；同一 stream 的第二次 kernel 启动给出明确边界，读 partials 求 22 + 26 = 48。',
-          duration: 4200
-        },
-        {
-          label: '实测对照',
-          title: '9070 XT 实测：三个层次的差距',
-          narration: '同一道题：hip-atomic 34.46 ms、hip-lds 4.33 ms、hip-two-stage 0.059 ms。层次决定了量级；数字来自 2026-07-19 curated evidence。',
-          duration: 5000
-        }
-      ]
-    }
-  }
+import Pipeline from '../reduction-pipeline-scene.vue'
+import Shuffle from '../reduction-shuffle-scene.vue'
+export type ReductionScenario='two-stage'|'shuffle'|'triton'
+export const reductionScenes:Record<ReductionScenario,{meta:SceneMeta;component:Component}>={
+ 'two-stage':{component:Pipeline,meta:{eyebrow:'HIP · local-lds 分工示意',title:'一个线程的局部和，怎样交给下一阶段？',viewBox:'0 0 720 480',mobileViewBox:'0 0 400 650',steps:[
+ {label:'准备',title:'先跟踪线程 0',narration:'16 项输入由两个 block、每块四个线程处理。这里只放大 block 0 的线程 0，它的 local 从 0 开始。'},
+ {label:'第一次读',title:'读取下标 0',narration:'input[0] = 3。读到的副本加入 local，得到 3；数组中的原值仍然保留。'},
+ {label:'再次累加',title:'下标加 8，读取下一个位置',narration:'两个 block 共八个线程，所以同一线程下一次读取 input[8] = 3。它把两个不同位置的值合成 local = 6。'},
+ {label:'全部局部和',title:'其他线程也按同一规则处理',narration:'两个 block 分别得到 [6,2,14,0] 和 [8,2,12,4]。现在只得到各线程的 local，还没有跨线程合并。'},
+ {label:'块内合并',title:'每块使用 LDS 求和',narration:'按前面的求和树合并，每轮完成写入与同步后继续，得到 22 和 26。此时这两个和仍属于各自 block。'},
+ {label:'写 partial',title:'写入独占的全局位置',narration:'block 0 写 partials[0] = 22，block 1 写 partials[1] = 26。独占位置让它们不必争着更新同一个数。'},
+ {label:'最终合并',title:'第二个 kernel 读取完整 partial',narration:'同一 stream 中第一阶段结束后，第二阶段读取 22、26 并得到 48。普通 block 屏障不能代替这项跨 block 的交接。'}
+ ]}},
+ shuffle:{component:Shuffle,meta:{eyebrow:'HIP · shuffle 依赖特写',title:'按距离读取，在原位置合并',viewBox:'0 0 720 535',mobileViewBox:'0 0 400 535',note:'缩成八项的手算示意，历史层留作核对。实际 wave32 的 offset 为 16、8、4、2、1；图的层数不表示同时存放的寄存器组。',steps:[
+ {label:'源值',title:'先保留各位置的值',narration:'顶部 0–7 是固定的位置编号。每一层的结果都留在对应列，先沿竖线看自己的值，再沿斜线找读来的值。这里只展开八项手算依赖。'},
+ {label:'距离 4',title:'读取另一位置的副本',narration:'位置 0 读取位置 4，合成 3+4=7，写在下一层的位置 0；位置 1、2、3 同理，分别得到 2、13、2。上层保留本轮开始时的值，便于追溯。'},
+ {label:'距离 2',title:'继续合并四个局部结果',narration:'位置 0 读取位置 2 的 13，与自己的 7 合成 20；位置 1 读取位置 3 的 2，合成 4。前两层继续保留，下一层只展开最终结果仍需的依赖。'},
+ {label:'距离 1',title:'lane 0 持有这个局部和',narration:'20 + 4 = 24。真实代码由各 wave 的 lane 0 写 wave_sums，经 block 屏障，再由第一个 wave 合并并写 partial。'}
+ ]}},
+ triton:{component:Pipeline,meta:{eyebrow:'Triton · 逻辑宽度 4、两个 program 的手算',title:'片段读完了，一个 program 的工作就结束了吗？',viewBox:'0 0 720 480',mobileViewBox:'0 0 400 650',note:'N=10、宽度4用于逻辑手算；本章实际 kernel 固定宽度1024。逻辑位置不等于物理线程。',steps:[
+ {label:'分配',title:'两个 program 领取不同片段',narration:'program 0 从下标 0 开始，program 1 从下标 4 开始。每个 program 保留自己的四项累计向量。'},
+ {label:'第一片段',title:'先逐位置累加第一片段',narration:'program 0 得到 [3,1,7,0]，program 1 得到 [4,1,6,2]。向量位置仍彼此独立，还没有做 tl.sum。'},
+ {label:'尾片段',title:'program 0 继续到下标 8',narration:'下标 8、9 有效，10、11 被 mask 挡住，只提供零贡献；累计成为 [6,2,7,0]。program 1 下一起点为 12，循环已经结束。'},
+ {label:'局部归约',title:'tl.sum 只合并本 program 的向量',narration:'program 0 交出 15，program 1 交出 13，各写自己的 partial。tl.sum 不会自动读取另一个 program 的结果。'},
+ {label:'读取 partial',title:'下一阶段读取两个有效值',narration:'第一阶段结束后，一个 program 读取 [15,13]。教学逻辑宽度仍是 4，另两个位置由 mask 提供 0。'},
+ {label:'最终结果',title:'再归约一次得到 28',narration:'15 + 13 + 0 + 0 = 28，等于前十项输入之和。两阶段完整执行后，最终标量才写入输出。'}
+ ]}}
 }

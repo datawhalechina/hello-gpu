@@ -7,6 +7,7 @@ import SidebarToggle from './SidebarToggle.vue'
 import ImplementationTabs from '../../components/ImplementationTabs.vue'
 import ChapterPrelude from './ChapterPrelude.vue'
 import ChapterMeta from './ChapterMeta.vue'
+import UiIcon from './UiIcon.vue'
 
 const Announcement = () => h('div', {
   class: 'announcement-banner',
@@ -24,7 +25,13 @@ export default {
       'layout-top': () => [h(Announcement), h(SidebarToggle)],
       'nav-bar-title-after': () => h('span', { class: 'hg-nav-tagline' }, '从理解到优化'),
       'sidebar-nav-before': () => h('div', { class: 'hg-sidebar-label' }, '全书目录'),
-      'sidebar-nav-after': () => h('div', { class: 'hg-sidebar-colophon' }, [h('strong', null, 'Hello GPU'), h('span', null, '看懂 GPU，亲手优化每一次计算。')]),
+      'sidebar-nav-after': () => h('div', { class: 'hg-sidebar-colophon' }, [
+        h('div', { class: 'hg-sidebar-brand' }, [
+          h(UiIcon, { name: 'chip', size: 22 }),
+          h('strong', null, 'Hello GPU'),
+        ]),
+        h('span', null, '看懂 GPU，亲手优化每一次计算。'),
+      ]),
       'doc-before': () => h(ChapterPrelude),
     })
   }

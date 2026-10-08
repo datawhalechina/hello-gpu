@@ -1,0 +1,45 @@
+{
+  "audited_at": "2026-09-19T17:46:10.386428+00:00",
+  "method": "Read-only reanalysis of frozen measurements; no new GPU timings collected for this audit.",
+  "main": {
+    "config_shapes": 19,
+    "processes": 57,
+    "samples": 2850,
+    "status": "PASS"
+  },
+  "confirmation": {
+    "config_shapes": 4,
+    "processes": 12,
+    "samples": 600,
+    "status": "PASS",
+    "summary_unchanged": true,
+    "historical_identity_limit": "Original confirmation copied its parent environment. Its own logs independently record GPU/architecture/Torch/HIP/public Triton version, but OS/kernel/Python/full Triton build were not separately saved. Original verify script checked package versions. New runner captures live environment before continuing."
+  },
+  "checks": [
+    "frozen source and HIP binary SHA-256",
+    "complete expected config/shape/process matrix",
+    "sample metadata against manifest and RESULT",
+    "runtime ENV against manifest",
+    "prior recorded sample hashes",
+    "sample numbering, positive finite timings and correctness",
+    "exact confirmation summary equality"
+  ],
+  "tests": {
+    "cpu_only_test_count": 19,
+    "identity_rejection_combinations": 33,
+    "rejection_cases": [
+      "missing whole configuration",
+      "unplanned sample file",
+      "wrong seed/block",
+      "wrong ENV",
+      "mutated source",
+      "changed published sample",
+      "duplicate sample number",
+      "nonfinite time",
+      "failed correctness",
+      "invalid profile leaves no new summary"
+    ]
+  },
+  "main_manifest_sha256": "5bcbab4246f754f38a5c807c34e69f4b4f8baa7d97a3c58a1981f8373ea614ef",
+  "original_confirmation_sha256": "f7b3aa927ef5c878f70b5eaad9be96286b5dc1bf40e505d9bf0a895032ed85ee"
+}

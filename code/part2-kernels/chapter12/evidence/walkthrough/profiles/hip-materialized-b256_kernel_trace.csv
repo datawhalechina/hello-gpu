@@ -1,0 +1,52 @@
+"Kind","Agent_Id","Queue_Id","Stream_Id","Thread_Id","Dispatch_Id","Kernel_Id","Kernel_Name","Correlation_Id","Start_Timestamp","End_Timestamp","LDS_Block_Size","Scratch_Size","VGPR_Count","Accum_VGPR_Count","SGPR_Count","Workgroup_Size_X","Workgroup_Size_Y","Workgroup_Size_Z","Grid_Size_X","Grid_Size_Y","Grid_Size_Z"
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,1,13,"__amd_rocclr_fillBufferUnAligned",1,887497019338020,887497019342420,0,0,8,0,128,256,1,1,2048,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,2,13,"__amd_rocclr_fillBufferUnAligned",2,887497019527222,887497019529382,0,0,8,0,128,256,1,1,4096,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,3,13,"__amd_rocclr_fillBufferUnAligned",3,887497019534822,887497019537502,0,0,8,0,128,256,1,1,4096,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,4,22,"scores_kernel(float const*, float const*, float*, int, int, float)",4,887497031213151,887497031221671,0,0,8,0,128,256,1,1,16384,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,6,20,"probability_value_kernel(float const*, float const*, float*, int, int)",6,887497031235871,887497031274031,0,0,16,0,128,256,1,1,8192,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,5,21,"softmax_rows_kernel(float const*, float*, int)",5,887497031226351,887497031231351,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,7,22,"scores_kernel(float const*, float const*, float*, int, int, float)",7,887497031366783,887497031385263,0,0,8,0,128,256,1,1,16384,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,8,21,"softmax_rows_kernel(float const*, float*, int)",8,887497031389743,887497031394383,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,9,20,"probability_value_kernel(float const*, float const*, float*, int, int)",9,887497031412503,887497031450264,0,0,16,0,128,256,1,1,8192,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,10,22,"scores_kernel(float const*, float const*, float*, int, int, float)",10,887497031454704,887497031462864,0,0,8,0,128,256,1,1,16384,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,11,21,"softmax_rows_kernel(float const*, float*, int)",11,887497031467224,887497031484384,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,12,20,"probability_value_kernel(float const*, float const*, float*, int, int)",12,887497031488824,887497031526665,0,0,16,0,128,256,1,1,8192,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,13,22,"scores_kernel(float const*, float const*, float*, int, int, float)",13,887497031531105,887497031539345,0,0,8,0,128,256,1,1,16384,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,14,21,"softmax_rows_kernel(float const*, float*, int)",14,887497031543825,887497031558706,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,15,20,"probability_value_kernel(float const*, float const*, float*, int, int)",15,887497031563146,887497031599186,0,0,16,0,128,256,1,1,8192,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,16,22,"scores_kernel(float const*, float const*, float*, int, int, float)",16,887497031603386,887497031611546,0,0,8,0,128,256,1,1,16384,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,17,21,"softmax_rows_kernel(float const*, float*, int)",17,887497031615786,887497031632627,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,18,20,"probability_value_kernel(float const*, float const*, float*, int, int)",18,887497031636947,887497031671907,0,0,16,0,128,256,1,1,8192,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,19,22,"scores_kernel(float const*, float const*, float*, int, int, float)",19,887497031676147,887497031684267,0,0,8,0,128,256,1,1,16384,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,20,21,"softmax_rows_kernel(float const*, float*, int)",20,887497031688428,887497031693148,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,21,20,"probability_value_kernel(float const*, float const*, float*, int, int)",21,887497031710188,887497031745268,0,0,16,0,128,256,1,1,8192,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,22,22,"scores_kernel(float const*, float const*, float*, int, int, float)",22,887497031786019,887497031805419,0,0,8,0,128,256,1,1,16384,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,23,21,"softmax_rows_kernel(float const*, float*, int)",23,887497031809699,887497031814260,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,24,20,"probability_value_kernel(float const*, float const*, float*, int, int)",24,887497031845800,887497031880681,0,0,16,0,128,256,1,1,8192,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,25,22,"scores_kernel(float const*, float const*, float*, int, int, float)",25,887497031916561,887497031934041,0,0,8,0,128,256,1,1,16384,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,26,21,"softmax_rows_kernel(float const*, float*, int)",26,887497031938281,887497031942841,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,27,20,"probability_value_kernel(float const*, float const*, float*, int, int)",27,887497031961122,887497031996082,0,0,16,0,128,256,1,1,8192,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,28,22,"scores_kernel(float const*, float const*, float*, int, int, float)",28,887497032026443,887497032034683,0,0,8,0,128,256,1,1,16384,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,29,21,"softmax_rows_kernel(float const*, float*, int)",29,887497032051403,887497032055883,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,30,20,"probability_value_kernel(float const*, float const*, float*, int, int)",30,887497032078044,887497032113004,0,0,16,0,128,256,1,1,8192,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,31,22,"scores_kernel(float const*, float const*, float*, int, int, float)",31,887497032142405,887497032150525,0,0,8,0,128,256,1,1,16384,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,32,21,"softmax_rows_kernel(float const*, float*, int)",32,887497032166525,887497032171085,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,33,20,"probability_value_kernel(float const*, float const*, float*, int, int)",33,887497032197535,887497032232296,0,0,16,0,128,256,1,1,8192,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,34,22,"scores_kernel(float const*, float const*, float*, int, int, float)",34,887497032261136,887497032269257,0,0,8,0,128,256,1,1,16384,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,35,21,"softmax_rows_kernel(float const*, float*, int)",35,887497032285577,887497032290217,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,36,20,"probability_value_kernel(float const*, float const*, float*, int, int)",36,887497032316177,887497032351098,0,0,16,0,128,256,1,1,8192,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,37,22,"scores_kernel(float const*, float const*, float*, int, int, float)",37,887497032380338,887497032388418,0,0,8,0,128,256,1,1,16384,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,38,21,"softmax_rows_kernel(float const*, float*, int)",38,887497032404539,887497032409139,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,39,20,"probability_value_kernel(float const*, float const*, float*, int, int)",39,887497032436719,887497032471640,0,0,16,0,128,256,1,1,8192,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,40,22,"scores_kernel(float const*, float const*, float*, int, int, float)",40,887497032501280,887497032509480,0,0,8,0,128,256,1,1,16384,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,41,21,"softmax_rows_kernel(float const*, float*, int)",41,887497032526001,887497032530521,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,42,20,"probability_value_kernel(float const*, float const*, float*, int, int)",42,887497032556701,887497032591502,0,0,16,0,128,256,1,1,8192,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,43,22,"scores_kernel(float const*, float const*, float*, int, int, float)",43,887497032620342,887497032628422,0,0,8,0,128,256,1,1,16384,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,44,21,"softmax_rows_kernel(float const*, float*, int)",44,887497032644942,887497032649502,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,45,20,"probability_value_kernel(float const*, float const*, float*, int, int)",45,887497032675313,887497032710353,0,0,16,0,128,256,1,1,8192,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,46,22,"scores_kernel(float const*, float const*, float*, int, int, float)",46,887497032740154,887497032748314,0,0,8,0,128,256,1,1,16384,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,47,21,"softmax_rows_kernel(float const*, float*, int)",47,887497032764874,887497032769394,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,48,20,"probability_value_kernel(float const*, float const*, float*, int, int)",48,887497032793595,887497032828555,0,0,16,0,128,256,1,1,8192,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,49,22,"scores_kernel(float const*, float const*, float*, int, int, float)",49,887497032857916,887497032865956,0,0,8,0,128,256,1,1,16384,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,50,21,"softmax_rows_kernel(float const*, float*, int)",50,887497032882356,887497032886876,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226358,51,20,"probability_value_kernel(float const*, float const*, float*, int, int)",51,887497032912706,887497032947627,0,0,16,0,128,256,1,1,8192,1,1

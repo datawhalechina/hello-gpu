@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="710" viewBox="0 0 700 710" role="img" aria-labelledby="title desc">
+  <title id="title">3　读取两个局部和，再合并</title>
+  <desc id="desc">整个 block 已经越过屏障。甲从 shared[0] 读取 3，也从 shared[1] 读取 30，再相加得到总和 33；两次共享写入都有对应的读取。两条箭头均从共享位置指向甲，而不是直接读取乙的普通局部变量。读取后共享位置中的 3 和 30 仍保留。甲乙来自同一个 block 的不同 wavefront，其余线程未画出。</desc>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 9 5 0 9Z" fill="#2f6e9e"/></marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 9 5 0 9Z" fill="#a35d27"/></marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 9 5 0 9Z" fill="#377554"/></marker>
+    <marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 9 5 0 9Z" fill="#59646b"/></marker>
+  </defs>
+  <rect width="700" height="710" rx="12" fill="#fcfbf7"/>
+  <g font-family="PingFang SC, Microsoft YaHei, Noto Sans CJK SC, sans-serif" fill="#27323a" text-anchor="middle">
+    <text x="32" y="48" font-size="30" font-weight="600" text-anchor="start">3　读取两个局部和，再合并</text>
+    <text x="32" y="86" font-size="26" fill="#59646b" text-anchor="start">任务：[1, 2, 10, 20] 求和</text>
+    <rect x="24" y="111" width="652" height="535" rx="10" fill="#fff" stroke="#aecbb7" stroke-width="2"/>
+    <text x="44" y="147" font-size="28" fill="#377554" text-anchor="start">同一 block</text>
+    <rect x="54" y="169" width="272" height="132" rx="10" fill="#eaf2f8" stroke="#8fb4cf" stroke-width="2"/>
+    <text x="190" y="205" font-size="26">线程甲 · wave 0</text>
+    <text x="190" y="250" font-size="32" fill="#377554" font-weight="600">3 + 30 = 33</text>
+    <text x="190" y="282" font-size="24" fill="#377554">得到总和</text>
+    <rect x="374" y="169" width="272" height="132" rx="10" fill="#fff0e1" stroke="#d9ad83" stroke-width="2"/>
+    <text x="510" y="205" font-size="26">线程乙 · wave 1</text>
+    <text x="510" y="250" font-size="30" fill="#a35d27" font-weight="600">10 + 20 = 30</text>
+    <text x="510" y="282" font-size="24" fill="#a35d27">局部和 30</text>
+    <rect x="50" y="391" width="600" height="165" rx="10" fill="#eaf4ec" stroke="#aecbb7" stroke-width="2"/>
+    <text x="350" y="428" font-size="28" fill="#377554" font-weight="600">共享区 LDS</text>
+    <rect x="76" y="447" width="248" height="90" rx="8" fill="#fff" stroke="#8fb4cf" stroke-width="2"/>
+    <text x="200" y="479" font-size="24" fill="#59646b">shared[0]</text>
+    <text x="200" y="521" font-size="36" fill="#2f6e9e" font-weight="600">3</text>
+    <rect x="376" y="447" width="248" height="90" rx="8" fill="#fff" stroke="#d9ad83" stroke-width="2"/>
+    <text x="500" y="479" font-size="24" fill="#59646b">shared[1]</text>
+    <text x="500" y="521" font-size="36" fill="#a35d27" font-weight="600">30</text>
+    <path d="M190 441V310" fill="none" stroke="#2f6e9e" stroke-width="3.5" stroke-linejoin="round" marker-end="url(#arrow-blue)"/>
+    <text x="146" y="352" font-size="26" fill="#2f6e9e" text-anchor="end">读取 3</text>
+    <path d="M510 441V352H290V310" fill="none" stroke="#a35d27" stroke-width="3.5" stroke-linejoin="round" marker-end="url(#arrow-orange)"/>
+    <text x="426" y="337" font-size="26" fill="#a35d27">读取 30</text>
+    <text x="350" y="606" font-size="26">屏障之后：甲从两格都读取</text>
+    <text x="350" y="688" font-size="24" fill="#59646b">共享区中的 3 和 30 仍然保留</text>
+  </g>
+</svg>

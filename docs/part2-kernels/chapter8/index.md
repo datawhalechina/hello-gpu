@@ -1,6 +1,6 @@
 ---
 title: "第8章 Element-Wise：逐元素算子"
-description: "Hello GPU 第8章 · 从数组加法和下标动画出发，理解连续访存、线程循环、向量化尾部与 Triton mask"
+description: "Hello GPU 第8章 · 从正确基线出发，实测地址排列、grid、float4 与 Triton tile，用逐轮比较决定下一步"
 ---
 
 <script setup lang="ts">
@@ -11,31 +11,33 @@ import ElementwiseJourney from './elementwise-journey.vue'
 
 ## 本章导读
 
-> 前面几章已经测量过向量加法。现在我们保持 `C[i] = A[i] + B[i]` 不变，研究另一件事：同样一批元素，怎样交给 GPU 执行，才有机会更快？从这个小问题出发，我们逐步观察独立输出、连续访问、线程重复工作和尾部处理。
+> 在第 1 篇中，我们以向量加法为例跑通了基准测试与性能剖析的全流程。进入算子实战的第一站，我们依然聚焦于看似最简单的加法运算 `C[i] = A[i] + B[i]`，但这次的核心命题转变为：**当我们手里有了一个能跑通的正确基线后，如何系统性地判断下一步值得改什么？改动之后又如何科学地决定该保留还是回退？**
 >
-> 读完后，你应该能解释一个元素由谁计算，判断两个版本是否进行了公平比较，并根据真实结果说明一次改动带来了什么。第 4–7 章的程序、计时与 profiling 是本章基础；HIP 和 Triton 的语法可以按需查阅附录。
+> 本章我们将分别沿着 HIP 与 Triton 两条路线展开优化探索。你将学习到如何通过受控实验逐一检验“相邻访存连续性”、“单线程循环工作量”与“向量化加载（float4）”对性能的真实影响；当遇到没有加速甚至反常变慢的尝试时，学会坦然记录并作出理性的工程决策。第 4–7 章建立的计时基准、Trace 分析与 Roofline 模型是本章的基石；文中的具体语法可按需随时查阅附录。
 
-你可以先读共同的数学与动画，再选择一种语言：
+你可以先阅读两条路线共通的数学定义与数据流动画，再根据技术背景选择对应的实现入口：
 
-| 阅读路线 | 如何开始 |
+| 阅读路线 | 推荐起点 |
 | ---- | ---- |
-| 第一次接触 GPU 核函数 | 先读 [编程范式附录](../../appendix/programming-models/index.md)，再回到 8.1 的小数组 |
-| 从 HIP 开始 | 阅读 8.1–8.3，在 [实现节](#_8-4-实现向量加法)选择 HIP，最后阅读共同的实验和对照 |
-| 从 Triton 开始 | 阅读 8.1–8.3，在 [实现节](#_8-4-实现向量加法)选择 Triton，最后阅读共同的实验和对照 |
+| 第一次接触 GPU 算子编程 | 建议先阅读[附录 D：编程范式](../../appendix/programming-models/index.md)，建立基本图景后回到 8.1 节 |
+| 倾向底层控制的 HIP 路线 | 阅读 8.1–8.3 节公共基础，在[实现节](#_8-4-实现向量加法)选择 HIP 标签，最后阅读跨路线总结 |
+| 倾向现代分块抽象的 Triton 路线 | 阅读 8.1–8.3 节公共基础，在[实现节](#_8-4-实现向量加法)选择 Triton 标签，最后阅读跨路线总结 |
 
-## 8.1 先认识 Element-Wise
+## 8.1 逐元素算子的数据依赖
 
-### 8.1.1 不看名字，先看依赖关系
+### 8.1.1 输出之间的独立性
 
-判断一个算子是不是逐元素，最稳妥的方法不是背算子表，而是观察一个输出依赖哪些输入。
+先看这个算子的**数据依赖**：一个输出需要哪些输入？计算它时，是否必须等待其他输出？
 
-Vector Add 的定义是：
+向量加法（Vector Add）的数学定义是：
 
 $$
 C_i = A_i + B_i, \qquad 0 \le i \lt N
 $$
 
-想得到 `C[3]`，只需要 `A[3]` 与 `B[3]`。`A[0]`、`A[1]` 或其他位置都不会影响它。因此不同输出位置之间没有数据依赖，可以彼此独立地计算。
+计算 `C[3]` 时，只需读取 `A[3]` 与 `B[3]` 并相加，不需要等待 `C[0]`、`C[1]` 或其他位置的结果。
+
+因此，**不同输出之间互不依赖**。每个位置的计算都可以看作一项独立任务。
 
 ::: figure fig-elementwise-dependency
 <ElementwiseJourney scenario="dependency" />
@@ -43,45 +45,48 @@ $$
 Vector Add 的逐元素依赖：当前位置只读取对应的两个输入位置。
 :::
 
-如 @fig-elementwise-dependency 所示，动画每一步只激活同一列中的 `A[i]`、`B[i]` 与 `C[i]`，结尾的「并行俯瞰」把各列完成顺序打乱以凸显独立性。真实 GPU 会并行处理许多列；这里故意逐步播放，是为了让依赖关系更容易看清。本章全部动画共用同一种播放器：**拖动进度条可擦洗到任意中间状态**，点步骤标签可跳步，键盘 `←`/`→` 逐步、空格播放暂停。
+@fig-elementwise-dependency 每一步只高亮同一列的 `A[i]`、`B[i]` 与 `C[i]`，用来说明一个输出依赖哪些输入。实际程序可以把不同位置分给多个线程并行处理，也可以让一个线程处理多个位置。计算任务最终由 GPU 的计算单元（CU）执行，任务数量不等于 CU 数量；动画的逐列展示也不代表真实执行顺序。
 
-同一模式还包括：
+现代深度学习中大量的核心算子都属于这种**逐元素算子（Element-Wise Operators）**：
 
 | 算子 | 单个输出的表达式 | `Y[i]` 依赖什么 |
 | ---- | ---- | ---- |
-| Add | `Y[i] = A[i] + B[i]` | `A[i]`、`B[i]` |
-| ReLU | `Y[i] = max(X[i], 0)` | `X[i]` |
-| Scale & Bias | `Y[i] = alpha * X[i] + beta` | `X[i]` 与两个标量 |
-| Clamp | `Y[i] = min(max(X[i], low), high)` | `X[i]` 与上下界 |
+| Add（加法） | `Y[i] = A[i] + B[i]` | 仅依赖同索引的 `A[i]` 与 `B[i]` |
+| ReLU（激活） | `Y[i] = max(X[i], 0)` | 仅依赖同索引的 `X[i]` |
+| Scale & Bias（缩放平移） | `Y[i] = alpha * X[i] + beta` | 仅依赖 `X[i]` 与全局常量标量 |
+| Clamp（截断） | `Y[i] = min(max(X[i], low), high)` | 仅依赖 `X[i]` 与常量上下界 |
 
-它们的计算表达式不同，但数据划分方法相似：先把互不依赖的下标分出去，再处理对应元素。HIP 与 Triton 对“怎样分出去”给出了不同的源码视角。
+这些算子的共同点是：计算一个输出不需要其他输出的结果。程序可以通过索引公式与启动配置安排数据分工，再由硬件调度执行。同样的数学公式可以采用不同分工，后面的实验会比较这些选择对时间的影响。
 
-### 8.1.2 先选择一条实现路线
+### 8.1.2 HIP 与 Triton 的实现视角
 
-同一个加法可以用两种视角描述。HIP 的核函数先描述一个线程：它得到一个下标，读取两个数并写回结果。Triton 的核函数先描述一块数据：它生成一组下标，对这一组位置执行加载、加法和写回。
+虽然数学语义相同，但 HIP 与 Triton 采用了两种截然不同的抽象视角来把这项任务分工给硬件：
 
-如果你还不熟悉这些词，可以先读 [附录 D：HIP 与 Triton 的编程范式](../../appendix/programming-models/index.md)。附录用同一个带尾部的数组解释 thread/block、program/tile 和 `if`/mask，并把语法对应到实际源码。读完再回到本章即可，不需要先学完两门语言。
+- **HIP 采用“线程主导”视角（Thread-centric）**：代码描述的是单个线程的行为——“我是第几号线程，我该计算哪一个下标 $i$，我把对应元素读进来、相加、并写回”；
+- **Triton 采用“分块主导”视角（Block/Tile-centric）**：代码描述的是一组连续数据的集合行为——“我是一个计算实例（Program），我圈定一段逻辑索引范围，整体加载这组数据张量、执行向量加法并整体写回”。
 
-后面的实现节提供 **HIP / Triton 标签页**。先选择熟悉的一种语言，沿着一个可运行的实现读下去；数学问题、正确性检查和最终对照是两条路线共用的。
+如果你希望进一步厘清 Thread 与 Program、Block 与 Tile 的概念映射，请随时参考[附录 D：HIP 与 Triton 的编程范式](../../appendix/programming-models/index.md)。
 
-### 8.1.3 什么不属于这一类
+### 8.1.3 与归约算子的区别
 
-如果输出 `Y[i]` 需要一整段输入，事情就变了。例如 Sum Reduction 要把很多输入合成一个值，线程之间必须协作；Softmax 还要先求一行最大值与总和。它们分别是[第 9 章 Reduction](../chapter9/index.md)和[第 10 章 Normalization](../chapter10/index.md)的主角。
+为了更深刻地理解逐元素算子的特性，我们可以对比另一种截然相反的数据流动模式——**归约（Reduction）**。
 
-因此，“输入输出形状相同”不是逐元素的充分条件。真正重要的是**输出位置之间能不能独立完成**。
+求和归约的单个输出需要汇总全部输入（$Y = \sum X_i$）；Softmax 的每个输出也需要用到整行的指数和。并行实现时，我们需要安排多个线程怎样合并这些数据。这是[第 9 章 Reduction](../chapter9/index.md)与[第 10 章 Normalization](../chapter10/index.md)要解决的问题。
+
+因此请记住：**“输入输出形状一致”并不等于逐元素算子**。逐元素算子的本质边界在于：**任意输出位置 $i$ 仅由对应输入位置 $i$ 的数值决定，不发生任何跨维度的跨行跨列跨位置聚合。**
 
 ## 8.2 固定数学语义与正确性标准
 
-### 8.2.1 先用 4 个元素手算
+### 8.2.1 四元素示例
 
-给定：
+我们用一个仅包含 4 个元素的小数组作为微型示范：
 
 ```text
 A = [2, -1, 4, 3]
 B = [7,  3, -1, 2]
 ```
 
-逐位置相加：
+按照逐位置相加的规则：
 
 ```text
 C[0] = 2  + 7  = 9
@@ -92,11 +97,11 @@ C[3] = 3  + 2  = 5
 C = [9, 2, 3, 5]
 ```
 
-这个例子已经包含完整语义。把长度从 4 换成几千万，数学没有变化，变化的是我们怎样把这些位置交给 GPU。
+这个微型算例涵盖了该算子的全部数学逻辑。当我们将数组规模扩大到几千万个元素时，底层数学运算并未发生任何变化，改变的仅仅是我们如何在物理芯片上组织并发访存。
 
-### 8.2.2 固定同一份裁判规则
+### 8.2.2 参考实现与检查条件
 
-本章配套程序让 HIP 与 Triton 使用相同规则：
+在优化过程中，“快但算错”没有任何意义。本章配套测试体系为 HIP 与 Triton 制定了完全统一的正确性红线：
 
 | 项目 | 固定方式 |
 | ---- | ---- |
@@ -106,27 +111,34 @@ C = [9, 2, 3, 5]
 | 参考结果 | CPU 逐元素执行同一个 FP32 加法 |
 | 边界 | 覆盖小于 wavefront、刚好等于 block、比 block 多 1、不能被 4 整除等长度 |
 | 正确性 | 正式计时前检查一次，计时后再检查一次 |
-| 计时范围 | 只计 GPU kernel，不含分配、输入生成与 Host-to-Device 拷贝 |
+| 计时范围 | GPU event 包围一次 kernel 提交，不含分配、输入生成与 Host-to-Device 拷贝 |
 
-为什么需要检查奇怪的长度？因为真实输入不会永远刚好等于 block size 的整数倍。若 `N=1027`，最后一个 block 只有少数位置有效；没有边界保护的 kernel 会访问数组外部。
+为什么要测试非整除长度？例如，把 $N = 1027$ 个元素按每块 256 个元素划分，最后一块只剩 3 个有效元素。若采用“一线程处理一个元素、每 block 256 个线程”的初版 HIP 映射，最后一个 block 中就只有前 3 个线程需要读写数据，其余线程应跳过读写。
 
-PyTorch 参考写法只有一行：
+这里的线程数量取决于映射方式。后面的 grid-stride 循环与四元素分组需要按各自的索引检查尾部；Triton 的 mask 则标记逻辑元素位置，3 个有效位置不能直接理解成 3 个线程。无论怎样分工，都需要阻止越界读写。
+
+Triton 测试脚本用 PyTorch 在 CPU 上计算参考结果，`host_a` 与 `host_b` 是两组输入：
 
 ```python
-reference = input_a + input_b
+reference = host_a + host_b
 ```
 
-短不代表可以省略它。自定义 kernel 的第一个目标永远是与参考结果一致；一个错误但很快的 kernel 没有比较价值。
+两条路线都逐个核对输出，要求结果有限、绝对误差不超过 `1e-6`。通过这些检查后，才比较运行时间。
 
-### 8.2.3 把“尾部”加入裁判规则
+### 8.2.3 非整除长度的边界
 
-边界长度专门检查最后一组不完整的位置。例如 `N=13`、候选下标为 `8–15` 时，只有 `8–12` 有效：HIP 由各 thread 的标量 `if` 关闭越界下标，Triton 由 mask 逐位置关闭越界 load/store。这是在落实 @fig-hip-triton-paradigms 的同一条规则，不再引入第三种分工方式。
+处理尾部边界时，两种路线展现了各自的表达习惯：
+
+- HIP 初版用 `if (index < size)` 保护单个元素的读写；使用循环的版本，则在每次迭代时检查下标；
+- Triton 用张量掩码（Mask）`mask = offsets < size` 标记有效位置，并将它传给加载和写回操作。
+
+无论采用哪种写法，都必须同时覆盖读操作与写操作的边界防护。
 
 ## 8.3 建立成本模型和瓶颈假设
 
-### 8.3.1 真正忙的可能不是加法器
+### 8.3.1 逻辑计算量与数据量
 
-对一个 FP32 输出元素，最理想的逻辑工作量是：
+针对 FP32 单精度下的单元素向量加法，我们来数一数最理想情况下的逻辑开销：
 
 | 动作 | 数量 | 逻辑字节 |
 | ---- | ----: | ----: |
@@ -136,63 +148,95 @@ reference = input_a + input_b
 | 写回 `C[i]` | 1 个 FP32 | 4 Byte |
 | 合计 |  | 12 Byte + 1 FLOP |
 
-所以它的理想算术强度是：
+由此推导出其算法理论算术强度：
 
 $$
 AI_{logical} = \frac{1\ \text{FLOP}}{12\ \text{Byte}}
              \approx 0.0833\ \text{FLOP/Byte}
 $$
 
-这只是从算子语义推导出的**逻辑下界**，不是性能实测。缓存命中、未合并访问、对齐和实际内存事务都可能让物理流量不同。
+必须明确：这是由算法逻辑读写量推导得出的逻辑算术强度，而不是硬件总线上测得的物理传输比例。在真实芯片中，由于片上缓存复用、显存事务打包或非对齐造成的额外搬运，各存储层级实际承受的数据流量都会与算法逻辑字节数存在差异。
 
-从这个比例可以提出一个等待实验检验的假设：
+基于这一逻辑算术强度，我们可以确立本章优化的首要指导假设：
+> 向量加法每读写 12 字节逻辑数据仅执行 1 次浮点计算，逻辑算术强度极低；在大规模数据输入下，算子更容易受限于显存数据供给，而非浮点计算能力。
 
-> Vector Add 每搬 12 Byte 只做 1 次加法，当前大 shape 可能更容易受显存带宽限制，而不是受浮点计算吞吐限制。
-
-第 7 章已经解释怎样在 Roofline 上读工作点；这里不再重推硬件参考线，只保留与当前算子直接相关的假设：Vector Add 的逻辑算术强度很低，当前大 shape 更可能先受数据搬运限制。注意用词仍是“更可能”。后文会用 Radeon RX 9070 XT 上的 GPU event 时间和受控地址实验检验它。即使逻辑有效带宽较高，也只能说明结果与访存受限假设一致；没有物理流量计数器时，不能把逻辑字节直接当成显存事务。
+我们在第 7 章已经系统学习了 Roofline 的分析原则。这一假设提示我们：优化工作应优先从内存访存排布、合并事务与总线利用率入手排查，同时注意控制核函数启动、线程分工与循环展开等结构性开销。
 
 ### 8.3.2 有效带宽怎样算
 
-本章统一用计时区间中的逻辑字节计算有效带宽：
+本章所有版本的性能横向对比，均统一按照如下标准折算算法有效带宽：
 
 $$
 BW_{effective} = \frac{3 \times N \times 4\ \text{Byte}}{t}
 $$
 
-其中 `t` 是一次 kernel 的 GPU event 时间。这个指标适合在**相同语义、相同 shape、相同计时范围**下比较版本，但它不等于内存控制器实际传输了多少字节。物理流量必须由可用的硬件计数器或更进一步的分析支持。
+其中 `t` 是包围一次 kernel 提交的 GPU event 时间。这个指标适合在**相同语义、相同 shape、相同计时范围**下比较版本，但它不等于内存控制器实际传输了多少字节。物理流量必须由可用的硬件计数器或更进一步的分析支持。
 
 ## 8.4 实现向量加法
 
-选择下面的一条路线开始。两种实现完成相同的加法，输入与输出要求不变；切换标签可以对照线程下标与 tile 下标怎样表达同一件事。
+一个有用的实验从问题开始。例如，相邻线程的地址分散后会怎样；让更少的 block 各自做更多工作是否划算；让一个 Triton program 处理更多元素是否值得。假设可以来自前面的数据依赖和成本模型，再由测量检验。
+
+先区分三件事，避免把“测到了一个数字”误当作解释：
+
+| 方法 | 回答的问题 | 何时执行 |
+| --- | --- | --- |
+| 正确性检查 | 输出仍符合加法语义吗？尾部有没有漏写或越界？ | 每次改动后，先检查再计时 |
+| Benchmark（性能测量） | 相同条件下更快吗？收益超过运行波动了吗？ | 每轮改动都做，与相关对照一起比较 |
+| Profiling（性能分析） | 哪项额外证据能帮助解释现象或排除一种猜测？ | 有具体问题且工具能回答时再做 |
+
+如果已经决定撤回一项没有稳定收益的改动，就可以结束这一轮。只有还想回答“为何没有收益”或核对某项执行细节时，才需要进一步分析。下面两条路线各保留自然基线；编号用于区分实验，不代表逐级提速。
+
+**准备环境。** 在 GPU 机器上，从仓库根目录进入本篇；自带的 `uv.lock` 用于锁定依赖，不需要删除：
+
+```bash
+cd code/part2-kernels &&
+uv sync --locked &&
+source ./activate-rocm.sh
+```
+
+首次使用先按[环境准备](../../part0-intro/chapter1/index.md)完成驱动、uv 和系统编译依赖。后文命令均在 `code/part2-kernels/` 执行。
+
+**新建一轮实验。** 在当前目录执行以下命令，保存打印出来的路径：
+
+```bash
+mkdir -p chapter8/results &&
+RUN=$(mktemp -d chapter8/results/walkthrough-XXXXXX) &&
+mkdir "$RUN/build" &&
+printf '本轮结果目录：%s\n' "$RUN"
+```
+
+每次新建都会得到不同目录，保留旧结果。这里的 `RUN` 只在当前终端有效。若换了终端，从仓库根目录重新执行环境准备，然后输入之前保存的目录：
+
+```bash
+read -r -p '粘贴上次输出的结果目录：' RUN &&
+test -n "$RUN" && test -d "$RUN/build" && printf '继续使用结果目录：%s\n' "$RUN"
+```
+
+在提示处粘贴目录路径，不包含 `RUN=`，再按回车。只有看到确认信息才继续；目录不存在时先核对路径。继续原实验时不重建目录、不重复已有测量；需要重测或修改源码时，新建一轮并重新编译 HIP 程序。
+
+命令开头会检查 `RUN` 是否已设置、目录是否存在，再进行写入。每条 benchmark 命令保存一个进程的 50 个样本。`test ! -e ... && ...` 防止追加到旧 CSV；文件已存在时程序不会运行。图中使用三个独立进程的结果，不能仅凭这里的一次运行挑选赢家。手工继续测第 2、3 个进程时，要同时将命令中的 `benchmark-p1.samples.csv` 和 `--process 1` 改为对应的 `p2` / `2`、`p3` / `3`；每一轮都依次运行本组全部候选，并轮换起始配置，保留所有结果。完成单项操作后，可用 [8.8 的批量入口](#_8-8-1-复现逐轮实验)自动保存三进程比较与图。
+
+**固定比较条件。** 本章数据来自 RX 9070 XT（gfx1201）、ROCm SDK 10.0.0、原生 Ubuntu 24.04；HIP 组件为 7.15.26333，Triton 为 3.8.0。
+
+| 项目 | 所有逐轮图采用的条件 |
+| --- | --- |
+| 输入 | `N=16,777,216`，FP32，确定性输入，`seed=20260920` |
+| 正确性 | 输出先填 NaN；计时前后检查所有结果有限、绝对误差不超过 `1e-6` |
+| 计时 | 预热 10 次、测量 50 次；分配、输入生成、拷贝、校验及 JIT 首次编译在计时之外 |
+| 重复与图示 | 每配置 3 个独立进程；柱长为三个进程 median 的中位数，误差线为这三个 median 的最小—最大范围，不是置信区间 |
+| 执行条件 | 轮换配置顺序；重复使用数组、不主动清缓存；保留桌面及已有后台上下文，不假定 GPU 独占 |
+
+以下边界输出来自同一份 kernel 源码的独立正确性检查；它们与主输入的三进程计时分开保存。通过这些已选长度不能证明所有输入均正确，修改数学表达式或访问规则后仍需重新检查。
+
+先看输出中的 `precheck`、`postcheck`、`correct` 是否全为 `OK`，再核对输入与配置，最后看 `median_ms`。`effective_bandwidth_gbs` 由逻辑字节数换算，不是硬件流量测量。计时口径沿用[第 5 章](../../part1-profiling/chapter5/index.md)，工具基础见[第 6 章](../../part1-profiling/chapter6/index.md)。
 
 <ImplementationTabs id="ch8-implementations">
 
 <template #hip>
 
+### 8.4.1 HIP 基线：一个线程处理一个元素
 
-### 8.4.1 HIP：先读标量线程的工作
-
-HIP 篇更适合下面的读者：
-
-- 想知道 block、thread、wavefront 最后怎样变成具体地址；
-- 愿意读少量 C++，并希望控制 grid、加载类型与尾部路径；
-- 后续想继续学习 LDS、Wave Shuffle、VGPR 等更底层机制；
-- 遇到性能问题时，希望能从源码一路追到 kernel trace。
-
-第一次读 HIP 不需要先记住所有硬件名词。本节只反复使用四个对象：
-
-```text
-grid 里有多个 block
-block 里有多个 thread
-相邻 thread 以 wavefront 为硬件执行组
-thread 最终访问全局内存中的地址
-```
-
-用一组具体数字锚定：本章 `N=16,777,216`、`blockDim.x=256`，那么 grid 需要 `65,536` 个 block；每个 block 里的 256 个 thread 按 32 个一组编成 8 个 wavefront；每个 thread 用 `blockIdx.x × 256 + threadIdx.x` 算出自己负责的那一个地址。后文所有版本只是在改变“哪个 thread 访问哪个地址、一次访问多少字节”。
-
-### 8.4.2 HIP v0：一个线程处理一个元素
-
-最短的正确 kernel 是：
+本章的起点是自然的一线程一元素写法。相邻线程访问相邻元素，数组加法又没有跨元素依赖，所以不需要先加入 LDS 或线程间同步。
 
 ```cpp
 __global__ void vector_add_v0(const float* __restrict__ input_a,
@@ -207,73 +251,199 @@ __global__ void vector_add_v0(const float* __restrict__ input_a,
 }
 ```
 
-先把索引公式拆开：
+`N=16,777,216`、每 block 256 个线程时，共需 65,536 个 block。最后一个 block 仍保留越界判断，以便同一份代码处理非整除长度。完整程序先准备输入与输出，对照 CPU 参考结果，再预热和计时。先看 `vector_add_v0()`，再看负责提交的 `launch()` 与组织测量的 `run_version()`。
 
-```text
-blockIdx.x * blockDim.x    当前 block 之前有多少线程
-+ threadIdx.x              当前线程在 block 内的位置
-= index                    当前线程负责的全局元素下标
+<a id="ch8-hip-source"></a>
+
+<details>
+<summary>完整源码：code/part2-kernels/chapter8/vector_add_hip.hip</summary>
+
+<<< @/../code/part2-kernels/chapter8/vector_add_hip.hip{cpp}
+
+</details>
+
+这份文件包含本路线所有候选。后面只需定位相应函数并改变运行参数，不必复制多份主机程序。先编译一次；已有可执行文件时直接复用：
+
+```bash
+test -d "${RUN:?请先完成环境与结果目录准备}/build" && \
+if [[ ! -x "$RUN/build/vector_add_hip" ]]; then
+  hipcc --offload-arch=gfx1201 -O3 -std=c++17 \
+    chapter8/vector_add_hip.hip -o "$RUN/build/vector_add_hip"
+fi
 ```
 
-例如 `blockDim.x=256`，第 2 个 block 中的第 3 个线程得到：
+`--offload-arch=gfx1201` 选择本章显卡的编译目标。若改了源码，请新建 `RUN` 后重新编译，避免新源码与旧可执行文件混用。
 
-```text
-index = 2 × 256 + 3 = 515
+<!-- benchmark:hip-v0 -->
+
+**运行与校验**
+
+```bash
+test -d "${RUN:?请先完成环境与结果目录准备}/build" && \
+mkdir -p "$RUN/configs/hip-v0" && \
+test ! -e "$RUN/configs/hip-v0/benchmark-p1.samples.csv" && \
+"$RUN/build/vector_add_hip" \
+  --version v0 --block 256 \
+  --size 16777216 --warmup 10 --repeat 50 --seed 20260920 \
+  --samples "$RUN/configs/hip-v0/benchmark-p1.samples.csv" \
+  --config-id hip-v0 --process 1
 ```
 
-它只处理 `C[515] = A[515] + B[515]`。最后一个 block 可能越过 `size`，所以 `if (index < size)` 不能省略。
+<details>
+<summary>运行输出：hip-v0，第 1 个独立进程</summary>
 
-当相邻线程得到相邻 `index` 时，它们也会访问相邻的 FP32 地址。AMD 的 HIP 性能指南把这种排列称为 coalesced memory access（合并访存）：硬件有机会把多个线程的请求组合成更少的内存事务。这里先把它当作**地址结构事实**；实际事务数与性能仍要测量。
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/hip-v0/benchmark-p1.stdout.log{text}
 
-### 8.4.3 HIP v1：怎样公平比较连续与跨步
+</details>
 
-一个常见教学错误是：连续版每线程处理 1 个元素，跨步版每线程处理 32 个元素，然后直接比较时间。此时改变的不只是地址顺序，还包括 grid、循环次数和每线程工作量，无法知道差异来自哪里。
+先核对 `shape=16777216`、`block=256`、`grid=65536` 和三个 `OK`。这次单进程的 `median_ms=0.349441` 是 50 次 event 时间的中位数。另两个独立进程分别为 **0.333301、0.334861 ms**；图中采用三者中位数 **0.334861 ms**，范围 **0.333301–0.349441 ms**。较慢的一次也保留，不能只取最快值。
 
-本章改用一个受控实验。真实代码与动画缩略的比例如下，两边只改“同一轮内 lane 到地址的排列”，其余全部固定：
+**基线分析：计时区间里实际执行了什么？** 这一处 trace 用来核对目标 kernel 的起止时间和实际启动规模，建立后续读报告的方法。它不负责证明“已经达到带宽极限”。
 
-| 配置 | 真实 HIP 代码 | @fig-hip-coalescing 动画 |
-| ---- | ---- | ---- |
-| 执行单元 | 1 个 wave32（32 个 lane） | 8 个 lane |
-| 每 lane 处理 | 32 个元素 | 4 个元素 |
-| 全部轮次覆盖 | 32 × 32 = 1024 元素 | 8 × 4 = 32 元素 |
-| grid / block / 循环次数 / 逻辑字节 | 两边相同 | 两边相同 |
+保持当前目录和 `RUN`，另启动一次带 profiler 的进程。分析时预热 5 次、记录 10 次；这次终端打印的 event 时间不进入 benchmark。`inspect_trace.py` 只用 Python 标准库读取 CSV，不运行 GPU。
+
+
+
+```bash
+test -d "${RUN:?请先完成环境与结果目录准备}/build" && \
+mkdir "$RUN/configs/hip-v0/profile" && \
+rocprofv3 --kernel-trace --hip-trace --stats \
+  --output-format csv pftrace \
+  --output-directory "$RUN/configs/hip-v0/profile" \
+  --output-file hip-v0 -- \
+  "$RUN/build/vector_add_hip" \
+  --version v0 --block 256 \
+  --size 16777216 --warmup 5 --repeat 10 --seed 20260920 \
+  --config-id hip-v0 --process 1 && \
+python chapter8/inspect_trace.py \
+  "$RUN/configs/hip-v0/profile/hip-v0_kernel_trace.csv" \
+  --kernel vector_add_v0 --skip 6 --take 10
+```
+
+<details>
+<summary>性能分析原始输出：hip-v0（终端、生成记录与 CSV）</summary>
+
+**程序 stdout**
+
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/hip-v0/profile.stdout.log{text}
+
+**Profiler stderr：文件生成记录**
+
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/hip-v0/profile.stderr.log{text}
+
+**原始 kernel trace CSV**
+
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/hip-v0/profile/hip-v0_kernel_trace.csv{text}
+
+</details>
+
+<details>
+<summary>筛选后的分析结果：hip-v0</summary>
+
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/hip-v0/inspect.stdout.log{text}
+
+</details>
+
+先找 `vector_add_v0`：原始 CSV 还包含填充输出的辅助 kernel，目标记录共有 16 条。去掉 1 次预检和 5 次预热，保留 10 次，这就是命令中 `--skip 6 --take 10` 的含义；整份 `kernel_stats` 的平均值包含预检与预热，不能直接作正式成绩。
+
+再核对时间：第一条保留记录为 `908153776012898 − 908153775686576 = 326322 ns`，即 **326.322 μs**；10 次的中位数为 **326.2815 μs**。它来自独立采集，与 benchmark 的 event 时间不是同一次运行，不能相减来估算 CPU 开销。
+
+最后核对启动规模：`grid_work_items_xyz=16777216x1x1` 除以 `workgroup_size_xyz=256x1x1` 得到 65,536 个 block。这里的 Grid X 是工作项数。`vgpr_count=8`、`scratch_bytes=0` 描述资源分配，不能单独证明动态占用率或带宽瓶颈。
+
+这次核对确认了目标、规模和统计区间。下一项假设可以直接来自地址安排，无需先为每个候选再采一份相同报告。分析脚本全文和时间线读法见 [8.5](#_8-5-按问题选择性能分析)。
+
+### 8.4.2 地址对照：只改变同轮访问顺序
+
+基线已经采用连续访问；不能把故意改坏它再改回来称为新的优化。这里另设一对实验，检验“同轮地址排列是否值得关注”，再把得到的判断带回正常实现。
+
+`base` 是这组线程所负责片段的起点，`round` 是当前循环轮次。真实代码让一个 wave32 处理 1,024 个元素：32 个 lane 各处理 32 个元素，共循环 32 轮。两版的 grid、block、循环轮数、加法次数和输入完全相同，仅下标排列不同：
+
+```cpp
+// hip-v1-contiguous：同一轮，相邻 lane 读取相邻位置
+index = base + round * 32 + lane;
+
+// hip-v1-strided：同一轮，相邻 lane 的位置相隔 32 个元素
+index = base + lane * 32 + round;
+```
+
+两种排法最终都会覆盖同一片输入，也产生同一份输出。区别发生在**同一轮请求哪些地址**。
 
 ::: figure fig-hip-coalescing
 <ElementwiseJourney scenario="memory" />
 
-合并访存受控对照的缩略动画：两边处理同一批元素，只改变每一轮的下标排列。图中 32B 地址组是帮助观察聚集度的教学分桶，不是实测硬件事务计数；连续顺序每轮触及 1 组，跨步顺序每轮触及 4 组。动画结尾给出 4 轮的累计落点对照，并以 9070 XT 实测逻辑有效带宽（`hip-v1` 两版，见 8.5.2）收束。
+地址排列的缩略演示：8 个 lane 各处理 4 个元素。32B 分组只帮助观察地址是否集中，不是 RX 9070 XT 的实测事务计数。
 :::
 
-左侧连续版在第 `round` 轮使用：
+图把真实代码的 32 个 lane × 32 轮缩成 8 个 lane × 4 轮，保留同轮连续或分散的差别。先在 @fig-hip-coalescing 中看一轮：连续排列的地址集中在一起，跨步排列散布在多组。再播放全部四轮，确认两边最终没有遗漏或重复。真实性能要看独立计时：
 
-```text
-index = base + round × wave_size + lane
+
+两次运行分别调用同一文件的 `vector_add_v1_contiguous()` 与 `vector_add_v1_strided()`，由 `--version` 选择。完整主机程序见[本路线源码](#ch8-hip-source)。
+
+<!-- benchmark:hip-v1-contiguous -->
+
+**运行与校验**
+
+```bash
+test -d "${RUN:?请先完成环境与结果目录准备}/build" && \
+mkdir -p "$RUN/configs/hip-v1-contiguous" && \
+test ! -e "$RUN/configs/hip-v1-contiguous/benchmark-p1.samples.csv" && \
+"$RUN/build/vector_add_hip" \
+  --version v1-contiguous --block 256 \
+  --size 16777216 --warmup 10 --repeat 50 --seed 20260920 \
+  --samples "$RUN/configs/hip-v1-contiguous/benchmark-p1.samples.csv" \
+  --config-id hip-v1-contiguous --process 1
 ```
 
-右侧跨步版只交换两个维度：
+<details>
+<summary>运行输出：hip-v1-contiguous，第 1 个独立进程</summary>
 
-```text
-index = base + lane × rounds + round
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/hip-v1-contiguous/benchmark-p1.stdout.log{text}
+
+</details>
+
+这是本轮的连续访问对照。输出应为 `grid=2048`、`block=256`，且前后检查通过；本次单进程中位数为 **0.370081 ms**。
+
+<!-- benchmark:hip-v1-strided -->
+
+**运行与校验**
+
+```bash
+test -d "${RUN:?请先完成环境与结果目录准备}/build" && \
+mkdir -p "$RUN/configs/hip-v1-strided" && \
+test ! -e "$RUN/configs/hip-v1-strided/benchmark-p1.samples.csv" && \
+"$RUN/build/vector_add_hip" \
+  --version v1-strided --block 256 \
+  --size 16777216 --warmup 10 --repeat 50 --seed 20260920 \
+  --samples "$RUN/configs/hip-v1-strided/benchmark-p1.samples.csv" \
+  --config-id hip-v1-strided --process 1
 ```
 
-四轮动画结束后，两边都覆盖下标 `0–31`，没有重复也没有遗漏。连续顺序的累计组访问依次为 `1 / 2 / 3 / 4`，跨步顺序依次为 `4 / 8 / 12 / 16`。这仍是地址分组层面的教学计数；正式 HIP 代码保持相同的 grid、block、每 lane 循环次数、加法次数和逻辑字节，物理事务与性能由后续实测判断。
+<details>
+<summary>运行输出：hip-v1-strided，第 1 个独立进程</summary>
 
-```text
-连续：base + round * 32 + lane
-跨步：base + lane * 32 + round
-```
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/hip-v1-strided/benchmark-p1.stdout.log{text}
 
-这个实验要验证的不是“跨步一定慢多少”，而是：
+</details>
 
-> 在当前 RX 9070 XT、当前 shape 与当前编译结果下，只改变 wavefront 内地址顺序，kernel 时间和 trace 是否出现可重复差异？
+跨步版保持同样的输入、grid、block 与循环工作量，输出仍然正确；本次单进程中位数为 **2.538206 ms**。接下来用三进程结果确认差异是否只是偶然波动。
 
-2026-07-19 最终 curated evidence 给出了可重复差异：连续版的三进程 median 是 `0.369584 ms`，跨步版是 `2.567170 ms`，跨步版用时约为连续版的 `6.95×`。两者的 kernel trace 都记录到相同的 `524,288` 个 work-item、workgroup size 256、VGPR 16、SGPR 128、LDS 0 Byte 和 scratch 0 Byte；grid、循环次数、算术与逻辑字节也相同。
+::: figure fig-vector-add-address-round
+![相同工作量下连续访问与跨步访问的时间比较](./images/walkthrough-address.png)
 
-因此，当前证据支持“wave32 同轮地址顺序显著影响这个 Vector Add”的判断。它仍没有直接数出物理显存事务，所以更严格的措辞是：**受控地址变化与约 `6.95×` 时间差同时出现，并且现有 trace 资源字段没有提供其他差异。**
+只改变同轮地址排列的 HIP 对照；柱长为三个独立进程 median 的中位数，误差线为进程范围。
+:::
 
-### 8.4.4 HIP v2：Grid-Stride Loop 让线程重复工作
+连续版为 **0.369681 ms**，跨步版为 **2.538206 ms**，后者用时约为前者的 **6.87 倍**，两者的进程范围明显分离。
 
-v0 启动足够多的线程，让每个线程只处理一个位置。另一种常见写法是限制 grid，让线程每隔整个 grid 的跨度继续处理下一个元素：
+受控对照支持“同轮地址排列显著影响当前实现的时间”。它同时改变 A/B 的读取与 C 的写入排列，尚未把时间分摊给读、写或具体缓存行为；图中的地址分组也不是实测内存事务。基线 v0 本来就连续访问，因此这不是把 v0 加速了 6.87 倍。
+
+本轮的决定是保留同轮相邻访问。再采一份仅重复“跨步版更慢”的 trace，不会改变这个决定。若要继续量化物理流量或缓存命中率，需要有效的硬件计数器；本机本次没有取得相应有效数据，边界见 8.5.3。
+
+### 8.4.3 Grid-Stride：减少 block 数是否有收益
+
+基线启动了 65,536 个 block，每个线程只做一次加法。一个可以验证的想法是：**让线程循环处理多个位置，能否用更少的 block 完成同样的工作？**
+
+`hip-v2` 用整个 grid 的线程数作为步长：
 
 ```cpp
 const std::size_t thread =
@@ -286,33 +456,116 @@ for (std::size_t index = thread; index < size; index += grid_stride) {
 }
 ```
 
-假设 grid 一共包含 1024 个线程：
+假设整个 grid 有 1,024 个线程，线程 0 处理 `0、1024、2048…`，线程 1 处理 `1、1025、2049…`。单个线程跨着读，**同一轮的相邻线程仍然连续读**，与上一轮的跨步反例不同。
 
-```text
-线程 0：0, 1024, 2048, ...
-线程 1：1, 1025, 2049, ...
-线程 2：2, 1026, 2050, ...
+不能只把 v0 与一个缩小了 grid 的 v2 相比，就把差异都归给 block 数。因此分两步观察：先让 v2 同样使用 65,536 个 block，再固定这份循环代码，只把 grid 改为 2,048、256。输入、block size、计时方式保持不变。
+
+本轮重点阅读完整程序中的 `vector_add_v2_grid_stride()` 与 `grid_for()`。三次使用同一份循环代码，分别给出明确的 grid 参数。
+
+**保持 65,536 个 block。**
+
+<!-- benchmark:hip-v2-g65536 -->
+
+**运行与校验**
+
+```bash
+test -d "${RUN:?请先完成环境与结果目录准备}/build" && \
+mkdir -p "$RUN/configs/hip-v2-g65536" && \
+test ! -e "$RUN/configs/hip-v2-g65536/benchmark-p1.samples.csv" && \
+"$RUN/build/vector_add_hip" \
+  --version v2 --block 256 --grid 65536 \
+  --size 16777216 --warmup 10 --repeat 50 --seed 20260920 \
+  --samples "$RUN/configs/hip-v2-g65536/benchmark-p1.samples.csv" \
+  --config-id hip-v2-g65536 --process 1
 ```
 
-在同一轮循环中，相邻线程依旧访问相邻元素，因此 Grid-Stride 与“连续访存”并不冲突。
+<details>
+<summary>运行输出：hip-v2-g65536，第 1 个独立进程</summary>
 
-本章代码默认把 v2 的 grid 上限设为“设备 CU 数量 × 8”，并把最终 grid 写入 `RESULT`。这只是待验证的起点，不是通用最优值。减少 block 数可能降低调度开销，也可能让并行度不足；两种方向都要由实测回答。
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/hip-v2-g65536/benchmark-p1.stdout.log{text}
 
-### 8.4.5 HIP v3：`float4` 与尾部不是一回事
+</details>
 
-FP32 标量占 4 Byte，`float4` 把 4 个 FP32 组合成 16 Byte 类型。v3 先把完整的四元素组交给向量路径，再用标量处理最后 `0–3` 个元素。
+先核对 `grid=65536` 与 v0 相同。此时检验的是换成循环结构的效果，不能把它和后面的 grid 缩小混为一项改动。本次单进程中位数为 **0.355121 ms**。
+
+**减少到 2,048 个 block。**
+
+<!-- benchmark:hip-v2-g2048 -->
+
+**运行与校验**
+
+```bash
+test -d "${RUN:?请先完成环境与结果目录准备}/build" && \
+mkdir -p "$RUN/configs/hip-v2-g2048" && \
+test ! -e "$RUN/configs/hip-v2-g2048/benchmark-p1.samples.csv" && \
+"$RUN/build/vector_add_hip" \
+  --version v2 --block 256 --grid 2048 \
+  --size 16777216 --warmup 10 --repeat 50 --seed 20260920 \
+  --samples "$RUN/configs/hip-v2-g2048/benchmark-p1.samples.csv" \
+  --config-id hip-v2-g2048 --process 1
+```
+
+<details>
+<summary>运行输出：hip-v2-g2048，第 1 个独立进程</summary>
+
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/hip-v2-g2048/benchmark-p1.stdout.log{text}
+
+</details>
+
+输出中的 `grid=2048` 表明配置已经生效。平均每线程处理 32 个元素，总加法数量没有减少；本次单进程中位数为 **0.361721 ms**。
+
+**减少到 256 个 block。**
+
+<!-- benchmark:hip-v2-g256 -->
+
+**运行与校验**
+
+```bash
+test -d "${RUN:?请先完成环境与结果目录准备}/build" && \
+mkdir -p "$RUN/configs/hip-v2-g256" && \
+test ! -e "$RUN/configs/hip-v2-g256/benchmark-p1.samples.csv" && \
+"$RUN/build/vector_add_hip" \
+  --version v2 --block 256 --grid 256 \
+  --size 16777216 --warmup 10 --repeat 50 --seed 20260920 \
+  --samples "$RUN/configs/hip-v2-g256/benchmark-p1.samples.csv" \
+  --config-id hip-v2-g256 --process 1
+```
+
+<details>
+<summary>运行输出：hip-v2-g256，第 1 个独立进程</summary>
+
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/hip-v2-g256/benchmark-p1.stdout.log{text}
+
+</details>
+
+此时平均每线程处理 256 个元素。确认 `correct=OK` 后，记录本次单进程中位数 **0.343640 ms**；不要因为这一项较小，就跳过重复测量。
+
+::: figure fig-vector-add-grid-round
+![固定 grid-stride kernel 后比较三种 grid 大小，并以原始基线作为参照](./images/walkthrough-grid.png)
+
+v0 是原始参照；v2 的三个配置使用同一份 kernel。缩小 grid 会同时增加每个线程的工作量，图中实际比较的是这项分工选择。
+:::
+
+三个 v2 配置分别为 **0.350301、0.357582、0.343640 ms**，本轮都没有显示稳定优于 v0 的收益。减少 block 数会同时增加每个线程的循环量；预期中的管理成本下降，未必能抵消其他代价。
+
+本轮保留 v0。这个决定只需要公平测量，不需要给三档 grid 分别再做完整 trace。若后续要判断是否启动了预期数量的 block，可针对那一档检查 Grid / Workgroup；若要解释运行时占用率或等待，还需要对应的有效证据，不能用 block 数替代它们。
+
+### 8.4.4 `float4`：一次表达四个元素是否更快
+
+上一轮的 `grid=256` 中位数高于基线，进程范围仍有重叠。每个线程要循环多次，按四个元素一组读写，能否弥补一部分开销？为了检验这个想法，我们继续固定 **grid=256、block=256**，比较标量循环 v2 与向量类型 v3；图中同时保留原始 v0。这里没有把 256 当作已经选出的最优 grid。
+
+本例从 `hipMalloc` 返回的对齐基地址开始；任意 `input + 1` 偏移不再保证适合强转为 `float4*`，复用这段代码时要先保证地址对齐。
+
+`float4` 把四个 FP32 组合成一个 16 Byte 类型。v3 按四元素组读写，并为剩余的 `0–3` 个元素保留标量路径：
 
 ::: figure fig-hip-float4-tail
 <ElementwiseJourney scenario="vector" />
 
-`N=18` 时的 `float4` 源码分组与标量尾部。动画只画输入 A 的读取；输入 B 的读取与输出 C 的写回采用同样分组。该分组不等同于物理显存事务一定减少。
+`N=18` 的源码分组：前 16 个元素组成四组，最后两个元素单独处理。图中只展开输入 A，B 和 C 使用相同分组。
 :::
-
-核心结构是：
 
 ```cpp
 const std::size_t vector_count = size / 4;
-
 for (std::size_t vector_index = thread;
      vector_index < vector_count;
      vector_index += grid_stride) {
@@ -321,9 +574,6 @@ for (std::size_t vector_index = thread;
     output4[vector_index] =
         make_float4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
 }
-
-// hipMalloc returns suitably aligned base pointers. The scalar loop keeps
-// the final 0-3 values correct when size is not divisible by four.
 for (std::size_t index = vector_count * 4 + thread;
      index < size;
      index += grid_stride) {
@@ -331,339 +581,821 @@ for (std::size_t index = vector_count * 4 + thread;
 }
 ```
 
-这里有三个容易混淆的事实：
+本轮的假设是向量类型可能改变生成的访存指令及循环工作量。源码写出 `float4` 本身不能证明事务减少；先通过包含尾部的正确性检查，再判断时间：
 
-1. `hipMalloc` 返回的基地址满足本例向量类型的对齐要求，但从任意偏移地址强转成 `float4*` 未必安全。
-2. 使用 `float4` 只说明源码请求了向量类型，不自动证明最终指令数量或显存事务减少。
-3. `N % 4 != 0` 时，尾部路径是正确性要求，不是可选优化。
 
-因此 v3 仍然要检查编译结果、边界输入、kernel trace 和时间。若它没有变快，这也是有效结果：说明“源码向量化必然提速”的假设在当前条件下没有成立。
+完整实现仍在[HIP 源文件](#ch8-hip-source)的 `vector_add_v3_float4()`，运行参数使用 `--version v3`。
 
-### 8.4.6 HIP 路线当前能下什么结论
+先检查新增的尾部路径：`N=2` 只走标量尾部，`N=6` 同时包含一组 float4 和两个尾部元素，`N=1026` 检查较长向量部分后的两个元素。这里预热为 0、计时重复 1 次，程序仍会先做一次预检；目的是核对答案。
 
-HIP ladder 已经把三个问题拆开：v1 只控制同一轮的地址顺序，v2 改变 grid 与每线程工作方式，v3 再引入源码向量类型和尾部路径。单看代码不能给它们排快慢；统一的正确性、benchmark 和 trace 数据放在 [共同实验](#_8-5-正确性、benchmark-与-profiling)，负结果与边界在 [适用边界](#_8-7-负结果、适用边界与下一步) 汇总。
+```bash
+test -d "${RUN:?请先完成环境与结果目录准备}/build" && \
+"$RUN/build/vector_add_hip" --version v3 --size 2 --block 256 --warmup 0 --repeat 1 --seed 20260920 --grid 256 && \
+"$RUN/build/vector_add_hip" --version v3 --size 6 --block 256 --warmup 0 --repeat 1 --seed 20260920 --grid 256 && \
+"$RUN/build/vector_add_hip" --version v3 --size 1026 --block 256 --warmup 0 --repeat 1 --seed 20260920 --grid 256
+```
 
-完整实现位于 `code/part2-kernels/chapter8/vector_add_hip.hip`。
+<details>
+<summary>边界检查原始输出：float4 尾部 @ RX 9070 XT / ROCm 10.0</summary>
 
+**boundary-float4-n2.log**
+
+<<< @/../code/part2-kernels/chapter8/evidence/boundary-check/boundary-float4-n2.log{text}
+
+**boundary-float4-n6.log**
+
+<<< @/../code/part2-kernels/chapter8/evidence/boundary-check/boundary-float4-n6.log{text}
+
+**boundary-float4-n1026.log**
+
+<<< @/../code/part2-kernels/chapter8/evidence/boundary-check/boundary-float4-n1026.log{text}
+
+</details>
+
+三项记录均为 `precheck=OK postcheck=OK correct=OK`，`max_abs_error=0`。小输入下程序会收缩 grid，三份输出的实际 `grid=1`，不是请求上限 256。日志中的单次 event 数值不作性能比较；边界通过后，再回到相同主输入与实际 grid=256 的对照。
+
+
+
+<!-- benchmark:hip-v3-g256 -->
+
+**运行与校验**
+
+```bash
+test -d "${RUN:?请先完成环境与结果目录准备}/build" && \
+mkdir -p "$RUN/configs/hip-v3-g256" && \
+test ! -e "$RUN/configs/hip-v3-g256/benchmark-p1.samples.csv" && \
+"$RUN/build/vector_add_hip" \
+  --version v3 --block 256 --grid 256 \
+  --size 16777216 --warmup 10 --repeat 50 --seed 20260920 \
+  --samples "$RUN/configs/hip-v3-g256/benchmark-p1.samples.csv" \
+  --config-id hip-v3-g256 --process 1
+```
+
+<details>
+<summary>运行输出：hip-v3-g256，第 1 个独立进程</summary>
+
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/hip-v3-g256/benchmark-p1.stdout.log{text}
+
+</details>
+
+先核对 `grid=256`、`block=256` 与标量 v2 一致，前后检查通过；本次单进程中位数为 **0.342002 ms**。四元素分组同时改变循环工作量、地址表达和编译选择，不能仅凭源码中的类型推断访存事务减少。
+
+::: figure fig-vector-add-vector-round
+![相同 grid 和 block 下标量循环与 float4 循环的时间比较](./images/walkthrough-vector.png)
+
+固定 grid=256、block=256，比较 v2 与 v3。相同执行配置使这轮改动更容易解释。
+:::
+
+标量 v2 为 **0.343640 ms**，四元素分组 v3 为 **0.342121 ms**。两者的三进程范围重叠，与 v0 也有重叠，尚无稳定收益足以替换简单基线。
+
+因此本轮停止这项改动，保留 v0。只有还要回答“编译器是否生成了预期的宽指令”时，才继续看编译结果；即使发现指令变宽，也不能据此宣布速度会提高。8.5.3 的 ATT 选读只演示 v0 的源码与指令对应，不作为这里 v3 的解释证据。
+
+### 8.4.5 HIP 路线的实验决策
+
+这条路线保留了三种可复用的方法：用相同工作量隔离地址排列，用同一循环 kernel 扫描 grid，用相同 grid/block 对照元素分组。每个对照都回答一个问题；没有稳定提速也能帮助决定停止哪项尝试。
+
+当前主输入选择 v0。换成别的实际长度或布局时，应从基线重新比较，不能把某个 grid 或向量类型当成通用答案。
 
 </template>
 
 <template #triton>
 
+### 8.4.6 Triton 基线：一个 program 处理一段元素
 
-### 8.4.7 Triton：先读一块数据的工作
-
-先看一个 program 处理哪些位置，再读对应的加载和写回。如果还不清楚 program 与 thread 的区别，可以按需阅读 [Triton 编程范式](../../appendix/programming-models/index.md#triton-model)。
-
-Triton 不是“无需理解硬件”。它把许多线程级细节交给编译器，但 program 怎样切 tile、地址是否连续、mask 是否正确、参数是否合适，仍由程序员负责。
-
-### 8.4.8 Triton kernel：从下标到读写
+HIP 的核函数描述一个线程；Triton 的核函数描述一块数据。我们先让一个 program 负责 256 个连续元素，得到本路线的 `triton-t0`。它是可以直接修改、复测的基线，不需要先复制 HIP 的线程循环和 `float4` 写法。
 
 ```python
 @triton.jit
 def vector_add_kernel(
-    input_a_ptr,
-    input_b_ptr,
-    output_ptr,
-    size,
+    input_a_ptr, input_b_ptr, output_ptr, size,
     BLOCK_SIZE: tl.constexpr,
 ):
-    """Add one tile of two FP32 vectors per Triton program."""
     program_id = tl.program_id(axis=0)
     offsets = program_id * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)
     valid = offsets < size
-
     input_a = tl.load(input_a_ptr + offsets, mask=valid, other=0.0)
     input_b = tl.load(input_b_ptr + offsets, mask=valid, other=0.0)
     tl.store(output_ptr + offsets, input_a + input_b, mask=valid)
 ```
 
-逐行看，不需要先背语法：
+`tl.arange` 生成一组下标，`program_id * BLOCK_SIZE` 将它们移到当前片段。`tl.load` 读入两组数，加法逐位置进行，`tl.store` 写回同一组位置。`BLOCK_SIZE` 表示逻辑元素数，**不是 HIP 的线程数 `blockDim.x`**；元素怎样分配给底层执行线程与寄存器，由编译器安排。
 
-1. `@triton.jit` 告诉 Triton：下面定义的是要即时编译的 kernel。
-2. `tl.program_id(0)` 取得当前 program 在一维网格中的编号。
-3. `tl.arange(0, BLOCK_SIZE)` 生成一个 tile 内的局部下标。
-4. `program_id * BLOCK_SIZE` 把局部下标移动到当前 tile 的起点。
-5. `valid` 标记哪些下标没有越过 `size`。
-6. 两次 `tl.load` 读取相同 offsets 的 A/B。
-7. `tl.store` 把逐元素加法写回相同 offsets 的 C。
-
-最值得注意的是：`offsets` 不是一个 Python 整数，而是一整组下标。Triton 代码看起来像在操作向量，编译器再把这块工作映射到底层 GPU 执行资源。
-
-### 8.4.9 Host wrapper 负责设置网格并启动
-
-输出已经由调用方分配好。下面的 host 函数从 `Implementation` 读取分块参数，设置网格并启动 kernel：
-
-```python
-def launch(
-    implementation: Implementation,
-    input_a: torch.Tensor,
-    input_b: torch.Tensor,
-    output: torch.Tensor,
-) -> None:
-    size = output.numel()
-    grid = (triton.cdiv(size, implementation.block_size),)
-    vector_add_kernel[grid](
-        input_a,
-        input_b,
-        output,
-        size,
-        BLOCK_SIZE=implementation.block_size,
-        num_warps=NUM_WARPS,
-    )
-```
-
-`triton.cdiv(size, implementation.block_size)` 是向上取整。`N=13`、`BLOCK_SIZE=8` 时需要 2 个 program；第二个 program 生成 `8–15`，再由 mask 关闭 `13–15`。
-
-配套脚本使用 `torch.cuda.Event` 与 `device="cuda"`。在 ROCm 版 PyTorch 中看到 `cuda` 不表示代码跑到了 NVIDIA GPU；PyTorch 官方为了兼容现有生态，HIP 后端继续复用 `torch.cuda` 接口，可通过 `torch.version.hip` 确认当前构建。
-
-### 8.4.10 Triton t0/t1：先只改一个参数
-
-本章保留同一个 kernel，只改变 `BLOCK_SIZE`：
-
-| 版本 | `BLOCK_SIZE` | `num_warps` | 改变了什么 |
-| ---- | ----: | ----: | ---- |
-| `triton-t0` | 256 | 4 | 最小正确 baseline |
-| `triton-t1` | 1024 | 4 | 每个 program 覆盖更多元素，program 数量减少 |
-
-这里把 `num_warps` 固定为 4，是为了让 block size 成为主要变量。`num_warps` 是 Triton 的元参数，指定编译一个 program 时使用多少个 warp/wavefront 执行组；它大致对应 HIP 语境里“一个 block 占几个 wavefront”，但 tile 元素怎样落到 lane 与寄存器仍由编译器决定。`BLOCK_SIZE` 更大可能减少 program 数量，也可能改变资源使用与调度；在实测前不能把 t1 称为“优化版”。
-
-### 8.4.11 用小数组理解 offsets 和 mask
-
-先不运行新的工具，直接观察 `N=13`、每个 program 覆盖 8 个位置时的下标。第一个 program 处理 `0–7`；第二个生成 `8–15`，但只能读写 `8–12`。
+先用小输入检查最后一段：
 
 ::: figure fig-triton-program-mask
 <ElementwiseJourney scenario="triton" />
 
-第二个 program 生成一整组下标，mask 保留五个有效位置。越界位置不会访问输入，也不会写回输出；这里展示的是算法索引过程。
+`N=13`、教学 tile 大小为 8。第二个 program 生成下标 8–15，mask 只允许读写 8–12。
 :::
 
-在 @fig-triton-program-mask 中先选择第二个 program，再看 mask 如何对应到每个下标。输入加载的 `other=0.0` 给关闭的位置一个占位值；保护输出仍需要 `tl.store` 自己的 mask，不能只给 load 加 mask。
+在 @fig-triton-program-mask 中，load 的 `other=0.0` 为关闭的位置提供占位值；store 仍必须独立传入 mask，才能保护输出边界。
 
-### 8.4.12 Triton 路线当前结果
+主机端负责把整个数组划分成 program 网格并启动它：
 
-Triton ladder 只把 `BLOCK_SIZE` 从 256 改为 1024，并保持 `num_warps=4`。更大的 tile 同时减少 program 数并改变资源需求，所以仍要把时间范围和 trace 放在一起读。统一结果见 [共同实验](#_8-5-正确性、benchmark-与-profiling)，不能只看到 program 数减少就提前宣布胜负。
+```python
+size = output.numel()
+grid = (triton.cdiv(size, implementation.block_size),)
+vector_add_kernel[grid](
+    input_a, input_b, output, size,
+    BLOCK_SIZE=implementation.block_size,
+    num_warps=4,
+)
+```
 
-完整实现位于 `code/part2-kernels/chapter8/vector_add_triton.py`。
+`triton.cdiv` 向上取整。完整程序还包含输出分配、CPU 参考计算、正确性检查与 GPU event 计时。先读 `main()` 中的准备与校验，再读 `benchmark()` 如何反复调用 `launch()`。ROCm 版 PyTorch 沿用 `torch.cuda.Event` 和 `device="cuda"` 这些兼容接口名。
 
+
+<a id="ch8-triton-source"></a>
+
+<details>
+<summary>完整源码：code/part2-kernels/chapter8/vector_add_triton.py</summary>
+
+<<< @/../code/part2-kernels/chapter8/vector_add_triton.py{python}
+
+</details>
+
+<!-- benchmark:triton-t0-b256 -->
+
+**运行与校验**
+
+```bash
+test -d "${RUN:?请先完成环境与结果目录准备}/build" && \
+mkdir -p "$RUN/configs/triton-t0-b256" && \
+test ! -e "$RUN/configs/triton-t0-b256/benchmark-p1.samples.csv" && \
+python chapter8/vector_add_triton.py \
+  --version t0 --block 256 \
+  --size 16777216 --warmup 10 --repeat 50 --seed 20260920 \
+  --samples "$RUN/configs/triton-t0-b256/benchmark-p1.samples.csv" \
+  --config-id triton-t0-b256 --process 1
+```
+
+<details>
+<summary>运行输出：triton-t0-b256，第 1 个独立进程</summary>
+
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/triton-t0-b256/benchmark-p1.stdout.log{text}
+
+</details>
+
+第一次调用在预检阶段完成 JIT 编译，不进入后面的稳态样本。先确认 `correct=OK`，再看 `block=256`、`grid=65536`、`num_warps=4`。这里输出字段 `block` 表示逻辑 tile 的元素数，不是实际线程数。
+
+本次单进程中位数为 **0.349521 ms**；三进程的中位数为 **0.334061 ms**，范围 **0.333781–0.349521 ms**。这组结果是本路线后续比较的起点。
+
+**基线分析：256 个元素对应多少底层线程？** 源码中的 tile 是逻辑数据量。下面示范本路线的基本 trace，核对编译后工作组与 program 网格，不用它替代上面的 benchmark。
+
+仍在本篇目录运行；预热 5 次、重复 10 次，另有 1 次预检。`inspect_trace.py` 匹配目标函数，按时间排序，跳过 6 条预检与预热，只读取后续 10 条。其完整源码在 [8.5.1](#_8-5-1-从问题到字段)，只依赖标准库。
+
+**256 个元素：资源参照。**
+
+
+
+```bash
+test -d "${RUN:?请先完成环境与结果目录准备}/build" && \
+mkdir "$RUN/configs/triton-t0-b256/profile" && \
+rocprofv3 --kernel-trace --hip-trace --stats \
+  --output-format csv pftrace \
+  --output-directory "$RUN/configs/triton-t0-b256/profile" \
+  --output-file triton-t0-b256 -- \
+  python chapter8/vector_add_triton.py \
+  --version t0 --block 256 \
+  --size 16777216 --warmup 5 --repeat 10 --seed 20260920 \
+  --config-id triton-t0-b256 --process 1 && \
+python chapter8/inspect_trace.py \
+  "$RUN/configs/triton-t0-b256/profile/triton-t0-b256_kernel_trace.csv" \
+  --kernel vector_add_kernel --skip 6 --take 10
+```
+
+<details>
+<summary>性能分析原始输出：triton-t0-b256（终端、生成记录与 CSV）</summary>
+
+**程序 stdout**
+
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/triton-t0-b256/profile.stdout.log{text}
+
+**Profiler stderr：文件生成记录**
+
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/triton-t0-b256/profile.stderr.log{text}
+
+**原始 kernel trace CSV**
+
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/triton-t0-b256/profile/triton-t0-b256_kernel_trace.csv{text}
+
+</details>
+
+<details>
+<summary>筛选后的分析结果：triton-t0-b256</summary>
+
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/triton-t0-b256/inspect.stdout.log{text}
+
+</details>
+
+先核对 `target_rows=16` 与 `kept_rows=10`。Workgroup X 为 **128**；Grid X 为 **8,388,608**，两者相除是 **65,536** 个 workgroup，与本次 program 数一致。可见，256 个逻辑元素并不等于 256 个底层线程。记录 `vgpr_count=8`，后续如有资源问题可复用这份基线，不必重新采集。
+
+时间字段是设备 kernel 的起止时间，单位为 μs；分析窗口中位数为 **327.2815 μs**。它与前面的 event 是不同运行、不同范围，不能相减来推算 CPU 开销。当前已核对到执行映射，可以继续检验更大的逻辑 tile。
+
+现在可以直接提出分工假设：一个 program 多处理一些元素，减少 program 数量，是否有收益？先固定 `num_warps=4` 比较 tile，保留原有连续访问与 mask，不需要照搬 HIP 的 grid-stride 或 `float4`。
+
+### 8.4.7 Tile 扫描：固定执行参数，只改数据粒度
+
+先比较四个候选，观察每项实际改变了什么：
+
+| 每 program 的元素数 `BLOCK_SIZE` | program 数，`N=16,777,216` | `num_warps` |
+| ---: | ---: | ---: |
+| 256 | 65,536 | 4 |
+| 512 | 32,768 | 4 |
+| 1,024 | 16,384 | 4 |
+| 2,048 | 8,192 | 4 |
+
+源码中的 `t0` 固定使用 256 个元素；扫描参数时选择 `t1`，再用 `--block` 指定逻辑 tile。三项都调用[完整源码](#ch8-triton-source)中的 `vector_add_kernel()`；`launch()` 依据 tile 计算网格，改的是传入编译器的配置。
+
+四项使用同一个 kernel，地址仍连续，尾部仍由 mask 保护。`num_warps` 控制编译一个 program 时采用的执行组数；它与“这一份工作有多少元素”是不同的参数。本轮固定为 4，以便先理解 tile 大小这一项选择。
+
+**更大的 tile 同时带来两种变化：独立 program 更少，每个 program 需要处理和保留的数据更多。** 因而不能只计算 program 数减少了几倍，就推出性能也会按比例提高。
+
+改变 tile 后，先检查各候选的「少一个、恰好填满、多一个」。这样可以验证 mask 与 program 网格配合时不会漏掉最后一个元素；这些短运行不用于测速。
+
+```bash
+python chapter8/vector_add_triton.py --version t1 --size 511 --block 512 --warmup 0 --repeat 1 --seed 20260920
+python chapter8/vector_add_triton.py --version t1 --size 512 --block 512 --warmup 0 --repeat 1 --seed 20260920
+python chapter8/vector_add_triton.py --version t1 --size 513 --block 512 --warmup 0 --repeat 1 --seed 20260920
+python chapter8/vector_add_triton.py --version t1 --size 1023 --block 1024 --warmup 0 --repeat 1 --seed 20260920
+python chapter8/vector_add_triton.py --version t1 --size 1024 --block 1024 --warmup 0 --repeat 1 --seed 20260920
+python chapter8/vector_add_triton.py --version t1 --size 1025 --block 1024 --warmup 0 --repeat 1 --seed 20260920
+python chapter8/vector_add_triton.py --version t1 --size 2047 --block 2048 --warmup 0 --repeat 1 --seed 20260920
+python chapter8/vector_add_triton.py --version t1 --size 2048 --block 2048 --warmup 0 --repeat 1 --seed 20260920
+python chapter8/vector_add_triton.py --version t1 --size 2049 --block 2048 --warmup 0 --repeat 1 --seed 20260920
+```
+
+<details>
+<summary>边界检查原始输出：三个 tile 的边界 @ RX 9070 XT / ROCm 10.0</summary>
+
+**boundary-tile512-n511.log**
+
+<<< @/../code/part2-kernels/chapter8/evidence/boundary-check/boundary-tile512-n511.log{text}
+
+**boundary-tile512-n512.log**
+
+<<< @/../code/part2-kernels/chapter8/evidence/boundary-check/boundary-tile512-n512.log{text}
+
+**boundary-tile512-n513.log**
+
+<<< @/../code/part2-kernels/chapter8/evidence/boundary-check/boundary-tile512-n513.log{text}
+
+**boundary-tile1024-n1023.log**
+
+<<< @/../code/part2-kernels/chapter8/evidence/boundary-check/boundary-tile1024-n1023.log{text}
+
+**boundary-tile1024-n1024.log**
+
+<<< @/../code/part2-kernels/chapter8/evidence/boundary-check/boundary-tile1024-n1024.log{text}
+
+**boundary-tile1024-n1025.log**
+
+<<< @/../code/part2-kernels/chapter8/evidence/boundary-check/boundary-tile1024-n1025.log{text}
+
+**boundary-tile2048-n2047.log**
+
+<<< @/../code/part2-kernels/chapter8/evidence/boundary-check/boundary-tile2048-n2047.log{text}
+
+**boundary-tile2048-n2048.log**
+
+<<< @/../code/part2-kernels/chapter8/evidence/boundary-check/boundary-tile2048-n2048.log{text}
+
+**boundary-tile2048-n2049.log**
+
+<<< @/../code/part2-kernels/chapter8/evidence/boundary-check/boundary-tile2048-n2049.log{text}
+
+</details>
+
+九项均通过前后检查，最大绝对误差为零；每组三个长度的 `grid` 分别为 1、1、2。不要用这些无预热、单次执行的 event 时间给候选排序。下面恢复相同主输入与正式预热、重复次数，比较 tile 的性能。
+
+
+
+**每个 program 处理 512 个元素。**
+
+<!-- benchmark:triton-t1-b512 -->
+
+**运行与校验**
+
+```bash
+test -d "${RUN:?请先完成环境与结果目录准备}/build" && \
+mkdir -p "$RUN/configs/triton-t1-b512" && \
+test ! -e "$RUN/configs/triton-t1-b512/benchmark-p1.samples.csv" && \
+python chapter8/vector_add_triton.py \
+  --version t1 --block 512 \
+  --size 16777216 --warmup 10 --repeat 50 --seed 20260920 \
+  --samples "$RUN/configs/triton-t1-b512/benchmark-p1.samples.csv" \
+  --config-id triton-t1-b512 --process 1
+```
+
+<details>
+<summary>运行输出：triton-t1-b512，第 1 个独立进程</summary>
+
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/triton-t1-b512/benchmark-p1.stdout.log{text}
+
+</details>
+
+核对 `block=512`、`grid=32768`，以及三个检查字段为 `OK`。本次单进程中位数为 **0.340481 ms**。
+
+**每个 program 处理 1,024 个元素。**
+
+<!-- benchmark:triton-t1-b1024 -->
+
+**运行与校验**
+
+```bash
+test -d "${RUN:?请先完成环境与结果目录准备}/build" && \
+mkdir -p "$RUN/configs/triton-t1-b1024" && \
+test ! -e "$RUN/configs/triton-t1-b1024/benchmark-p1.samples.csv" && \
+python chapter8/vector_add_triton.py \
+  --version t1 --block 1024 \
+  --size 16777216 --warmup 10 --repeat 50 --seed 20260920 \
+  --samples "$RUN/configs/triton-t1-b1024/benchmark-p1.samples.csv" \
+  --config-id triton-t1-b1024 --process 1
+```
+
+<details>
+<summary>运行输出：triton-t1-b1024，第 1 个独立进程</summary>
+
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/triton-t1-b1024/benchmark-p1.stdout.log{text}
+
+</details>
+
+核对 `block=1024`、`grid=16384`。本次单进程中位数为 **0.338220 ms**；后面仍与最初的 tile256 一起比较，不只挑一个较慢候选作分母。
+
+**每个 program 处理 2,048 个元素。**
+
+<!-- benchmark:triton-t1-b2048 -->
+
+**运行与校验**
+
+```bash
+test -d "${RUN:?请先完成环境与结果目录准备}/build" && \
+mkdir -p "$RUN/configs/triton-t1-b2048" && \
+test ! -e "$RUN/configs/triton-t1-b2048/benchmark-p1.samples.csv" && \
+python chapter8/vector_add_triton.py \
+  --version t1 --block 2048 \
+  --size 16777216 --warmup 10 --repeat 50 --seed 20260920 \
+  --samples "$RUN/configs/triton-t1-b2048/benchmark-p1.samples.csv" \
+  --config-id triton-t1-b2048 --process 1
+```
+
+<details>
+<summary>运行输出：triton-t1-b2048，第 1 个独立进程</summary>
+
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/triton-t1-b2048/benchmark-p1.stdout.log{text}
+
+</details>
+
+核对 `block=2048`、`grid=8192`。本次单进程中位数为 **0.341241 ms**。program 更少没有在这一次运行里自动换来更短的时间，判断仍看三进程结果。
+
+::: figure fig-vector-add-triton-round
+![同一 Triton kernel 在固定 num_warps 下的四种 tile 大小与时间](./images/walkthrough-triton.png)
+
+固定 `num_warps=4` 的 tile 扫描；每个候选均先通过正确性，再参加独立进程计时。
+:::
+
+256、512、1,024、2,048 四个候选分别为 **0.334061、0.335441、0.337701、0.341241 ms**。三个更大 tile 的进程范围都与 256 基线有重叠，没有稳定收益，因此本轮保留 `BLOCK_SIZE=256、num_warps=4`。这个性能决定到这里已经成立。
+
+**代表配置分析：program 减少后，每份工作的资源分配是否也变化？** 如果要进一步理解 tile 的代价，可以比较扫描的两端 256 与 2048。选择它们是为了检查分工变化，不是为了把“没有收益”解释成已经证明的寄存器瓶颈；中间两个配置无需再重复同一操作。
+
+复用 8.4.6 中已取得的 tile256 基线，只对 tile2048 增加一次分析。下面仍在本篇目录运行，采用同样的预检、预热与筛选窗口；两份 trace 都独立于 benchmark。
+
+**2,048 个元素：与参照保持相同 `num_warps`。**
+
+
+
+```bash
+test -d "${RUN:?请先完成环境与结果目录准备}/build" && \
+mkdir "$RUN/configs/triton-t1-b2048/profile" && \
+rocprofv3 --kernel-trace --hip-trace --stats \
+  --output-format csv pftrace \
+  --output-directory "$RUN/configs/triton-t1-b2048/profile" \
+  --output-file triton-t1-b2048 -- \
+  python chapter8/vector_add_triton.py \
+  --version t1 --block 2048 \
+  --size 16777216 --warmup 5 --repeat 10 --seed 20260920 \
+  --config-id triton-t1-b2048 --process 1 && \
+python chapter8/inspect_trace.py \
+  "$RUN/configs/triton-t1-b2048/profile/triton-t1-b2048_kernel_trace.csv" \
+  --kernel vector_add_kernel --skip 6 --take 10
+```
+
+<details>
+<summary>性能分析原始输出：triton-t1-b2048（终端、生成记录与 CSV）</summary>
+
+**程序 stdout**
+
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/triton-t1-b2048/profile.stdout.log{text}
+
+**Profiler stderr：文件生成记录**
+
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/triton-t1-b2048/profile.stderr.log{text}
+
+**原始 kernel trace CSV**
+
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/triton-t1-b2048/profile/triton-t1-b2048_kernel_trace.csv{text}
+
+</details>
+
+<details>
+<summary>筛选后的分析结果：triton-t1-b2048</summary>
+
+<<< @/../code/part2-kernels/chapter8/evidence/walkthrough/configs/triton-t1-b2048/inspect.stdout.log{text}
+
+</details>
+
+阅读时先确认两份结果都为 `target_rows=16`、`kept_rows=10`，随后按下列顺序比较：
+
+| 字段 | tile256 | tile2048 | 能回答什么 |
+| --- | ---: | ---: | --- |
+| Workgroup X | 128 | 128 | 本次实际工作组大小没有随逻辑 tile 变成 8 倍 |
+| Grid X | 8,388,608 | 1,048,576 | 工作项数；除以 Workgroup X，得到 65,536 与 8,192 个 workgroup，与 program 网格对应 |
+| VGPR | 8 | 40 | 当前编译与启动的寄存器资源字段增大 |
+| LDS / Scratch（Byte） | 0 / 0 | 0 / 0 | 本次记录的这两项分配为零 |
+
+这组证据说明，减少 program 并不是只减少启动数量：每份工作的资源需求也会改变。它没有测出动态 occupancy 或寄存器造成的耗时比例；`scratch=0` 也不表示资源没有代价。不要将“VGPR 增大”和“没有稳定加速”直接拼成唯一因果关系。
+
+当前仍保留 tile256。若实际工作需要处理另一种长度，可以重新比较；若继续研究资源与并行量的取舍，可固定 tile 再单独改变 `num_warps`，但那是下一项实验，不能用本轮数据预告结果。
+
+### 8.4.8 从手工比较到自动调优
+
+Triton 的优化从 program 的数据分工出发：先写清 offsets、mask 与负责的输出，再固定一个执行参数，扫描少量有理由的 tile。编译器负责将逻辑数据块映射到底层线程和寄存器；需要解释这层映射时才查看相应记录。
+
+当候选变多、不同 shape 需要不同配置时，可以让 `triton.autotune` 搜索。但它只比较给定候选，不替代正确性检查、数据流设计或结果解释。本章保留小范围手工扫描；后面的矩阵乘再研究多个 tile 参数怎样组合。
 
 </template>
 
 </ImplementationTabs>
 
-## 8.5 正确性、Benchmark 与 Profiling
+<a id="_8-5-正确性-benchmark-与-profiling"></a>
 
-本节只发布 `code/part2-kernels/chapter8/evidence/` 中已经进入 curated evidence 的字段。实验基线是 **AMD Radeon RX 9070 XT（gfx1201）+ ROCm 7.13.99004 + 原生 Ubuntu 24.04.4 LTS**；输入为 `N=16,777,216` 个 FP32 元素。
+## 8.5 按问题选择性能分析
 
-### 8.5.1 正确性矩阵
+打开 profiler 之前，先写一句它要回答的问题，再决定读什么字段。若报告无法改变下一步的选择，就不必为了流程完整而采集。
 
-发布行都经过独立进程汇总，`correct` 与 `max_abs_error` 直接来自 `summary.csv`。正式计时前，`run_all.sh` 还会检查小于 wavefront、block 边界、block 加一和不能被向量宽度整除的输入。
+### 8.5.1 从问题到字段
 
-| Implementation | Runtime | Shape | Block | Grid | Correct | Max abs error |
-| ---- | ---- | ----: | ----: | ----: | ---- | ----: |
-| `hip-v0` | hip | 16777216 | 256 | 65536 | OK | 0.0 |
-| `hip-v1-contiguous` | hip | 16777216 | 256 | 2048 | OK | 0.0 |
-| `hip-v1-strided` | hip | 16777216 | 256 | 2048 | OK | 0.0 |
-| `hip-v2` | hip | 16777216 | 256 | 256 | OK | 0.0 |
-| `hip-v3` | hip | 16777216 | 256 | 256 | OK | 0.0 |
-| `triton-t0` | triton | 16777216 | 256 | 65536 | OK | 0.0 |
-| `triton-t1` | triton | 16777216 | 1024 | 16384 | OK | 0.0 |
+| 当前问题 | 优先证据 | 本章的使用位置 |
+| --- | --- | --- |
+| 修改后是否正确，是否值得替换基线？ | 正确性检查与独立进程 benchmark | 每轮必做；不需要 profiler 才能作取舍 |
+| 运行的是预期 kernel 和启动规模吗？ | kernel 名称、Grid / Workgroup、目标调用次数 | HIP 基线 trace |
+| kernel 在设备上何时开始、何时结束？ | 起止时间戳与 CPU/GPU 时间线 | 基线示范；后续有提交节奏疑问时再看 |
+| tile 改变后资源分配有变化吗？ | 代表配置的 Workgroup、VGPR、LDS、Scratch | Triton256 与2048配对分析 |
+| 物理流量或缓存命中率是否变化？ | 经过有效性核验的相应硬件计数器 | 本机本次没有取得足够证据，不能用逻辑字节替代 |
+| 源码对应哪些指令，局部 wave 在哪里等待？ | 编译结果或局部指令跟踪 | 进阶诊断；不能直接分摊整个 kernel 的时间 |
 
-### 8.5.2 Benchmark 口径与发布结果
+本章的 `inspect_trace.py` 先匹配一个确定的 kernel 名称，按起点排序，再去掉预检与预热。它会检查记录数量、必需列和各次启动字段是否一致；不满足预期时直接报错。命令中的 grid 仍要与结果人工对照。
 
-每个进程先 warmup 10 次、正式计时 50 次；每个发布值先取进程内 median，再对 3 个独立进程的 median 取中位数。计时范围是 GPU event，不含分配、输入生成和 Host-to-Device 拷贝。
+<details>
+<summary>完整分析脚本：code/part2-kernels/chapter8/inspect_trace.py</summary>
 
-| Implementation | Median (ms) | Run range (ms) | Logical effective bandwidth (GB/s) | Run range (GB/s) |
-| ---- | ----: | ----: | ----: | ----: |
-| `hip-v0` | 0.336324 | 0.336224–0.337965 | 598.609044 | 595.703362–598.787113 |
-| `hip-v1-contiguous` | 0.369584 | 0.367805–0.370344 | 544.738374 | 543.620507–547.373904 |
-| `hip-v1-strided` | 2.567170 | 2.539349–2.581509 | 78.423556 | 77.987935–79.282759 |
-| `hip-v2` | 0.343484 | 0.341984–0.345644 | 586.130918 | 582.468070–588.701781 |
-| `hip-v3` | 0.345224 | 0.344864–0.347444 | 583.176683 | 579.450457–583.785476 |
-| `triton-t0` | 0.336204 | 0.335084–0.336803 | 598.823604 | 597.756836–600.824263 |
-| `triton-t1` | 0.338504 | 0.338404–0.338844 | 594.753950 | 594.157167–594.929706 |
+<<< @/../code/part2-kernels/chapter8/inspect_trace.py{python}
 
-::: figure fig-vector-add-bandwidth
-![七个 HIP 与 Triton Vector Add 实现的逻辑有效带宽；跨步 HIP 版本明显低于其余连续访问版本](./images/vector-add-ch8-bandwidth.png)
+</details>
 
-Radeon RX 9070 XT 上的 Vector Add 逻辑有效带宽；柱长为三进程中位数，误差线为三进程范围。
-:::
+采集命令用 `mkdir ... && rocprofv3 ... && python ...` 连接。目录已存在或采集失败时停止后续步骤，避免覆盖旧记录或误读旧报告。采集过程中可能改变队列处理方式，因此其 event 时间始终与 benchmark 分开。
 
-图和表中的带宽都按 `12 Byte × N / 时间` 计算，是方便同语义版本比较的**逻辑有效带宽**。它不等于内存控制器实际传输的物理 GDDR6 流量。
+| 文件 | 阅读用途 |
+| --- | --- |
+| `*_kernel_trace.csv` | 逐条核对目标名称、时间戳和启动字段 |
+| `*_hip_api_trace.csv` | CPU 侧 API 调用，用 `Correlation_Id` 关联提交与设备执行 |
+| `*_kernel_stats.csv` | 整次进程汇总，含预检与预热，不作正式成绩 |
+| `*_results.pftrace` | 查看 CPU/GPU 时间线与调用关系 |
 
-### 8.5.3 Profiling 字段
+工具的 `Opened result file` 记录位于 stderr，行首带 `E`；这些行报告文件生成。是否成功还要看退出状态、文件内容与目标记录，不能只看日志前缀。时间戳单位为 ns，分析脚本为 μs，benchmark 为 ms：`1 ms = 1,000 μs = 1,000,000 ns`。
 
-`profile_all.sh` 为每个实现启动独立的 `rocprofv3` kernel trace。下面逐格来自 `profile_summary.csv`；dispatch 数、grid、workgroup 与资源字段不从源码反推。这里的 Grid X 是 trace 报告的工作项范围，不是 block 或 Triton program 数；例如 HIP v0 的 `16777216 / 256 = 65536` 才是该次启动的 block 数。
+### 8.5.2 时间线与工具适用范围
 
-| Implementation | Dispatches | Grid X | Workgroup X | LDS B | Scratch B | VGPR | Accum VGPR | SGPR |
-| ---- | ----: | ----: | ----: | ----: | ----: | ----: | ----: | ----: |
-| `hip-v0` | 6 | 16777216 | 256 | 0 | 0 | 8 | 0 | 128 |
-| `hip-v1-contiguous` | 6 | 524288 | 256 | 0 | 0 | 16 | 0 | 128 |
-| `hip-v1-strided` | 6 | 524288 | 256 | 0 | 0 | 16 | 0 | 128 |
-| `hip-v2` | 6 | 65536 | 256 | 0 | 0 | 16 | 0 | 128 |
-| `hip-v3` | 6 | 65536 | 256 | 0 | 0 | 16 | 0 | 128 |
-| `triton-t0` | 6 | 8388608 | 128 | 0 | 0 | 8 | 0 | 128 |
-| `triton-t1` | 6 | 2097152 | 128 | 0 | 0 | 24 | 0 | 128 |
+先让工具回答一个具体问题：要知道哪次 kernel 慢，读时间线；要核对执行了多少工作，尝试有效的硬件计数器；要观察局部 wave 的指令轨迹，再进入 ATT。工具越底层，需要核对的采集条件也越多。
+
+本章环境中的 `rocprofv3` 来自 **ROCprofiler-SDK 1.3.5**，工具自报 ROCm 10.0.0。ROCm 发行版、SDK 工具和 HIP 组件各有自己的版本号，不能要求它们都显示 `10.0`。
+
+```bash
+rocprofv3 --version
+```
+
+<details>
+<summary>查看本机 rocprofv3 版本输出</summary>
+
+**ROCm wheel 环境中的工具**
+
+<<< @/../code/part2-kernels/chapter8/evidence/tool-audit/version.stdout.log{text}
+
+</details>
+
+输出中的 `version` 与 `rocm_version` 对应工具版本和 ROCm 版本；`system_version` 是工具构建信息，实验机系统以本章的环境记录为准。
+
+| 工具或功能 | 在本章 RX 9070 XT 上的情况 | 适合回答的问题 |
+| --- | --- | --- |
+| `rocprofv3` kernel / HIP trace | 本章 11 个配置均已采集 CSV 与 Perfetto 时间线 | CPU 提交了什么，GPU 何时执行，实际启动规模是多少 |
+| `rocprofv3` 硬件计数器（PMC） | wave 数取得可核对结果；本次缓存与流量指标返回零，不能用来解释访存效率 | 指定 dispatch 的某类事件发生了多少次；先核对指标与采集是否有效 |
+| `rocprofv3 --att` 指令跟踪 | 已取得单次 baseline dispatch 的原始跟踪与解码产物 | 选定硬件位置上的 wave 执行了哪些指令；适合继续定位局部等待 |
+| ROCprofiler Systems | 官方 ROCm 10.0 矩阵列出 Radeon 支持；本章未实测此工具 | 更大的应用中，CPU 调用栈、线程活动与 GPU 工作怎样关联 |
+| ROCprofiler Compute（原 Omniperf） | 当前官方兼容表未列 RX 9070 XT | 在其支持设备上使用硬件指标面板；本章不提供该工具的实操命令 |
+| Radeon GPU Profiler（RGP） | 官方 Linux Ubuntu 24.04 条目为 Vulkan only，不能直接套到这里的 HIP 程序 | 需要同时符合 GPU、API 与操作系统要求，不能只看显卡型号 |
+
+支持范围分别见 [SDK tracing 文档](https://rocm.docs.amd.com/projects/rocprofiler-sdk/en/latest/how-to/using-rocprofv3.html)、[ROCm 10.0 兼容矩阵](https://rocm.docs.amd.com/en/docs-10.0.0/compatibility/compatibility-matrix.html)、[Compute 支持表](https://rocm.docs.amd.com/projects/rocprofiler-compute/en/latest/reference/compatible-accelerators.html)和 [RGP Requirements](https://gpuopen.com/rgp/#requirements)。下面只展开本机已经验证过的路径。
+
+**先看时间线。** 在 [Perfetto](https://ui.perfetto.dev/) 中选择 **Open trace file**，打开本次配置目录内的 `*_results.pftrace`。先找到 CPU 的 HIP API 轨道与 GPU kernel 轨道，再搜索目标函数名：CPU 的 launch 调用结束，不代表 GPU kernel 已经完成。展开进程轨道，搜索 `vector_add_v0`，可以依次定位 16 次目标调用；第一条是预检。点选 GPU 区间，在 Details 中看 Duration，在 Preceding Flows 中找到对应的 `hipLaunchKernel`；比较时仍应使用 8.4 中经过筛选的多次执行，而非随手选中一条。
+
+同一个 profile 同时导出了 API trace 和 kernel trace，可以借助 `Correlation_Id` 对应一次提交与设备执行。时间线适合找执行先后和空隙，不能仅凭某段空白就断言 CPU 算力不足；同步、依赖和提交节奏都需要结合程序检查。当前命令没有开启 memory-copy trace，因此不把缺少拷贝轨道解释为没有发生数据复制。
+
+
+本次 Perfetto 导入出现了一项 `track_descriptor_conflicting_reservation` 提示，目标 kernel 的 16 条记录仍可检索，数量与 CSV 一致。因此时间线用于观察调用关系，本章的筛选统计继续以原始 CSV 为准；不把查看器的导入提示当作 kernel 性能问题。
+
+### 8.5.3 进阶诊断：计数器与指令跟踪
+
+前面的配置选择不依赖下面两项诊断。只有遇到对应问题时才展开；不能因为工具更底层，就默认它更适合回答当前问题。
+
+**计数器能否作为解释依据？** 当前 wave 计数能与启动规模核对，但缓存与流量计数返回零，不足以解释地址对照的时间差。这里的第一步是确认测到的量有意义。
+
+<details>
+<summary>选读：核对 wave 计数，以及缓存与流量指标的有效性</summary>
+
+计数器记录某类硬件事件的次数。先选择一个能用程序规模核对的量，比一开始就读几十个百分比更容易。本例选择 `SQ_WAVES_sum`，核对 baseline 启动的 wave 数。
+
+下面使用 HIP v0 做独立工具核验。若前面只走了 Triton 路线，也先执行这里的编译命令；它生成的仍是 8.4.1 的完整程序。然后查询指标组合，采集 v0 预检和预热之后的 10 次执行：
+
+```bash
+test -d "${RUN:?请先完成环境与结果目录准备}/build" && \
+if [[ ! -x "$RUN/build/vector_add_hip" ]]; then
+  hipcc --offload-arch=gfx1201 -O3 -std=c++17 \
+    chapter8/vector_add_hip.hip -o "$RUN/build/vector_add_hip"
+fi && \
+rocprofv3-avail -d 0 pmc-check SQ_WAVES_sum GRBM_GUI_ACTIVE && \
+mkdir "$RUN/pmc-waves" && \
+rocprofv3 --pmc SQ_WAVES_sum GRBM_GUI_ACTIVE \
+  --kernel-include-regex vector_add_v0 --kernel-iteration-range 7-16 \
+  --output-format csv --output-directory "$RUN/pmc-waves" \
+  --output-file baseline -- \
+  "$RUN/build/vector_add_hip" --version v0 --size 16777216 --block 256 \
+  --warmup 5 --repeat 10 --seed 20260920
+```
+
+`-d 0` 选择当前查询到的设备；`pmc-check` 检查这组指标能否一起采集，最终还要看实际记录。`--kernel-iteration-range 7-16` 在这里筛选 **计数器采集的目标调用**；它不会替 8.4 的 kernel trace 删除预检与预热，所以 trace 仍然需要自己的筛选步骤。
+
+<details>
+<summary>查看计数器组合检查、运行输出与完整原始 CSV</summary>
+
+**组合检查**
+
+<<< @/../code/part2-kernels/chapter8/evidence/tool-audit/pmc/pmc-check-global-device-waves.stdout.log{text}
+
+**采集进程的输出（不用于 benchmark）**
+
+<<< @/../code/part2-kernels/chapter8/evidence/tool-audit/pmc-walkthrough/pmc/pmc-waves.stdout.log{text}
+
+**Profiler 文件生成记录**
+
+<<< @/../code/part2-kernels/chapter8/evidence/tool-audit/pmc-walkthrough/pmc/pmc-waves.stderr.log{text}
+
+**baseline_counter_collection.csv**
+
+<<< @/../code/part2-kernels/chapter8/evidence/tool-audit/pmc-walkthrough/pmc/waves_counter_collection.csv{text}
+
+</details>
+
+
+读取 `baseline_counter_collection.csv` 时，先找 `Counter_Name=SQ_WAVES_sum`。同一个 `Dispatch_Id` 下有不同计数器的记录，不要把 CSV 行数当作 kernel 次数。本次每个目标 dispatch 的值都是 **524,288**。本例实际采用 wave32，可以按分工核对：
+
+$$
+65,536\ \text{blocks} \times \frac{256\ \text{threads}}{32\ \text{threads/wave}}
+= 524,288\ \text{waves}
+$$
+
+这说明本次 wave 计数与已知启动规模吻合。它并没有告诉我们显存传输了多少字节，也不表示 wave 数越少就越快。
+
+我们还试了 `GL2C_HIT_sum`、`GL2C_MISS_sum` 与 `FetchSize`，本机当前电源状态下得到的记录均为零，没有取得足以解释缓存命中率或物理流量的有效证据。AMD 的 [SDK 限制说明](https://github.com/ROCm/rocm-systems/blob/therock-10.0/projects/rocprofiler-sdk/README.md#limitations)要求 gfx11/gfx12 计数器采集使用稳定 power state；本次保留机器原来的 AUTO 状态。因此本章不据这些零值计算命中率，也不把地址反例的慢直接换算成 DRAM 事务数。
+
+<details>
+<summary>查看本次缓存与流量计数器的尝试：命令及原始零值记录</summary>
+
+两组分别采集，程序与参数不变；结果保存在不同目录。
+
+```bash
+test -d "${RUN:?请先完成环境与结果目录准备}/build" && \
+mkdir "$RUN/pmc-l2" && \
+rocprofv3 --pmc GL2C_HIT_sum GL2C_MISS_sum \
+  --kernel-include-regex vector_add_v0 --kernel-iteration-range 7-16 \
+  --output-format csv --output-directory "$RUN/pmc-l2" \
+  --output-file baseline -- \
+  "$RUN/build/vector_add_hip" --version v0 --size 16777216 --block 256 \
+  --warmup 5 --repeat 10 --seed 20260920
+
+test -d "${RUN:?请先完成环境与结果目录准备}/build" && \
+mkdir "$RUN/pmc-fetch" && \
+rocprofv3 --pmc FetchSize \
+  --kernel-include-regex vector_add_v0 --kernel-iteration-range 7-16 \
+  --output-format csv --output-directory "$RUN/pmc-fetch" \
+  --output-file baseline -- \
+  "$RUN/build/vector_add_hip" --version v0 --size 16777216 --block 256 \
+  --warmup 5 --repeat 10 --seed 20260920
+```
+
+**缓存计数器：采集进程输出**
+
+<<< @/../code/part2-kernels/chapter8/evidence/tool-audit/pmc-walkthrough/pmc/pmc-l2.stdout.log{text}
+
+**缓存计数器：原始 CSV**
+
+<<< @/../code/part2-kernels/chapter8/evidence/tool-audit/pmc-walkthrough/pmc/l2_counter_collection.csv{text}
+
+**FetchSize：采集进程输出**
+
+<<< @/../code/part2-kernels/chapter8/evidence/tool-audit/pmc-walkthrough/pmc/pmc-fetch.stdout.log{text}
+
+**FetchSize：原始 CSV**
+
+<<< @/../code/part2-kernels/chapter8/evidence/tool-audit/pmc-walkthrough/pmc/fetch_counter_collection.csv{text}
+
+这里核对的是目标 dispatch 的 `Counter_Value`，不是上方采集进程打印的 event 耗时。全零尚不能解释原来的快慢，下一步应先核对采集条件，而不是用这些零值计算命中率或带宽。
+
+</details>
+
+</details>
+
+**一行加法对应哪些指令？** 下例跟踪 baseline v0 的一个局部硬件位置，将源码对应到实际加载、等待、计算与写回。它用于理解指令报告，不用来解释 v3 或把局部周期换算成整卡瓶颈。
+
+<details>
+<summary>选读：用 ATT 查看 baseline 的源码与指令对应</summary>
+
+若要观察某行源码对应哪些指令，可以用局部 wave 跟踪补充证据。下面只演示 baseline 的源码对应，不归因某个优化版本的时间差。SDK 的 [ATT 支持表](https://rocm.docs.amd.com/projects/rocprofiler-sdk/en/latest/how-to/using-thread-trace.html#supported-devices)已列出 gfx1201，模式为 **trace-only**；本例不使用 Instinct 示例里的 `--att-perfcounters`。
+
+这是进阶选读，不影响前面完成一轮优化实验。本章提供一个短脚本，仍使用完整的 `vector_add_hip.hip`：单独编译带行号的诊断程序，选择 v0 的第 7 次调用，即预检与 5 次预热之后的一次调用，再限定一个 shader engine 与 SIMD。
+
+<details>
+<summary>完整采集脚本：code/part2-kernels/chapter8/profile_att.sh</summary>
+
+<<< @/../code/part2-kernels/chapter8/profile_att.sh{bash}
+
+</details>
+
+脚本最后会调用随附的 `validate_att.py`，核对目标 dispatch 的指令统计、kernel 名称和解码 JSON；产物缺失或为空时会报错，不会只凭 profiler 正常退出就宣布解码成功。
+
+<details>
+<summary>完整产物检查脚本：code/part2-kernels/chapter8/validate_att.py</summary>
+
+<<< @/../code/part2-kernels/chapter8/validate_att.py{python}
+
+</details>
+
+```bash
+test -d "${RUN:?请先完成环境与结果目录准备}/build" && \
+bash chapter8/profile_att.sh "$RUN/att"
+```
+
+<details>
+<summary>查看 ATT 运行结果、采集记录与解码后的指令统计</summary>
+
+**脚本的终端输出**
+
+<<< @/../code/part2-kernels/chapter8/evidence/tool-audit/att-helper.stdout.log{text}
+
+**采集进程输出（不用于 benchmark）**
+
+<<< @/../code/part2-kernels/chapter8/evidence/tool-audit/att/profile.stdout.log{text}
+
+**Profiler 记录**
+
+<<< @/../code/part2-kernels/chapter8/evidence/tool-audit/att/profile.stderr.log{text}
+
+**stats_ui_output_agent_3208_dispatch_8.csv 的归档副本**
+
+<<< @/../code/part2-kernels/chapter8/evidence/tool-audit/att/instruction-stats.csv{text}
+
+</details>
+
+
+本次生成原始 `.att`、对应 code object，以及解码后的 `stats_ui_output_agent_3208_dispatch_8.csv` 与 `ui_output_agent_3208_dispatch_8/`；文件名中的 agent 编号可能随运行变化。终端中的 `ATT_VALIDATED` 确认目标为 dispatch 8、kernel 为 `vector_add_v0`，并检查了 29 行指令统计和 4,134 个非空的有效 JSON 文件。输出记录中只有选定的一次 dispatch。脚本显式指定当前 ROCm wheel 的解码库目录，是因为本次直接采用默认搜索路径时出现了 `Error loading decoder: 37`；指定路径后采集与解码均成功。脚本会保留实际命令、编译日志、采集日志与产物检查结果。
+
+先读 `Instruction` 与 `Source` 两列。本次 `vector_add_hip.hip:42` 的一行加法，映射出两条 `global_load_b32`，随后是 `s_wait_loadcnt`、`v_add_f32_e32` 与 `global_store_b32`。它把源码中的“读两个数、等待数据、相加、写回”对应到了真实指令。
+
+再看 `Hitcount`：上述指令在本次局部跟踪中各记录了 **4,124** 次。它是对已追踪 wave 累加的该指令执行次数；本例每个被跟踪的 wave 执行这些指令各一次。它和上一节全 dispatch 的 **524,288** 个 wave 不是同一范围。`Latency`、`Stall` 与 `Idle` 是周期统计，不是 ms；即使等待指令对应较大数值，也需要结合跟踪范围、依赖和受控对照分析，不能直接宣布它贡献了整个 kernel 的多少百分比。字段定义见 [ATT Stats CSV](https://rocm.docs.amd.com/projects/rocprofiler-sdk/en/latest/how-to/using-thread-trace.html#stats-csv)。
+
+这些轨迹只代表选定硬件位置与这一次调用。局部 wave 的指令时间不能直接加成整个 GPU 的 kernel 时间，也不能拿启用 ATT 后的 event 耗时替换 benchmark。解码目录可交给 [ROCprof Compute Viewer](https://rocm.docs.amd.com/projects/rocprof-compute-viewer/en/amd-mainline/how-to/using_compute_viewer.html)继续查看；本章验证到采集与解码，尚未验证该查看器在本机上的图形展示。
+
+
+</details>
 
 ## 8.6 HIP 与 Triton 对照
 
-### 8.6.1 把两种语言放回同一张数据流
+### 8.6.1 两条路线调整的对象
 
-| 要回答的问题 | HIP 写法 | Triton 写法 |
-| ---- | ---- | ---- |
-| 源码中显式编号的并行实例 | `blockIdx.x`、`threadIdx.x` 选出当前 thread | `tl.program_id(0)` 选出当前 program |
-| 一次分多少数据 | 通常从一个 thread 的标量工作开始 | 一个 program 的 tile |
-| 生成下标 | 标量 `index`，或在线程循环中递增 | 张量 `offsets` |
-| 保护尾部 | `if (index < size)` | `mask = offsets < size` |
-| 读取 | 指针下标或显式向量类型 | `tl.load(pointer + offsets, mask=...)` |
-| 计算 | C++ 标量/向量表达式 | tile 上的张量表达式 |
-| 写回 | 指针下标 | `tl.store(..., mask=...)` |
-| 主要显式参数 | grid、block、每线程工作、加载类型 | program grid、block size、num warps |
-| 主要风险 | 越界、对齐、并行度、资源压力 | mask、tile 过大、program 映射、资源压力 |
+| 问题 | HIP 直接表达 | Triton 直接表达 |
+| --- | --- | --- |
+| 一份工作负责哪些数据 | 线程下标、循环步长、向量分组 | program 的 offsets 与逻辑 tile |
+| 尾部怎样保护 | 标量 `if` 与标量尾部循环 | load/store 各自的 mask |
+| 本章改变的执行粒度 | 固定 kernel 后调整 grid | 固定 `num_warps` 后调整 `BLOCK_SIZE` |
+| 谁完成底层映射 | 源码指定线程到地址的关系，编译器生成指令 | 编译器将 tile 分配给 lane、寄存器与执行组 |
 
-HIP 的一个 thread 与 Triton 的一个 program **不是一一对应**。更准确的迁移方法是先问三次：
+HIP 的 thread 与 Triton 的 program 不是一一对应关系。比较两种实现时，先核对**负责哪些输出、读哪些输入、怎样处理边界**，再核对时间与资源，而不是把两种语言的参数名称直接互换。
 
-```text
-1. 这一组输出下标是什么？
-2. 它们读取哪些输入下标？
-3. 尾部哪些位置必须关闭？
-```
+### 8.6.2 将每轮结果放回原始基线
 
-只要这三件事对应起来，语言差异就不会遮住算子本身。
+::: figure fig-vector-add-bandwidth
+![HIP 与 Triton 向量加法各版本的完整时间汇总](./images/walkthrough-summary.png)
 
-### 8.6.2 什么时候先选哪条路线
+相同主输入下的代表配置总览；下表列出全部 11 个配置。地址对照是独立诊断，不是从 v0 开始的线性升级链；这张图用于回看各轮选择，不替代前面的受控比较。
+:::
 
-| 当前目标 | 更自然的起点 | 原因 |
-| ---- | ---- | ---- |
-| 第一次验证一个简单算子想法 | Triton | kernel 与 Host wrapper 较短，tile/mask 容易修改 |
-| 精确控制 thread 到地址的排列 | HIP | grid、thread、指针与加载类型直接暴露 |
-| 研究 Wave/LDS/VGPR 细节 | HIP | 更靠近 AMD 执行与资源模型 |
-| 快速尝试多个 tile 参数 | Triton | meta-parameter 与 Python 驱动更集中 |
-| 定位地址或 mask 错误 | 下标动画与完整输出校验，再结合 GPU trace | 两边都要回到实际地址证据 |
+| 配置 | Median（ms） | 三进程范围（ms） |
+| --- | ---: | ---: |
+| `hip-v0` | 0.334861 | 0.333301–0.349441 |
+| `hip-v1-contiguous` | 0.369681 | 0.366240–0.370081 |
+| `hip-v1-strided` | 2.538206 | 2.505867–2.576887 |
+| `hip-v2-g65536` | 0.350301 | 0.332861–0.355121 |
+| `hip-v2-g2048` | 0.357582 | 0.353582–0.361721 |
+| `hip-v2-g256` | 0.343640 | 0.334301–0.344421 |
+| `hip-v3-g256` | 0.342121 | 0.342002–0.342500 |
+| `triton-t0-b256` | 0.334061 | 0.333781–0.349521 |
+| `triton-t1-b512` | 0.335441 | 0.335401–0.340481 |
+| `triton-t1-b1024` | 0.337701 | 0.336301–0.338220 |
+| `triton-t1-b2048` | 0.341241 | 0.340961–0.343221 |
 
-同一个算子可以先用 Triton 验证算法，再用 HIP 追底层细节；也可以从 HIP baseline 出发，完全不重写。路线选择服务于当前问题，不建立跨 shape、跨软件栈的语言排名。
 
-### 8.6.3 怎样读这次对照
+`hip-v0` 与 `triton-t0-b256` 的三进程测量范围高度重叠，基于当前严谨的统计数据，我们不能得出“某种语言在性能上压倒另一种”的轻率结论。更为客观的认识是：在当前的大规模输入下，两条路线最自然的基线实现均已展现出极高的访存效率；后续试图通过更复杂的技巧进行重构时，唯有拿出同口径下更显著的提速证据，才值得替换掉简洁明了的基线。
 
-这次 HIP 与 Triton 对照使用相同输入公式、FP32 语义、shape、warmup、repeat 与 kernel-only 计时边界。当前快照中 `triton-t0` 与 `hip-v0` 的三进程范围重叠，中心值差约 `0.00012 ms`；不能据此外推另一种环境中的胜负。
-
-更可靠的共同结论是：先保持地址连续和边界正确，再用目标 shape 实测 grid、tile 与向量类型；更少的 block/program 或更宽的源码类型都不自动等于更快。
+正文引用的单进程输出、三进程统计与五张对比图表，均完整归档于配套代码库的 `evidence/walkthrough/` 目录中，确保所有实验数据源头均可独立追溯与复核。
 
 ## 8.7 负结果、适用边界与下一步
 
-负结果不是删掉的草稿，而是下一轮实验的输入：
+一次改动没有提速，也能帮助我们判断在当前条件下是否值得保留。记录观察结果时，要同时说明它还不能解释什么：
 
-- 受控跨步版本的 median 是 `2.567170 ms`，逻辑有效带宽是 `78.423556 GB/s`；它是本次最明确的负例，但仍没有直接测得物理显存事务。
-- `hip-v2` 把 block 数从 65536 限制为 256，median 为 `0.343484 ms`，没有超过 `hip-v0` 的 `0.336324 ms`。减少 grid 不自动带来收益。
-- `hip-v3` 与 `hip-v2` 使用相同的 256 blocks，但 `float4` 版本 median 为 `0.345224 ms`；源码向量类型没有在当前配置下提速。
-- `triton-t1` 把 program 数从 65536 减到 16384，median 为 `0.338504 ms`，没有超过 `triton-t0` 的 `0.336204 ms`；trace 同时显示 VGPR 从 8 变为 24。
+| 观察到的实测现象 | 据此可以作出的工程决定 | 依然不能直接推论的假设 |
+| --- | --- | --- |
+| 受控地址排列对比出现 6.87 倍断崖落差 | 坚决保留同轮连续访存模式，在后续所有算子中持续审视访问连续性 | 不能脱离硬件计数器直接将理论分桶等同于真实 DRAM 事务数 |
+| Grid 或 Tile 缩放未见稳定收益 | 保留最初简洁的配置，不盲目为了减少线程/Program 而加重单任务负担 | 不能推广认为“更少的 Block/Program 在所有场景下都普遍低效” |
+| 引入 `float4` 向量化后无稳定提速 | 保留原生标量加法写法，避免徒增代码复杂度 | 不能断言“向量类型在硬件层面上绝对没有生成更宽的访存指令” |
 
-这些结论只适用于 manifest 记录的硬件、软件、shape、block、warmup、repeat 与独立进程协议。下一步若要检验可迁移性，应先扩展 shape、dtype 或系统状态中的一个变量，并生成新的 manifest 与 curated evidence；不能把当前逻辑有效带宽解释成物理 GDDR6 流量。
+本章得出的最佳配置结论严格受限于当前的大规模输入。当计算场景切换到小尺寸张量或非连续内存布局时，应当重新运行基线并评估候选版本，切忌将大数组下的经验生搬硬套。
+
+如果未来我们需要实现 ReLU、GELU 或 Scale & Bias，由于输出元素依然保持严格独立，本章建立的网格划分与边界保护策略均可直接迁移复用。如果考虑将 Add 与后续的激活算子进行算子融合，则必须严格测量“两次独立算子调用”与“单次融合内核调用”的完整端到端路径，相关的融合收益与代价我们将在第 12 章深入探讨。
 
 ## 8.8 复跑与练习
 
-### 8.8.1 一键入口
+### 8.8.1 复现逐轮实验
 
-在已经 clone 的仓库根目录执行以下命令，准备 Part 2 环境，再分别运行正确性与计时、profiling。当前安装的是 **ROCm 10.0**；上面的历史性能表仍对应其标注的 ROCm 7.13 采集环境，复跑时请记录自己的版本与结果：
+在仓库根目录进入本篇环境：
 
 ```bash
-cd code/part2-kernels
-uv sync
+cd code/part2-kernels &&
+uv sync --locked &&
 source ./activate-rocm.sh
-bash chapter8/run_all.sh
-bash chapter8/profile_all.sh
 ```
 
-可选的地址调试工具默认关闭，不影响正确性、benchmark 和 profiling 主流程。
-
-`run_all.sh` 的顺序是：
-
-```text
-采集环境
-→ 编译 HIP
-→ HIP/Triton 边界正确性
-→ 主 benchmark
-→ 3 次独立进程复跑
-→ 汇总 CSV/JSON
-```
-
-`profile_all.sh` 单独运行，避免 profiler 开销混入 GPU event benchmark。实验完成后应得到：
-
-```text
-code/part2-kernels/chapter8/
-├── evidence/
-│   ├── manifest.json
-│   ├── profile_summary.csv
-│   ├── summary.csv
-│   └── summary.json
-├── logs/
-└── profiles/
-```
-
-详细环境、参数、关键结果与证据路径见 `code/part2-kernels/chapter8/EXPERIMENT.md`。带宽图可以直接从汇总结果重画：
+单项命令帮助你理解一个改动。要比较运行波动，用批量入口自动运行 11 个配置，每个配置启动 3 个独立进程，并轮换运行顺序。这里显式选择 `main`：做小边界检查与 benchmark，不采集 profiler。输出目录必须尚不存在：
 
 ```bash
-python chapter8/plot_vector_add_ch8.py \
-  --summary chapter8/evidence/summary.csv \
-  --manifest chapter8/evidence/manifest.json \
-  --out ../../docs/part2-kernels/chapter8/images/vector-add-ch8-bandwidth.png
+python chapter8/run_rounds.py --output chapter8/results/my-run --phase main
 ```
 
-### 8.8.2 从 Add 迁移到更多逐元素算子
+程序默认同样为 `main`。它在测量前检查 `1、31、32、33、255、256、257、1027` 等小长度；主输入每个进程仍执行前后检查。`profile` 与 `validation` 是额外阶段，不是每次实验必做的下一步；`profile` 会采集全部配置，当前章节通常只需 8.4 中针对问题的单项命令。已有主实验目录不会被覆盖。
 
-Vector Add 的价值不在于加法本身，而在于它提供了一个可替换的模板。
+若需要在独立进程中再次确认选定配置，并检查各 tile 的专属边界，可以执行下面的补充验收。这是单独的验收步骤，不包含在上面的默认运行中：
 
-把核心表达式改成 ReLU：
-
-```text
-output[i] = max(input[i], 0)
+```bash
+python chapter8/verify_rounds.py \
+  --frozen-run chapter8/results/my-run \
+  --output chapter8/results/my-confirmation
 ```
 
-线程/program 的划分与尾部保护可以保持不变。改成 Scale & Bias：
+确认步骤复用 `my-run` 中保存的 kernel，结果写进新目录；不覆盖原扫描。8.4 的单项命令用于看清每一步，这里的运行器用于自动保存完整的多进程矩阵。
 
-```text
-output[i] = alpha * input[i] + beta
+从自己的汇总重画本章五类比较图：
+
+```bash
+python chapter8/plot_rounds.py \
+  --summary chapter8/results/my-run/summary/summary.csv \
+  --manifest chapter8/results/my-run/summary/manifest.json \
+  --out-dir chapter8/results/my-run/figures
 ```
 
-仍然是逐元素，只是每个位置多做了乘法和加法。把 Add 与 ReLU 合在一个 kernel：
+运行目录中，`samples/` 保存每次 event 时间，`commands.jsonl` 保存实际命令，`logs/` 保存环境、程序输出和检查结果，`profiles/` 保存原始 trace，`source/` 保存该次源码，`summary/` 保存汇总与环境清单。仅执行 `main` 时，`profiles/` 为空是正常现象。上面的绘图命令显式读取你自己的汇总；不要省略数据参数，否则脚本的默认值会读取另一组归档。正文五张图对应 `evidence/walkthrough/`；`evidence/rounds/` 是先前完整运行器实验的独立快照，两组不混算成绩。
 
-```text
-output[i] = max(input_a[i] + input_b[i], 0)
-```
+采集日期、源码身份与详细条件保存在每组实验记录中。新增结果以自己的运行目录保存，原始样本、环境、源码哈希和实际参数一起保留；不同日期、shape 或计时区间的结果不混成一个中位数。
 
-如果分成两个 kernel，中间结果通常需要写回再读出；融合后可能减少这次中间读写。这里仍然只能提出假设，真正的收益要在第 12 章用完整计时验证。
+### 8.8.2 练习与验收
 
-### 8.8.3 练习
+1. 选择一个新的非整除长度，先预测最后一个 HIP block 和 Triton program 中哪些位置有效，再检查输出。正确性通过后才计时。
+2. 固定 v2 的源码与 block size，增加一个 grid 候选。把结果与现有 grid 配置放在同一张图中，说明这次是否值得保留。
+3. 固定 Triton 的 `num_warps=4`，改变一个 tile 候选；记录 program 数和实测范围。若差异很小，说明为什么还不能宣布胜者。
+4. 将算术替换为 `output[i] = alpha * input[i] + beta`。重新计算逻辑字节与 FLOP，先写出改动假设，再校验和比较；如果需要 profiling，写明它要回答的问题与预期字段。
 
-1. 把 `N` 改成 `1、31、32、33、1027`，先预测 HIP 的 `if` 与 Triton 的 mask 分别关闭哪些位置，再运行正确性检查。
-2. 把 Triton t1 的 `BLOCK_SIZE` 改为 `512`，保持 `num_warps=4`，记录 program 数量怎样变化；不要在计时前猜谁更快。
-3. 在 HIP 与 Triton 中都实现 `Scale & Bias`，继续使用同一输入生成、precheck、postcheck 与 event 计时框架。
-4. 给 `float4` 版本传入从 `input + 1` 开始的偏移指针，先解释为什么对齐假设被破坏，再设计安全的头部/主体/尾部拆分；不要直接运行未对齐强转。
-
-### 8.8.4 验收信号
-
-完成本章时，不要求某个版本必须最快，但需要同时满足下面四项：
-
-1. HIP 与 Triton 的边界正确性检查都通过，发布行的 `max_abs_error` 与 evidence 一致。
-2. 能解释 benchmark 的 shape、warmup、repeat、独立进程汇总和 kernel-only 计时范围。
-3. 能从 profile 表指出受控 HIP 对照固定了哪些资源字段，以及 Triton tile 变化伴随什么资源变化。
-4. 能明确写出至少一个负结果，并说明当前结论为什么不能外推到其他硬件、shape 或物理显存流量。
+完成时应能独立回答：我改了哪项分工，为什么值得试，正确性怎样确认，比较图支持什么决定，还有什么原因没有证实。如果决定进一步 profiling，还要说明现有测量缺少什么证据、工具能否取得它，以及不同结果会怎样改变下一步。某个优化一定成功，不是验收条件。
 
 ## 本章小结
 
-- Element-Wise 的核心不是“公式简单”，而是输出位置之间没有依赖，可以独立划分。
-- HIP 线程级范式让 kernel 正文从一个 thread 与标量下标出发；Triton 分块范式让正文从一个 program 与一块逻辑下标出发。`blockDim.x` 与 `BLOCK_SIZE` 不是对应参数，tile 位置也不固定对应硬件 lane。
-- Vector Add 每个 FP32 输出至少对应两次逻辑读取、一次逻辑写回和一次加法；受控跨步实验让用时增加到连续版的约 `6.95×`，结果与数据搬运主导假设一致。
-- HIP 从 thread 与标量地址出发，适合看清连续访问、Grid-Stride、向量类型和尾部。
-- Triton 从 program 与 tile offsets 出发，用 mask 处理边界；下标动画用于理解访问位置，真实性能仍需要 GPU 实验。
-- Grid-Stride 在当前配置下与 v0 接近；`float4` 没有提速；Triton 的 1024 元素 tile 也没有稳定超过 256 元素 tile。负结果同样决定下一轮该测什么。
-- 遇到一个新的逐元素算子时，本章的判断仍然成立：先确认输出位置彼此独立 → 沿用同一套线程/program 划分与尾部保护 → 只替换核心表达式 → 用同一口径复测，不要凭源码表象预判快慢。
-- 下一章会撤掉“每个输出彼此独立”这个前提：Reduction 需要许多线程合作得到一个结果，因此会第一次引入跨线程通信、LDS 与 Wave Shuffle。
+- **输出独立，分工可以改变**：一个输出只依赖对应输入，可以比较不同的线程分工与数据块大小。低算术强度提示优先检查数据访问，但不能据此断定显存带宽是唯一瓶颈。
+- **两条路线各有控制方式**：HIP 从线程索引出发，比较地址排列、grid-stride 循环与四元素分组；Triton 从分块张量出发，比较 tile 大小。
+- **每轮都检查并复测**：先核对结果，再按相同口径测量，与基线及上一轮比较。独立复测与样本范围帮助判断收益是否稳定，没有提速的结果也要保留。
+- **有具体问题时再做 profiling**：正确性与性能比较可以支持保留或回退的决定；需要进一步解释时，再选择能够提供相关证据的工具。
+
+接下来的[第 9 章：Reduction 归约算子](../chapter9/index.md)研究一个输出依赖多个输入的情况：怎样组织线程协作，并把各组的局部结果合并为最终答案。
 
 ## 延伸阅读
 
-- [AMD HIP 编程模型](https://rocm.docs.amd.com/projects/HIP/en/latest/understand/programming_model.html)：thread、block、grid、wavefront 与 SIMT 执行关系。
 - [AMD HIP Performance Guidelines](https://rocm.docs.amd.com/projects/HIP/en/latest/how-to/performance_guidelines.html)：线程映射、合并访存、对齐与内存吞吐建议。
-- [Triton 官方编程指南：Introduction](https://triton-lang.org/main/programming-guide/chapter-1/introduction.html)：Blocked Program、Scalar Threads 与分块算法的官方定义。
-- [Triton 官方 Vector Addition 教程](https://triton-lang.org/main/getting-started/tutorials/01-vector-add.html)：kernel、Host wrapper、正确性与 benchmark 的官方最小例子。
-- [PyTorch HIP 语义](https://docs.pytorch.org/docs/stable/notes/hip.html)：为什么 ROCm 构建继续使用 `torch.cuda` 接口名。
+- [Triton 官方编程模型介绍](https://triton-lang.org/main/programming-guide/chapter-1/introduction.html)：program 与分块计算的含义。
+- [Triton 官方 Vector Addition 教程](https://triton-lang.org/main/getting-started/tutorials/01-vector-add.html)：kernel、主机调用、正确性与 benchmark 的完整起点。
+- [PyTorch HIP 语义](https://docs.pytorch.org/docs/stable/notes/hip.html)：ROCm 构建为何沿用 `torch.cuda` 接口名。
+- 《AMD GPU 编程》第 8.1–8.2 节：从任务分工到 block/grid 实验的思路；书中 MI100 的配置与性能不作为本章 RX 9070 XT 的结论。

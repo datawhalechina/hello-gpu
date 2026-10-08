@@ -10,7 +10,10 @@ COLS="${COLS:-1024}"
 HIP_BLOCK="${HIP_BLOCK:-256}"
 WARMUP="${WARMUP:-10}"
 REPEAT="${REPEAT:-50}"
-SEED="${SEED:-20260719}"
+SEED="${SEED:-20260920}"
+T0_WARPS="${T0_WARPS:-4}"
+T1_WARPS="${T1_WARPS:-8}"
+T1_BLOCK="${T1_BLOCK:-0}"
 RUN_EDGE_CASES="${RUN_EDGE_CASES:-1}"
 BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hello-gpu-ch10.XXXXXX")"
 HIP_BINARY="${BUILD_DIR}/softmax_hip"
@@ -56,6 +59,7 @@ run_shape() {
         --seed "${SEED}"
 
     python "${SCRIPT_DIR}/softmax_triton.py" \
+        --t0-warps "${T0_WARPS}" --t1-warps "${T1_WARPS}" --t1-block "${T1_BLOCK}" \
         --version all \
         --rows "${rows}" \
         --cols "${columns}" \

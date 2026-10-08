@@ -1,0 +1,52 @@
+[
+  {
+    "path": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/lib/librocprof-trace-decoder.so.0.2",
+    "resolved": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/lib/librocprof-trace-decoder.so.0.2",
+    "exists": true
+  },
+  {
+    "path": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/lib/librocprof-trace-decoder.so",
+    "resolved": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/lib/librocprof-trace-decoder.so.0.2",
+    "exists": true
+  },
+  {
+    "path": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/lib/librocprof-trace-decoder.so.0.2.0",
+    "resolved": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/lib/librocprof-trace-decoder.so.0.2",
+    "exists": true
+  },
+  {
+    "path": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/lib/librocprof-trace-decoder.so.0.2",
+    "resolved": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/lib/librocprof-trace-decoder.so.0.2",
+    "exists": true
+  },
+  {
+    "path": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/include/rocprof-trace-decoder",
+    "resolved": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/include/rocprof-trace-decoder",
+    "exists": true
+  },
+  {
+    "path": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/lib/cmake/rocprof-trace-decoder",
+    "resolved": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/lib/cmake/rocprof-trace-decoder",
+    "exists": true
+  },
+  {
+    "path": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/lib/cmake/rocprof-trace-decoder/rocprof-trace-decoder-config.cmake",
+    "resolved": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/lib/cmake/rocprof-trace-decoder/rocprof-trace-decoder-config.cmake",
+    "exists": true
+  },
+  {
+    "path": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/lib/cmake/rocprof-trace-decoder/rocprof-trace-decoder-targets.cmake",
+    "resolved": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/lib/cmake/rocprof-trace-decoder/rocprof-trace-decoder-targets.cmake",
+    "exists": true
+  },
+  {
+    "path": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/lib/cmake/rocprof-trace-decoder/rocprof-trace-decoder-config-version.cmake",
+    "resolved": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/lib/cmake/rocprof-trace-decoder/rocprof-trace-decoder-config-version.cmake",
+    "exists": true
+  },
+  {
+    "path": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/lib/cmake/rocprof-trace-decoder/rocprof-trace-decoder-targets-release.cmake",
+    "resolved": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/lib/cmake/rocprof-trace-decoder/rocprof-trace-decoder-targets-release.cmake",
+    "exists": true
+  }
+]

@@ -1,0 +1,1116 @@
+{
+  "schema_version": 1,
+  "collection": "chapter13-existing-main-and-short-p1-terminal-export",
+  "new_gpu_measurement": false,
+  "scope": "Unmodified process-1 terminal logs plus existing short-row kernel traces; reports are new CPU-only reanalysis, not a new GPU benchmark.",
+  "parent_manifest": {
+    "path": "../rounds/manifest.json",
+    "sha256": "cfb370eec7b6cdbdd300f7a04f1619f485176d384c08b09955bcbf3be1cbe761",
+    "experiment": "chapter13-controlled-rmsnorm-rounds",
+    "started_at": "2026-09-19T18:43:07.702278+00:00"
+  },
+  "raw_run": {
+    "path": "results/rocm10-20260920",
+    "manifest_sha256": "2d46d3c8d280dfc3652458d6ef3a03c25f9908e0313f7c385f73312bfcb20eb0",
+    "commands_jsonl_sha256": "f7aba085a94a2660364d0d35e7813d5bb1d530e28b2b27a2faa8e3540a0b2993"
+  },
+  "current_runtime_sha256": {
+    "rmsnorm_hip.hip": "e991ebda3c505e48d7cee84c2ce71c65dd2bdad4745ebbed1ebaa2d2e6047bca",
+    "rmsnorm_triton.py": "63fcf6c0b8453d6d37ab56238cbfea46c268fb0c58891daf43010da6e0275088"
+  },
+  "measured_source_sha256": {
+    "rmsnorm_hip.hip": "e991ebda3c505e48d7cee84c2ce71c65dd2bdad4745ebbed1ebaa2d2e6047bca",
+    "rmsnorm_triton.py": "63fcf6c0b8453d6d37ab56238cbfea46c268fb0c58891daf43010da6e0275088",
+    "run_rounds.py": "bc9b4252692d0dcada1377dbcfd0d74340a2d827ce89b56099d2ea9c12b686cd",
+    "summarize_rounds.py": "390a8e39410f4ba1e79d772672483552f440b1a3416c4d709106e09e63a4c644",
+    "rounds_identity.py": "0e60528045d055891710e1863af5a23ddbc0c202f9b220d0aae3ddd1830a83bb",
+    "collect_environment.sh": "e0a6a7fa4d61d78bf5b8c6c4d424ffc922a320b86499c3e5fd1017c5139ba11b",
+    "resolve_rocprofv3.py": "6057fa1c79cd769712bbc30006af63a4e1cf0a74b7de7e2d11eae868d3889c96"
+  },
+  "measured_hip_binary_sha256": "90a498a41ee243bbc58a3e65db18224a8d9521144640f6715d81ad22dfbf2cfa",
+  "environment_record": {
+    "gpu": "AMD Radeon RX 9070 XT",
+    "architecture": "gfx1201",
+    "rocm_sdk": "10.0.0",
+    "hip": "7.15.26333",
+    "gpu_exclusive": false,
+    "profiler_during_benchmark": false
+  },
+  "software_record": {
+    "rocm": "10.0.0",
+    "hip": "7.15.26333",
+    "torch": "2.13.0+rocm10.0.0",
+    "triton": "3.8.0+git4cff872c.rocm10.0.0"
+  },
+  "platform_record": {
+    "os_pretty_name": "Ubuntu 24.04.5 LTS",
+    "kernel": "7.0.0-31-generic",
+    "execution": "native"
+  },
+  "environment_provenance": "Original measurement manifest; not captured at export.",
+  "benchmark_conditions": {
+    "shape": "4096x1024",
+    "dtype": "float32",
+    "input": "rmsnorm-dyadic-v1",
+    "input_mode": "normal",
+    "reference": "cpu-fp64-to-fp32",
+    "epsilon": 9.999999747378752e-06,
+    "seed": 20260920,
+    "warmup": 10,
+    "repeat": 50,
+    "processes": 3,
+    "independent_runs": 3,
+    "scope": "gpu-event-full-operator",
+    "atol": 2e-05,
+    "rtol": 2e-05,
+    "cache": "reuse arrays; no cache flush",
+    "timing": "precreate event pairs; synchronize after every single-kernel full-operator interval",
+    "correctness": "output NaN prefill before precheck, full precheck and postcheck; finite, elementwise atol+rtol*abs(FP64 reference castFP32)"
+  },
+  "measurement_selection": {
+    "4096x1024": [
+      "hip-serial-b256",
+      "hip-block-b256",
+      "hip-block-b128",
+      "hip-block-b64",
+      "triton-r1-w4",
+      "triton-r1-w8"
+    ],
+    "4096x128": [
+      "triton-r1-w4",
+      "triton-r2-w4",
+      "triton-r4-w4"
+    ]
+  },
+  "path_normalization": {
+    "logs": "none; byte-identical copies",
+    "traces": "none; byte-identical copies",
+    "reports": "none; byte-identical actual Ubuntu reader stdout/stderr",
+    "argv": "Benchmark argv explicitly normalized; CPU report argv are original relative arguments.",
+    "original_private_path_sha256": {
+      "<MEASURED_RUN>": "17e8fbf8b178d18d87ce14f022dd670444a4684b9c3741b4c46c60d1a0bbd35b",
+      "<ENVIRONMENT_PYTHON>": "7263b70981a463b6c8582f51fd928d198e1526525a35ffcea972c853b16a102c"
+    },
+    "raw_argv_sha256_format": "UTF-8 JSON array, ensure_ascii=False, separators=(comma,colon)"
+  },
+  "measurements": [
+    {
+      "config_id": "hip-serial-b256",
+      "shape": "4096x1024",
+      "process": 1,
+      "configuration": {
+        "id": "hip-serial-b256",
+        "runtime": "hip",
+        "version": "serial",
+        "block": 256,
+        "kernels": [
+          "rmsnorm_serial_kernel"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n4096x1024-hip-serial-b256-p1.log",
+      "published_log": "logs/n4096x1024-hip-serial-b256-p1.log",
+      "raw_sha256": "5ca0a3c4d62ce8342ce0270ac384fac1ffcb753afbad1a3b41e75d0056e2874c",
+      "published_sha256": "5ca0a3c4d62ce8342ce0270ac384fac1ffcb753afbad1a3b41e75d0056e2874c",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 133,
+        "recorded_at": "2026-09-19T18:45:55.945662+00:00",
+        "raw_argv_sha256": "9543ce0c7538e893acbdeec96d5deafb9ed7b199f063097a2a55b7c48fa07e8a",
+        "argv_path_normalized": [
+          "<MEASURED_RUN>/build/rmsnorm_hip",
+          "--block",
+          "256",
+          "--version",
+          "serial",
+          "--rows",
+          "4096",
+          "--cols",
+          "1024",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--epsilon",
+          "9.999999747378752e-06",
+          "--input",
+          "normal",
+          "--config-id",
+          "hip-serial-b256",
+          "--samples",
+          "<MEASURED_RUN>/samples/n4096x1024-hip-serial-b256-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "hip-block-b256",
+      "shape": "4096x1024",
+      "process": 1,
+      "configuration": {
+        "id": "hip-block-b256",
+        "runtime": "hip",
+        "version": "block",
+        "block": 256,
+        "kernels": [
+          "rmsnorm_block_kernel"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n4096x1024-hip-block-b256-p1.log",
+      "published_log": "logs/n4096x1024-hip-block-b256-p1.log",
+      "raw_sha256": "b51b399bbc4b1b5f8865e076fdfa161d5c499484f8c4a293d9dcb54ee328d146",
+      "published_sha256": "b51b399bbc4b1b5f8865e076fdfa161d5c499484f8c4a293d9dcb54ee328d146",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 134,
+        "recorded_at": "2026-09-19T18:45:56.107714+00:00",
+        "raw_argv_sha256": "c3d40d6454680a1865db792655f54a345bc97fc94f5b2e590c921e5eb9cd48cf",
+        "argv_path_normalized": [
+          "<MEASURED_RUN>/build/rmsnorm_hip",
+          "--block",
+          "256",
+          "--version",
+          "block",
+          "--rows",
+          "4096",
+          "--cols",
+          "1024",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--epsilon",
+          "9.999999747378752e-06",
+          "--input",
+          "normal",
+          "--config-id",
+          "hip-block-b256",
+          "--samples",
+          "<MEASURED_RUN>/samples/n4096x1024-hip-block-b256-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "hip-block-b128",
+      "shape": "4096x1024",
+      "process": 1,
+      "configuration": {
+        "id": "hip-block-b128",
+        "runtime": "hip",
+        "version": "block",
+        "block": 128,
+        "kernels": [
+          "rmsnorm_block_kernel"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n4096x1024-hip-block-b128-p1.log",
+      "published_log": "logs/n4096x1024-hip-block-b128-p1.log",
+      "raw_sha256": "7fcb537c1a8f8f8b2471f26c7841a5712b90dc59bbee5a84e36134e5ee4bd174",
+      "published_sha256": "7fcb537c1a8f8f8b2471f26c7841a5712b90dc59bbee5a84e36134e5ee4bd174",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 135,
+        "recorded_at": "2026-09-19T18:45:56.230849+00:00",
+        "raw_argv_sha256": "3fb9962a0abfb4ac8d6b6349dd1ba1a617bf9c2fdd3f9a71e1c9583ed8742032",
+        "argv_path_normalized": [
+          "<MEASURED_RUN>/build/rmsnorm_hip",
+          "--block",
+          "128",
+          "--version",
+          "block",
+          "--rows",
+          "4096",
+          "--cols",
+          "1024",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--epsilon",
+          "9.999999747378752e-06",
+          "--input",
+          "normal",
+          "--config-id",
+          "hip-block-b128",
+          "--samples",
+          "<MEASURED_RUN>/samples/n4096x1024-hip-block-b128-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "hip-block-b64",
+      "shape": "4096x1024",
+      "process": 1,
+      "configuration": {
+        "id": "hip-block-b64",
+        "runtime": "hip",
+        "version": "block",
+        "block": 64,
+        "kernels": [
+          "rmsnorm_block_kernel"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n4096x1024-hip-block-b64-p1.log",
+      "published_log": "logs/n4096x1024-hip-block-b64-p1.log",
+      "raw_sha256": "0a0b1ed68ed55b20ebb01d2aea84e198075cdddd03e646753e2777ab4674da40",
+      "published_sha256": "0a0b1ed68ed55b20ebb01d2aea84e198075cdddd03e646753e2777ab4674da40",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 136,
+        "recorded_at": "2026-09-19T18:45:56.348831+00:00",
+        "raw_argv_sha256": "2200f55c6f27d7602bd3e122d5c3a02d6e048e727056b3eb60b35c5ca836cc41",
+        "argv_path_normalized": [
+          "<MEASURED_RUN>/build/rmsnorm_hip",
+          "--block",
+          "64",
+          "--version",
+          "block",
+          "--rows",
+          "4096",
+          "--cols",
+          "1024",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--epsilon",
+          "9.999999747378752e-06",
+          "--input",
+          "normal",
+          "--config-id",
+          "hip-block-b64",
+          "--samples",
+          "<MEASURED_RUN>/samples/n4096x1024-hip-block-b64-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "triton-r1-w4",
+      "shape": "4096x1024",
+      "process": 1,
+      "configuration": {
+        "id": "triton-r1-w4",
+        "runtime": "triton",
+        "version": "configured",
+        "rows_per_program": 1,
+        "num_warps": 4,
+        "kernels": [
+          "rmsnorm_kernel"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n4096x1024-triton-r1-w4-p1.log",
+      "published_log": "logs/n4096x1024-triton-r1-w4-p1.log",
+      "raw_sha256": "3438aa54764512a1695fa4d13e2525ca45141b24e2bef90f419f039141f70d20",
+      "published_sha256": "3438aa54764512a1695fa4d13e2525ca45141b24e2bef90f419f039141f70d20",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 137,
+        "recorded_at": "2026-09-19T18:45:56.470807+00:00",
+        "raw_argv_sha256": "e3f302e7f2a96d07729abfd8ead3ae082264e73640f06240e788f97eab8ff691",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/rmsnorm_triton.py",
+          "--rows-per-program",
+          "1",
+          "--num-warps",
+          "4",
+          "--version",
+          "configured",
+          "--rows",
+          "4096",
+          "--cols",
+          "1024",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--epsilon",
+          "9.999999747378752e-06",
+          "--input",
+          "normal",
+          "--config-id",
+          "triton-r1-w4",
+          "--samples",
+          "<MEASURED_RUN>/samples/n4096x1024-triton-r1-w4-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "triton-r1-w8",
+      "shape": "4096x1024",
+      "process": 1,
+      "configuration": {
+        "id": "triton-r1-w8",
+        "runtime": "triton",
+        "version": "configured",
+        "rows_per_program": 1,
+        "num_warps": 8,
+        "kernels": [
+          "rmsnorm_kernel"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n4096x1024-triton-r1-w8-p1.log",
+      "published_log": "logs/n4096x1024-triton-r1-w8-p1.log",
+      "raw_sha256": "6ac24d323cd295e268b467a24706a6fcfccb0f06ed1ae9bf29dceafbf3a6a740",
+      "published_sha256": "6ac24d323cd295e268b467a24706a6fcfccb0f06ed1ae9bf29dceafbf3a6a740",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 138,
+        "recorded_at": "2026-09-19T18:45:58.773011+00:00",
+        "raw_argv_sha256": "5e5106eec415a41d6f75ad6f0e9a829e39bac5d831b1f44546aff7706e4a6d50",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/rmsnorm_triton.py",
+          "--rows-per-program",
+          "1",
+          "--num-warps",
+          "8",
+          "--version",
+          "configured",
+          "--rows",
+          "4096",
+          "--cols",
+          "1024",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--epsilon",
+          "9.999999747378752e-06",
+          "--input",
+          "normal",
+          "--config-id",
+          "triton-r1-w8",
+          "--samples",
+          "<MEASURED_RUN>/samples/n4096x1024-triton-r1-w8-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "triton-r1-w4",
+      "shape": "4096x128",
+      "process": 1,
+      "configuration": {
+        "id": "triton-r1-w4",
+        "runtime": "triton",
+        "version": "configured",
+        "rows_per_program": 1,
+        "num_warps": 4,
+        "kernels": [
+          "rmsnorm_kernel"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n4096x128-triton-r1-w4-p1.log",
+      "published_log": "logs/n4096x128-triton-r1-w4-p1.log",
+      "raw_sha256": "9ec4f4dfd3d2185692ca962808ff1dff7453ea39ce9bda3519c907ef9be31db9",
+      "published_sha256": "9ec4f4dfd3d2185692ca962808ff1dff7453ea39ce9bda3519c907ef9be31db9",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 151,
+        "recorded_at": "2026-09-19T18:46:37.761386+00:00",
+        "raw_argv_sha256": "272db4c33b447422f5f63dea7b444b4344bd2505c4d45d04a293db57886d0617",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/rmsnorm_triton.py",
+          "--rows-per-program",
+          "1",
+          "--num-warps",
+          "4",
+          "--version",
+          "configured",
+          "--rows",
+          "4096",
+          "--cols",
+          "128",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--epsilon",
+          "9.999999747378752e-06",
+          "--input",
+          "normal",
+          "--config-id",
+          "triton-r1-w4",
+          "--samples",
+          "<MEASURED_RUN>/samples/n4096x128-triton-r1-w4-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "triton-r2-w4",
+      "shape": "4096x128",
+      "process": 1,
+      "configuration": {
+        "id": "triton-r2-w4",
+        "runtime": "triton",
+        "version": "configured",
+        "rows_per_program": 2,
+        "num_warps": 4,
+        "kernels": [
+          "rmsnorm_rows_kernel"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n4096x128-triton-r2-w4-p1.log",
+      "published_log": "logs/n4096x128-triton-r2-w4-p1.log",
+      "raw_sha256": "78d087f1c4bd163fce21f75e3eb06abed3d0c6bdd58eccbf92194d751f1db5b7",
+      "published_sha256": "78d087f1c4bd163fce21f75e3eb06abed3d0c6bdd58eccbf92194d751f1db5b7",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 152,
+        "recorded_at": "2026-09-19T18:46:39.970608+00:00",
+        "raw_argv_sha256": "e58b2ef6728ba2d74086c3b13cd735b4ff0ed2fcb3979f6eaa7721b3242dbd3f",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/rmsnorm_triton.py",
+          "--rows-per-program",
+          "2",
+          "--num-warps",
+          "4",
+          "--version",
+          "configured",
+          "--rows",
+          "4096",
+          "--cols",
+          "128",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--epsilon",
+          "9.999999747378752e-06",
+          "--input",
+          "normal",
+          "--config-id",
+          "triton-r2-w4",
+          "--samples",
+          "<MEASURED_RUN>/samples/n4096x128-triton-r2-w4-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "triton-r4-w4",
+      "shape": "4096x128",
+      "process": 1,
+      "configuration": {
+        "id": "triton-r4-w4",
+        "runtime": "triton",
+        "version": "configured",
+        "rows_per_program": 4,
+        "num_warps": 4,
+        "kernels": [
+          "rmsnorm_rows_kernel"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n4096x128-triton-r4-w4-p1.log",
+      "published_log": "logs/n4096x128-triton-r4-w4-p1.log",
+      "raw_sha256": "1a6eb3bf73597bcbab131f5e7b2b365f95dc51abcc5f62d7162a0f2f9f819b8d",
+      "published_sha256": "1a6eb3bf73597bcbab131f5e7b2b365f95dc51abcc5f62d7162a0f2f9f819b8d",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 153,
+        "recorded_at": "2026-09-19T18:46:42.193098+00:00",
+        "raw_argv_sha256": "273bd6c6db21a05337773983138e488457f2e6de0111319bbac7cc50a162beea",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/rmsnorm_triton.py",
+          "--rows-per-program",
+          "4",
+          "--num-warps",
+          "4",
+          "--version",
+          "configured",
+          "--rows",
+          "4096",
+          "--cols",
+          "128",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--epsilon",
+          "9.999999747378752e-06",
+          "--input",
+          "normal",
+          "--config-id",
+          "triton-r4-w4",
+          "--samples",
+          "<MEASURED_RUN>/samples/n4096x128-triton-r4-w4-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    }
+  ],
+  "available_trace_inventory": [
+    {
+      "config_id": "triton-r1-w4",
+      "shape": "4096x128",
+      "source_trace": "results/rocm10-20260920/profiles/n4096x128-triton-r1-w4_kernel_trace.csv",
+      "published_trace": "profiles/n4096x128-triton-r1-w4_kernel_trace.csv",
+      "raw_sha256": "353afeb18d6d60ab6480aaf0d14da97b6f3aa153375d231df5774dba70998f6d",
+      "published_sha256": "353afeb18d6d60ab6480aaf0d14da97b6f3aa153375d231df5774dba70998f6d",
+      "trace_bytes_changed": false,
+      "kernel_names": [
+        "rmsnorm_kernel"
+      ],
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10,
+      "original_capture": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 196,
+        "recorded_at": "2026-09-19T18:48:18.284728+00:00",
+        "raw_argv_sha256": "5dc13439f57974522ca431c7b37455fde68eeebf2835e24dd6742cffe3f33270"
+      }
+    },
+    {
+      "config_id": "triton-r2-w4",
+      "shape": "4096x128",
+      "source_trace": "results/rocm10-20260920/profiles/n4096x128-triton-r2-w4_kernel_trace.csv",
+      "published_trace": "profiles/n4096x128-triton-r2-w4_kernel_trace.csv",
+      "raw_sha256": "99533f7fc96e7df571afbab26a610157f569d8cd806db7fc3c503c49b76e4718",
+      "published_sha256": "99533f7fc96e7df571afbab26a610157f569d8cd806db7fc3c503c49b76e4718",
+      "trace_bytes_changed": false,
+      "kernel_names": [
+        "rmsnorm_rows_kernel"
+      ],
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10,
+      "original_capture": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 197,
+        "recorded_at": "2026-09-19T18:48:20.635077+00:00",
+        "raw_argv_sha256": "c25395fd0948fa132eee582bad98ce270fffdb54e6766bb67bbe2149f39fb7c0"
+      }
+    },
+    {
+      "config_id": "triton-r4-w4",
+      "shape": "4096x128",
+      "source_trace": "results/rocm10-20260920/profiles/n4096x128-triton-r4-w4_kernel_trace.csv",
+      "published_trace": "profiles/n4096x128-triton-r4-w4_kernel_trace.csv",
+      "raw_sha256": "011edd4cda2ae4d1d7a2b85b3ef42893b36a98e57748e1ddec60f069a472788f",
+      "published_sha256": "011edd4cda2ae4d1d7a2b85b3ef42893b36a98e57748e1ddec60f069a472788f",
+      "trace_bytes_changed": false,
+      "kernel_names": [
+        "rmsnorm_rows_kernel"
+      ],
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10,
+      "original_capture": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 198,
+        "recorded_at": "2026-09-19T18:48:22.951710+00:00",
+        "raw_argv_sha256": "8635e872150779d27a25873758be8a18f823f3ad579d573eca6c26e0976bc465"
+      }
+    }
+  ],
+  "trace_reanalysis": {
+    "new_gpu_measurement": false,
+    "started_at": "2026-09-20T04:56:59.949779+00:00",
+    "completed_at": "2026-09-20T04:57:00.035929+00:00",
+    "environment": {
+      "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+      "python_executable": "<ENVIRONMENT_PYTHON>",
+      "os_pretty_name": "Ubuntu 24.04.5 LTS",
+      "kernel": "7.0.0-31-generic",
+      "rocm_sdk_package": "10.0.0",
+      "rocm_sdk_core_package": "10.0.0"
+    },
+    "environment_provenance": "Actual CPU-process environment captured during standard-library reanalysis; no torch import or GPU query.",
+    "raw_record_sha256": "f53aa687f48e8c585d8733f081c74a9a0043f494c71b1774939996beccbbfa4b",
+    "profile_summary_reference": {
+      "path": "../rounds/profile-summary.csv",
+      "sha256": "7f7db98e5757c3ed129dcc3c7ec64a397015c50c1a859d541889e6c25b04813a"
+    },
+    "reports": [
+      {
+        "config_id": "triton-r1-w4",
+        "shape": "4096x128",
+        "published_report": "reports/n4096x128-triton-r1-w4.txt",
+        "published_stderr": "reports/n4096x128-triton-r1-w4.stderr.log",
+        "source_trace": "profiles/n4096x128-triton-r1-w4_kernel_trace.csv",
+        "helper": "source/inspect_trace.py",
+        "helper_sha256": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b",
+        "actual_command": {
+          "argv": [
+            "python",
+            "chapter8/inspect_trace.py",
+            "chapter13/results/rocm10-20260920/profiles/n4096x128-triton-r1-w4_kernel_trace.csv",
+            "--kernel",
+            "rmsnorm_kernel",
+            "--skip",
+            "6",
+            "--take",
+            "10"
+          ],
+          "argv_is_raw": true,
+          "cwd": "<MEASURED_PART>",
+          "cwd_private_path_sha256": "41177b40ec2d87d9e81f71d9d58288a10b633ac0d49ad080d42ee250e58264bc",
+          "recorded_at": "2026-09-20T04:56:59.949779+00:00",
+          "returncode": 0
+        },
+        "analysis": {
+          "csv_rows": 18,
+          "kernel_name": "rmsnorm_kernel",
+          "target_rows": 16,
+          "skipped_rows": 6,
+          "kept_rows": 10,
+          "first_kept": {
+            "start_ns": 888416322477216,
+            "end_ns": 888416322488056,
+            "duration_ns": 10840
+          },
+          "kernel_time_us": {
+            "min": 9.0,
+            "median": 9.14,
+            "max": 31.56
+          },
+          "launch": {
+            "grid_work_items_xyz": [
+              524288,
+              1,
+              1
+            ],
+            "workgroup_size_xyz": [
+              128,
+              1,
+              1
+            ],
+            "workgroups_xyz": [
+              4096,
+              1,
+              1
+            ],
+            "workgroups_total": 4096
+          },
+          "resources": {
+            "vgpr_count": 16,
+            "sgpr_count": 128,
+            "lds_bytes": 0,
+            "scratch_bytes": 0
+          }
+        },
+        "agrees_with_profile_summary": true
+      },
+      {
+        "config_id": "triton-r2-w4",
+        "shape": "4096x128",
+        "published_report": "reports/n4096x128-triton-r2-w4.txt",
+        "published_stderr": "reports/n4096x128-triton-r2-w4.stderr.log",
+        "source_trace": "profiles/n4096x128-triton-r2-w4_kernel_trace.csv",
+        "helper": "source/inspect_trace.py",
+        "helper_sha256": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b",
+        "actual_command": {
+          "argv": [
+            "python",
+            "chapter8/inspect_trace.py",
+            "chapter13/results/rocm10-20260920/profiles/n4096x128-triton-r2-w4_kernel_trace.csv",
+            "--kernel",
+            "rmsnorm_rows_kernel",
+            "--skip",
+            "6",
+            "--take",
+            "10"
+          ],
+          "argv_is_raw": true,
+          "cwd": "<MEASURED_PART>",
+          "cwd_private_path_sha256": "41177b40ec2d87d9e81f71d9d58288a10b633ac0d49ad080d42ee250e58264bc",
+          "recorded_at": "2026-09-20T04:56:59.978120+00:00",
+          "returncode": 0
+        },
+        "analysis": {
+          "csv_rows": 18,
+          "kernel_name": "rmsnorm_rows_kernel",
+          "target_rows": 16,
+          "skipped_rows": 6,
+          "kept_rows": 10,
+          "first_kept": {
+            "start_ns": 888418640497210,
+            "end_ns": 888418640506170,
+            "duration_ns": 8960
+          },
+          "kernel_time_us": {
+            "min": 6.641,
+            "median": 8.68,
+            "max": 21.96
+          },
+          "launch": {
+            "grid_work_items_xyz": [
+              262144,
+              1,
+              1
+            ],
+            "workgroup_size_xyz": [
+              128,
+              1,
+              1
+            ],
+            "workgroups_xyz": [
+              2048,
+              1,
+              1
+            ],
+            "workgroups_total": 2048
+          },
+          "resources": {
+            "vgpr_count": 16,
+            "sgpr_count": 128,
+            "lds_bytes": 0,
+            "scratch_bytes": 0
+          }
+        },
+        "agrees_with_profile_summary": true
+      },
+      {
+        "config_id": "triton-r4-w4",
+        "shape": "4096x128",
+        "published_report": "reports/n4096x128-triton-r4-w4.txt",
+        "published_stderr": "reports/n4096x128-triton-r4-w4.stderr.log",
+        "source_trace": "profiles/n4096x128-triton-r4-w4_kernel_trace.csv",
+        "helper": "source/inspect_trace.py",
+        "helper_sha256": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b",
+        "actual_command": {
+          "argv": [
+            "python",
+            "chapter8/inspect_trace.py",
+            "chapter13/results/rocm10-20260920/profiles/n4096x128-triton-r4-w4_kernel_trace.csv",
+            "--kernel",
+            "rmsnorm_rows_kernel",
+            "--skip",
+            "6",
+            "--take",
+            "10"
+          ],
+          "argv_is_raw": true,
+          "cwd": "<MEASURED_PART>",
+          "cwd_private_path_sha256": "41177b40ec2d87d9e81f71d9d58288a10b633ac0d49ad080d42ee250e58264bc",
+          "recorded_at": "2026-09-20T04:57:00.006140+00:00",
+          "returncode": 0
+        },
+        "analysis": {
+          "csv_rows": 18,
+          "kernel_name": "rmsnorm_rows_kernel",
+          "target_rows": 16,
+          "skipped_rows": 6,
+          "kept_rows": 10,
+          "first_kept": {
+            "start_ns": 888420937447347,
+            "end_ns": 888420937454227,
+            "duration_ns": 6880
+          },
+          "kernel_time_us": {
+            "min": 5.2,
+            "median": 7.08,
+            "max": 21.2
+          },
+          "launch": {
+            "grid_work_items_xyz": [
+              131072,
+              1,
+              1
+            ],
+            "workgroup_size_xyz": [
+              128,
+              1,
+              1
+            ],
+            "workgroups_xyz": [
+              1024,
+              1,
+              1
+            ],
+            "workgroups_total": 1024
+          },
+          "resources": {
+            "vgpr_count": 16,
+            "sgpr_count": 128,
+            "lds_bytes": 0,
+            "scratch_bytes": 0
+          }
+        },
+        "agrees_with_profile_summary": true
+      }
+    ]
+  },
+  "artifacts_sha256": {
+    "README.md": "538273da8ac06d7ba937a57369d8bca1b455af92975a8cf409f7b6f7d2740654",
+    "logs/edge-normal-33x129-triton-r4-w4.log": "33965c6f39a444439513973ef0aebac1ca1bf6ad54f019e4ca3e40342446823a",
+    "logs/edge-signed-weight-33x129-triton-r2-w4.log": "af9328340fb3020195d9c8306015d8f15a3eb0b80fcf52abcf6957f7a93210b1",
+    "logs/edge-zero-33x1-hip-block-b64.log": "625f4b1c6219d5e7e305180f128533cf21d2cbe8d90317b54d312d19735475f3",
+    "logs/edge-zero-weight-33x257-hip-block-b64.log": "b17d126fbedd190456e6f6918f5e54d2a2973248addd9751bcd5a28dbd265f7e",
+    "logs/n4096x1024-hip-block-b128-p1.log": "7fcb537c1a8f8f8b2471f26c7841a5712b90dc59bbee5a84e36134e5ee4bd174",
+    "logs/n4096x1024-hip-block-b256-p1.log": "b51b399bbc4b1b5f8865e076fdfa161d5c499484f8c4a293d9dcb54ee328d146",
+    "logs/n4096x1024-hip-block-b64-p1.log": "0a0b1ed68ed55b20ebb01d2aea84e198075cdddd03e646753e2777ab4674da40",
+    "logs/n4096x1024-hip-serial-b256-p1.log": "5ca0a3c4d62ce8342ce0270ac384fac1ffcb753afbad1a3b41e75d0056e2874c",
+    "logs/n4096x1024-triton-r1-w4-p1.log": "3438aa54764512a1695fa4d13e2525ca45141b24e2bef90f419f039141f70d20",
+    "logs/n4096x1024-triton-r1-w8-p1.log": "6ac24d323cd295e268b467a24706a6fcfccb0f06ed1ae9bf29dceafbf3a6a740",
+    "logs/n4096x128-triton-r1-w4-p1.log": "9ec4f4dfd3d2185692ca962808ff1dff7453ea39ce9bda3519c907ef9be31db9",
+    "logs/n4096x128-triton-r2-w4-p1.log": "78d087f1c4bd163fce21f75e3eb06abed3d0c6bdd58eccbf92194d751f1db5b7",
+    "logs/n4096x128-triton-r4-w4-p1.log": "1a6eb3bf73597bcbab131f5e7b2b365f95dc51abcc5f62d7162a0f2f9f819b8d",
+    "profiles/n4096x128-triton-r1-w4_kernel_trace.csv": "353afeb18d6d60ab6480aaf0d14da97b6f3aa153375d231df5774dba70998f6d",
+    "profiles/n4096x128-triton-r2-w4_kernel_trace.csv": "99533f7fc96e7df571afbab26a610157f569d8cd806db7fc3c503c49b76e4718",
+    "profiles/n4096x128-triton-r4-w4_kernel_trace.csv": "011edd4cda2ae4d1d7a2b85b3ef42893b36a98e57748e1ddec60f069a472788f",
+    "reports/n4096x128-triton-r1-w4.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "reports/n4096x128-triton-r1-w4.txt": "6378fbaadaf3bdbfa3ccbfa26dfc7dd15c9ef19accdc3b8a1676f5093c0aca07",
+    "reports/n4096x128-triton-r2-w4.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "reports/n4096x128-triton-r2-w4.txt": "c3ec1fc848c21a414488c5c442a8083bd18d5a16ae213dade4655c9714b6e31c",
+    "reports/n4096x128-triton-r4-w4.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "reports/n4096x128-triton-r4-w4.txt": "16d29e72d1cc55592127e10d3f6ed4b6792435f75c88900177e2bb11cc1f9396",
+    "source/inspect_trace.py": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b"
+  },
+  "representative_boundary_checks": [
+    {
+      "config_id": "hip-block-b64",
+      "shape": "33x1",
+      "input_mode": "zero",
+      "source_log": "results/rocm10-20260920/logs/edge-zero-33x1-hip-block-b64.log",
+      "published_log": "logs/edge-zero-33x1-hip-block-b64.log",
+      "raw_sha256": "625f4b1c6219d5e7e305180f128533cf21d2cbe8d90317b54d312d19735475f3",
+      "published_sha256": "625f4b1c6219d5e7e305180f128533cf21d2cbe8d90317b54d312d19735475f3",
+      "log_bytes_changed": false,
+      "purpose": "correctness-only demonstration; one timing sample is not a performance comparison",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 16,
+        "recorded_at": "2026-09-19T18:43:20.408583+00:00",
+        "raw_argv_sha256": "38f207706f6b4b784007263aaabfbbd8b1f077deea1ca7cf19618196071bed27",
+        "argv_path_normalized": [
+          "<MEASURED_RUN>/build/rmsnorm_hip",
+          "--block",
+          "64",
+          "--version",
+          "block",
+          "--rows",
+          "33",
+          "--cols",
+          "1",
+          "--warmup",
+          "0",
+          "--repeat",
+          "1",
+          "--seed",
+          "20260920",
+          "--epsilon",
+          "9.999999747378752e-06",
+          "--input",
+          "zero",
+          "--config-id",
+          "hip-block-b64"
+        ],
+        "argv_is_raw": false
+      }
+    },
+    {
+      "config_id": "hip-block-b64",
+      "shape": "33x257",
+      "input_mode": "zero-weight",
+      "source_log": "results/rocm10-20260920/logs/edge-zero-weight-33x257-hip-block-b64.log",
+      "published_log": "logs/edge-zero-weight-33x257-hip-block-b64.log",
+      "raw_sha256": "b17d126fbedd190456e6f6918f5e54d2a2973248addd9751bcd5a28dbd265f7e",
+      "published_sha256": "b17d126fbedd190456e6f6918f5e54d2a2973248addd9751bcd5a28dbd265f7e",
+      "log_bytes_changed": false,
+      "purpose": "correctness-only demonstration; one timing sample is not a performance comparison",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 88,
+        "recorded_at": "2026-09-19T18:44:39.961852+00:00",
+        "raw_argv_sha256": "3b53d07c34eee1794f51e8e980501c95c2db3ffd421ae5e521d86710b129bead",
+        "argv_path_normalized": [
+          "<MEASURED_RUN>/build/rmsnorm_hip",
+          "--block",
+          "64",
+          "--version",
+          "block",
+          "--rows",
+          "33",
+          "--cols",
+          "257",
+          "--warmup",
+          "0",
+          "--repeat",
+          "1",
+          "--seed",
+          "20260920",
+          "--epsilon",
+          "9.999999747378752e-06",
+          "--input",
+          "zero-weight",
+          "--config-id",
+          "hip-block-b64"
+        ],
+        "argv_is_raw": false
+      }
+    },
+    {
+      "config_id": "triton-r2-w4",
+      "shape": "33x129",
+      "input_mode": "signed-weight",
+      "source_log": "results/rocm10-20260920/logs/edge-signed-weight-33x129-triton-r2-w4.log",
+      "published_log": "logs/edge-signed-weight-33x129-triton-r2-w4.log",
+      "raw_sha256": "af9328340fb3020195d9c8306015d8f15a3eb0b80fcf52abcf6957f7a93210b1",
+      "published_sha256": "af9328340fb3020195d9c8306015d8f15a3eb0b80fcf52abcf6957f7a93210b1",
+      "log_bytes_changed": false,
+      "purpose": "correctness-only demonstration; one timing sample is not a performance comparison",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 67,
+        "recorded_at": "2026-09-19T18:44:17.718285+00:00",
+        "raw_argv_sha256": "2940fcf07660e9310fe6d40cb751c2c7b57d2d2cb3810f9925d90785d2d8669d",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/rmsnorm_triton.py",
+          "--rows-per-program",
+          "2",
+          "--num-warps",
+          "4",
+          "--version",
+          "configured",
+          "--rows",
+          "33",
+          "--cols",
+          "129",
+          "--warmup",
+          "0",
+          "--repeat",
+          "1",
+          "--seed",
+          "20260920",
+          "--epsilon",
+          "9.999999747378752e-06",
+          "--input",
+          "signed-weight",
+          "--config-id",
+          "triton-r2-w4"
+        ],
+        "argv_is_raw": false
+      }
+    },
+    {
+      "config_id": "triton-r4-w4",
+      "shape": "33x129",
+      "input_mode": "normal",
+      "source_log": "results/rocm10-20260920/logs/edge-normal-33x129-triton-r4-w4.log",
+      "published_log": "logs/edge-normal-33x129-triton-r4-w4.log",
+      "raw_sha256": "33965c6f39a444439513973ef0aebac1ca1bf6ad54f019e4ca3e40342446823a",
+      "published_sha256": "33965c6f39a444439513973ef0aebac1ca1bf6ad54f019e4ca3e40342446823a",
+      "log_bytes_changed": false,
+      "purpose": "correctness-only demonstration; one timing sample is not a performance comparison",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 44,
+        "recorded_at": "2026-09-19T18:43:53.335208+00:00",
+        "raw_argv_sha256": "b377b4e4c8c6ab5d393b37986893be83b7ec73792f70a9616b6255b1bb80c1d4",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/rmsnorm_triton.py",
+          "--rows-per-program",
+          "4",
+          "--num-warps",
+          "4",
+          "--version",
+          "configured",
+          "--rows",
+          "33",
+          "--cols",
+          "129",
+          "--warmup",
+          "0",
+          "--repeat",
+          "1",
+          "--seed",
+          "20260920",
+          "--epsilon",
+          "9.999999747378752e-06",
+          "--input",
+          "normal",
+          "--config-id",
+          "triton-r4-w4"
+        ],
+        "argv_is_raw": false
+      }
+    }
+  ]
+}

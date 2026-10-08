@@ -1,0 +1,9 @@
+             version: 1.3.5
+        git_revision: 6b0e43f341195e203754e08f850e437ff2fc09f9
+        library_arch: x86_64-unknown-linux-gnu
+         system_name: Linux
+    system_processor: x86_64
+      system_version: 6.12.73-95.123.amzn2023.x86_64
+         compiler_id: Clang
+    compiler_version: 23.0.0
+        rocm_version: 10.0.0

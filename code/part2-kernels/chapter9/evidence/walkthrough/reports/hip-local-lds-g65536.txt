@@ -1,0 +1,17 @@
+kernel_name="(anonymous namespace)::reduction_local_lds(float const*, unsigned long, float*)"
+csv_rows=36 target_rows=16 skipped_rows=6 kept_rows=10
+sort=Start_Timestamp_ascending
+first_start_ns=884176295478876 first_end_ns=884176295890684 first_duration_ns=411808
+kernel_min_us=410.889000 kernel_median_us=411.649000 kernel_max_us=412.529000
+grid_work_items_xyz=16777216x1x1 workgroup_size_xyz=256x1x1 workgroups_xyz=65536x1x1
+workgroups_total=65536
+vgpr_count=8 sgpr_count=128 lds_bytes=0 scratch_bytes=0
+
+kernel_name="(anonymous namespace)::reduction_final(float const*, unsigned long, float*)"
+csv_rows=36 target_rows=16 skipped_rows=6 kept_rows=10
+sort=Start_Timestamp_ascending
+first_start_ns=884176295894885 first_end_ns=884176295965606 first_duration_ns=70721
+kernel_min_us=70.721000 kernel_median_us=73.042000 kernel_max_us=75.162000
+grid_work_items_xyz=256x1x1 workgroup_size_xyz=256x1x1 workgroups_xyz=1x1x1
+workgroups_total=1
+vgpr_count=8 sgpr_count=128 lds_bytes=0 scratch_bytes=0

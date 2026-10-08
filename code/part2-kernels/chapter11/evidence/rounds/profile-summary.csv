@@ -1,0 +1,10 @@
+config_id,shape,stage,kernel,scope,trace_dispatches,excluded_precheck_warmup,timed_dispatches,trace_median_ms,trace_min_ms,trace_max_ms,Grid_Size_X,Grid_Size_Y,Grid_Size_Z,Workgroup_Size_X,Workgroup_Size_Y,Workgroup_Size_Z,VGPR_Count,SGPR_Count,LDS_Block_Size,Scratch_Size
+hip-naive-t16,1024x1024x1024,1,matmul_naive,rocprofv3-kernel-trace,16,6,10,2.9802144999999998,2.839585,3.075601,1024,1024,1,16,16,1,16,128,0,0
+hip-tiled-t16,1024x1024x1024,1,matmul_tiled,rocprofv3-kernel-trace,16,6,10,1.4413334999999998,1.358688,1.453015,1024,1024,1,16,16,1,56,128,2048,0
+hip-tiled-t8,1024x1024x1024,1,matmul_tiled,rocprofv3-kernel-trace,16,6,10,1.567741,1.524539,1.635506,1024,1024,1,8,8,1,40,128,512,0
+hip-tiled-t32,1024x1024x1024,1,matmul_tiled,rocprofv3-kernel-trace,16,6,10,1.5039565,1.435812,1.526898,1024,1024,1,32,32,1,88,128,8192,0
+triton-b32x32-g1,1024x1024x1024,1,matmul_kernel,rocprofv3-kernel-trace,16,6,10,0.5340545,0.521074,0.537115,131072,1,1,128,1,1,104,128,0,0
+triton-b32x64-g1,1024x1024x1024,1,matmul_kernel,rocprofv3-kernel-trace,16,6,10,0.367683,0.362984,0.369903,65536,1,1,128,1,1,120,128,0,0
+triton-b64x32-g1,1024x1024x1024,1,matmul_kernel,rocprofv3-kernel-trace,16,6,10,0.3663835,0.365063,0.647281,65536,1,1,128,1,1,120,128,0,0
+triton-b64x32-g4,1024x1024x1024,1,matmul_kernel,rocprofv3-kernel-trace,16,6,10,0.36584300000000003,0.362943,0.63508,65536,1,1,128,1,1,120,128,0,0
+triton-b64x32-g8,1024x1024x1024,1,matmul_kernel,rocprofv3-kernel-trace,16,6,10,0.36008249999999997,0.351102,0.367423,65536,1,1,128,1,1,120,128,0,0

@@ -1,0 +1,9 @@
+Activated ROCm uv environment:
+  PROJECT:    <operation-root>/code/part2-kernels
+  VENV:       <operation-root>/code/part2-kernels/.venv
+  ROCM_PATH:  <existing-part-environment>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel
+  Python:     <operation-root>/code/part2-kernels/.venv/bin/python
+  ROCm SDK:   10.0.0
+Python 3.12.3
+继续使用结果目录：chapter8/results/walkthrough-bW89n8
+编译完成：chapter8/results/walkthrough-bW89n8/build/vector_add_hip

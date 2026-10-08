@@ -25,7 +25,6 @@ def main() -> None:
     two_stage_rows = [row for row in rows if row["implementation"] in two_stage_ids]
     hardware = environment["torch.cuda.device_name"]
     system = environment["PRETTY_NAME"].strip('"')
-    rocm = ".".join(environment["torch.version.hip"].split(".")[:2])
     date = manifest["generated_at"].split("T", 1)[0]
 
     render_timing_figure(
@@ -36,7 +35,7 @@ def main() -> None:
         title="Reduction 完整计时与两阶段实现对比",
         subtitle=(
             f"{hardware} · N = {int(benchmark['shape']):,} · FP32 · "
-            f"{system} · ROCm {rocm} · 历史实验 {date}"
+            f"{system} · 历史参考结果 {date}"
         ),
         notes=[
             f"每进程预热 {benchmark['warmup']} 次、计时重复 {benchmark['repeat']} 次；完整 GPU event 区间，越短越好。",

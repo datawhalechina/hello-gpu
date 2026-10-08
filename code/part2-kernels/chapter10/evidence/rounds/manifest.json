@@ -1,0 +1,590 @@
+{
+  "schema_version": 1,
+  "experiment": "chapter10-controlled-softmax-rounds",
+  "started_at": "2026-09-19T17:55:45.005284+00:00",
+  "hardware": "AMD Radeon RX 9070 XT",
+  "software": {
+    "rocm": "10.0.0",
+    "hip": "7.15.26333",
+    "torch": "2.13.0+rocm10.0.0",
+    "triton": "3.8.0+git4cff872c.rocm10.0.0"
+  },
+  "platform": {
+    "os_pretty_name": "Ubuntu 24.04.5 LTS",
+    "kernel": "7.0.0-31-generic",
+    "execution": "native"
+  },
+  "environment": {
+    "gpu": "AMD Radeon RX 9070 XT",
+    "architecture": "gfx1201",
+    "rocm_sdk": "10.0.0",
+    "hip": "7.15.26333",
+    "gpu_exclusive": false,
+    "profiler_during_benchmark": false
+  },
+  "source_sha256": {
+    "softmax_hip.hip": "12975c9d5b4246da0388002b55c1d2883724239fdde25476267174d12b6dc55c",
+    "softmax_triton.py": "563968117db997dc066566c60dff49194d9c28900b69a819a77fd9c195b2cf67",
+    "run_rounds.py": "74774f4ad1b4d8bf8a64bcdae69c76b01ce81dd5bd625e9301f3006d514c7a2a",
+    "summarize_rounds.py": "b4dc2ab15de348e75b9d7ca86ecdf5bfdd026ea1bd088f452f1efc1302399d51",
+    "rounds_identity.py": "1a08872efee1bbc396f157b9f126aacff41aa8ae788e08c352fbabcdf702c0a2",
+    "collect_environment.sh": "e0a6a7fa4d61d78bf5b8c6c4d424ffc922a320b86499c3e5fd1017c5139ba11b",
+    "resolve_rocprofv3.py": "6057fa1c79cd769712bbc30006af63a4e1cf0a74b7de7e2d11eae868d3889c96"
+  },
+  "benchmark": {
+    "shape": "4096x1024",
+    "dtype": "float32",
+    "input": "shifted-dyadic",
+    "reference": "fp64-softmax-to-fp32",
+    "seed": 20260920,
+    "warmup": 10,
+    "repeat": 50,
+    "processes": 3,
+    "independent_runs": 3,
+    "scope": "gpu-event-full-operator",
+    "absolute_tolerance": 2e-05,
+    "row_sum_tolerance": 2e-05,
+    "cache": "reuse arrays; no cache flush",
+    "timing": "synchronize after each event interval; entire 3-kernel or 1-kernel operator",
+    "correctness": "output NaN prefill, full precheck and postcheck; finite, FP64 softmax castFP32 error, FP64 row sum"
+  },
+  "configurations": [
+    {
+      "id": "hip-serial-b256",
+      "runtime": "hip",
+      "version": "baseline",
+      "block": 256,
+      "kernels": [
+        "row_max_serial",
+        "row_exp_sum_serial",
+        "normalize_rows"
+      ]
+    },
+    {
+      "id": "hip-cooperative-b256",
+      "runtime": "hip",
+      "version": "cooperative",
+      "block": 256,
+      "kernels": [
+        "row_max_block",
+        "row_exp_sum_block",
+        "normalize_block"
+      ]
+    },
+    {
+      "id": "hip-fused-b256",
+      "runtime": "hip",
+      "version": "fused",
+      "block": 256,
+      "kernels": [
+        "softmax_fused_lds"
+      ]
+    },
+    {
+      "id": "triton-b4",
+      "runtime": "triton",
+      "version": "t0",
+      "block_multiplier": 1,
+      "num_warps": 4,
+      "kernels": [
+        "softmax_row_kernel"
+      ]
+    },
+    {
+      "id": "triton-b8",
+      "runtime": "triton",
+      "version": "t0",
+      "block_multiplier": 1,
+      "num_warps": 8,
+      "kernels": [
+        "softmax_row_kernel"
+      ]
+    },
+    {
+      "id": "triton-2b4",
+      "runtime": "triton",
+      "version": "t1",
+      "block_multiplier": 2,
+      "num_warps": 4,
+      "kernels": [
+        "softmax_row_kernel"
+      ]
+    },
+    {
+      "id": "triton-2b8",
+      "runtime": "triton",
+      "version": "t1",
+      "block_multiplier": 2,
+      "num_warps": 8,
+      "kernels": [
+        "softmax_row_kernel"
+      ]
+    }
+  ],
+  "edge_shapes": [
+    "1x1",
+    "3x33",
+    "3x257",
+    "3x1025"
+  ],
+  "execution_order": [
+    {
+      "shape": "4096x1024",
+      "process": 1,
+      "configs": [
+        "hip-serial-b256",
+        "hip-cooperative-b256",
+        "hip-fused-b256",
+        "triton-b4",
+        "triton-b8",
+        "triton-2b4",
+        "triton-2b8"
+      ]
+    },
+    {
+      "shape": "4096x1024",
+      "process": 2,
+      "configs": [
+        "hip-fused-b256",
+        "triton-b4",
+        "triton-b8",
+        "triton-2b4",
+        "triton-2b8",
+        "hip-serial-b256",
+        "hip-cooperative-b256"
+      ]
+    },
+    {
+      "shape": "4096x1024",
+      "process": 3,
+      "configs": [
+        "triton-b8",
+        "triton-2b4",
+        "triton-2b8",
+        "hip-serial-b256",
+        "hip-cooperative-b256",
+        "hip-fused-b256",
+        "triton-b4"
+      ]
+    },
+    {
+      "shape": "4096x1023",
+      "process": 1,
+      "configs": [
+        "hip-cooperative-b256",
+        "hip-fused-b256",
+        "triton-b4",
+        "triton-b8",
+        "triton-2b4",
+        "triton-2b8"
+      ]
+    },
+    {
+      "shape": "4096x1023",
+      "process": 2,
+      "configs": [
+        "triton-b4",
+        "triton-b8",
+        "triton-2b4",
+        "triton-2b8",
+        "hip-cooperative-b256",
+        "hip-fused-b256"
+      ]
+    },
+    {
+      "shape": "4096x1023",
+      "process": 3,
+      "configs": [
+        "triton-2b4",
+        "triton-2b8",
+        "hip-cooperative-b256",
+        "hip-fused-b256",
+        "triton-b4",
+        "triton-b8"
+      ]
+    },
+    {
+      "shape": "4096x1025",
+      "process": 1,
+      "configs": [
+        "hip-cooperative-b256",
+        "hip-fused-b256",
+        "triton-b4",
+        "triton-b8",
+        "triton-2b4",
+        "triton-2b8"
+      ]
+    },
+    {
+      "shape": "4096x1025",
+      "process": 2,
+      "configs": [
+        "triton-b4",
+        "triton-b8",
+        "triton-2b4",
+        "triton-2b8",
+        "hip-cooperative-b256",
+        "hip-fused-b256"
+      ]
+    },
+    {
+      "shape": "4096x1025",
+      "process": 3,
+      "configs": [
+        "triton-2b4",
+        "triton-2b8",
+        "hip-cooperative-b256",
+        "hip-fused-b256",
+        "triton-b4",
+        "triton-b8"
+      ]
+    },
+    {
+      "shape": "128x1024",
+      "process": 1,
+      "configs": [
+        "hip-cooperative-b256",
+        "hip-fused-b256",
+        "triton-b4",
+        "triton-b8",
+        "triton-2b4",
+        "triton-2b8"
+      ]
+    },
+    {
+      "shape": "128x1024",
+      "process": 2,
+      "configs": [
+        "triton-b4",
+        "triton-b8",
+        "triton-2b4",
+        "triton-2b8",
+        "hip-cooperative-b256",
+        "hip-fused-b256"
+      ]
+    },
+    {
+      "shape": "128x1024",
+      "process": 3,
+      "configs": [
+        "triton-2b4",
+        "triton-2b8",
+        "hip-cooperative-b256",
+        "hip-fused-b256",
+        "triton-b4",
+        "triton-b8"
+      ]
+    }
+  ],
+  "build": {
+    "command": [
+      "hipcc",
+      "--offload-arch=gfx1201",
+      "-O3",
+      "-std=c++17",
+      "-save-temps",
+      "../source/softmax_hip.hip",
+      "-o",
+      "softmax_hip"
+    ],
+    "binary_sha256": "81bae78fba3e2b55e790b0d90aeee2f1ac64ff5831b73c5c84a69c2c496583d3"
+  },
+  "updated_at": "2026-09-19T17:59:06.371442+00:00",
+  "identity_checks": [
+    {
+      "phase": "profile",
+      "checked_at": "2026-09-19T17:57:15.029923+00:00",
+      "environment": {
+        "gpu": "AMD Radeon RX 9070 XT",
+        "architecture": "gfx1201",
+        "rocm_sdk": "10.0.0",
+        "hip": "7.15.26333",
+        "torch": "2.13.0+rocm10.0.0",
+        "triton": "3.8.0+git4cff872c.rocm10.0.0",
+        "os_pretty_name": "Ubuntu 24.04.5 LTS",
+        "kernel": "7.0.0-31-generic"
+      },
+      "source_reference": {
+        "source_sha256": {
+          "softmax_hip.hip": "12975c9d5b4246da0388002b55c1d2883724239fdde25476267174d12b6dc55c",
+          "softmax_triton.py": "563968117db997dc066566c60dff49194d9c28900b69a819a77fd9c195b2cf67",
+          "run_rounds.py": "74774f4ad1b4d8bf8a64bcdae69c76b01ce81dd5bd625e9301f3006d514c7a2a",
+          "summarize_rounds.py": "b4dc2ab15de348e75b9d7ca86ecdf5bfdd026ea1bd088f452f1efc1302399d51",
+          "rounds_identity.py": "1a08872efee1bbc396f157b9f126aacff41aa8ae788e08c352fbabcdf702c0a2",
+          "collect_environment.sh": "e0a6a7fa4d61d78bf5b8c6c4d424ffc922a320b86499c3e5fd1017c5139ba11b",
+          "resolve_rocprofv3.py": "6057fa1c79cd769712bbc30006af63a4e1cf0a74b7de7e2d11eae868d3889c96"
+        },
+        "binary_sha256": "81bae78fba3e2b55e790b0d90aeee2f1ac64ff5831b73c5c84a69c2c496583d3"
+      }
+    },
+    {
+      "phase": "validation",
+      "checked_at": "2026-09-19T17:57:45.775537+00:00",
+      "environment": {
+        "gpu": "AMD Radeon RX 9070 XT",
+        "architecture": "gfx1201",
+        "rocm_sdk": "10.0.0",
+        "hip": "7.15.26333",
+        "torch": "2.13.0+rocm10.0.0",
+        "triton": "3.8.0+git4cff872c.rocm10.0.0",
+        "os_pretty_name": "Ubuntu 24.04.5 LTS",
+        "kernel": "7.0.0-31-generic"
+      },
+      "source_reference": {
+        "source_sha256": {
+          "softmax_hip.hip": "12975c9d5b4246da0388002b55c1d2883724239fdde25476267174d12b6dc55c",
+          "softmax_triton.py": "563968117db997dc066566c60dff49194d9c28900b69a819a77fd9c195b2cf67",
+          "run_rounds.py": "74774f4ad1b4d8bf8a64bcdae69c76b01ce81dd5bd625e9301f3006d514c7a2a",
+          "summarize_rounds.py": "b4dc2ab15de348e75b9d7ca86ecdf5bfdd026ea1bd088f452f1efc1302399d51",
+          "rounds_identity.py": "1a08872efee1bbc396f157b9f126aacff41aa8ae788e08c352fbabcdf702c0a2",
+          "collect_environment.sh": "e0a6a7fa4d61d78bf5b8c6c4d424ffc922a320b86499c3e5fd1017c5139ba11b",
+          "resolve_rocprofv3.py": "6057fa1c79cd769712bbc30006af63a4e1cf0a74b7de7e2d11eae868d3889c96"
+        },
+        "binary_sha256": "81bae78fba3e2b55e790b0d90aeee2f1ac64ff5831b73c5c84a69c2c496583d3"
+      }
+    }
+  ],
+  "profile": {
+    "warmup": 5,
+    "repeat": 10,
+    "precheck_dispatches": 1,
+    "tool_kind": "bundled",
+    "sdk": "10.0.0"
+  },
+  "validation_selection": {
+    "shapes": [
+      "4096x1023",
+      "4096x1025",
+      "128x1024"
+    ],
+    "config_ids": [
+      "hip-cooperative-b256",
+      "hip-fused-b256",
+      "triton-b4",
+      "triton-b8",
+      "triton-2b4",
+      "triton-2b8"
+    ],
+    "rule": "cooperative/fused and all four Triton candidates; serial remains a teaching bridge"
+  },
+  "sample_sha256": {
+    "samples/n128x1024-hip-cooperative-b256-p1.csv": "cc846c8f2af86fcc80e0c0470d231211225a2adcf25ae559e3fa5ea311676ff3",
+    "samples/n128x1024-hip-cooperative-b256-p2.csv": "acffad88c5d83eebd5bba4d3dec252c23fc0306289916936ab42c70209e1d3ff",
+    "samples/n128x1024-hip-cooperative-b256-p3.csv": "b536ce456344f8d202c2d82dcca03519404a421e2986e267acf4d00028320831",
+    "samples/n128x1024-hip-fused-b256-p1.csv": "e80df0f2292eb2d04d37954a0c039e5be320d30c3f3d7e0a37e23c396e4b2ed7",
+    "samples/n128x1024-hip-fused-b256-p2.csv": "706b054ba8ecf941f40ea88e1b9fcd8b8448ce6aea40fa7d3b929a68b6cb3083",
+    "samples/n128x1024-hip-fused-b256-p3.csv": "b084930b3a50b3cb9751418e70bd3c0c308580ededa6915ff4965c49e2ac6cb3",
+    "samples/n128x1024-triton-2b4-p1.csv": "e512f47f468f56c8c4350c8f47aa4060e0628862b7ec67689715ea18e949dd87",
+    "samples/n128x1024-triton-2b4-p2.csv": "77e2a6ead01ccf4874bd27caf3cbce7e1bd32a0ec7aefcdc4aaa9f6eba0d55e8",
+    "samples/n128x1024-triton-2b4-p3.csv": "1f331c9f4f513fff8a81f806a8dc5b6015698d8f92dc5d92583f07262dfe6516",
+    "samples/n128x1024-triton-2b8-p1.csv": "52f8cf6a146e0716506d7d5d5a31aefbb4e5cdc917a051a345212e13612969ca",
+    "samples/n128x1024-triton-2b8-p2.csv": "34b953bb3b9bde107894cd7257218818971a35fe013fb72c058d96afc7950447",
+    "samples/n128x1024-triton-2b8-p3.csv": "20dbb4ae0f7b7146afb4a11a7d63d7388da51b19d23a45c06ae59c2706d2faed",
+    "samples/n128x1024-triton-b4-p1.csv": "7bebb6468c6ade3af2ed91b150da3ed4443ba64bc779f4d52e1e119d2925f15c",
+    "samples/n128x1024-triton-b4-p2.csv": "692aa2be520681a023aaa4c6e4344ae87cf2fb5f4f4e6ee7b771b9917e8a4f7a",
+    "samples/n128x1024-triton-b4-p3.csv": "1194b2b9a8de929c2d1264f71053012a2bdc075c0c0bbf485b4493dc86a3c30e",
+    "samples/n128x1024-triton-b8-p1.csv": "233089fa2bb18de460c2888e8940fdad9ae5670fc2a3f0f5c2bc4ac451071f61",
+    "samples/n128x1024-triton-b8-p2.csv": "f7cdac24d05f23a0686271f70a964e723527a107c0f82a9a47034814eb1044be",
+    "samples/n128x1024-triton-b8-p3.csv": "37ca86e97739b3f5a9e7796ca9a5d027133f5179840ba9d7d008df575d2c5df3",
+    "samples/n4096x1023-hip-cooperative-b256-p1.csv": "4964d0b24a9da006cc7d682df76f36b26354e71637c60447f5467d8186d53c3b",
+    "samples/n4096x1023-hip-cooperative-b256-p2.csv": "c132b995cb5f6260ea4c350d56f3590bfd91f546d1b8b32895009a5f1fb3dc66",
+    "samples/n4096x1023-hip-cooperative-b256-p3.csv": "7850213a8087918fff6f3a760c8851a7843766c236aebff8316096f77465b05e",
+    "samples/n4096x1023-hip-fused-b256-p1.csv": "11dfcf8f2b8ea1fe661caee5c056ae2dbafc6fe94438569af632711988f2fac0",
+    "samples/n4096x1023-hip-fused-b256-p2.csv": "e07a2a892f7a3a3e6399dd4f9075e8bc24ed43115f22ae28f5df0ebecdf9a8af",
+    "samples/n4096x1023-hip-fused-b256-p3.csv": "ac2144efc55342059aa7ba5eed076a906eda2b8143ae86f5b88f86ad88c457ca",
+    "samples/n4096x1023-triton-2b4-p1.csv": "6d8c89e8c534ec0777bef19c87dea4ca7e4f7ee8ff2ed799aa0cbff977f52a7a",
+    "samples/n4096x1023-triton-2b4-p2.csv": "3cfa12f499c73ab4a557b8ab8ea45375c54b6358682e8b425e1289430b9f4029",
+    "samples/n4096x1023-triton-2b4-p3.csv": "fdcff494d52b773070afb0e05d805f7a32ed4532082b77b63679b2c14ac3f0d0",
+    "samples/n4096x1023-triton-2b8-p1.csv": "4075c98f7cca92f6a6ee6eb4d939c71fe8250952a52d3648e128505a3bae69c6",
+    "samples/n4096x1023-triton-2b8-p2.csv": "b6af4d3d546d79be3ba3aff36710132fa4a2631af034fbca57136b1d7d153da5",
+    "samples/n4096x1023-triton-2b8-p3.csv": "adc90f9ca6fb82dc4570b60e43792ac236275a5bd1a6b4bde19446cb91991d66",
+    "samples/n4096x1023-triton-b4-p1.csv": "182c7d9773eec683a3cacb4f7be4a225621f84583e70acee67ae908b794be43e",
+    "samples/n4096x1023-triton-b4-p2.csv": "0bfff271479a4679b0b9e266d656a5bca8c4ef844801e6bc7c06e4bcf2ab9c21",
+    "samples/n4096x1023-triton-b4-p3.csv": "7c43c0a0b1bab40680b8e380742d0fd0cbd7d532b2520196b585953613169600",
+    "samples/n4096x1023-triton-b8-p1.csv": "8b49697094f8ec7a0eece7792ec270e1576da818f601f4a0f50ddc9a5219d8fe",
+    "samples/n4096x1023-triton-b8-p2.csv": "7d182c690732f0f86a7510d8123b2b12f878b9b4fe14abcc69cf6310c33b197a",
+    "samples/n4096x1023-triton-b8-p3.csv": "b847ea0af71c527cdf2d660c36b2cc603b0ca5802b86a01128722f9277fa68ed",
+    "samples/n4096x1024-hip-cooperative-b256-p1.csv": "e21b95755f00a35f1f0794473449073566f819c6409ed1cfd9938a90acd1d42c",
+    "samples/n4096x1024-hip-cooperative-b256-p2.csv": "ecf6349845ffd8c7c167b3a9d5a2bbea1387e8153ad229a9b1ec46e0c7667328",
+    "samples/n4096x1024-hip-cooperative-b256-p3.csv": "c9eb25a7bf9892f486b23b94d3812fc77a1bfa2586e84194f88758a41bed0171",
+    "samples/n4096x1024-hip-fused-b256-p1.csv": "7bbdb899dba998de03e28b0b7ab9cc52e7ef078f89dac09dba3a7633ff21a93a",
+    "samples/n4096x1024-hip-fused-b256-p2.csv": "a2671f2adc37a09d65a67595480843d1faab3947c5d9cd900098add2aca358c8",
+    "samples/n4096x1024-hip-fused-b256-p3.csv": "5af65407105ecc7d4bc1d4e437964429bb1e393ad5db0cb46bce2d7a3f47bf10",
+    "samples/n4096x1024-hip-serial-b256-p1.csv": "94e7a8f0de3fc7a0fbb1577a1c35d4e767d2b35750543dfe21ce40e77f10f572",
+    "samples/n4096x1024-hip-serial-b256-p2.csv": "aa0306cb394a0d52e70a7c0f55aeb9055f09b622e6db912fd61fcd5d02f08b45",
+    "samples/n4096x1024-hip-serial-b256-p3.csv": "0310a0b4478a225797f8ed0e5eaf81aefdc45d252593305248edd061c95202bf",
+    "samples/n4096x1024-triton-2b4-p1.csv": "845e4e3ff648e98f60e8c511956c16c0b725c6001fe189a19596b20d1859da73",
+    "samples/n4096x1024-triton-2b4-p2.csv": "17035a0da38f251dc1bd2966a272f6411f0c8f2df517b8b3adf1d4bbd75c19cf",
+    "samples/n4096x1024-triton-2b4-p3.csv": "31a4ed84b2b3200c9b5ca4b24b99ceb97935afa4a32e409df3528fe3a7dc3dcf",
+    "samples/n4096x1024-triton-2b8-p1.csv": "b3378815cc9cec82bdeaa0a9a4a67fb3014a00658e837699d0e8fcbf505121d6",
+    "samples/n4096x1024-triton-2b8-p2.csv": "f809c0a96881f8c7879586add5f8e98440dc446984271aaa96876bec80dce90b",
+    "samples/n4096x1024-triton-2b8-p3.csv": "09622569f580643fe154802383ad314c1e19b6cb5941766fbb1112f2ac25cdee",
+    "samples/n4096x1024-triton-b4-p1.csv": "29fd03711fa1647e2f78cfb241d79589bd7ebfb0b8da9dc3b449cb978cfef642",
+    "samples/n4096x1024-triton-b4-p2.csv": "6cee6b832e8aa5f59429ff3106a07bd0cab66965ee88f518d4dfb2d0918e886f",
+    "samples/n4096x1024-triton-b4-p3.csv": "7c2019fab2f2fda594ec51959886eac43142a01eab38c913238cb299bc69b84e",
+    "samples/n4096x1024-triton-b8-p1.csv": "1d4d9a07e9372904447b7d6d7c1cc25577eaf4f2c19eaeee9a5d37ce37b60fd1",
+    "samples/n4096x1024-triton-b8-p2.csv": "3c17d0003643cbc105812dc7dcfa0017daf5325acd07cd286ce29c0342169cd1",
+    "samples/n4096x1024-triton-b8-p3.csv": "f120a1b4a52b0fe70657b17ae0fd08272e432dcd7c23b67a4c4cee995990f234",
+    "samples/n4096x1025-hip-cooperative-b256-p1.csv": "015f30692b68aec2a0d4c0789067518e1a5555c9a0274f4fc599d49da16ad71e",
+    "samples/n4096x1025-hip-cooperative-b256-p2.csv": "9ec186ab0bba75ade588363ff5a38a161fdacec0659ab948ba22354a4c442a32",
+    "samples/n4096x1025-hip-cooperative-b256-p3.csv": "3b5e4d7728c97e600383439913bb50982830dff7a8dbe51fc86347645f26bf9c",
+    "samples/n4096x1025-hip-fused-b256-p1.csv": "b60ca82ed9dc1e0568c3fa3181c07d9a593ccc27d21d1aa52adaacbabd8b9449",
+    "samples/n4096x1025-hip-fused-b256-p2.csv": "76e462812578140dbfc119bc6d9f4dca39a81d504196e0edd02a412de846d0e8",
+    "samples/n4096x1025-hip-fused-b256-p3.csv": "96f30045a2e194cc44a8c1d68badbc7c9a5e57de2a350369675fd9ac4bdfa26e",
+    "samples/n4096x1025-triton-2b4-p1.csv": "7ddb0de43649317794aeabfd3c3022943c78f2b4de9f8be55b4ef19a8aca54e7",
+    "samples/n4096x1025-triton-2b4-p2.csv": "67bbb0a0e44b360c08e4376e2a62192a84d50ba2d62180d08ef76984ad41c074",
+    "samples/n4096x1025-triton-2b4-p3.csv": "098fcba887f81e5011053b4f685ec27dc5d590136ffe21da0eb552976327881b",
+    "samples/n4096x1025-triton-2b8-p1.csv": "270c398774a31ac84d769d38f0fe8dfdbc08df5fc7584b39593570f2cbf69a31",
+    "samples/n4096x1025-triton-2b8-p2.csv": "b39bbc45b74e4d0a9f611903da20a7f2fb956adcb47eb0e1e6ca5d8081dde074",
+    "samples/n4096x1025-triton-2b8-p3.csv": "03b70a16a2855b573b610526de144e845cb098b463414c3753d3915858137379",
+    "samples/n4096x1025-triton-b4-p1.csv": "14a9540699ef4359da039279b0cf2485325ef99e5643514025b45667bf185f81",
+    "samples/n4096x1025-triton-b4-p2.csv": "64ce1da85be3a08d187e5957dfb5928347ca090efb61adcafa58d2a24fde3cb6",
+    "samples/n4096x1025-triton-b4-p3.csv": "dde852a606e8ed98bc391992867a4b075d0ab74e4187b5ce32c641b56f8ebb18",
+    "samples/n4096x1025-triton-b8-p1.csv": "cd9eace0de179d72739d3e1e3bb7ded2da19f5a25f3a68dd720cd93e382186e4",
+    "samples/n4096x1025-triton-b8-p2.csv": "d0aa33fed916a2bde28b6b63e73edac2c066fd16b2b47120fd900079af908e89",
+    "samples/n4096x1025-triton-b8-p3.csv": "7cfbbf59b7b690d7ea15c3e9c683f1f42df00191dd8ba070a6c2fae0eb311b73"
+  },
+  "log_sha256": {
+    "logs/n128x1024-hip-cooperative-b256-p1.log": "fb9414a6feff74965b0043fd4bd70d5a7fd824c225a486bab46a4489a72631b9",
+    "logs/n128x1024-hip-cooperative-b256-p2.log": "02ad16dcc55d48300c2679623c739f24573dd54605caab791eadb74ff77735a0",
+    "logs/n128x1024-hip-cooperative-b256-p3.log": "9e1d0cb9f818a8ca3f39091b24dfb2187a3ec8586ac1175d1c959fc6f6193f78",
+    "logs/n128x1024-hip-fused-b256-p1.log": "c77c057721297fbb924055e0620d478ec448d05e57ed8718ff5fc4bc83d18e65",
+    "logs/n128x1024-hip-fused-b256-p2.log": "d35a78f367fb71dd7da6e3498c78397805af18e576102040abedf1cace217121",
+    "logs/n128x1024-hip-fused-b256-p3.log": "9d10f211af4b4231ece2fce9b0ca63ae0bbe9b239bda9ba4733f8ac05cbce610",
+    "logs/n128x1024-triton-2b4-p1.log": "5710c9a8d6f4557dd9fa6b4b8bfb7ed1186d4abf886903c614442e0b2d5eab7b",
+    "logs/n128x1024-triton-2b4-p2.log": "1e4c8ec2f94545bb9afd3063b6a1b7d31d0d233d72b230be62f7ae10d0482171",
+    "logs/n128x1024-triton-2b4-p3.log": "763aea3058449061cc3620efa0fdaf1305bdd3ba13707eac902ada8b34c0ad09",
+    "logs/n128x1024-triton-2b8-p1.log": "70088ae9fd149fcecab6c84cbe5ef214d8dd2332bc6a81405d7cbbe8b337a874",
+    "logs/n128x1024-triton-2b8-p2.log": "fa9247367cd1fd0d3821b01bcbca15c698f595cd55fa771b5a267cac2d83dc13",
+    "logs/n128x1024-triton-2b8-p3.log": "0d10fd40c6323c4b62642fe77b8ce53c02fb2c4ca8c1f5722cc695fa0da26c46",
+    "logs/n128x1024-triton-b4-p1.log": "266935435c64e353c6ad513cd031d5aa3d22993137021445abd80021c73c7861",
+    "logs/n128x1024-triton-b4-p2.log": "0e9633c12f4affd9be9b077bdcbfc433b19fca7eedc6e8ffee7dc986cc744781",
+    "logs/n128x1024-triton-b4-p3.log": "f0a4996b378391dfa076c9d6737ef26958289759564cadd62299d691957cca3e",
+    "logs/n128x1024-triton-b8-p1.log": "db0831c09f8d7ebb3de01461a3a3d140c3aa54538eac6f3b8cea937635691ff4",
+    "logs/n128x1024-triton-b8-p2.log": "0313d0155dfdcc505415d87447ebb738c03ec6f33e091f145a0ba9c6d9c05119",
+    "logs/n128x1024-triton-b8-p3.log": "38eb34ace221247cb8bb397c122d736cf2b2c765f8baaf6159219661f2f334c7",
+    "logs/n4096x1023-hip-cooperative-b256-p1.log": "5131b662c3fcec5892b3cab3c3891fddd5dfa07df0c47d6319499a37c8bf6e96",
+    "logs/n4096x1023-hip-cooperative-b256-p2.log": "d9120cf1756430ca6a6a25bda317859204ce4b49b7adad72c250b4f6d2928b80",
+    "logs/n4096x1023-hip-cooperative-b256-p3.log": "68bc94bbbb2de29fe78ed294e3fc36451f57916ee37171ae07ea3bc9e17888de",
+    "logs/n4096x1023-hip-fused-b256-p1.log": "7e22d8e0e164d5b2ac2bc4737c905daf503a1c83e91dbabc14f9fc901a582f03",
+    "logs/n4096x1023-hip-fused-b256-p2.log": "d76c609fdee9477b63df272c180ba6e4424e3651f18c64aec201e8577865e312",
+    "logs/n4096x1023-hip-fused-b256-p3.log": "cdfeb71b9cf8875c4bea6b04e3d5b73c05a822da259e837e3baeca25f34f2772",
+    "logs/n4096x1023-triton-2b4-p1.log": "8e4f176def7fe17aeacab19a1e06533cc810e357c527500fbccad97c922adadd",
+    "logs/n4096x1023-triton-2b4-p2.log": "5e154ca60bdf9b0ac063de8d0651d09f607ff125cab35a7983a210c095e71b39",
+    "logs/n4096x1023-triton-2b4-p3.log": "872fef0a6579f6c44d717dfa73af5fb4b7c71068b6f2ba51124d6bd2b3137075",
+    "logs/n4096x1023-triton-2b8-p1.log": "93b4f2a32911cd428eb445a7c8520c80497fba1433cf6b47ddce3e8d7d63ec55",
+    "logs/n4096x1023-triton-2b8-p2.log": "3e777725977ca24fb3f025b9cb1133941e6dce84d912d304017359a8a42995f9",
+    "logs/n4096x1023-triton-2b8-p3.log": "613643dd1955da80268c3337acfc87ca562f6a1a46ad16f89eca8203b0e55197",
+    "logs/n4096x1023-triton-b4-p1.log": "58c8797f2141173ef128b5e092468fb80c8754f4dadb3f1766c94e2b1a31f5b8",
+    "logs/n4096x1023-triton-b4-p2.log": "f87dc782b46b6917cec368b11d6e5314e00a560c9be87a97fced9b907bd95622",
+    "logs/n4096x1023-triton-b4-p3.log": "d955cc210bd167a6c2d79361321617c9e14c754c8c1a4a1e43a5e26436bce77d",
+    "logs/n4096x1023-triton-b8-p1.log": "91e8f1c72a5f015a0b690b9e924c06c5ec09ac85f927daf6b78a0dd432a10b63",
+    "logs/n4096x1023-triton-b8-p2.log": "f92e1d0d4e2056b174b30900f359f7beedcea65c306c3b41d4ba145c82887dba",
+    "logs/n4096x1023-triton-b8-p3.log": "b4d35b70ed87eece56ea3beb6025630b3be06507d74e991edd2a703a25fb516a",
+    "logs/n4096x1024-hip-cooperative-b256-p1.log": "2ff1b3cc1f88e2f584fcc51af04626349593a266a094c0d029588ad658b61f89",
+    "logs/n4096x1024-hip-cooperative-b256-p2.log": "435de084d3ef861219bc7b75d9c84d901b13db64b2877f60f155df7a5eddd4c0",
+    "logs/n4096x1024-hip-cooperative-b256-p3.log": "969ba4a4591aa2cc672d6cf795150db10d529fac09bdd50d4c5e52ee472122ec",
+    "logs/n4096x1024-hip-fused-b256-p1.log": "b24c4c7df6d3a3b700b15bbd31e15631dd00af28888c76dae66ce75c65938f6f",
+    "logs/n4096x1024-hip-fused-b256-p2.log": "a50de7c91461786ea924684e931e18431a4896230f5194380018ce09c1abd823",
+    "logs/n4096x1024-hip-fused-b256-p3.log": "1d8e4c3017d12946f33cc628549f22a3acae5f96822b217b41fdcf82af9c6b9c",
+    "logs/n4096x1024-hip-serial-b256-p1.log": "07392729e7dd9fd179bca9a7486bf257e0b175733bdb67539ea85151ce531bdb",
+    "logs/n4096x1024-hip-serial-b256-p2.log": "9dec46dc4e03323ff4733ae9769b523436684bd5626c842745c03682dd094ca1",
+    "logs/n4096x1024-hip-serial-b256-p3.log": "8c1dbfa3127580b06c56be5c88903d74a5b84ba7e88115bcba0e73e027d76fd2",
+    "logs/n4096x1024-triton-2b4-p1.log": "81fe29b617e4c39c9998069caf9aaf065d929fe185b7d204ea4d8f899d657b2c",
+    "logs/n4096x1024-triton-2b4-p2.log": "a56b8655f907f71688babe39ac332d98d5bbb08c8d7078175d9e6bbb633f025e",
+    "logs/n4096x1024-triton-2b4-p3.log": "1a07e098d5dc4b6192c6360c43f2cc85238a8d20662f67ebff20ac8673a215e0",
+    "logs/n4096x1024-triton-2b8-p1.log": "83b09fc2760b230c02d75d035882b0938270ce3e4042c52696589c2a8c649e74",
+    "logs/n4096x1024-triton-2b8-p2.log": "bde3e6b2e40c9c4f3c9549c559c7ceb28823308f3d2eb6f2b1b85532e9ad9248",
+    "logs/n4096x1024-triton-2b8-p3.log": "6b533c57179eec7aabe137582ba22e2a9bf41963110d81a4392127e5427dc721",
+    "logs/n4096x1024-triton-b4-p1.log": "afda9bb3383db5f6372c88bc29e6b3e4cf30117243e08e5aac96aa66bae10c66",
+    "logs/n4096x1024-triton-b4-p2.log": "8ff59b6a6ee37aafd58e9266e49d5a91400af189a605d3220dfdc3be51890245",
+    "logs/n4096x1024-triton-b4-p3.log": "4c90896e9827a21b69a46cd472e6894fa4684b7171adc546f76da61689821957",
+    "logs/n4096x1024-triton-b8-p1.log": "6014eed396bf517220c4b7c9c54b8afa31556c34a19d3d8ee4f8ad88a8fd03e9",
+    "logs/n4096x1024-triton-b8-p2.log": "ff84e58f3b4d0bc2b5e439deb495dc4e26f1cd2826ae54b8d69f214050b59126",
+    "logs/n4096x1024-triton-b8-p3.log": "59d1c0b256a88a14a0ad8fb1a5c9e1531ad2d2e762f168733c25a4c59d3580b3",
+    "logs/n4096x1025-hip-cooperative-b256-p1.log": "5fbfd24f05e122c1f740232fbb03063ce081f55f979fe4acd7287f2167d9c23c",
+    "logs/n4096x1025-hip-cooperative-b256-p2.log": "f9a071eb3507c4080fc72810908eec1bd39d187510b3c1e0d96de7f2c6ec9bc5",
+    "logs/n4096x1025-hip-cooperative-b256-p3.log": "9e514dfefd7dd6bcc2ebec77c5d201756009005ac97a2b6d8c124aa4cbd13ab4",
+    "logs/n4096x1025-hip-fused-b256-p1.log": "89da028e50eba1f9bf502c23cb3bb86c308693fa27e49d6db5d62db413aa3586",
+    "logs/n4096x1025-hip-fused-b256-p2.log": "c06e2221980669e4452fa43471ead077752c939b387840428fedde24ab188b2d",
+    "logs/n4096x1025-hip-fused-b256-p3.log": "872682e15545b050367e8bfcae0f3d5f3cb6a1d735a2942ff4d8b58dea5fe390",
+    "logs/n4096x1025-triton-2b4-p1.log": "855de15c57e553af6faf45df258c09cd023fda846636c3f87d0b07a9b96e9bfb",
+    "logs/n4096x1025-triton-2b4-p2.log": "f6c8bec8e50ede5cbe88fcbc1ce8c651b3f72eaa78ac69bcef99d99aaef76958",
+    "logs/n4096x1025-triton-2b4-p3.log": "a565ab1a39f969aac36763aef62d8feaae3df8580e2bd51273b988addeb66a97",
+    "logs/n4096x1025-triton-2b8-p1.log": "e675c64184c913cd1b96c988ceb99a2e8ca7dd8398f744121d270d8517162023",
+    "logs/n4096x1025-triton-2b8-p2.log": "79e60f6da324443012f2c96a7b549d252fbbeb577a7f55bfac80f1f407e8999d",
+    "logs/n4096x1025-triton-2b8-p3.log": "21559bfee01b97875c7b24011d5e32294abc945d40a9a735057c9f92637b8129",
+    "logs/n4096x1025-triton-b4-p1.log": "b7e69d1ebe9dafb52afb0fe80d112b6bd69a4bf23a8769b5b2cc121a082ac7e0",
+    "logs/n4096x1025-triton-b4-p2.log": "0238375ad6392ec690610549cac774616e121568a04a91582a0135909e0e1b92",
+    "logs/n4096x1025-triton-b4-p3.log": "425976df614ba3266e2bda32a218418d46f16cd15b5c3c6b5b5e8ac83a353f37",
+    "logs/n4096x1025-triton-b8-p1.log": "ab104ef0e87db2fdbde8108fa85c2b3a63010aaefeab931fc5f433a6240c0f48",
+    "logs/n4096x1025-triton-b8-p2.log": "0ac1dc7863742ab588eea4b92cb75523491be96770fff3ba0f0c9c0eeb1195a4",
+    "logs/n4096x1025-triton-b8-p3.log": "7480861e5f7335ecd7f8b7fc068766337a2ab0a9316ab0d5e57ce0179861e4c1",
+    "logs/edge-1x1-hip-serial-b256.log": "fb27628975efc8e73a22801a12870231b1e5ba13422331c55eb7591192ef4133",
+    "logs/edge-1x1-hip-cooperative-b256.log": "ff20edd8f1de16269988f0ca589b6cc3936fd188d7202efa7a9d9fe4f3d2aaa8",
+    "logs/edge-1x1-hip-fused-b256.log": "4923176485bc27cb1bc408a3a313d5866a02136886c9bc6856b4ba78f6da499b",
+    "logs/edge-1x1-triton-b4.log": "ced2c35187a9d8ba1025891e13f65ab347a4ecaa8642f75cf7b67cbeccf27f2a",
+    "logs/edge-1x1-triton-b8.log": "7fa3aefb2af5cf5b23c887b317121cc7d627ce5d09cc52379a1dd6c092cc00c3",
+    "logs/edge-1x1-triton-2b4.log": "0e71a5cd34e6d784985b1bfd360d7d1e8405881d303757de760accdb81653aa0",
+    "logs/edge-1x1-triton-2b8.log": "a2acd37e193a20ae50e0e959588071bcaf610ea2b6c3c55670b74f152e986623",
+    "logs/edge-3x33-hip-serial-b256.log": "c72ed017ad1685a6c4efb83bd37c59ed92c236e09197ad55b914ab053e85cf62",
+    "logs/edge-3x33-hip-cooperative-b256.log": "b27f481b435c108106b401d418648b3176a2f0544fa59338d969c699b721e4e0",
+    "logs/edge-3x33-hip-fused-b256.log": "c58b93ace02fcfd0d66c685956c9a3c8f0d06a6d2c42ce4194a97db9253fd4d4",
+    "logs/edge-3x33-triton-b4.log": "3d261e664d3d31ac1824c271219757d839b7b2b44212bdba72412a38ea012bdf",
+    "logs/edge-3x33-triton-b8.log": "06ea7a61f2959fed04e6810f2727851c9b909bb71b3b5ef0bc66691a3828b032",
+    "logs/edge-3x33-triton-2b4.log": "4213c48885a0345d8075373a638b1bb5dffea790c173dfd358af8abf990e331e",
+    "logs/edge-3x33-triton-2b8.log": "a4bb42c10a4b5d14836be739b81eff5c2b4b50234a1f0b2353d664b9e7bd1586",
+    "logs/edge-3x257-hip-serial-b256.log": "9b699558fd72484f0dbddfc2dbcfed637161529f56a3272e8aba0fd85ea2fd6a",
+    "logs/edge-3x257-hip-cooperative-b256.log": "a124f98617e29fa66be1ac54c72ef61ab312c3cef3db60a94b387b1a44852510",
+    "logs/edge-3x257-hip-fused-b256.log": "ee01e7501652bb7eaf38c8e2a2474116d8e849c4dab44d39ef9a4b3e8d059375",
+    "logs/edge-3x257-triton-b4.log": "b3e38668af02e16422bd9a3179e8486d13218af8422683f90413c8036d920790",
+    "logs/edge-3x257-triton-b8.log": "492d7b74244bb647e427b6e14b7dd438b45fb6d83dfe8e3f504e70557447ca6a",
+    "logs/edge-3x257-triton-2b4.log": "936cc739ffc9577726e5dffb41701372501fb67ecccd50b44336dc287d76685b",
+    "logs/edge-3x257-triton-2b8.log": "bafb70cf34b3d54fc394f5d008020bde25a4975ae290c408a84a0884f6858146",
+    "logs/edge-3x1025-hip-serial-b256.log": "1baf0e2053f651cc6cecb3d18f847318256e98cc899702b2fe8a02a83154fbe8",
+    "logs/edge-3x1025-hip-cooperative-b256.log": "4b9e41750003cab9c0f804122685b70ec2970460f0adb2d10afd30db29ecd518",
+    "logs/edge-3x1025-hip-fused-b256.log": "658974b89065a25a9228fd73af3da17e60d93a2ea71af4559bfcc135878fe6c9",
+    "logs/edge-3x1025-triton-b4.log": "1b36d09fe8b61d11f010b7454db3c01055780f17edfd9d4351255a289b4287de",
+    "logs/edge-3x1025-triton-b8.log": "0151167abb932bf8077810976a45821ce12cfbdedc7e438373cf6cdde4c07f25",
+    "logs/edge-3x1025-triton-2b4.log": "82bf564a24e42581afb9a334cc070c597648b89241ab1385bb9bee7f7fd379d8",
+    "logs/edge-3x1025-triton-2b8.log": "d9a1cbc034590cf71950db5d4bcc769f0bb5dc1f2f0844cc26e71ab1bd8293fd",
+    "logs/profile-hip-serial-b256.log": "1150dc1451cb30f400454b6d960bdc787d1852bf62983d6f01cf91047bb9a15c",
+    "logs/profile-hip-cooperative-b256.log": "8b1ed8ee07aed0d93a87191364a3a39d44013298c5d84c708fd467c33ac18ed4",
+    "logs/profile-hip-fused-b256.log": "3c26c3bc6e5fb7c866be61c2686278925ff5f7031ad34be9ce53ea9edff25624",
+    "logs/profile-triton-b4.log": "20cafdfd7757f92d274f5f39d795e41465166c80fa9e01cc044729e489f13db1",
+    "logs/profile-triton-b8.log": "f3c4feadc5518aa3a5c7fc7b3bf2cd458e67ed6893992e9ca08ef264c6973c19",
+    "logs/profile-triton-2b4.log": "7b85190123df627568dc7f0a3c7f9a25d7ca6c2965d1efbe6dd33d8675063656",
+    "logs/profile-triton-2b8.log": "6b6fc03ebae19a8f5f79d660fefd7ebb7fcaeed4f76ccad4cf8f64814fd5f70c"
+  },
+  "profile_sha256": {
+    "profiles/hip-serial-b256_kernel_trace.csv": "841ddb25615e58d0c53eb0d45e51fcc2103c85e56a6e01a69caedabdc89dbe52",
+    "profiles/hip-cooperative-b256_kernel_trace.csv": "cf54727aefd096ac7fc9c860153171560ca2b6a186feac496fb00172dba319ac",
+    "profiles/hip-fused-b256_kernel_trace.csv": "df8932e5451847930607f14d41262786225708fb1aad823656287388f09edc72",
+    "profiles/triton-b4_kernel_trace.csv": "79df0a4a44db12ff9a94463493823d5a43142e4a2d9e43e1a6a0eda2f7a3921e",
+    "profiles/triton-b8_kernel_trace.csv": "551fe62cf676efe257442d5bd61da219f7846b61f221ad3fc4fbac5370f0b3f5",
+    "profiles/triton-2b4_kernel_trace.csv": "b742ad644a4a03c752e8c68a293e5258efc7e4b5c50918b648554ad5445dcc0f",
+    "profiles/triton-2b8_kernel_trace.csv": "cb3c40a23eee385c858c438e5780b7422b8bedbb7b470bc2421f8a513b41a235"
+  },
+  "correctness_checks": {
+    "small_checks": 28,
+    "correct": "OK"
+  },
+  "analysis": {
+    "summarizer_sha256": "b4dc2ab15de348e75b9d7ca86ecdf5bfdd026ea1bd088f452f1efc1302399d51",
+    "identity_check": "frozen source/binary; actual ENV; full matrix/metadata; correctness; trace grid/count; prior raw hashes"
+  },
+  "statistics": {
+    "within_process": "median of event samples",
+    "across_processes": "median of process medians; min/max of process medians",
+    "range_is_confidence_interval": false,
+    "sample_count": 3750
+  },
+  "artifacts_sha256": {
+    "summary.csv": "7337f2bc7abea4b534d62d2c790d61e4b8b15dc80be0e89af3915ab404b13d4e",
+    "process-summary.csv": "412a0474dfa3b653db878b3d70a886dfc881f6691b9e15d7d8842c9b341c8dbf",
+    "summary.json": "d405ddbf1321008286728adbaebf402289d1fb59a225d5e7f76c5315e4e1f32e",
+    "profile-summary.csv": "d982ad1b4a04594638b39f1e7a8cdcd63728e2a0cabdf7e5f16e9435573f4305",
+    "confirmation.json": "90344f76d2a64f0a8d47ea9e7c177674a75cc9abc73ab9b048d28c1c55c91a92",
+    "shape-confirmation.json": "ba94ac551e3a520d78443f94cbad6ad8a59834d3be9a1a44ad6758d2b2150a9d"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "rocprofv3": "<environment-part-root>/.venv/bin/rocprofv3",
+  "rocprofv3-avail": "<environment-part-root>/.venv/bin/rocprofv3-avail",
+  "rocprof-compute": null,
+  "rocprofiler-compute": null,
+  "rocprof-sys-run": null,
+  "rocprof-sys-instrument": null,
+  "rocprof-sys-avail": null,
+  "rocprofiler-systems": null,
+  "roctracer": null,
+  "rocminfo": "<environment-part-root>/.venv/bin/rocminfo",
+  "hipcc": "<environment-part-root>/.venv/bin/hipcc",
+  "llvm-objdump": null,
+  "llvm-readelf": null,
+  "sdk_bin_entries": [
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/bin/hipcc",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/bin/hipcc_cmake_linker_helper",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/bin/rocminfo",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/bin/rocpd2pftrace",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/bin/rocprofv3",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/bin/rocprofv3-avail"
+  ],
+  "sdk_library_entries": [
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/lib/libcltrace.so",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/lib/libhsa-amd-aqlprofile64.so.1",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/lib/librocprof-trace-decoder.so.0.2",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/lib/librocprofiler-register.so.0",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/lib/librocprofiler-sdk-attach.so.1",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/lib/librocprofiler-sdk-rocattach.so.1",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/lib/librocprofiler-sdk-rocpd.so.1",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/lib/librocprofiler-sdk-roctx.so.1",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/lib/librocprofiler-sdk.so.1",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/lib/libroctracer64.so.4",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/lib/rocprofiler-sdk",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/lib/roctracer"
+  ],
+  "sdk_share_entries": [
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/share/rocprofiler-register",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/share/rocprofiler-sdk",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/share/rocprofiler-sdk-rocattach",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/share/rocprofiler-sdk-rocpd",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/share/rocprofiler-sdk-roctx",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/share/rocprofiler-sdk-tests",
+    "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_core/share/roctracer"
+  ]
+}

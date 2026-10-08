@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="750" viewBox="0 0 700 750" role="img" aria-labelledby="title desc">
+  <title id="title">等待数据时，调度器选择已经就绪的 wavefront</title>
+  <desc id="desc">两个 wavefront 已经保留在计算单元中。wave A 的下一条指令需要尚未返回的数据，因此暂时等待；它的临时值和执行位置仍保留，没有被清空或替换成零。wave B 的下一条指令已经就绪，调度器可以选择 B 发出下一条指令。该图只说明调度选择，不表示硬件容量、时钟周期、占用率或实测并发数量。</desc>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 9 5 0 9Z" fill="#2f6e9e"/></marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 9 5 0 9Z" fill="#a35d27"/></marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 9 5 0 9Z" fill="#377554"/></marker>
+    <marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 9 5 0 9Z" fill="#59646b"/></marker>
+  </defs>
+  <rect width="700" height="750" rx="12" fill="#fcfbf7"/>
+  <g font-family="PingFang SC, Microsoft YaHei, Noto Sans CJK SC, sans-serif" fill="#27323a" text-anchor="middle">
+    <text x="32" y="48" font-size="30" font-weight="600" text-anchor="start">等待数据时，先执行就绪工作</text>
+    <text x="32" y="88" font-size="26" fill="#59646b" text-anchor="start">A、B 的临时状态都已保留</text>
+    <rect x="36" y="128" width="298" height="224" rx="10" fill="#eaf2f8" stroke="#8fb4cf" stroke-width="2"/>
+    <text x="185" y="175" font-size="32" fill="#2f6e9e" font-weight="600">wave A</text>
+    <text x="185" y="222" font-size="26">所需数据未返回</text>
+    <rect x="65" y="243" width="240" height="48" rx="6" fill="#fff" stroke="#a7afad" stroke-width="2" stroke-dasharray="6 4"/>
+    <text x="185" y="277" font-size="26" fill="#59646b">下一条指令等待</text>
+    <text x="185" y="329" font-size="24" fill="#59646b">临时值与位置仍保留</text>
+    <rect x="366" y="128" width="298" height="224" rx="10" fill="#fff0e1" stroke="#d9ad83" stroke-width="2"/>
+    <text x="515" y="175" font-size="32" fill="#a35d27" font-weight="600">wave B</text>
+    <text x="515" y="222" font-size="26">下一条指令已就绪</text>
+    <rect x="395" y="243" width="240" height="48" rx="6" fill="#eaf4ec" stroke="#aecbb7" stroke-width="2"/>
+    <text x="515" y="277" font-size="26" fill="#377554" font-weight="600">可以执行</text>
+    <text x="515" y="329" font-size="24" fill="#59646b">等待调度器选择</text>
+    <path d="M515 362V387H350V423" fill="none" stroke="#a35d27" stroke-width="3.5" stroke-linejoin="round" marker-end="url(#arrow-orange)"/>
+    <text x="520" y="417" font-size="26" fill="#a35d27" font-weight="600">选择 B</text>
+    <rect x="235" y="433" width="230" height="91" rx="10" fill="#fff" stroke="#a7afad" stroke-width="2"/>
+    <text x="350" y="489" font-size="30" font-weight="600">调度器</text>
+    <path d="M350 535V580" fill="none" stroke="#377554" stroke-width="3.5" stroke-linejoin="round" marker-end="url(#arrow-green)"/>
+    <rect x="137" y="590" width="426" height="76" rx="10" fill="#eaf4ec" stroke="#aecbb7" stroke-width="2"/>
+    <text x="350" y="638" font-size="26" fill="#377554" font-weight="600">执行 wave B 的下一条指令</text>
+    <text x="350" y="713" font-size="24" fill="#59646b">A 等到数据就绪后，才能继续相关指令</text>
+  </g>
+</svg>

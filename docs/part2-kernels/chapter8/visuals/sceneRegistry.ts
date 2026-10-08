@@ -5,7 +5,7 @@ import ParadigmScene from './scenes/ParadigmScene.vue'
 import MemoryScene from './scenes/MemoryScene.vue'
 import VectorScene from './scenes/VectorScene.vue'
 import TritonScene from './scenes/TritonScene.vue'
-import { INPUT_A, INPUT_B, MEASURED_BANDWIDTH, OUTPUT_C } from './scenes/data'
+import { INPUT_A, INPUT_B, OUTPUT_C } from './scenes/data'
 
 export type Scenario = 'dependency' | 'paradigm' | 'memory' | 'vector' | 'triton'
 
@@ -82,7 +82,7 @@ export const sceneRegistry: Record<Scenario, RegisteredScene> = {
     meta: {
       eyebrow: '8.4 HIP · 合并访存 · 8-lane 教学缩略',
       title: '同样 8 个 lane，地址排法决定触及几组',
-      viewBox: '0 0 720 420',
+      viewBox: '0 0 720 290',
       steps: [
         {
           label: '两种排法',
@@ -99,16 +99,11 @@ export const sceneRegistry: Record<Scenario, RegisteredScene> = {
         })),
         {
           label: '累计落点',
-          title: '4 轮累计：打包次数差 4 倍',
-          narration: '同样是每轮读 8 个元素、读 4 轮：连续累计只触及 4 个 32B 组，跨步累计触及 16 个组。',
+          title: '4 轮累计：请求落入哪些教学分组',
+          narration: '两边最终都覆盖同样的 4 个 32B 组。连续排列每轮访问 1 组，4 轮共 4 组次；跨步排列每轮都访问这 4 组，累计 16 组次。这里重复计数的是每轮访问，不是 16 个不同分组。',
           duration: 4400
         },
-        {
-          label: '实测带宽',
-          title: '9070 XT 实测：差距约 6.95×',
-          narration: `连续 ${MEASURED_BANDWIDTH.contiguous.toFixed(1)} GB/s，跨步 ${MEASURED_BANDWIDTH.strided.toFixed(1)} GB/s（N=16,777,216，hip-v1 两版，口径见 8.5.2）。32B 分桶是教学模型，不是硬件事务计数。`,
-          duration: 5000
-        }
+
       ]
     }
   },

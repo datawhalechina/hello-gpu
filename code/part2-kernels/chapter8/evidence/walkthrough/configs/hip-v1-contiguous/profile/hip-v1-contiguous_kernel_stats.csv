@@ -1,0 +1,3 @@
+"Name","Calls","TotalDurationNs","AverageNs","Percentage","MinNs","MaxNs","StdDev"
+"(anonymous namespace)::vector_add_v1_contiguous(float const*, float const*, float*, unsigned long)",16,6688105,418006.562500,99.43,355001,723922,119926.510496
+"__amd_rocclr_fillBufferUnAligned",1,38520,38520.000000,0.5726,38520,38520,0.00000000e+00

@@ -1,0 +1,26 @@
+kernel_name="scores_kernel(float const*, float const*, float*, int, int, float)"
+csv_rows=51 target_rows=16 skipped_rows=6 kept_rows=10
+sort=Start_Timestamp_ascending
+first_start_ns=887497031786019 first_end_ns=887497031805419 first_duration_ns=19400
+kernel_min_us=8.040000 kernel_median_us=8.140500 kernel_max_us=19.400000
+grid_work_items_xyz=16384x1x1 workgroup_size_xyz=256x1x1 workgroups_xyz=64x1x1
+workgroups_total=64
+vgpr_count=8 sgpr_count=128 lds_bytes=0 scratch_bytes=0
+
+kernel_name="softmax_rows_kernel(float const*, float*, int)"
+csv_rows=51 target_rows=16 skipped_rows=6 kept_rows=10
+sort=Start_Timestamp_ascending
+first_start_ns=887497031809699 first_end_ns=887497031814260 first_duration_ns=4561
+kernel_min_us=4.480000 kernel_median_us=4.560000 kernel_max_us=4.640000
+grid_work_items_xyz=32768x1x1 workgroup_size_xyz=256x1x1 workgroups_xyz=128x1x1
+workgroups_total=128
+vgpr_count=16 sgpr_count=128 lds_bytes=0 scratch_bytes=0
+
+kernel_name="probability_value_kernel(float const*, float const*, float*, int, int)"
+csv_rows=51 target_rows=16 skipped_rows=6 kept_rows=10
+sort=Start_Timestamp_ascending
+first_start_ns=887497031845800 first_end_ns=887497031880681 first_duration_ns=34881
+kernel_min_us=34.761000 kernel_median_us=34.921000 kernel_max_us=35.040000
+grid_work_items_xyz=8192x1x1 workgroup_size_xyz=256x1x1 workgroups_xyz=32x1x1
+workgroups_total=32
+vgpr_count=16 sgpr_count=128 lds_bytes=0 scratch_bytes=0

@@ -9,7 +9,7 @@ description: "RX 9070 XT 上的 6 条搜索裁决与 5 次独立复测：接受�
 
 ## 1. 任务与环境
 
-这一节固定本次实验的范围，便于你判断哪些条件需要在复跑时保持一致。
+本报告分析下面列出的历史实验记录，便于你判断哪些条件需要在复跑时保持一致。当前运行环境使用第 17 章配置的 **ROCm 10.0**，复跑时需要重新采集性能数据。
 
 | 项目 | 本次配置 |
 | --- | --- |
@@ -17,7 +17,6 @@ description: "RX 9070 XT 上的 6 条搜索裁决与 5 次独立复测：接受�
 | 任务 | `output = x + y`，两个连续 FP16 输入，形状 `4096 × 2048` |
 | 设备 | AMD Radeon RX 9070 XT，`gfx1201` |
 | 系统 | 原生 Ubuntu 24.04.5 LTS，Linux `7.0.0-31-generic` |
-| 软件 | ROCm SDK 7.13.0，HIP runtime 7.13.99004，PyTorch 2.11.0+rocm7.13.0，Triton 3.6.0+rocm7.13.0 |
 | Python 与调用库 | Python 3.12.3，LiteLLM 1.95.0 |
 | 模型 | 硅基流动兼容接口，`openai/Qwen/Qwen3.6-35B-A3B`，temperature 0.2，`enable_thinking=false` |
 | 正确性 | seeds 17、29；`atol=rtol=0.001`；检查输入不变、输出契约与数值结果 |
@@ -71,7 +70,7 @@ bash chapter17/run_all.sh --skip-pytest
 ::: figure fig-vector-add-timeline
 ![向量加法 Agent 的六条裁决记录](./images/vector-add-9070xt-timeline.png)
 
-RX 9070 XT + ROCm 7.13，FP16 向量加法：修改说明来自运行记录，计时和裁决来自评测工具。
+RX 9070 XT 上的 FP16 向量加法历史记录：修改说明来自运行记录，计时和裁决来自评测工具。
 :::
 
 **图例**：三角形表示未达阈值，圆点表示接受；每行同时列出本轮候选延迟与相对当时当前版本的配对改进。文字里的原因解释未被自动验证；第 6 条自动提交的实际源码配置是 `block_size=512`。

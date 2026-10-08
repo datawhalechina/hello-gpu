@@ -1,0 +1,34 @@
+{
+  "time": "2026-09-19T23:57:40.830545+00:00",
+  "python": "<environment-part-root>/.venv/bin/python",
+  "os": {
+    "NAME": "Ubuntu",
+    "ID": "ubuntu",
+    "PRETTY_NAME": "Ubuntu 24.04.5 LTS",
+    "VERSION_ID": "24.04",
+    "VERSION": "24.04.5 LTS (Noble Numbat)",
+    "VERSION_CODENAME": "noble",
+    "ID_LIKE": "debian",
+    "HOME_URL": "https://www.ubuntu.com/",
+    "SUPPORT_URL": "https://help.ubuntu.com/",
+    "BUG_REPORT_URL": "https://bugs.launchpad.net/ubuntu/",
+    "PRIVACY_POLICY_URL": "https://www.ubuntu.com/legal/terms-and-policies/privacy-policy",
+    "UBUNTU_CODENAME": "noble",
+    "LOGO": "ubuntu-logo"
+  },
+  "kernel": "7.0.0-31-generic",
+  "gpu": "AMD Radeon RX 9070 XT",
+  "architecture": "gfx1201",
+  "torch": "2.13.0+rocm10.0.0",
+  "hip": "7.15.26333",
+  "triton": "3.8.0+git4cff872c.rocm10.0.0",
+  "rocm_sdk": "10.0.0",
+  "environment": {
+    "PATH": "<environment-part-root>/.venv/bin:<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/bin:<environment-part-root>/.venv/bin:<home>/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "VIRTUAL_ENV": "<environment-part-root>/.venv",
+    "ROCM_PATH": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel",
+    "ROCM_HOME": null,
+    "HIP_PATH": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel",
+    "LD_LIBRARY_PATH": "<environment-part-root>/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/lib"
+  }
+}

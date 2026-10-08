@@ -1,0 +1,52 @@
+[
+  {
+    "group": "waves",
+    "counter": "GRBM_GUI_ACTIVE",
+    "dispatch_count": 10,
+    "min": 894818.0,
+    "median": 900513.5,
+    "max": 906979.0,
+    "valid_for_cache_or_traffic_conclusions": false,
+    "interpretation": "nonzero activity count; not clock or occupancy proof"
+  },
+  {
+    "group": "waves",
+    "counter": "SQ_WAVES_sum",
+    "dispatch_count": 10,
+    "min": 524288.0,
+    "median": 524288.0,
+    "max": 524288.0,
+    "valid_for_cache_or_traffic_conclusions": false,
+    "interpretation": "launch-count sanity check only"
+  },
+  {
+    "group": "l2",
+    "counter": "GL2C_HIT_sum",
+    "dispatch_count": 10,
+    "min": 0.0,
+    "median": 0.0,
+    "max": 0.0,
+    "valid_for_cache_or_traffic_conclusions": false,
+    "interpretation": "all zero in this collection; unusable as cache/traffic evidence"
+  },
+  {
+    "group": "l2",
+    "counter": "GL2C_MISS_sum",
+    "dispatch_count": 10,
+    "min": 0.0,
+    "median": 0.0,
+    "max": 0.0,
+    "valid_for_cache_or_traffic_conclusions": false,
+    "interpretation": "all zero in this collection; unusable as cache/traffic evidence"
+  },
+  {
+    "group": "fetch",
+    "counter": "FetchSize",
+    "dispatch_count": 10,
+    "min": 0.0,
+    "median": 0.0,
+    "max": 0.0,
+    "valid_for_cache_or_traffic_conclusions": false,
+    "interpretation": "all zero in this collection; unusable as cache/traffic evidence"
+  }
+]

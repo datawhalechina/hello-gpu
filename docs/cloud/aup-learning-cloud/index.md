@@ -79,7 +79,7 @@ description: AUP Learning Cloud 远程 JupyterHub/Code Server 使用指南与登
 
 ### 4. 成功登录后的界面
 
-![登录成功后的 JupyterHub 界面](./images/04-jupyterhub-home-1.png)
+![登录成功后的 JupyterHub 欢迎区与服务器入口（局部截图）](./images/04-jupyterhub-home-1.png)
 
 ![JupyterHub 启动服务器界面](./images/05-jupyterhub-home-2.png)
 
@@ -151,7 +151,7 @@ cp <需要保存的文件> /home/jovyan
 1. 登录后，在启动页面选择 **Code Server CPU Environment** 或 **Code Server GPU Environment**
 2. 选择所需的硬件配置（如 AMD Radeon™ 8060S GPU）
 
-![选择 Code Server 环境](./images/08-code-server-select.png)
+![Development 区域的 Code Server 环境选项（局部截图）](./images/08-code-server-select.png)
 
 3. 设置运行时长，点击 **Launch Server**
 4. 等待几秒后，浏览器将自动打开 VSCode 界面

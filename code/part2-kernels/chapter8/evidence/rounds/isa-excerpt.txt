@@ -1,0 +1,45 @@
+ROCm SDK 10.0.0 / HIP 7.15.26333 / gfx1201 / -O3 -std=c++17 -save-temps
+Assembly: results/rocm10-20260920/build/vector_add_hip-hip-amdgcn-amd-amdhsa-gfx1201.s
+Assembly SHA-256: 438b5cee1f03a0c6386290fd576b8a401018456da88b3955945c8bf6a05f32c6
+
+The lines below establish generated instruction width only; they do not establish a performance cause.
+
+v2 scalar loop
+451: 	s_wait_alu depctr_va_vcc(0)
+452: 	v_add_co_ci_u32_e64 v7, null, s7, v3, vcc_lo
+453: 	global_load_b32 v8, v[4:5], off
+454: 	global_load_b32 v6, v[6:7], off
+455: 	v_add_co_u32 v0, vcc_lo, v0, s12
+
+v2 scalar store
+467: 	s_wait_loadcnt 0x0
+468: 	v_add_f32_e32 v6, v8, v6
+469: 	global_store_b32 v[4:5], v6, off
+470: 	s_wait_alu depctr_sa_sdst(0)
+
+v3 float4 loads
+592: 	s_wait_alu depctr_va_vcc(0)
+593: 	v_add_co_ci_u32_e64 v11, null, s17, v3, vcc_lo
+594: 	global_load_b128 v[6:9], v[6:7], off
+595: 	global_load_b128 v[10:13], v[10:11], off
+596: 	v_add_co_u32 v4, vcc_lo, v4, s2
+
+v3 float4 store
+609: 	v_dual_add_f32 v6, v6, v10 :: v_dual_add_f32 v7, v7, v11
+610: 	v_dual_add_f32 v8, v8, v12 :: v_dual_add_f32 v9, v9, v13
+611: 	global_store_b128 v[14:15], v[6:9], off
+612: 	s_wait_alu depctr_sa_sdst(0)
+
+v3 scalar tail loads
+637: 	s_wait_alu depctr_va_vcc(0)
+638: 	v_add_co_ci_u32_e64 v7, null, s7, v3, vcc_lo
+639: 	global_load_b32 v8, v[4:5], off
+640: 	global_load_b32 v6, v[6:7], off
+641: 	v_add_co_u32 v0, vcc_lo, v0, s2
+
+v3 scalar tail store
+654: 	s_wait_loadcnt 0x0
+655: 	v_add_f32_e32 v6, v8, v6
+656: 	global_store_b32 v[4:5], v6, off
+657: 	s_wait_alu depctr_sa_sdst(0)
+

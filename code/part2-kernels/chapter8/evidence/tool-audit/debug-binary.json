@@ -1,0 +1,17 @@
+{
+  "command": [
+    "hipcc",
+    "--offload-arch=gfx1201",
+    "-O3",
+    "-std=c++17",
+    "-gline-tables-only",
+    "-save-temps",
+    "../source/vector_add_hip.hip",
+    "-o",
+    "vector_add_hip_debug"
+  ],
+  "working_directory": "build",
+  "source_sha256": "73e1af89d25a91fb35ee78198ce74c93d617a9ac5a0852ff74d20abd2184aa80",
+  "binary_sha256": "d25ec73bb441f049c8d3b0f8d3b96b337968b9ab0fb94e2c8f9a98ec8609c224",
+  "purpose": "separate diagnostic binary with line tables; not the frozen benchmark binary"
+}

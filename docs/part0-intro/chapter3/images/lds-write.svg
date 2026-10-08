@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="710" viewBox="0 0 700 710" role="img" aria-labelledby="title desc">
+  <title id="title">1　分别写入局部和</title>
+  <desc id="desc">求和任务 [1,2,10,20] 中，线程甲先得到局部和 3，线程乙先得到局部和 30。两者是同一 block 中不同 wavefront 的代表线程。甲已经把 3 写入 shared[0]，乙尚未把 30 写入 shared[1]。未就绪不表示零；甲不能开始读取两格并合并。其余线程虽未画出，也必须参加后续的整个 block 屏障。</desc>
+  <defs>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 9 5 0 9Z" fill="#2f6e9e"/></marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 9 5 0 9Z" fill="#a35d27"/></marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 9 5 0 9Z" fill="#377554"/></marker>
+    <marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 9 5 0 9Z" fill="#59646b"/></marker>
+  </defs>
+  <rect width="700" height="710" rx="12" fill="#fcfbf7"/>
+  <g font-family="PingFang SC, Microsoft YaHei, Noto Sans CJK SC, sans-serif" fill="#27323a" text-anchor="middle">
+    <text x="32" y="48" font-size="30" font-weight="600" text-anchor="start">1　分别写入局部和</text>
+    <text x="32" y="86" font-size="26" fill="#59646b" text-anchor="start">任务：[1, 2, 10, 20] 求和</text>
+    <rect x="24" y="111" width="652" height="535" rx="10" fill="#fff" stroke="#aecbb7" stroke-width="2"/>
+    <text x="44" y="147" font-size="28" fill="#377554" text-anchor="start">同一 block</text>
+    <rect x="54" y="169" width="272" height="132" rx="10" fill="#eaf2f8" stroke="#8fb4cf" stroke-width="2"/>
+    <text x="190" y="205" font-size="26">线程甲 · wave 0</text>
+    <text x="190" y="250" font-size="30" fill="#2f6e9e" font-weight="600">1 + 2 = 3</text>
+    <text x="190" y="282" font-size="24" fill="#2f6e9e">局部和 3</text>
+    <rect x="374" y="169" width="272" height="132" rx="10" fill="#fff0e1" stroke="#d9ad83" stroke-width="2"/>
+    <text x="510" y="205" font-size="26">线程乙 · wave 1</text>
+    <text x="510" y="250" font-size="30" fill="#a35d27" font-weight="600">10 + 20 = 30</text>
+    <text x="510" y="282" font-size="24" fill="#a35d27">局部和 30</text>
+    <rect x="50" y="391" width="600" height="165" rx="10" fill="#eaf4ec" stroke="#aecbb7" stroke-width="2"/>
+    <text x="350" y="428" font-size="28" fill="#377554" font-weight="600">共享区 LDS</text>
+    <rect x="76" y="447" width="248" height="90" rx="8" fill="#fff" stroke="#8fb4cf" stroke-width="2"/>
+    <text x="200" y="479" font-size="24" fill="#59646b">shared[0]</text>
+    <text x="200" y="521" font-size="36" fill="#2f6e9e" font-weight="600">3</text>
+    <rect x="376" y="447" width="248" height="90" rx="8" fill="#f0f1ee" stroke="#a7afad" stroke-width="2" stroke-dasharray="7 5"/>
+    <text x="500" y="479" font-size="24" fill="#59646b">shared[1]</text>
+    <text x="500" y="521" font-size="30" fill="#59646b">未就绪</text>
+    <path d="M190 310V440" fill="none" stroke="#2f6e9e" stroke-width="3.5" stroke-linejoin="round" marker-end="url(#arrow-blue)"/>
+    <text x="141" y="353" font-size="26" fill="#2f6e9e" text-anchor="end">写入 3</text>
+    <text x="510" y="353" font-size="26" fill="#59646b">尚未写入</text>
+    <text x="350" y="606" font-size="26">乙尚未写好，甲不能开始合并</text>
+    <text x="350" y="688" font-size="24" fill="#59646b">其余线程未画出，也要参与后续屏障</text>
+  </g>
+</svg>

@@ -1,0 +1,8 @@
+kernel_name="rmsnorm_kernel"
+csv_rows=18 target_rows=16 skipped_rows=6 kept_rows=10
+sort=Start_Timestamp_ascending
+first_start_ns=888416322477216 first_end_ns=888416322488056 first_duration_ns=10840
+kernel_min_us=9.000000 kernel_median_us=9.140000 kernel_max_us=31.560000
+grid_work_items_xyz=524288x1x1 workgroup_size_xyz=128x1x1 workgroups_xyz=4096x1x1
+workgroups_total=4096
+vgpr_count=16 sgpr_count=128 lds_bytes=0 scratch_bytes=0

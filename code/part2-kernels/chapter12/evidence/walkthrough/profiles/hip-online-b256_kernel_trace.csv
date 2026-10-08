@@ -1,0 +1,20 @@
+"Kind","Agent_Id","Queue_Id","Stream_Id","Thread_Id","Dispatch_Id","Kernel_Id","Kernel_Name","Correlation_Id","Start_Timestamp","End_Timestamp","LDS_Block_Size","Scratch_Size","VGPR_Count","Accum_VGPR_Count","SGPR_Count","Workgroup_Size_X","Workgroup_Size_Y","Workgroup_Size_Z","Grid_Size_X","Grid_Size_Y","Grid_Size_Z"
+"KERNEL_DISPATCH","Agent 1",1,0,1226368,1,7,"__amd_rocclr_fillBufferUnAligned",1,887497185858205,887497185863325,0,0,8,0,128,256,1,1,2048,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226368,3,7,"__amd_rocclr_fillBufferUnAligned",3,887497186061257,887497186063977,0,0,8,0,128,256,1,1,4096,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226368,2,7,"__amd_rocclr_fillBufferUnAligned",2,887497186053457,887497186055617,0,0,8,0,128,256,1,1,4096,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226368,4,19,"online_attention_kernel(float const*, float const*, float const*, float*, int, int, float)",4,887497197260764,887497197502048,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226368,5,19,"online_attention_kernel(float const*, float const*, float const*, float*, int, int, float)",5,887497197602929,887497197827973,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226368,6,19,"online_attention_kernel(float const*, float const*, float const*, float*, int, int, float)",6,887497197832453,887497198055896,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226368,7,19,"online_attention_kernel(float const*, float const*, float const*, float*, int, int, float)",7,887497198060216,887497198283460,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226368,8,19,"online_attention_kernel(float const*, float const*, float const*, float*, int, int, float)",8,887497198287620,887497198510664,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226368,9,19,"online_attention_kernel(float const*, float const*, float const*, float*, int, int, float)",9,887497198515024,887497198738147,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226368,10,19,"online_attention_kernel(float const*, float const*, float const*, float*, int, int, float)",10,887497198778368,887497199001372,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226368,11,19,"online_attention_kernel(float const*, float const*, float const*, float*, int, int, float)",11,887497199039912,887497199262956,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226368,12,19,"online_attention_kernel(float const*, float const*, float const*, float*, int, int, float)",12,887497199292596,887497199515720,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226368,13,19,"online_attention_kernel(float const*, float const*, float const*, float*, int, int, float)",13,887497199545600,887497199768324,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226368,14,19,"online_attention_kernel(float const*, float const*, float const*, float*, int, int, float)",14,887497199798325,887497200021128,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226368,15,19,"online_attention_kernel(float const*, float const*, float const*, float*, int, int, float)",15,887497200051049,887497200273892,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226368,16,19,"online_attention_kernel(float const*, float const*, float const*, float*, int, int, float)",16,887497200303453,887497200526416,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226368,17,19,"online_attention_kernel(float const*, float const*, float const*, float*, int, int, float)",17,887497200555537,887497200778340,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226368,18,19,"online_attention_kernel(float const*, float const*, float const*, float*, int, int, float)",18,887497200808061,887497201030744,0,0,16,0,128,256,1,1,32768,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1226368,19,19,"online_attention_kernel(float const*, float const*, float const*, float*, int, int, float)",19,887497212227815,887497212468418,0,0,16,0,128,256,1,1,32768,1,1

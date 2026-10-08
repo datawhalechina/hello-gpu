@@ -1,0 +1,380 @@
+{
+  "schema_version": 1,
+  "experiment": "chapter9-reduction-tree-layout",
+  "measured_date": "2026-09-19",
+  "environment": {
+    "gpu": "AMD Radeon RX 9070 XT",
+    "architecture": "gfx1201",
+    "wave_size": 32,
+    "hip_multi_processor_count": 32,
+    "rocm_sdk": "10.0.0",
+    "hip": "7.15.26333",
+    "os": "Ubuntu 24.04",
+    "kernel": "7.0.0-31-generic",
+    "profiler_during_benchmark": false,
+    "gpu_exclusive": false,
+    "background_context": "Desktop approximately 3% GPU utilization and two sleeping notebook contexts; no deliberate cache flush."
+  },
+  "build": {
+    "command": "hipcc --offload-arch=gfx1201 -O3 -std=c++17 -save-temps reduction_mapping.hip -o reduction_mapping",
+    "source": "reduction_mapping.hip",
+    "source_sha256": "af8c75f965ba0b96fa6a8c0b7057989d86ac459040ef61c001910933f87dedbd",
+    "binary_sha256": "8281a0a02a7c0c4b3e9253d05b098ffde0c1bcad5832b1f9ce87ec00434a9544",
+    "system_log": "results/mapping-20260919/logs/system.txt",
+    "system_log_sha256": "83b0294f857f8c332a21dc33653974daabcc4b690c2e4dda03b2d46c28e63941"
+  },
+  "benchmark": {
+    "sizes": [
+      1024,
+      65536,
+      1048576,
+      16777216
+    ],
+    "block": 256,
+    "dtype": "float32",
+    "input": "random",
+    "input_definition": "SplitMix64(seed), value=(next_random % 33 - 16) / 32 as exact dyadic FP32",
+    "seed": 20260919,
+    "warmup": 10,
+    "repeat_per_version_per_interval_per_process": 50,
+    "independent_processes_per_size": 3,
+    "total_processes": 12,
+    "total_timing_samples": 3600,
+    "order": "rotate versions by round; reverse interval order on odd rounds",
+    "cache": "same input allocation reused; no explicit flush",
+    "intervals": {
+      "partial": "GPU events around first-stage kernel only",
+      "two-stage": "GPU events around first-stage and common fixed final-merge kernels"
+    },
+    "excluded_from_timing": [
+      "allocation",
+      "host-device copies",
+      "precheck",
+      "postcheck",
+      "warmup"
+    ],
+    "command_template": "./reduction_mapping --version all --size SIZE --block 256 --input random --seed 20260919 --warmup 10 --repeat 50 --order rotate --measure both --samples samples/bench-SIZE-pPROCESS.csv"
+  },
+  "versions": {
+    "A": {
+      "implementation": "sequential",
+      "first_stage_kernel": "mapping_sequential_partial"
+    },
+    "B": {
+      "implementation": "interleaved",
+      "first_stage_kernel": "mapping_interleaved_partial"
+    },
+    "C": {
+      "implementation": "compacted",
+      "first_stage_kernel": "mapping_compacted_partial"
+    }
+  },
+  "common_final_kernel": "mapping_final_sum",
+  "statistics": {
+    "within_process": "median of 50 GPU event intervals for each version and interval",
+    "across_processes": "median of the three process medians, plus their minimum and maximum",
+    "range_is_confidence_interval": false,
+    "pool_samples_across_processes": false,
+    "pool_partial_and_two_stage": false
+  },
+  "correctness": {
+    "benchmark_pre_post": "All 12 logs: three variants, both phases, exact partials and exact fixed FP32 final tree; FP64 final absolute error 0 for these inputs.",
+    "edge_sizes": [
+      1,
+      31,
+      32,
+      33,
+      255,
+      256,
+      257,
+      1027
+    ],
+    "edge_inputs": [
+      "ones",
+      "weighted",
+      "random"
+    ],
+    "edge_case_count": 24,
+    "edge_variant_case_count": 72,
+    "edge_pre_post": "All checks OK; each block compared against FP64 and final output against the fixed CPU FP32 tree.",
+    "edge_logs": [
+      {
+        "size": 1,
+        "input": "ones",
+        "log": "results/mapping-20260919/logs/edge-1-ones.txt",
+        "sha256": "eb5fa938aca4409920a68d41b99616f170fd3d90ef828885599e4df96bc50289",
+        "correct": "OK"
+      },
+      {
+        "size": 1,
+        "input": "weighted",
+        "log": "results/mapping-20260919/logs/edge-1-weighted.txt",
+        "sha256": "87f5b00692f4648c12dc76269f608f60e3a70418d507a92dbd6ecc8be4bf0f74",
+        "correct": "OK"
+      },
+      {
+        "size": 1,
+        "input": "random",
+        "log": "results/mapping-20260919/logs/edge-1-random.txt",
+        "sha256": "5a93db1c27c6f6091647b8ba3d4addff56ffa38e1dee6e5820bf5571699b4174",
+        "correct": "OK"
+      },
+      {
+        "size": 31,
+        "input": "ones",
+        "log": "results/mapping-20260919/logs/edge-31-ones.txt",
+        "sha256": "a9a409253765d93742d23fd236854fef27e5b280b0466af7e6e74aa37ff7ed38",
+        "correct": "OK"
+      },
+      {
+        "size": 31,
+        "input": "weighted",
+        "log": "results/mapping-20260919/logs/edge-31-weighted.txt",
+        "sha256": "04eb7d92ea3e6d17fbcffb38249018685b01cbfd4b61473c4232c710e56d89e5",
+        "correct": "OK"
+      },
+      {
+        "size": 31,
+        "input": "random",
+        "log": "results/mapping-20260919/logs/edge-31-random.txt",
+        "sha256": "dc62df2beea89678a2a99fadc277b335f60a9fef359348d19de7d384965f6f07",
+        "correct": "OK"
+      },
+      {
+        "size": 32,
+        "input": "ones",
+        "log": "results/mapping-20260919/logs/edge-32-ones.txt",
+        "sha256": "5536244ee4bdcb6229b60cca6e3bf7f056fc9ab36087bf97d3d2814082e04679",
+        "correct": "OK"
+      },
+      {
+        "size": 32,
+        "input": "weighted",
+        "log": "results/mapping-20260919/logs/edge-32-weighted.txt",
+        "sha256": "22c9a2e798ddb5acd7aa27b00f1dd378a6b704b05d70d1cc4dcb0096bee0a4ba",
+        "correct": "OK"
+      },
+      {
+        "size": 32,
+        "input": "random",
+        "log": "results/mapping-20260919/logs/edge-32-random.txt",
+        "sha256": "6dc6ae84801d85a41b5d0e283ff354c3098c07846e0390bb19e8521ee35e7068",
+        "correct": "OK"
+      },
+      {
+        "size": 33,
+        "input": "ones",
+        "log": "results/mapping-20260919/logs/edge-33-ones.txt",
+        "sha256": "93ad9eb001e5359567bbfa1f11914a592456d8484e56d8a136491b9006688363",
+        "correct": "OK"
+      },
+      {
+        "size": 33,
+        "input": "weighted",
+        "log": "results/mapping-20260919/logs/edge-33-weighted.txt",
+        "sha256": "362a84ed8a22e470cfdb6566eb80418d36013ec8adfe42f1818f54c001bd1e91",
+        "correct": "OK"
+      },
+      {
+        "size": 33,
+        "input": "random",
+        "log": "results/mapping-20260919/logs/edge-33-random.txt",
+        "sha256": "174d8bb7f037ceec334efea7b324146c2d95e478f2545716de8693fc61b13de7",
+        "correct": "OK"
+      },
+      {
+        "size": 255,
+        "input": "ones",
+        "log": "results/mapping-20260919/logs/edge-255-ones.txt",
+        "sha256": "9075a601ac8eaf139fc15a45e3ed940919bb2fa6212406eba431910e73f3db0f",
+        "correct": "OK"
+      },
+      {
+        "size": 255,
+        "input": "weighted",
+        "log": "results/mapping-20260919/logs/edge-255-weighted.txt",
+        "sha256": "a852d059259398061286d61285f25d9a59d22f5508d3783bb62c817c3cc2e0f8",
+        "correct": "OK"
+      },
+      {
+        "size": 255,
+        "input": "random",
+        "log": "results/mapping-20260919/logs/edge-255-random.txt",
+        "sha256": "b7e0f9d646fb8930042b03e5c8f620553033fd8fbfac32792d55971427794217",
+        "correct": "OK"
+      },
+      {
+        "size": 256,
+        "input": "ones",
+        "log": "results/mapping-20260919/logs/edge-256-ones.txt",
+        "sha256": "83adac389361d753538e63fd622e53aedf80d1c418202d0aca37b75bb4b57c9e",
+        "correct": "OK"
+      },
+      {
+        "size": 256,
+        "input": "weighted",
+        "log": "results/mapping-20260919/logs/edge-256-weighted.txt",
+        "sha256": "bd0e37c3dfc7382bf5f783b65c0eec77293fe8a942f356542f6eca6243141c73",
+        "correct": "OK"
+      },
+      {
+        "size": 256,
+        "input": "random",
+        "log": "results/mapping-20260919/logs/edge-256-random.txt",
+        "sha256": "99be67a8ddd831b0ffa4b29d36a34256be6471a3b60044b81fc101e5a7732e5b",
+        "correct": "OK"
+      },
+      {
+        "size": 257,
+        "input": "ones",
+        "log": "results/mapping-20260919/logs/edge-257-ones.txt",
+        "sha256": "a969153f30623908ea67500e8429b1a322bef998129384520b70305eea051a34",
+        "correct": "OK"
+      },
+      {
+        "size": 257,
+        "input": "weighted",
+        "log": "results/mapping-20260919/logs/edge-257-weighted.txt",
+        "sha256": "b58af4cf0be3b98c7833dfbe553a127c92d7a9d63f2d54116558560aea31b280",
+        "correct": "OK"
+      },
+      {
+        "size": 257,
+        "input": "random",
+        "log": "results/mapping-20260919/logs/edge-257-random.txt",
+        "sha256": "c041eed3fc0ba3120c7649788af2c37cad82d4dd6a79fbe64783b82181e4cb2c",
+        "correct": "OK"
+      },
+      {
+        "size": 1027,
+        "input": "ones",
+        "log": "results/mapping-20260919/logs/edge-1027-ones.txt",
+        "sha256": "7fade4fdef5b4b74a893c6a8c7a240eddb473488082f8aacddca3f2156ebffd9",
+        "correct": "OK"
+      },
+      {
+        "size": 1027,
+        "input": "weighted",
+        "log": "results/mapping-20260919/logs/edge-1027-weighted.txt",
+        "sha256": "ca1bf48261042133b14e0b5cb0fb41c343c3676b529f91288b20053f9f6692d7",
+        "correct": "OK"
+      },
+      {
+        "size": 1027,
+        "input": "random",
+        "log": "results/mapping-20260919/logs/edge-1027-random.txt",
+        "sha256": "e27c3a08b71b86d709ea82712959766d391df8791d09bec65523b5c6ffebb24e",
+        "correct": "OK"
+      }
+    ]
+  },
+  "raw_runs": [
+    {
+      "size": 1024,
+      "process": 1,
+      "samples": "results/mapping-20260919/samples/bench-1024-p1.csv",
+      "samples_sha256": "93c0d316f951e55db8bb4aaccf2a1ef590d798fb5551aaf27893ed2dd8734754",
+      "log": "results/mapping-20260919/logs/bench-1024-p1.txt",
+      "log_sha256": "fb5e43561b23879d6f23b665ccd49cc0507aa2e972768c450f641f766c96d6c7"
+    },
+    {
+      "size": 1024,
+      "process": 2,
+      "samples": "results/mapping-20260919/samples/bench-1024-p2.csv",
+      "samples_sha256": "ca7cb25e271e456cdc054793709dfdc3ec7118f9e7892fabbcf1c75d7af7a1f8",
+      "log": "results/mapping-20260919/logs/bench-1024-p2.txt",
+      "log_sha256": "d80c3a39be548693a44c60254ebba9be225f20d6daef285be6b76ee814a8fa8b"
+    },
+    {
+      "size": 1024,
+      "process": 3,
+      "samples": "results/mapping-20260919/samples/bench-1024-p3.csv",
+      "samples_sha256": "4e2376518c6ce876768a561dec5dad8f0ff8ce9265c2910ed13258652aab5a53",
+      "log": "results/mapping-20260919/logs/bench-1024-p3.txt",
+      "log_sha256": "cc8d5d35629af770073a319cd1e4f62a0922639d0356226ac2d66a7a1107dbd9"
+    },
+    {
+      "size": 65536,
+      "process": 1,
+      "samples": "results/mapping-20260919/samples/bench-65536-p1.csv",
+      "samples_sha256": "494d74fda360983f434314df448efd2dbf3841d577b8a97b0097c3ff67e00f0c",
+      "log": "results/mapping-20260919/logs/bench-65536-p1.txt",
+      "log_sha256": "628ec10309a487cefe448a05042008f0fba63d01639da11e2cc69656cf40306d"
+    },
+    {
+      "size": 65536,
+      "process": 2,
+      "samples": "results/mapping-20260919/samples/bench-65536-p2.csv",
+      "samples_sha256": "78a2a1251080272b32e13384ab65acf32335ca30102ff28bb57f859f8aeee609",
+      "log": "results/mapping-20260919/logs/bench-65536-p2.txt",
+      "log_sha256": "c0c6b6d9cbbd2f22c5a4224fe3109b08812cdfc97853a3d1c9b4da265f9675ef"
+    },
+    {
+      "size": 65536,
+      "process": 3,
+      "samples": "results/mapping-20260919/samples/bench-65536-p3.csv",
+      "samples_sha256": "630b91a6e676cdaa0bcd36e4e7fdf9af8f4ab5a4ed2b206fe42b79b495c84def",
+      "log": "results/mapping-20260919/logs/bench-65536-p3.txt",
+      "log_sha256": "437677722fb2c11a916c40d6f286f6c8acddfb40e7dc3f2ee8b3709b9023619a"
+    },
+    {
+      "size": 1048576,
+      "process": 1,
+      "samples": "results/mapping-20260919/samples/bench-1048576-p1.csv",
+      "samples_sha256": "271459f143e4e0730957e8a40650c7a4e942724bdafbb15056ad26c94a39aca9",
+      "log": "results/mapping-20260919/logs/bench-1048576-p1.txt",
+      "log_sha256": "ee5b17f76d352952e5aba4890fa8336f2a493cca7ab965c51388d907c06592f5"
+    },
+    {
+      "size": 1048576,
+      "process": 2,
+      "samples": "results/mapping-20260919/samples/bench-1048576-p2.csv",
+      "samples_sha256": "3c31a732d16c6809bde851df9d5f663680f9350f9b740e71c656265cf74fda0f",
+      "log": "results/mapping-20260919/logs/bench-1048576-p2.txt",
+      "log_sha256": "2964334ea35df9d12ad7ac2327e6980bcf7130904a607e99d5196feb892456b6"
+    },
+    {
+      "size": 1048576,
+      "process": 3,
+      "samples": "results/mapping-20260919/samples/bench-1048576-p3.csv",
+      "samples_sha256": "0a7509b0c0294b34d0719ed984dd9abe3d7038a6de2083d898713ac4c78206c3",
+      "log": "results/mapping-20260919/logs/bench-1048576-p3.txt",
+      "log_sha256": "199a8f43ca2f2f536bf178885a50748b6a9a7d2ac5ec64ad20896af4aa3c30f4"
+    },
+    {
+      "size": 16777216,
+      "process": 1,
+      "samples": "results/mapping-20260919/samples/bench-16777216-p1.csv",
+      "samples_sha256": "5ae40934c57e9e8450dd17cf2df8e63adf99432529275922daaad60964f1bc62",
+      "log": "results/mapping-20260919/logs/bench-16777216-p1.txt",
+      "log_sha256": "f65c58a6a93538d9c65bb95dab870ffc25b254a115e3d81a5c4efd4653c21345"
+    },
+    {
+      "size": 16777216,
+      "process": 2,
+      "samples": "results/mapping-20260919/samples/bench-16777216-p2.csv",
+      "samples_sha256": "05bf662b430861dcea5a608ea15266641dfe9e775e4288fe4750b393187708d4",
+      "log": "results/mapping-20260919/logs/bench-16777216-p2.txt",
+      "log_sha256": "29633ce18ed11d1291988aabc138529ef28e11572bd1089e1c210e3e8ec3be34"
+    },
+    {
+      "size": 16777216,
+      "process": 3,
+      "samples": "results/mapping-20260919/samples/bench-16777216-p3.csv",
+      "samples_sha256": "1b09a82de03085a8b08e45e55846eb383f0165953d3274089f686edbd20c7e69",
+      "log": "results/mapping-20260919/logs/bench-16777216-p3.txt",
+      "log_sha256": "94c3204c07d4fbd25da01baa436fa117747d34aa46182341dfe30f6ea1c2b6e4"
+    }
+  ],
+  "outputs": {
+    "summary.csv": "198a668784ba9992dd6b57c79cb028d57abc73b4e8c20709ffcb29816c3d1884",
+    "summary.json": "b38a2a19a4f87f382827f08099860f103af344b3f052e83a6293f86f166a1bda",
+    "process-summary.csv": "e68a7e9e1ba47112d0044a7b98fd6c28f8026d098fbcffb84c85bca7b29f0953"
+  },
+  "interpretation_limits": [
+    "This is a separate controlled partial-plus-final diagnostic, not a direct timing comparison against the existing LDS-plus-atomic implementation.",
+    "GPU event intervals can include submission gaps; kernel trace times are a separate measurement.",
+    "Timing alone does not identify divergence or LDS bank conflicts as the cause.",
+    "At size 16777216 the interleaved and compacted process-median ranges overlap; do not claim compacted improved performance."
+  ]
+}

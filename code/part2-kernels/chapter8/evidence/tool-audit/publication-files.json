@@ -1,0 +1,373 @@
+[
+  {
+    "source": "results/tool-audit-20260920/environment.json",
+    "published": "environment.json",
+    "raw_sha256": "d64675c029a332fa423e47cdc65149d3bcc312e2869163d47dd39c86b08d97ba",
+    "published_sha256": "e811b99ed6fe955a4d0810227ef4b45669cad88b9f809b7aaacea3c61fc58885",
+    "transformation": "explicit private-path prefix replacement only"
+  },
+  {
+    "source": "results/tool-audit-20260920/packages.json",
+    "published": "packages.json",
+    "raw_sha256": "e7903bc08fac5a7e42f0be40125d218edcfc232b258a6ac1314225a558cf08db",
+    "published_sha256": "9c1b926b66d8c27dcb0600956c4aff9d0fce15f16cac4b97f9261d8cfeea482c",
+    "transformation": "explicit private-path prefix replacement only"
+  },
+  {
+    "source": "results/tool-audit-20260920/tool-paths.json",
+    "published": "tool-paths.json",
+    "raw_sha256": "2e7891bfedd111bfd6cbb0095181bdb37d8c9eb18b8cdd45e6b5958b9d39dafc",
+    "published_sha256": "12bd24cd32ac019076e4585e9f4a7c41331544e06e1931b13041614e3f6a5e59",
+    "transformation": "explicit private-path prefix replacement only"
+  },
+  {
+    "source": "results/tool-audit-20260920/baseline-identity.json",
+    "published": "baseline-identity.json",
+    "raw_sha256": "1afac942fa270726e56cceeef48e32e08f39c7a7bd892c4301dbf61c17d70444",
+    "published_sha256": "7a738d3bdc68a1d0908f13a45e6095972bd27a02cdae6aecfe499d4e5753e977",
+    "transformation": "explicit private-path prefix replacement only"
+  },
+  {
+    "source": "results/tool-audit-20260920/debug-binary.json",
+    "published": "debug-binary.json",
+    "raw_sha256": "cdb20c9282ed92cf24c324719b9b46867857816b361406d2fa2b95f7cda4a733",
+    "published_sha256": "cdb20c9282ed92cf24c324719b9b46867857816b361406d2fa2b95f7cda4a733",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/path-rocprofv3-version.stdout.log",
+    "published": "version.stdout.log",
+    "raw_sha256": "ad224f8e9219d895dc43a641a2792d5b3ef4e500538fe46ba5046f3fec7e0fe8",
+    "published_sha256": "ad224f8e9219d895dc43a641a2792d5b3ef4e500538fe46ba5046f3fec7e0fe8",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/path-rocprofv3-version.stderr.log",
+    "published": "version.stderr.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/hipcc-version.stdout.log",
+    "published": "hipcc-version.stdout.log",
+    "raw_sha256": "e12f8aa62ab2eab6bb2106da142622215cbf837dabc57879129d31d32e80f6b3",
+    "published_sha256": "502c6787402dcb29d1e4cfea531d0b6dfdbed47c50ac87aa3da89a8c5891cf05",
+    "transformation": "explicit private-path prefix replacement only"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/hipcc-version.stderr.log",
+    "published": "hipcc-version.stderr.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/wrapper-avail-agents.stdout.log",
+    "published": "agents.stdout.log",
+    "raw_sha256": "8701f77a5f05ad78c18df7d020c9ee12c3bf4fc300625ea8df63498d7cf714e5",
+    "published_sha256": "8701f77a5f05ad78c18df7d020c9ee12c3bf4fc300625ea8df63498d7cf714e5",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/wrapper-avail-agents.stderr.log",
+    "published": "agents.stderr.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/performance-level-read.stdout.log",
+    "published": "performance-level.stdout.log",
+    "raw_sha256": "9eb91575becbe8926206bfc8f12e4a43f324878654f1a4ae3e9c19c27e258087",
+    "published_sha256": "9eb91575becbe8926206bfc8f12e4a43f324878654f1a4ae3e9c19c27e258087",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/performance-level-read.stderr.log",
+    "published": "performance-level.stderr.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/decoder-paths.stdout.log",
+    "published": "decoder-paths.stdout.log",
+    "raw_sha256": "a9e8be8ae6a988e3d064585ef5aa17b1639bbb8049c6cd993f9c5bb8d4fa931d",
+    "published_sha256": "e3c327c4c0b6890fdb704d894698201e81466429c7649021f0d096d1cef7cc51",
+    "transformation": "explicit private-path prefix replacement only"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/decoder-paths.stderr.log",
+    "published": "decoder-paths.stderr.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/pmc-waves.stdout.log",
+    "published": "pmc/pmc-waves.stdout.log",
+    "raw_sha256": "a6adb24128513302c5415ef6ef367b09f3720a793e485b8c6ead6149cc4a0520",
+    "published_sha256": "a6adb24128513302c5415ef6ef367b09f3720a793e485b8c6ead6149cc4a0520",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/pmc-waves.stderr.log",
+    "published": "pmc/pmc-waves.stderr.log",
+    "raw_sha256": "468b74ce4ef2d4623721feea9736782b4e0ea5a31825202137574d4e6bb5ed62",
+    "published_sha256": "2d458e297dae98be2a0ef7761ec9d643f5aaa050eeaf598e2a8dff7222b00216",
+    "transformation": "explicit private-path prefix replacement only"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/pmc-check-global-device-waves.stdout.log",
+    "published": "pmc/pmc-check-global-device-waves.stdout.log",
+    "raw_sha256": "5c8fd049fbcb49fad92e51231b0123ac317c29645ebff78398cb52e9ea30392f",
+    "published_sha256": "5c8fd049fbcb49fad92e51231b0123ac317c29645ebff78398cb52e9ea30392f",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/pmc-check-global-device-waves.stderr.log",
+    "published": "pmc/pmc-check-global-device-waves.stderr.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/tool-audit-20260920/pmc-waves/baseline_counter_collection.csv",
+    "published": "pmc/waves_counter_collection.csv",
+    "raw_sha256": "7bfb99703d3ce21196481c339163af97cfe66c9260c03e21097199d65c3bdcc3",
+    "published_sha256": "7bfb99703d3ce21196481c339163af97cfe66c9260c03e21097199d65c3bdcc3",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/pmc-l2.stdout.log",
+    "published": "pmc/pmc-l2.stdout.log",
+    "raw_sha256": "322dd4bc99e8066e56a6857d5ddb4d194ce12f31ab4ade4e00f43130e9810d69",
+    "published_sha256": "322dd4bc99e8066e56a6857d5ddb4d194ce12f31ab4ade4e00f43130e9810d69",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/pmc-l2.stderr.log",
+    "published": "pmc/pmc-l2.stderr.log",
+    "raw_sha256": "f6ce33fa6b3ef569cc807744d984cc625af0b2def2a62eb780d92e7c0d6793d0",
+    "published_sha256": "59f55887ab47cdbdc25b1cd38f73166999f241b9fbafd9fa9965405d40d89b78",
+    "transformation": "explicit private-path prefix replacement only"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/pmc-check-global-device-l2.stdout.log",
+    "published": "pmc/pmc-check-global-device-l2.stdout.log",
+    "raw_sha256": "92eb899f3ebe74725fd07f5fc3634a676cde3003bf381c56d5664d0495374874",
+    "published_sha256": "92eb899f3ebe74725fd07f5fc3634a676cde3003bf381c56d5664d0495374874",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/pmc-check-global-device-l2.stderr.log",
+    "published": "pmc/pmc-check-global-device-l2.stderr.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/tool-audit-20260920/pmc-l2/baseline_counter_collection.csv",
+    "published": "pmc/l2_counter_collection.csv",
+    "raw_sha256": "19ce78613a055d20c3ccc4cff5702d6a01b96d68225cd3397be733f41d2bb33c",
+    "published_sha256": "19ce78613a055d20c3ccc4cff5702d6a01b96d68225cd3397be733f41d2bb33c",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/pmc-fetch.stdout.log",
+    "published": "pmc/pmc-fetch.stdout.log",
+    "raw_sha256": "cd3befa7f9c4a04a6ed95403a58e18941e20796def1458e2b18030e534d14906",
+    "published_sha256": "cd3befa7f9c4a04a6ed95403a58e18941e20796def1458e2b18030e534d14906",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/pmc-fetch.stderr.log",
+    "published": "pmc/pmc-fetch.stderr.log",
+    "raw_sha256": "0a4ed47f5ac5f23b81ed86f507bfd2fe9534362bf77b717e4ab7911dda512f5e",
+    "published_sha256": "cdb5bc0a2d9486043ee2d743bdb163b246fc8f95c7bc1fd280423531eb1a0963",
+    "transformation": "explicit private-path prefix replacement only"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/pmc-check-global-device-fetch.stdout.log",
+    "published": "pmc/pmc-check-global-device-fetch.stdout.log",
+    "raw_sha256": "f8e18d13d130d8eeb8b477b983a4e93937dc74c527775527956d95604ab0eadf",
+    "published_sha256": "f8e18d13d130d8eeb8b477b983a4e93937dc74c527775527956d95604ab0eadf",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/tool-audit-20260920/logs/pmc-check-global-device-fetch.stderr.log",
+    "published": "pmc/pmc-check-global-device-fetch.stderr.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/tool-audit-20260920/pmc-fetch/baseline_counter_collection.csv",
+    "published": "pmc/fetch_counter_collection.csv",
+    "raw_sha256": "9d1624242cedb200d81dbd53a7c7404d01cb51e2c6d55eac7b4391832f268c44",
+    "published_sha256": "9d1624242cedb200d81dbd53a7c7404d01cb51e2c6d55eac7b4391832f268c44",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/walkthrough-20260920/logs/environment-ready.stdout.log",
+    "published": "environment-ready.stdout.log",
+    "raw_sha256": "ca42502f76c2b1ad248a896b5e779947fb086383bf25b89d7c63c18fc0225650",
+    "published_sha256": "ef146d2408f9a85b4f615e897ed7b233eebe4aef729fb712bf11aea1ab8f8eb7",
+    "transformation": "explicit private-path prefix replacement only"
+  },
+  {
+    "source": "results/walkthrough-20260920/logs/environment-ready.stderr.log",
+    "published": "environment-ready.stderr.log",
+    "raw_sha256": "71f1fb4dcb61f6824f2b6d15d491d0f93420ecb2bd122239061661752c47ec02",
+    "published_sha256": "71f1fb4dcb61f6824f2b6d15d491d0f93420ecb2bd122239061661752c47ec02",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/walkthrough-20260920/supplemental-commands.jsonl",
+    "published": "supplemental-commands.jsonl",
+    "raw_sha256": "0ad96dfed620c486f0fc284ba02b32ff0fc6dfa016b97bbc076fc67195d12cf7",
+    "published_sha256": "4f0592b66744fc1cdca1c7b6d0a2b1b18f00d0c15d6b804a4f9f9c002480932b",
+    "transformation": "explicit private-path prefix replacement only"
+  },
+  {
+    "source": "results/walkthrough-20260920/att-verified/commands.log",
+    "published": "att/commands.log",
+    "raw_sha256": "f38252646a3fa44d519a0cd370e6baad84b22635b65d9e163cc319a760965cea",
+    "published_sha256": "4226000f77bb4ea30e26690c63f19067d0bf4e62227fdf6e3ea5681053ccfa1a",
+    "transformation": "explicit private-path prefix replacement only"
+  },
+  {
+    "source": "results/walkthrough-20260920/att-verified/compile.stdout.log",
+    "published": "att/compile.stdout.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/walkthrough-20260920/att-verified/compile.stderr.log",
+    "published": "att/compile.stderr.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/walkthrough-20260920/att-verified/profile.stdout.log",
+    "published": "att/profile.stdout.log",
+    "raw_sha256": "0cb9dba9b392049517b841eff1b07444aaf43b34a21585a085c38d73375ed8ae",
+    "published_sha256": "0cb9dba9b392049517b841eff1b07444aaf43b34a21585a085c38d73375ed8ae",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/walkthrough-20260920/att-verified/profile.stderr.log",
+    "published": "att/profile.stderr.log",
+    "raw_sha256": "a6c587630c12975ec3d47cd46c35867b5c1b4f06a778c3d20a6826a777aa97cb",
+    "published_sha256": "a6c587630c12975ec3d47cd46c35867b5c1b4f06a778c3d20a6826a777aa97cb",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/walkthrough-20260920/att-verified/validation.stdout.log",
+    "published": "att/validation.stdout.log",
+    "raw_sha256": "a1bb0d7b5a9d886913f6f0bcd186c2cd38df4d1b2dd6dc67ab2515f5a919dc9e",
+    "published_sha256": "a1bb0d7b5a9d886913f6f0bcd186c2cd38df4d1b2dd6dc67ab2515f5a919dc9e",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/walkthrough-20260920/att-verified/validation.stderr.log",
+    "published": "att/validation.stderr.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/walkthrough-20260920/att-verified/source/profile_att.sh",
+    "published": "att/profile_att.sh",
+    "raw_sha256": "3bf95aee3675f2373630caae212cf1982fb972e510f148a17c5d151563868dcf",
+    "published_sha256": "3bf95aee3675f2373630caae212cf1982fb972e510f148a17c5d151563868dcf",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/walkthrough-20260920/att-verified/source/validate_att.py",
+    "published": "att/validate_att.py",
+    "raw_sha256": "5c58251f09b16b3ac71fea72db7c527654263cd4504d9ae396b160889fa5379a",
+    "published_sha256": "5c58251f09b16b3ac71fea72db7c527654263cd4504d9ae396b160889fa5379a",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/walkthrough-20260920/att-verified/source/test_validate_att.py",
+    "published": "att/test_validate_att.py",
+    "raw_sha256": "9f077ea5686d803c97e1d9bf6a37ba3e9e2105e07955708d4e401c8f68ab3c04",
+    "published_sha256": "9f077ea5686d803c97e1d9bf6a37ba3e9e2105e07955708d4e401c8f68ab3c04",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/walkthrough-20260920/att-verified/trace/stats_ui_output_agent_3208_dispatch_8.csv",
+    "published": "att/instruction-stats.csv",
+    "raw_sha256": "2a1fb197b409a9731aed8d11f0fc598ed0e90f2e6fe73891e5dc8126ab34e7cf",
+    "published_sha256": "b614992c65a0e14de2e16a6e5fe8d40b8feec7546fc772e2c70fbfb215f3d4b4",
+    "transformation": "explicit private-path prefix replacement only"
+  },
+  {
+    "source": "results/walkthrough-20260920/att-verified/trace/baseline_agent_info.csv",
+    "published": "att/agent-info.csv",
+    "raw_sha256": "cdab8675e0580be24065daea957ae58f3d5a6f8b8f1052ce023b266fc2e3b358",
+    "published_sha256": "cdab8675e0580be24065daea957ae58f3d5a6f8b8f1052ce023b266fc2e3b358",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/walkthrough-20260920/att-verified-manifest.json",
+    "published": "att/manifest.json",
+    "raw_sha256": "dd8b6b6cf72b3704b2f1d69c67c0fd05eb71f68ab722453ba1e191657d311f97",
+    "published_sha256": "dd8b6b6cf72b3704b2f1d69c67c0fd05eb71f68ab722453ba1e191657d311f97",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/walkthrough-20260920/att-verified-logs/commands.jsonl",
+    "published": "att-verified-commands.jsonl",
+    "raw_sha256": "886355754452b5c6f07a68743ca9b563d0a689a19ae6adb6c14c9bbd20fcd9cc",
+    "published_sha256": "1662c430071b44c5ad20d3c1a3f814b554522c10d8e5a88f2a743cbdd52dbf16",
+    "transformation": "explicit private-path prefix replacement only"
+  },
+  {
+    "source": "results/walkthrough-20260920/att-verified-logs/att-helper.stdout.log",
+    "published": "att-helper.stdout.log",
+    "raw_sha256": "84f34b74809c412db8cc4518da01f5c6c9e637e96755f03fbe0e4f32ae747e9d",
+    "published_sha256": "84f34b74809c412db8cc4518da01f5c6c9e637e96755f03fbe0e4f32ae747e9d",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/walkthrough-20260920/att-verified-logs/att-helper.stderr.log",
+    "published": "att-helper.stderr.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/walkthrough-20260920/att-verified-logs/directory-setup.stdout.log",
+    "published": "directory-setup.stdout.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/walkthrough-20260920/att-verified-logs/directory-setup.stderr.log",
+    "published": "directory-setup.stderr.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/walkthrough-20260920/att-verified-logs/validator-tests.stdout.log",
+    "published": "validator-tests.stdout.log",
+    "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "published_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "transformation": "byte-identical"
+  },
+  {
+    "source": "results/walkthrough-20260920/att-verified-logs/validator-tests.stderr.log",
+    "published": "validator-tests.stderr.log",
+    "raw_sha256": "4c5588a567331b41c167e7b0322d345caf84ccc08f92fa683139b8ea52163487",
+    "published_sha256": "4c5588a567331b41c167e7b0322d345caf84ccc08f92fa683139b8ea52163487",
+    "transformation": "byte-identical"
+  }
+]

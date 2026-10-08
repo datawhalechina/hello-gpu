@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="470" viewBox="0 0 720 470" role="img" aria-labelledby="title desc">
+  <title id="title">一次数组加法，CPU 和 GPU 各做什么</title>
+  <desc id="desc">CPU 准备输入、指定计算规则和线程分组，发起一次启动。GPU 用许多线程执行这份规则。CPU 等待计算完成后取回结果。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#607870"/></marker>
+  </defs>
+  <rect width="720" height="470" rx="12" fill="#fcfbf7"/>
+  <g font-family="PingFang SC, Microsoft YaHei, Noto Sans CJK SC, sans-serif" text-anchor="middle" fill="#273b35">
+    <rect x="30" y="24" width="660" height="106" rx="10" fill="#eaf2f8" stroke="#b7cddd" stroke-width="2"/>
+    <text x="360" y="66" font-size="30" font-weight="600">CPU：准备这次计算</text>
+    <text x="360" y="106" font-size="25">准备输入 · 指定计算规则 · 设置线程分组</text>
+    <path d="M 360 132 V 200" fill="none" stroke="#607870" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <rect x="204" y="146" width="312" height="38" rx="8" fill="#fcfbf7"/>
+    <text x="360" y="173" font-size="25">发起一次启动（Launch）</text>
+    <rect x="30" y="214" width="660" height="106" rx="10" fill="#eaf4ec" stroke="#aecbb7" stroke-width="2"/>
+    <text x="360" y="256" font-size="30" font-weight="600">GPU：许多线程执行同一份规则</text>
+    <text x="360" y="296" font-size="25">各自取数 → 相加 → 写回结果</text>
+    <path d="M 360 322 V 368" fill="none" stroke="#607870" stroke-width="2.5" marker-end="url(#arrow)"/>
+    <rect x="30" y="382" width="660" height="64" rx="10" fill="#f1f3f2" stroke="#cbd6d1" stroke-width="2"/>
+    <text x="360" y="424" font-size="27">CPU 等待计算完成后，取回结果</text>
+  </g>
+</svg>

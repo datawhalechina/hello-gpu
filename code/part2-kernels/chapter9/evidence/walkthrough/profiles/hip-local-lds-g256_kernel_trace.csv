@@ -1,0 +1,39 @@
+"Kind","Agent_Id","Queue_Id","Stream_Id","Thread_Id","Dispatch_Id","Kernel_Id","Kernel_Name","Correlation_Id","Start_Timestamp","End_Timestamp","LDS_Block_Size","Scratch_Size","VGPR_Count","Accum_VGPR_Count","SGPR_Count","Workgroup_Size_X","Workgroup_Size_Y","Workgroup_Size_Z","Grid_Size_X","Grid_Size_Y","Grid_Size_Z"
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,1,11,"__amd_rocclr_fillBufferUnAligned",1,884176804365562,884176804369562,0,0,8,0,128,256,1,1,256,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,2,11,"__amd_rocclr_fillBufferUnAligned",2,884176804550586,884176804553426,0,0,8,0,128,256,1,1,256,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,3,21,"(anonymous namespace)::reduction_local_lds(float const*, unsigned long, float*)",3,884176816201734,884176816280935,0,0,8,0,128,256,1,1,65536,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,4,19,"(anonymous namespace)::reduction_final(float const*, unsigned long, float*)",4,884176816286135,884176816289495,0,0,8,0,128,256,1,1,256,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,5,7,"__amd_rocclr_copyBuffer",5,884176816342385,884176816346065,0,0,16,0,128,512,1,1,512,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,6,7,"__amd_rocclr_copyBuffer",6,884176816384716,884176816387676,0,0,16,0,128,512,1,1,512,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,7,21,"(anonymous namespace)::reduction_local_lds(float const*, unsigned long, float*)",7,884176816425887,884176816501728,0,0,8,0,128,256,1,1,65536,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,8,19,"(anonymous namespace)::reduction_final(float const*, unsigned long, float*)",8,884176816506808,884176816510128,0,0,8,0,128,256,1,1,256,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,9,21,"(anonymous namespace)::reduction_local_lds(float const*, unsigned long, float*)",9,884176816514528,884176816588850,0,0,8,0,128,256,1,1,65536,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,10,19,"(anonymous namespace)::reduction_final(float const*, unsigned long, float*)",10,884176816593330,884176816596610,0,0,8,0,128,256,1,1,256,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,11,21,"(anonymous namespace)::reduction_local_lds(float const*, unsigned long, float*)",11,884176816601210,884176816673971,0,0,8,0,128,256,1,1,65536,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,12,19,"(anonymous namespace)::reduction_final(float const*, unsigned long, float*)",12,884176816678331,884176816681571,0,0,8,0,128,256,1,1,256,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,13,21,"(anonymous namespace)::reduction_local_lds(float const*, unsigned long, float*)",13,884176816685731,884176816754572,0,0,8,0,128,256,1,1,65536,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,14,19,"(anonymous namespace)::reduction_final(float const*, unsigned long, float*)",14,884176816758692,884176816761893,0,0,8,0,128,256,1,1,256,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,15,21,"(anonymous namespace)::reduction_local_lds(float const*, unsigned long, float*)",15,884176816766093,884176816834974,0,0,8,0,128,256,1,1,65536,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,16,19,"(anonymous namespace)::reduction_final(float const*, unsigned long, float*)",16,884176816839174,884176816842334,0,0,8,0,128,256,1,1,256,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,17,21,"(anonymous namespace)::reduction_local_lds(float const*, unsigned long, float*)",17,884176816886195,884176816957316,0,0,8,0,128,256,1,1,65536,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,18,19,"(anonymous namespace)::reduction_final(float const*, unsigned long, float*)",18,884176816961596,884176816964836,0,0,8,0,128,256,1,1,256,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,19,21,"(anonymous namespace)::reduction_local_lds(float const*, unsigned long, float*)",19,884176816980156,884176817051317,0,0,8,0,128,256,1,1,65536,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,20,19,"(anonymous namespace)::reduction_final(float const*, unsigned long, float*)",20,884176817055478,884176817058878,0,0,8,0,128,256,1,1,256,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,21,21,"(anonymous namespace)::reduction_local_lds(float const*, unsigned long, float*)",21,884176817073518,884176817144959,0,0,8,0,128,256,1,1,65536,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,22,19,"(anonymous namespace)::reduction_final(float const*, unsigned long, float*)",22,884176817149079,884176817152279,0,0,8,0,128,256,1,1,256,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,24,19,"(anonymous namespace)::reduction_final(float const*, unsigned long, float*)",24,884176817242681,884176817245881,0,0,8,0,128,256,1,1,256,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,26,19,"(anonymous namespace)::reduction_final(float const*, unsigned long, float*)",26,884176817334922,884176817338642,0,0,8,0,128,256,1,1,256,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,27,21,"(anonymous namespace)::reduction_local_lds(float const*, unsigned long, float*)",27,884176817353243,884176817423404,0,0,8,0,128,256,1,1,65536,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,28,19,"(anonymous namespace)::reduction_final(float const*, unsigned long, float*)",28,884176817427564,884176817430724,0,0,8,0,128,256,1,1,256,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,29,21,"(anonymous namespace)::reduction_local_lds(float const*, unsigned long, float*)",29,884176817445684,884176817515765,0,0,8,0,128,256,1,1,65536,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,32,19,"(anonymous namespace)::reduction_final(float const*, unsigned long, float*)",32,884176817611647,884176817614847,0,0,8,0,128,256,1,1,256,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,23,21,"(anonymous namespace)::reduction_local_lds(float const*, unsigned long, float*)",23,884176817166919,884176817238441,0,0,8,0,128,256,1,1,65536,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,25,21,"(anonymous namespace)::reduction_local_lds(float const*, unsigned long, float*)",25,884176817260401,884176817330842,0,0,8,0,128,256,1,1,65536,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,30,19,"(anonymous namespace)::reduction_final(float const*, unsigned long, float*)",30,884176817520085,884176817523285,0,0,8,0,128,256,1,1,256,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,33,21,"(anonymous namespace)::reduction_local_lds(float const*, unsigned long, float*)",33,884176817629607,884176817699608,0,0,8,0,128,256,1,1,65536,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,31,21,"(anonymous namespace)::reduction_local_lds(float const*, unsigned long, float*)",31,884176817537766,884176817607367,0,0,8,0,128,256,1,1,65536,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,34,19,"(anonymous namespace)::reduction_final(float const*, unsigned long, float*)",34,884176817703849,884176817707089,0,0,8,0,128,256,1,1,256,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,35,21,"(anonymous namespace)::reduction_local_lds(float const*, unsigned long, float*)",35,884176817721769,884176817790810,0,0,8,0,128,256,1,1,65536,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,36,19,"(anonymous namespace)::reduction_final(float const*, unsigned long, float*)",36,884176817795130,884176817798370,0,0,8,0,128,256,1,1,256,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,37,7,"__amd_rocclr_copyBuffer",37,884176817839141,884176817842141,0,0,16,0,128,512,1,1,512,1,1
+"KERNEL_DISPATCH","Agent 1",1,0,1187176,38,7,"__amd_rocclr_copyBuffer",38,884176817869171,884176817871851,0,0,16,0,128,512,1,1,512,1,1

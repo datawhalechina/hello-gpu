@@ -1,5 +1,50 @@
 # Chapter 8 Vector Add Experiment
 
+## 2026-09-20：问题驱动的教学重组
+
+正文性能比较继续使用 `evidence/walkthrough/` 的 11 配置、33 独立进程、1650 个 event 样本和五张 walkthrough 图。当前 kernel 与冻结源码一致，本轮不重跑性能矩阵，不改写旧日志、采集顺序或性能数值。
+
+教学主线保留 HIP v0 与 Triton tile256 的基线 trace；Triton 扫描后的资源问题只追加读取 tile2048，与已采基线配对。地址对照、grid 扫描、四元素分组仍逐项校验和 benchmark，不再要求每项重复采集 trace。全部原 trace 继续归档。PMC 与 ATT 为有具体问题时的选读；当前 ATT 验证组仍是 agent3208、指令 Hitcount4124，范围见 tool-audit。
+
+新增公开入口 `evidence/boundary-check/` 从已有独立确认组逐字节提取 12 项正确性日志，不是新增 GPU 测量，完整来源与哈希见其 manifest。它使用同源的独立冻结 binary，不冒称 walkthrough binary；无预热、单次执行的 event 数不作为性能成绩。
+
+实际新增验证仅为 `evidence/operation-check/` 的终端操作：六个独立 shell 检查锁文件同步、环境激活、新建/恢复 RUN、初编译/跳过已有 binary、结果拒绝追加。只运行一次 N=17、warmup=0、repeat=1 的正确性 smoke，不用于新性能结论。小日志、命令、身份与前后哈希均已落盘；远端没有执行 Git。
+
+`run_rounds.py` 默认阶段改为 `main`，帮助信息明确额外诊断与验证阶段；显式 `--phase all` 保留兼容。kernel、配置矩阵、正式参数没有变。CPU 行为测试检查默认不进入 profile/validation、显式阶段保持原顺序且复用冻结 manifest。读者如需完整三进程归档，可显式运行 `--phase main`，不用为每轮性能比较采集全矩阵 trace。
+
+## 2026-09-20：ROCm 10.0 逐轮受控实验
+
+当前正式实验位于 [`evidence/rounds/README.md`](evidence/rounds/README.md)。本次运行于 RX 9070 XT / gfx1201、原生 Ubuntu 24.04.5、ROCm SDK 10.0.0 / HIP 7.15.26333，PyTorch 2.13.0、Triton 3.8.0。
+
+- 主输入 N=16,777,216，11 个配置，每配置 3 个独立进程，warmup=10，repeat=50，seed=20260920。
+- 包含原七版基线、固定 v2 kernel 的 grid=65536/2048/256 对照、相同 grid=256 的 v2/v3 对照，以及固定 num_warps=4 的 Triton tile=256/512/1024/2048 对照。
+- 所有 11 个配置另采独立 kernel trace，各有 1 次 precheck + 5 次 warmup + 10 次重复；不把 profiler 下的 event 时间混入性能表。
+- 对选定 4 个配置补测 N=1,048,576 和 4,194,304，共计 57 个独立计时进程、2850 个原始 event 样本；56 个小尺寸正确性检查与 11 个 N=16,777,219 尾部检查全部通过。
+- 原始源码快照、样本、日志、trace、编译中间结果和实际命令均位于 `results/rocm10-20260920/`。公开摘要在 `evidence/rounds/`，旧根目录证据未覆盖。
+- HIP 源码 SHA-256：`73e1af89d25a91fb35ee78198ce74c93d617a9ac5a0852ff74d20abd2184aa80`；Triton 源码 SHA-256：`831525557254b8cf17965403972491e6b95cac63dc1c9a343af49366752fa893`。其他源码和二进制哈希见 manifest。
+- 本次 ISA 中 v2 主循环为 `global_load_b32` / `global_store_b32`，v3 主循环为 `global_load_b128` / `global_store_b128`，尾部仍为 b32。指令宽度证据未建立单独的性能因果。
+
+实际运行入口（已激活 Part 2 环境，工作目录 `code/part2-kernels/`）：
+
+```bash
+python chapter8/run_rounds.py --output chapter8/results/rocm10-20260920 --phase main
+python chapter8/run_rounds.py --output chapter8/results/rocm10-20260920 --phase profile
+python chapter8/run_rounds.py --output chapter8/results/rocm10-20260920 --phase validation
+python chapter8/summarize_rounds.py chapter8/results/rocm10-20260920 --out chapter8/evidence/rounds
+```
+
+NaN 仅在每进程的 precheck 前填充一次，随后预热与计时重复使用输出，最后 postcheck 检查完整数组；未逐个检查中间计时输出。桌面背景约 4% GFX activity，另有两个未显示 GPU 工作的 Python 上下文；没有锁频或停止用户进程，不声称硬件完全独占。
+
+### 补充验收
+
+`verify_rounds.py` 复用已冻结 HIP 二进制与 Triton 源码，核验身份后补测 12 个边界（Triton 512/1024/2048 各自的前一项、整 tile、后一项共 9 个；float4 N=2/6/1026 共 3 个），全部通过。另对主输入的 HIP v0、Triton t0、v2 grid65536、v3 grid256 独立确认 3 进程×50 次，共 600 个样本，结果在 `evidence/rounds/confirmation.json`，原始材料在 `results/confirmation-20260920/`。没有合并进原主矩阵或改动已有图数。
+
+确认中 v0 / t0 / v2 grid65536 的进程范围重叠，v3 grid256 较慢；不宣称最优，也不使用未重测的 v2 grid256 对照来归因 float4。
+
+采集后对当前 `run_rounds.py` 做了一项可靠性修正：profile/validation 使用 manifest 保存的配置，避免未来当前 `CONFIGS` 变化影响后续阶段。旧冻结快照与 manifest 不变；本次实际配置没有变化。本地把当前 `CONFIGS` 换成无关占位后，已验证计划仍复原冻结 manifest 的 11 个 profile、4 配置×2 小 shape 与 11 个尾部检查。该修正不要求重新测量 kernel。
+
+以下内容保留为 **2026-07-19 / ROCm 7.13 历史实验记录**；旧章号和旧命令属于当时的采集上下文，不作为当前复跑入口。
+
 ## Scope
 
 本记录发布 Chapter 7 Vector Add 在指定 AMD GPU 上的完整正确性、benchmark 与 kernel-trace 实验。发布表格与图只读取 `chapter7/evidence/` 中的 curated evidence；远端 raw logs、profiles 与 results 不进入仓库。

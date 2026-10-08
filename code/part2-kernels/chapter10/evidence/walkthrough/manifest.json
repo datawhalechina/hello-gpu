@@ -1,0 +1,1066 @@
+{
+  "schema_version": 1,
+  "collection": "chapter10-existing-main-p1-terminal-export",
+  "new_gpu_measurement": false,
+  "scope": "Unmodified terminal logs from process 1 of the measured main-shape matrix; not a new benchmark or aggregate statistic.",
+  "parent_manifest": {
+    "path": "../rounds/manifest.json",
+    "sha256": "bd2ccc04cdbf89a827fe8962b9d1bd6111f207562bdfef6d8a0f1270257afbc2",
+    "experiment": "chapter10-controlled-softmax-rounds",
+    "started_at": "2026-09-19T17:55:45.005284+00:00"
+  },
+  "raw_run": {
+    "path": "results/rocm10-20260920",
+    "manifest_sha256": "77f0b6064bddeca68d62b0f4c03dadc850da8594c12cac796c33022a8376e0c5",
+    "commands_jsonl_sha256": "479f302204a97e2d0f09b9991f5b6d1167f45e99d20b3b598d98791db40f54c4"
+  },
+  "current_runtime_sha256": {
+    "softmax_hip.hip": "12975c9d5b4246da0388002b55c1d2883724239fdde25476267174d12b6dc55c",
+    "softmax_triton.py": "563968117db997dc066566c60dff49194d9c28900b69a819a77fd9c195b2cf67"
+  },
+  "measured_source_sha256": {
+    "softmax_hip.hip": "12975c9d5b4246da0388002b55c1d2883724239fdde25476267174d12b6dc55c",
+    "softmax_triton.py": "563968117db997dc066566c60dff49194d9c28900b69a819a77fd9c195b2cf67",
+    "run_rounds.py": "74774f4ad1b4d8bf8a64bcdae69c76b01ce81dd5bd625e9301f3006d514c7a2a",
+    "summarize_rounds.py": "b4dc2ab15de348e75b9d7ca86ecdf5bfdd026ea1bd088f452f1efc1302399d51",
+    "rounds_identity.py": "1a08872efee1bbc396f157b9f126aacff41aa8ae788e08c352fbabcdf702c0a2",
+    "collect_environment.sh": "e0a6a7fa4d61d78bf5b8c6c4d424ffc922a320b86499c3e5fd1017c5139ba11b",
+    "resolve_rocprofv3.py": "6057fa1c79cd769712bbc30006af63a4e1cf0a74b7de7e2d11eae868d3889c96"
+  },
+  "measured_hip_binary_sha256": "81bae78fba3e2b55e790b0d90aeee2f1ac64ff5831b73c5c84a69c2c496583d3",
+  "environment_record": {
+    "gpu": "AMD Radeon RX 9070 XT",
+    "architecture": "gfx1201",
+    "rocm_sdk": "10.0.0",
+    "hip": "7.15.26333",
+    "gpu_exclusive": false,
+    "profiler_during_benchmark": false
+  },
+  "software_record": {
+    "rocm": "10.0.0",
+    "hip": "7.15.26333",
+    "torch": "2.13.0+rocm10.0.0",
+    "triton": "3.8.0+git4cff872c.rocm10.0.0"
+  },
+  "platform_record": {
+    "os_pretty_name": "Ubuntu 24.04.5 LTS",
+    "kernel": "7.0.0-31-generic",
+    "execution": "native"
+  },
+  "environment_provenance": "Original measurement manifest; not captured at export.",
+  "benchmark_conditions": {
+    "shape": "4096x1024",
+    "dtype": "float32",
+    "input": "shifted-dyadic",
+    "reference": "fp64-softmax-to-fp32",
+    "seed": 20260920,
+    "warmup": 10,
+    "repeat": 50,
+    "processes": 3,
+    "independent_runs": 3,
+    "scope": "gpu-event-full-operator",
+    "absolute_tolerance": 2e-05,
+    "row_sum_tolerance": 2e-05,
+    "cache": "reuse arrays; no cache flush",
+    "timing": "synchronize after each event interval; entire 3-kernel or 1-kernel operator",
+    "correctness": "output NaN prefill, full precheck and postcheck; finite, FP64 softmax castFP32 error, FP64 row sum"
+  },
+  "path_normalization": {
+    "logs": "none; byte-identical copies",
+    "argv": "explicitly normalized representation, not original argv bytes",
+    "original_private_path_sha256": {
+      "<MEASURED_RUN>": "fdaf868396787c40f9a160b9d59a58ec60804ebc4a0adabdd348719cbcf4dcbc",
+      "<ENVIRONMENT_PYTHON>": "7263b70981a463b6c8582f51fd928d198e1526525a35ffcea972c853b16a102c"
+    },
+    "raw_argv_sha256_format": "UTF-8 JSON array, ensure_ascii=False, separators=(comma,colon)"
+  },
+  "measurements": [
+    {
+      "config_id": "hip-serial-b256",
+      "shape": "4096x1024",
+      "process": 1,
+      "configuration": {
+        "id": "hip-serial-b256",
+        "runtime": "hip",
+        "version": "baseline",
+        "block": 256,
+        "kernels": [
+          "row_max_serial",
+          "row_exp_sum_serial",
+          "normalize_rows"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n4096x1024-hip-serial-b256-p1.log",
+      "published_log": "logs/n4096x1024-hip-serial-b256-p1.log",
+      "raw_sha256": "07392729e7dd9fd179bca9a7486bf257e0b175733bdb67539ea85151ce531bdb",
+      "published_sha256": "07392729e7dd9fd179bca9a7486bf257e0b175733bdb67539ea85151ce531bdb",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 33,
+        "recorded_at": "2026-09-19T17:56:24.255712+00:00",
+        "raw_argv_sha256": "47074543abe24bfbac12575e5df4256c80cbd0ef8e883c8d42525292f8e0ea45",
+        "argv_path_normalized": [
+          "<MEASURED_RUN>/build/softmax_hip",
+          "--block",
+          "256",
+          "--version",
+          "baseline",
+          "--rows",
+          "4096",
+          "--cols",
+          "1024",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--config-id",
+          "hip-serial-b256",
+          "--samples",
+          "<MEASURED_RUN>/samples/n4096x1024-hip-serial-b256-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "hip-cooperative-b256",
+      "shape": "4096x1024",
+      "process": 1,
+      "configuration": {
+        "id": "hip-cooperative-b256",
+        "runtime": "hip",
+        "version": "cooperative",
+        "block": 256,
+        "kernels": [
+          "row_max_block",
+          "row_exp_sum_block",
+          "normalize_block"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n4096x1024-hip-cooperative-b256-p1.log",
+      "published_log": "logs/n4096x1024-hip-cooperative-b256-p1.log",
+      "raw_sha256": "2ff1b3cc1f88e2f584fcc51af04626349593a266a094c0d029588ad658b61f89",
+      "published_sha256": "2ff1b3cc1f88e2f584fcc51af04626349593a266a094c0d029588ad658b61f89",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 34,
+        "recorded_at": "2026-09-19T17:56:24.429778+00:00",
+        "raw_argv_sha256": "aae383c3d04ac87cb0ebc7a145d216eee2bfe264bf350170676c999b39af27cd",
+        "argv_path_normalized": [
+          "<MEASURED_RUN>/build/softmax_hip",
+          "--block",
+          "256",
+          "--version",
+          "cooperative",
+          "--rows",
+          "4096",
+          "--cols",
+          "1024",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--config-id",
+          "hip-cooperative-b256",
+          "--samples",
+          "<MEASURED_RUN>/samples/n4096x1024-hip-cooperative-b256-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "hip-fused-b256",
+      "shape": "4096x1024",
+      "process": 1,
+      "configuration": {
+        "id": "hip-fused-b256",
+        "runtime": "hip",
+        "version": "fused",
+        "block": 256,
+        "kernels": [
+          "softmax_fused_lds"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n4096x1024-hip-fused-b256-p1.log",
+      "published_log": "logs/n4096x1024-hip-fused-b256-p1.log",
+      "raw_sha256": "b24c4c7df6d3a3b700b15bbd31e15631dd00af28888c76dae66ce75c65938f6f",
+      "published_sha256": "b24c4c7df6d3a3b700b15bbd31e15631dd00af28888c76dae66ce75c65938f6f",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 35,
+        "recorded_at": "2026-09-19T17:56:24.558759+00:00",
+        "raw_argv_sha256": "af660a092cc914f6ad697b1c40d8ac174f7cedd84bd1a0b8a6e64f67a6bea10f",
+        "argv_path_normalized": [
+          "<MEASURED_RUN>/build/softmax_hip",
+          "--block",
+          "256",
+          "--version",
+          "fused",
+          "--rows",
+          "4096",
+          "--cols",
+          "1024",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--config-id",
+          "hip-fused-b256",
+          "--samples",
+          "<MEASURED_RUN>/samples/n4096x1024-hip-fused-b256-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "triton-b4",
+      "shape": "4096x1024",
+      "process": 1,
+      "configuration": {
+        "id": "triton-b4",
+        "runtime": "triton",
+        "version": "t0",
+        "block_multiplier": 1,
+        "num_warps": 4,
+        "kernels": [
+          "softmax_row_kernel"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n4096x1024-triton-b4-p1.log",
+      "published_log": "logs/n4096x1024-triton-b4-p1.log",
+      "raw_sha256": "afda9bb3383db5f6372c88bc29e6b3e4cf30117243e08e5aac96aa66bae10c66",
+      "published_sha256": "afda9bb3383db5f6372c88bc29e6b3e4cf30117243e08e5aac96aa66bae10c66",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 36,
+        "recorded_at": "2026-09-19T17:56:24.685800+00:00",
+        "raw_argv_sha256": "1effe4bf4e4c722bb35dacef357577c62748545bc5b92967466abd54cd04f257",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/softmax_triton.py",
+          "--t0-warps",
+          "4",
+          "--t1-warps",
+          "4",
+          "--t1-block",
+          "1024",
+          "--version",
+          "t0",
+          "--rows",
+          "4096",
+          "--cols",
+          "1024",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--config-id",
+          "triton-b4",
+          "--samples",
+          "<MEASURED_RUN>/samples/n4096x1024-triton-b4-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "triton-b8",
+      "shape": "4096x1024",
+      "process": 1,
+      "configuration": {
+        "id": "triton-b8",
+        "runtime": "triton",
+        "version": "t0",
+        "block_multiplier": 1,
+        "num_warps": 8,
+        "kernels": [
+          "softmax_row_kernel"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n4096x1024-triton-b8-p1.log",
+      "published_log": "logs/n4096x1024-triton-b8-p1.log",
+      "raw_sha256": "6014eed396bf517220c4b7c9c54b8afa31556c34a19d3d8ee4f8ad88a8fd03e9",
+      "published_sha256": "6014eed396bf517220c4b7c9c54b8afa31556c34a19d3d8ee4f8ad88a8fd03e9",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 37,
+        "recorded_at": "2026-09-19T17:56:26.935073+00:00",
+        "raw_argv_sha256": "4d9b2244abf5bcfde6fde34bf93aaad32c78db062f9962284e5c9bccf1e4c062",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/softmax_triton.py",
+          "--t0-warps",
+          "8",
+          "--t1-warps",
+          "8",
+          "--t1-block",
+          "1024",
+          "--version",
+          "t0",
+          "--rows",
+          "4096",
+          "--cols",
+          "1024",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--config-id",
+          "triton-b8",
+          "--samples",
+          "<MEASURED_RUN>/samples/n4096x1024-triton-b8-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "triton-2b4",
+      "shape": "4096x1024",
+      "process": 1,
+      "configuration": {
+        "id": "triton-2b4",
+        "runtime": "triton",
+        "version": "t1",
+        "block_multiplier": 2,
+        "num_warps": 4,
+        "kernels": [
+          "softmax_row_kernel"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n4096x1024-triton-2b4-p1.log",
+      "published_log": "logs/n4096x1024-triton-2b4-p1.log",
+      "raw_sha256": "81fe29b617e4c39c9998069caf9aaf065d929fe185b7d204ea4d8f899d657b2c",
+      "published_sha256": "81fe29b617e4c39c9998069caf9aaf065d929fe185b7d204ea4d8f899d657b2c",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 38,
+        "recorded_at": "2026-09-19T17:56:29.198277+00:00",
+        "raw_argv_sha256": "60bb3b13ca704a07045d9e7bbfbc60d49a04e5edd41434cf4b58f9416096925e",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/softmax_triton.py",
+          "--t0-warps",
+          "4",
+          "--t1-warps",
+          "4",
+          "--t1-block",
+          "2048",
+          "--version",
+          "t1",
+          "--rows",
+          "4096",
+          "--cols",
+          "1024",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--config-id",
+          "triton-2b4",
+          "--samples",
+          "<MEASURED_RUN>/samples/n4096x1024-triton-2b4-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "triton-2b8",
+      "shape": "4096x1024",
+      "process": 1,
+      "configuration": {
+        "id": "triton-2b8",
+        "runtime": "triton",
+        "version": "t1",
+        "block_multiplier": 2,
+        "num_warps": 8,
+        "kernels": [
+          "softmax_row_kernel"
+        ]
+      },
+      "source_log": "results/rocm10-20260920/logs/n4096x1024-triton-2b8-p1.log",
+      "published_log": "logs/n4096x1024-triton-2b8-p1.log",
+      "raw_sha256": "83b09fc2760b230c02d75d035882b0938270ce3e4042c52696589c2a8c649e74",
+      "published_sha256": "83b09fc2760b230c02d75d035882b0938270ce3e4042c52696589c2a8c649e74",
+      "log_bytes_changed": false,
+      "stream": "stdout with stderr merged by subprocess.STDOUT",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 39,
+        "recorded_at": "2026-09-19T17:56:31.481158+00:00",
+        "raw_argv_sha256": "2f6e22e5583ce5460822f50134a95222dc8154c6c9b41fecb740bb2a531ff15d",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/softmax_triton.py",
+          "--t0-warps",
+          "8",
+          "--t1-warps",
+          "8",
+          "--t1-block",
+          "2048",
+          "--version",
+          "t1",
+          "--rows",
+          "4096",
+          "--cols",
+          "1024",
+          "--warmup",
+          "10",
+          "--repeat",
+          "50",
+          "--seed",
+          "20260920",
+          "--config-id",
+          "triton-2b8",
+          "--samples",
+          "<MEASURED_RUN>/samples/n4096x1024-triton-2b8-p1.csv",
+          "--process",
+          "1"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only private run-root/interpreter paths replaced; all flags, values and ordering unchanged."
+      }
+    }
+  ],
+  "available_trace_inventory": [
+    {
+      "config_id": "hip-serial-b256",
+      "shape": "4096x1024",
+      "source_trace": "results/rocm10-20260920/profiles/hip-serial-b256_kernel_trace.csv",
+      "raw_sha256": "841ddb25615e58d0c53eb0d45e51fcc2103c85e56a6e01a69caedabdc89dbe52",
+      "kernel_names": [
+        "row_max_serial",
+        "row_exp_sum_serial",
+        "normalize_rows"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-hip-serial-b256.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    },
+    {
+      "config_id": "hip-cooperative-b256",
+      "shape": "4096x1024",
+      "source_trace": "results/rocm10-20260920/profiles/hip-cooperative-b256_kernel_trace.csv",
+      "raw_sha256": "cf54727aefd096ac7fc9c860153171560ca2b6a186feac496fb00172dba319ac",
+      "kernel_names": [
+        "row_max_block",
+        "row_exp_sum_block",
+        "normalize_block"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-hip-cooperative-b256.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    },
+    {
+      "config_id": "hip-fused-b256",
+      "shape": "4096x1024",
+      "source_trace": "results/rocm10-20260920/profiles/hip-fused-b256_kernel_trace.csv",
+      "raw_sha256": "df8932e5451847930607f14d41262786225708fb1aad823656287388f09edc72",
+      "kernel_names": [
+        "softmax_fused_lds"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-hip-fused-b256.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    },
+    {
+      "config_id": "triton-b4",
+      "shape": "4096x1024",
+      "source_trace": "results/rocm10-20260920/profiles/triton-b4_kernel_trace.csv",
+      "raw_sha256": "79df0a4a44db12ff9a94463493823d5a43142e4a2d9e43e1a6a0eda2f7a3921e",
+      "kernel_names": [
+        "softmax_row_kernel"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-triton-b4.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    },
+    {
+      "config_id": "triton-b8",
+      "shape": "4096x1024",
+      "source_trace": "results/rocm10-20260920/profiles/triton-b8_kernel_trace.csv",
+      "raw_sha256": "551fe62cf676efe257442d5bd61da219f7846b61f221ad3fc4fbac5370f0b3f5",
+      "kernel_names": [
+        "softmax_row_kernel"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-triton-b8.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    },
+    {
+      "config_id": "triton-2b4",
+      "shape": "4096x1024",
+      "source_trace": "results/rocm10-20260920/profiles/triton-2b4_kernel_trace.csv",
+      "raw_sha256": "b742ad644a4a03c752e8c68a293e5258efc7e4b5c50918b648554ad5445dcc0f",
+      "kernel_names": [
+        "softmax_row_kernel"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-triton-2b4.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    },
+    {
+      "config_id": "triton-2b8",
+      "shape": "4096x1024",
+      "source_trace": "results/rocm10-20260920/profiles/triton-2b8_kernel_trace.csv",
+      "raw_sha256": "cb3c40a23eee385c858c438e5780b7422b8bedbb7b470bc2421f8a513b41a235",
+      "kernel_names": [
+        "softmax_row_kernel"
+      ],
+      "source_terminal_log": "results/rocm10-20260920/logs/profile-triton-2b8.log",
+      "copied_to_walkthrough": false,
+      "scope": "rocprofv3-kernel-trace; separate from benchmark",
+      "warmup": 5,
+      "repeat": 10,
+      "precheck_dispatches_per_kernel": 1,
+      "target_rows_per_kernel": 16,
+      "skip_per_kernel": 6,
+      "take_per_kernel": 10
+    }
+  ],
+  "artifacts_sha256": {
+    "README.md": "c1e780976363f0c5aff2c3306b120095c0898cf78d746845b6abff024750e58c",
+    "logs/edge-3x1025-hip-fused-b256.log": "658974b89065a25a9228fd73af3da17e60d93a2ea71af4559bfcc135878fe6c9",
+    "logs/edge-3x1025-triton-b4.log": "1b36d09fe8b61d11f010b7454db3c01055780f17edfd9d4351255a289b4287de",
+    "logs/n4096x1024-hip-cooperative-b256-p1.log": "2ff1b3cc1f88e2f584fcc51af04626349593a266a094c0d029588ad658b61f89",
+    "logs/n4096x1024-hip-fused-b256-p1.log": "b24c4c7df6d3a3b700b15bbd31e15631dd00af28888c76dae66ce75c65938f6f",
+    "logs/n4096x1024-hip-serial-b256-p1.log": "07392729e7dd9fd179bca9a7486bf257e0b175733bdb67539ea85151ce531bdb",
+    "logs/n4096x1024-triton-2b4-p1.log": "81fe29b617e4c39c9998069caf9aaf065d929fe185b7d204ea4d8f899d657b2c",
+    "logs/n4096x1024-triton-2b8-p1.log": "83b09fc2760b230c02d75d035882b0938270ce3e4042c52696589c2a8c649e74",
+    "logs/n4096x1024-triton-b4-p1.log": "afda9bb3383db5f6372c88bc29e6b3e4cf30117243e08e5aac96aa66bae10c66",
+    "logs/n4096x1024-triton-b8-p1.log": "6014eed396bf517220c4b7c9c54b8afa31556c34a19d3d8ee4f8ad88a8fd03e9",
+    "profiles/hip-cooperative-b256_kernel_trace.csv": "cf54727aefd096ac7fc9c860153171560ca2b6a186feac496fb00172dba319ac",
+    "profiles/hip-fused-b256_kernel_trace.csv": "df8932e5451847930607f14d41262786225708fb1aad823656287388f09edc72",
+    "reports/hip-cooperative-b256.txt": "d3281f1babf75c25f5f5405a1e1272101e77e00689526b48cf6e90874e5c630f",
+    "reports/hip-fused-b256.txt": "87172f63dc36f801cc83252f172bdd3543d8e23a1d7df76c4f0c0df94a4b5679",
+    "source/inspect_trace.py": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b"
+  },
+  "correctness_examples": [
+    {
+      "published_log": "logs/edge-3x1025-hip-fused-b256.log",
+      "source_log": "results/rocm10-20260920/logs/edge-3x1025-hip-fused-b256.log",
+      "raw_sha256": "658974b89065a25a9228fd73af3da17e60d93a2ea71af4559bfcc135878fe6c9",
+      "published_sha256": "658974b89065a25a9228fd73af3da17e60d93a2ea71af4559bfcc135878fe6c9",
+      "log_bytes_changed": false,
+      "purpose": "Correctness only: warmup=0/repeat=1, not a performance comparison",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 28,
+        "recorded_at": "2026-09-19T17:56:15.325584+00:00",
+        "raw_argv_sha256": "55b6b0a6bac125e7cdc595a43aa6e236340ecf8e27891d870b4200e6449026fb",
+        "argv_path_normalized": [
+          "<MEASURED_RUN>/build/softmax_hip",
+          "--block",
+          "256",
+          "--version",
+          "fused",
+          "--rows",
+          "3",
+          "--cols",
+          "1025",
+          "--warmup",
+          "0",
+          "--repeat",
+          "1",
+          "--seed",
+          "20260920",
+          "--config-id",
+          "hip-fused-b256"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only executable and private run-root paths replaced; flags, parameter values and ordering unchanged."
+      }
+    },
+    {
+      "published_log": "logs/edge-3x1025-triton-b4.log",
+      "source_log": "results/rocm10-20260920/logs/edge-3x1025-triton-b4.log",
+      "raw_sha256": "1b36d09fe8b61d11f010b7454db3c01055780f17edfd9d4351255a289b4287de",
+      "published_sha256": "1b36d09fe8b61d11f010b7454db3c01055780f17edfd9d4351255a289b4287de",
+      "log_bytes_changed": false,
+      "purpose": "Correctness only: warmup=0/repeat=1, not a performance comparison",
+      "actual_command": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 29,
+        "recorded_at": "2026-09-19T17:56:15.382545+00:00",
+        "raw_argv_sha256": "68df93fd04af87a815b7b239673dbc6d1f40100e769729cb9450c88c022d6a32",
+        "argv_path_normalized": [
+          "<ENVIRONMENT_PYTHON>",
+          "<MEASURED_RUN>/source/softmax_triton.py",
+          "--t0-warps",
+          "4",
+          "--t1-warps",
+          "4",
+          "--t1-block",
+          "2048",
+          "--version",
+          "t0",
+          "--rows",
+          "3",
+          "--cols",
+          "1025",
+          "--warmup",
+          "0",
+          "--repeat",
+          "1",
+          "--seed",
+          "20260920",
+          "--config-id",
+          "triton-b4"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only executable and private run-root paths replaced; flags, parameter values and ordering unchanged."
+      }
+    }
+  ],
+  "selected_traces": [
+    {
+      "config_id": "hip-cooperative-b256",
+      "published_trace": "profiles/hip-cooperative-b256_kernel_trace.csv",
+      "source_trace": "results/rocm10-20260920/profiles/hip-cooperative-b256_kernel_trace.csv",
+      "raw_sha256": "cf54727aefd096ac7fc9c860153171560ca2b6a186feac496fb00172dba319ac",
+      "published_sha256": "cf54727aefd096ac7fc9c860153171560ca2b6a186feac496fb00172dba319ac",
+      "trace_bytes_changed": false,
+      "actual_capture": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 55,
+        "recorded_at": "2026-09-19T17:57:16.680071+00:00",
+        "raw_argv_sha256": "7695eed91ca1534eb84493f3483802e6b44623caa171c76d202e92c9ddffa7e2",
+        "argv_path_normalized": [
+          "<MEASURED_TOOL>/rocprofv3",
+          "--rocm-root",
+          "<MEASURED_TOOL>/_rocm_sdk_core",
+          "--kernel-trace",
+          "--output-directory",
+          "<MEASURED_RUN>/profiles",
+          "--output-file",
+          "hip-cooperative-b256",
+          "--output-format",
+          "csv",
+          "--",
+          "<MEASURED_RUN>/build/softmax_hip",
+          "--block",
+          "256",
+          "--version",
+          "cooperative",
+          "--rows",
+          "4096",
+          "--cols",
+          "1024",
+          "--warmup",
+          "5",
+          "--repeat",
+          "10",
+          "--seed",
+          "20260920",
+          "--config-id",
+          "hip-cooperative-b256"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only executable and private run-root paths replaced; flags, parameter values and ordering unchanged."
+      }
+    },
+    {
+      "config_id": "hip-fused-b256",
+      "published_trace": "profiles/hip-fused-b256_kernel_trace.csv",
+      "source_trace": "results/rocm10-20260920/profiles/hip-fused-b256_kernel_trace.csv",
+      "raw_sha256": "df8932e5451847930607f14d41262786225708fb1aad823656287388f09edc72",
+      "published_sha256": "df8932e5451847930607f14d41262786225708fb1aad823656287388f09edc72",
+      "trace_bytes_changed": false,
+      "actual_capture": {
+        "source_commands": "results/rocm10-20260920/commands.jsonl",
+        "line_1based": 56,
+        "recorded_at": "2026-09-19T17:57:16.933722+00:00",
+        "raw_argv_sha256": "de9b468276517682266dc951bf504f80e40488e101d649a1b1638777d7845a63",
+        "argv_path_normalized": [
+          "<MEASURED_TOOL>/rocprofv3",
+          "--rocm-root",
+          "<MEASURED_TOOL>/_rocm_sdk_core",
+          "--kernel-trace",
+          "--output-directory",
+          "<MEASURED_RUN>/profiles",
+          "--output-file",
+          "hip-fused-b256",
+          "--output-format",
+          "csv",
+          "--",
+          "<MEASURED_RUN>/build/softmax_hip",
+          "--block",
+          "256",
+          "--version",
+          "fused",
+          "--rows",
+          "4096",
+          "--cols",
+          "1024",
+          "--warmup",
+          "5",
+          "--repeat",
+          "10",
+          "--seed",
+          "20260920",
+          "--config-id",
+          "hip-fused-b256"
+        ],
+        "argv_is_raw": false,
+        "normalization": "Only executable and private run-root paths replaced; flags, parameter values and ordering unchanged."
+      }
+    }
+  ],
+  "trace_reanalysis": {
+    "new_gpu_measurement": false,
+    "operation": "CPU-only standard-library reanalysis of existing kernel traces",
+    "started_at": "2026-09-20T06:01:04.954579+00:00",
+    "completed_at": "2026-09-20T06:01:05.185859+00:00",
+    "environment": {
+      "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+      "python_executable": "<ENVIRONMENT_PYTHON>",
+      "os_pretty_name": "Ubuntu 24.04.5 LTS",
+      "kernel": "7.0.0-31-generic",
+      "rocm_sdk_package": "10.0.0",
+      "hip_distribution": "10.0.0"
+    },
+    "raw_record_sha256": "5faa5a9fabe15c88d441c83b0a8ae4dfd22b8caaa5ae7e7b1f3ff27df85b1e9d",
+    "report_composition": "Each recorded stdout preserved verbatim; reports with multiple kernels concatenate them in command order with one blank line between reports.",
+    "records": [
+      {
+        "config_id": "hip-cooperative-b256",
+        "kernel": "row_max_block",
+        "published_report": "reports/hip-cooperative-b256.txt",
+        "input_sha256": "cf54727aefd096ac7fc9c860153171560ca2b6a186feac496fb00172dba319ac",
+        "helper_sha256": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b",
+        "started_at": "2026-09-20T06:01:05.070407+00:00",
+        "actual_argv": [
+          "python",
+          "chapter8/inspect_trace.py",
+          "chapter10/results/rocm10-20260920/profiles/hip-cooperative-b256_kernel_trace.csv",
+          "--kernel",
+          "row_max_block",
+          "--skip",
+          "6",
+          "--take",
+          "10"
+        ],
+        "cwd": "<MEASURED_PART>",
+        "cwd_private_sha256": "57e2d79e531306b030c01d9c5774b396cb75983bfb4796829cc036b9e4f270b9",
+        "returncode": 0,
+        "stderr": "",
+        "stdout_sha256": "3f26bb89ead2764c94823a8732cf5ba9bf2eccfcb58f01058327bf89e6aee433",
+        "analysis": {
+          "csv_rows": 52,
+          "kernel_name": "(anonymous namespace)::row_max_block(float const*, float*, unsigned long)",
+          "target_rows": 16,
+          "skipped_rows": 6,
+          "kept_rows": 10,
+          "first_kept": {
+            "start_ns": 885352907365890,
+            "end_ns": 885352907410649,
+            "duration_ns": 44759
+          },
+          "kernel_time_us": {
+            "min": 44.519,
+            "median": 44.759,
+            "max": 270.714
+          },
+          "launch": {
+            "grid_work_items_xyz": [
+              1048576,
+              1,
+              1
+            ],
+            "workgroup_size_xyz": [
+              256,
+              1,
+              1
+            ],
+            "workgroups_xyz": [
+              4096,
+              1,
+              1
+            ],
+            "workgroups_total": 4096
+          },
+          "resources": {
+            "vgpr_count": 8,
+            "sgpr_count": 128,
+            "lds_bytes": 0,
+            "scratch_bytes": 0
+          }
+        },
+        "agrees_with_profile_summary": true
+      },
+      {
+        "config_id": "hip-cooperative-b256",
+        "kernel": "row_exp_sum_block",
+        "published_report": "reports/hip-cooperative-b256.txt",
+        "input_sha256": "cf54727aefd096ac7fc9c860153171560ca2b6a186feac496fb00172dba319ac",
+        "helper_sha256": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b",
+        "started_at": "2026-09-20T06:01:05.100396+00:00",
+        "actual_argv": [
+          "python",
+          "chapter8/inspect_trace.py",
+          "chapter10/results/rocm10-20260920/profiles/hip-cooperative-b256_kernel_trace.csv",
+          "--kernel",
+          "row_exp_sum_block",
+          "--skip",
+          "6",
+          "--take",
+          "10"
+        ],
+        "cwd": "<MEASURED_PART>",
+        "cwd_private_sha256": "57e2d79e531306b030c01d9c5774b396cb75983bfb4796829cc036b9e4f270b9",
+        "returncode": 0,
+        "stderr": "",
+        "stdout_sha256": "45cd2a35cd4e379517cc8b588576dc3d736e14db82bbf330410f215e8fef726b",
+        "analysis": {
+          "csv_rows": 52,
+          "kernel_name": "(anonymous namespace)::row_exp_sum_block(float const*, float const*, float*, float*, unsigned long)",
+          "target_rows": 16,
+          "skipped_rows": 6,
+          "kept_rows": 10,
+          "first_kept": {
+            "start_ns": 885352907414689,
+            "end_ns": 885352907475607,
+            "duration_ns": 60918
+          },
+          "kernel_time_us": {
+            "min": 56.679,
+            "median": 60.1585,
+            "max": 60.918
+          },
+          "launch": {
+            "grid_work_items_xyz": [
+              1048576,
+              1,
+              1
+            ],
+            "workgroup_size_xyz": [
+              256,
+              1,
+              1
+            ],
+            "workgroups_xyz": [
+              4096,
+              1,
+              1
+            ],
+            "workgroups_total": 4096
+          },
+          "resources": {
+            "vgpr_count": 16,
+            "sgpr_count": 128,
+            "lds_bytes": 0,
+            "scratch_bytes": 0
+          }
+        },
+        "agrees_with_profile_summary": true
+      },
+      {
+        "config_id": "hip-cooperative-b256",
+        "kernel": "normalize_block",
+        "published_report": "reports/hip-cooperative-b256.txt",
+        "input_sha256": "cf54727aefd096ac7fc9c860153171560ca2b6a186feac496fb00172dba319ac",
+        "helper_sha256": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b",
+        "started_at": "2026-09-20T06:01:05.131962+00:00",
+        "actual_argv": [
+          "python",
+          "chapter8/inspect_trace.py",
+          "chapter10/results/rocm10-20260920/profiles/hip-cooperative-b256_kernel_trace.csv",
+          "--kernel",
+          "normalize_block",
+          "--skip",
+          "6",
+          "--take",
+          "10"
+        ],
+        "cwd": "<MEASURED_PART>",
+        "cwd_private_sha256": "57e2d79e531306b030c01d9c5774b396cb75983bfb4796829cc036b9e4f270b9",
+        "returncode": 0,
+        "stderr": "",
+        "stdout_sha256": "ea6f0c7afa2ce1d323d6ae4060d30eadf2608351b4af1edd5c360d2e1d35cb16",
+        "analysis": {
+          "csv_rows": 52,
+          "kernel_name": "(anonymous namespace)::normalize_block(float const*, float const*, float*, unsigned long)",
+          "target_rows": 16,
+          "skipped_rows": 6,
+          "kept_rows": 10,
+          "first_kept": {
+            "start_ns": 885352907481287,
+            "end_ns": 885352907541366,
+            "duration_ns": 60079
+          },
+          "kernel_time_us": {
+            "min": 36.439,
+            "median": 59.1585,
+            "max": 61.118
+          },
+          "launch": {
+            "grid_work_items_xyz": [
+              1048576,
+              1,
+              1
+            ],
+            "workgroup_size_xyz": [
+              256,
+              1,
+              1
+            ],
+            "workgroups_xyz": [
+              4096,
+              1,
+              1
+            ],
+            "workgroups_total": 4096
+          },
+          "resources": {
+            "vgpr_count": 16,
+            "sgpr_count": 128,
+            "lds_bytes": 0,
+            "scratch_bytes": 0
+          }
+        },
+        "agrees_with_profile_summary": true
+      },
+      {
+        "config_id": "hip-fused-b256",
+        "kernel": "softmax_fused_lds",
+        "published_report": "reports/hip-fused-b256.txt",
+        "input_sha256": "df8932e5451847930607f14d41262786225708fb1aad823656287388f09edc72",
+        "helper_sha256": "18635e932a550f5c10c05c370ea7dc1d0c08441f8bcf70ea7967aaf1616dc56b",
+        "started_at": "2026-09-20T06:01:05.159049+00:00",
+        "actual_argv": [
+          "python",
+          "chapter8/inspect_trace.py",
+          "chapter10/results/rocm10-20260920/profiles/hip-fused-b256_kernel_trace.csv",
+          "--kernel",
+          "softmax_fused_lds",
+          "--skip",
+          "6",
+          "--take",
+          "10"
+        ],
+        "cwd": "<MEASURED_PART>",
+        "cwd_private_sha256": "57e2d79e531306b030c01d9c5774b396cb75983bfb4796829cc036b9e4f270b9",
+        "returncode": 0,
+        "stderr": "",
+        "stdout_sha256": "87172f63dc36f801cc83252f172bdd3543d8e23a1d7df76c4f0c0df94a4b5679",
+        "analysis": {
+          "csv_rows": 20,
+          "kernel_name": "(anonymous namespace)::softmax_fused_lds(float const*, float*, unsigned long, unsigned long)",
+          "target_rows": 16,
+          "skipped_rows": 6,
+          "kept_rows": 10,
+          "first_kept": {
+            "start_ns": 885353157818181,
+            "end_ns": 885353157928658,
+            "duration_ns": 110477
+          },
+          "kernel_time_us": {
+            "min": 110.117,
+            "median": 110.5775,
+            "max": 118.757
+          },
+          "launch": {
+            "grid_work_items_xyz": [
+              1048576,
+              1,
+              1
+            ],
+            "workgroup_size_xyz": [
+              256,
+              1,
+              1
+            ],
+            "workgroups_xyz": [
+              4096,
+              1,
+              1
+            ],
+            "workgroups_total": 4096
+          },
+          "resources": {
+            "vgpr_count": 16,
+            "sgpr_count": 128,
+            "lds_bytes": 0,
+            "scratch_bytes": 0
+          }
+        },
+        "agrees_with_profile_summary": true
+      }
+    ]
+  }
+}
