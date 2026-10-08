@@ -660,7 +660,7 @@ python chapter11/matmul_triton.py \
 
 </details>
 
-先核对 tile 与 warps 没有跟着改变，再看 group 与完整时间。这里的命令复现本文对照；自己的扫描若选出 32×64，应对那个 tile 做分组，章末批量入口会自动完成选择。
+先核对 tile 与 warps 没有跟着改变，再看 group 与完整时间。这里的命令用于复现本章的实验对照；读者在自行扫描时若选出 32×64，应对该 tile 进行分组比较，章末的批量入口会自动完成这一选择。
 
 ::: figure fig-matmul-round-group
 ![Triton 固定输出 tile 后比较 program 分组](./images/round-group.png)
@@ -904,7 +904,7 @@ python chapter11/verify_rounds.py \
 
 本章图使用 `chapter11/evidence/rounds/` 的三进程实测与独立确认；折叠终端输出来自其中第 1 个进程的原始日志，保存在 `chapter11/evidence/walkthrough/`。一次进程的中位数不必等于图的中心。按需 trace 的采集命令与阅读报告已经放在对应问题旁；批量 `--phase profile` 仅供需要完整诊断矩阵时选用。
 
-本文独立确认保留了 32×64 与 64×32 两种接近的 tile，以及所选 tile 的 group1/4/8；数值第一发生变化，因此没有把 group4 升为默认值。实际复跑的 `manifest.json` 中，`tile_selection` 记录被选中的方向及 `group_scan_ids`，新的分组图按该记录生成。
+本章独立确认保留了 32×64 与 64×32 两种表现接近的 tile，以及所选 tile 的 group1/4/8；复测中各项的最佳名次出现细微变动，因此没有将 group4 直接升级为默认配置。实际复跑的 `manifest.json` 中，`tile_selection` 记录被选中的方向及 `group_scan_ids`，新的分组图按该记录生成。
 
 实验条件为 RX 9070 XT、ROCm SDK 10.0.0、原生 Ubuntu 24.04.5，HIP 7.15.26333、Triton 3.8.0。GPU 非独占、不锁频，重复使用数组、不主动清缓存；正式 benchmark 与 trace 分开。本章性能主张只涵盖所测输入与条件。
 
@@ -921,5 +921,5 @@ python chapter11/verify_rounds.py \
 
 ## 延伸阅读
 
-- 《AMD GPU 编程》第 8.4 节矩阵乘法：从每个输出的点积出发，再用共享分块减少重复输入请求。本章借用这一递进方式，实验数据来自本文的 RX 9070 XT。
-- [Triton 官方矩阵乘教程](https://triton-lang.org/main/getting-started/tutorials/03-matrix-multiplication.html)：进一步阅读二维地址、program 分组与按形状自动调参。官方示例的精度和硬件条件与本文不同，参数和性能值需要分别验证。
+- 《AMD GPU 编程》第 8.4 节矩阵乘法：从每个输出的点积出发，再用共享分块减少重复输入请求。本章借用这一递进方式，实验数据来自本教程在 RX 9070 XT 上的实测。
+- [Triton 官方矩阵乘教程](https://triton-lang.org/main/getting-started/tutorials/03-matrix-multiplication.html)：进一步阅读二维地址、program 分组与按形状自动调参。官方示例的精度和硬件条件与本章不同，参数和性能指标需按实际环境独立验证。

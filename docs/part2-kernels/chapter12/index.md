@@ -724,7 +724,7 @@ python chapter12/verify_rounds.py \
   --frozen-run "$RUN/rounds" --output "$RUN/confirmation"
 ```
 
-确认保留 HIP 两版、Triton 物化与 online16，再加最快在线配置及距它不超过 5% 的候选，重复项只运行一次。本文因此确认全部六项。确认数据保存在自己的 `summary/summary.csv`、`summary/process-summary.csv` 与 `confirmation.json` 中，不自动并入父实验。先比较同形状的新旧进程范围，再决定是否保留候选；不要复制教程中的确认文件到新目录拼图。
+确认保留 HIP 两版、Triton 物化与 online16，再加最快在线配置及距它不超过 5% 的候选，重复项只运行一次。本章测试因此确认了全部六项配置。确认数据保存在自己的 `summary/summary.csv`、`summary/process-summary.csv` 与 `confirmation.json` 中，不自动并入父实验。先比较同形状的新旧进程范围，再决定是否保留候选；不要复制教程中的确认文件到新目录拼图。
 
 程序把逐次计时写入 `samples/`，把检查与终端记录写入 `logs/`；`source/` 保存本轮源码，`commands.jsonl` 保存实际参数。已有主目录拒绝被新的 `main` 覆盖；修改代码、改变条件或重新采一轮时，新建 `RUN`。第一次编译和 Triton JIT 在稳态计时之外，后续终端继续使用本篇环境。
 
@@ -748,6 +748,6 @@ Attention 的输出依赖所有 key 的权重，但不一定需要保存全部�
 
 ## 延伸阅读
 
-- [FlashAttention 论文](https://arxiv.org/abs/2205.14135)：理解分块和减少中间读写的设计。本文只保留便于观察的 FP32 前向版本，不复现完整论文 kernel。
+- [FlashAttention 论文](https://arxiv.org/abs/2205.14135)：理解分块和减少中间读写的设计。本章只保留便于教学观察的 FP32 前向版本，不复现完整论文 kernel。
 - [Triton Fused Attention 教程](https://triton-lang.org/main/getting-started/tutorials/06-fused-attention.html)：继续阅读更完整的分块实现；其中部分配置与硬件路径有额外前提，不能直接当作本章 gfx1201 的已验证选项。
 - [附录 D：HIP 与 Triton 的编程范式](../../appendix/programming-models/index.md)：回顾 block 协作与 program 的逻辑数据块。
