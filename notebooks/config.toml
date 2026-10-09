@@ -1,0 +1,20 @@
+# 修改这里后重新运行 notebook；无需修改公共库。
+[experiment]
+n = 1048576
+block = 256
+warmup = 5
+repeat = 30
+seed = 0
+
+[profiling]
+enabled = true
+# 留空时寻找当前 ROCm SDK 的 rocprofv3。
+rocprofv3 = ""
+
+[roofline]
+# 0 表示使用本次 copy_ / FP32 mm 微基准作为实测参考。
+# 自行填写时须同时注明来源；这些参考值不是硬件峰值。
+bandwidth_gbs = 0.0
+compute_tflops = 0.0
+source = ""
+matrix_size = 512

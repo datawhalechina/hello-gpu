@@ -1,0 +1,41 @@
+{
+  "schema_version": 2,
+  "chapters": [
+    {
+      "notebook": "part0-intro/chapter0/chapter0.ipynb",
+      "doc": "docs/part0-intro/chapter0/index.md"
+    },
+    {
+      "notebook": "part0-intro/chapter1/chapter1.ipynb",
+      "doc": "docs/part0-intro/chapter1/index.md"
+    },
+    {
+      "notebook": "part0-intro/chapter2/chapter2.ipynb",
+      "doc": "docs/part0-intro/chapter2/index.md"
+    },
+    {
+      "notebook": "part0-intro/chapter3/chapter3.ipynb",
+      "doc": "docs/part0-intro/chapter3/index.md"
+    },
+    {
+      "notebook": "part0-intro/chapter4/chapter4.ipynb",
+      "doc": "docs/part0-intro/chapter4/index.md"
+    },
+    {
+      "notebook": "part1-profiling/chapter5/chapter5.ipynb",
+      "doc": "docs/part1-profiling/chapter5/index.md"
+    },
+    {
+      "notebook": "part1-profiling/chapter6/chapter6.ipynb",
+      "doc": "docs/part1-profiling/chapter6/index.md"
+    },
+    {
+      "notebook": "part1-profiling/chapter7/chapter7.ipynb",
+      "doc": "docs/part1-profiling/chapter7/index.md"
+    },
+    {
+      "notebook": "part2-kernels/chapter8/chapter8.ipynb",
+      "doc": "docs/part2-kernels/chapter8/index.md"
+    }
+  ]
+}

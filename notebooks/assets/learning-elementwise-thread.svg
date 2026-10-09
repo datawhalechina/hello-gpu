@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 250" role="img">
+<title>逐元素依赖与自然线程分工</title>
+<rect width="1240" height="250" fill="#f8faf9"/>
+<text x="24" y="35" font-family="sans-serif" font-size="22" fill="#173d4e">逐元素依赖与自然线程分工</text>
+<rect x="24" y="64" width="285" height="126" rx="9" fill="#edf4f5" stroke="#497789"/>
+<text x="36" y="95" font-family="sans-serif" font-size="16" fill="#183c4a">输入位置 i</text>
+<text x="36" y="127" font-family="sans-serif" font-size="16" fill="#183c4a">a[i] 与 b[i]</text>
+<text x="36" y="159" font-family="sans-serif" font-size="16" fill="#183c4a">同位置两个输入</text>
+<rect x="329" y="64" width="285" height="126" rx="9" fill="#edf4f5" stroke="#497789"/>
+<text x="341" y="95" font-family="sans-serif" font-size="16" fill="#183c4a">thread 的工号</text>
+<text x="341" y="127" font-family="sans-serif" font-size="16" fill="#183c4a">block × blockDim + thread</text>
+<text x="341" y="159" font-family="sans-serif" font-size="16" fill="#183c4a">得到全局下标 i</text>
+<rect x="634" y="64" width="285" height="126" rx="9" fill="#edf4f5" stroke="#497789"/>
+<text x="646" y="95" font-family="sans-serif" font-size="16" fill="#183c4a">有效性条件</text>
+<text x="646" y="127" font-family="sans-serif" font-size="16" fill="#183c4a">i &lt; n</text>
+<text x="646" y="159" font-family="sans-serif" font-size="16" fill="#183c4a">尾块不写越界位置</text>
+<rect x="939" y="64" width="285" height="126" rx="9" fill="#edf4f5" stroke="#497789"/>
+<text x="951" y="95" font-family="sans-serif" font-size="16" fill="#183c4a">输出位置 i</text>
+<text x="951" y="127" font-family="sans-serif" font-size="16" fill="#183c4a">c[i] = a[i] + b[i]</text>
+<text x="951" y="159" font-family="sans-serif" font-size="16" fill="#183c4a">不同输出互不依赖</text>
+<text x="24" y="226" font-family="sans-serif" font-size="15" fill="#445a62">这是数据依赖与逻辑下标图；框的大小不表示设备宽度、性能或访存事务。</text></svg>

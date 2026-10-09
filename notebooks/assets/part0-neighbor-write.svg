@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="650" viewBox="0 0 1120 650" role="img" aria-labelledby="title description">
+  <title id="title">邻居加法的第一步：每个线程写入自己的 LDS 位置</title>
+  <desc id="description">固定手算图例 n 等于 6，block 等于 4。输入 a 为 1、2、3、4、5、6。Block 0 的四个线程将 1、2、3、4 写入自己的 tile 位置；Block 1 的两个有效线程写入 5、6，两个无效线程写入占位值 0。两个 block 各自的全部线程都到达自己的屏障。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" fill="#227868"/></marker>
+    <marker id="gray-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0 0 L9 4.5 L0 9 Z" fill="#8b9298"/></marker>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif; fill: #22313b; }
+      .title { font-size: 26px; font-weight: 700; }
+      .subtitle { font-size: 17px; fill: #576670; }
+      .heading { font-size: 20px; font-weight: 650; }
+      .label { font-size: 16px; }
+      .small { font-size: 14px; fill: #576670; }
+      .number { font-size: 27px; font-weight: 700; }
+      .mono { font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace; font-size: 16px; }
+      .panel { fill: #fbfcfc; stroke: #d8e1e3; stroke-width: 1.5; }
+      .input { fill: #e4f4ee; stroke: #92bcaf; stroke-width: 1.5; }
+      .tile { fill: #e6eef8; stroke: #90abc9; stroke-width: 1.5; }
+      .invalid { fill: #f0f1f2; stroke: #b4bac0; stroke-width: 1.5; stroke-dasharray: 5 4; }
+      .flow { fill: none; stroke: #227868; stroke-width: 2.5; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect width="1120" height="650" fill="#ffffff"/>
+  <text x="28" y="40" class="title">① 先写入：每个线程负责自己的共享位置</text>
+  <text x="28" y="74" class="subtitle">固定手算图例：n = 6，block = 4，a = [1, 2, 3, 4, 5, 6]。每个 block 拥有独立的 tile。</text>
+  <rect x="24" y="104" width="600" height="412" rx="12" class="panel"/>
+  <rect x="650" y="104" width="446" height="412" rx="12" class="panel"/>
+  <text x="44" y="138" class="heading">Block 0 · start = 0 · valid = 4</text>
+  <text x="670" y="138" class="heading">Block 1 · start = 4 · valid = 2</text>
+  <text x="44" y="167" class="small">全部线程都有输入</text>
+  <text x="670" y="167" class="small">尾块：线程仍有 4 个，输入只剩 2 个</text>
+  <g text-anchor="middle">
+    <rect x="69" y="186" width="102" height="76" rx="8" class="input"/><text x="120" y="207" class="small">a[0]</text><text x="120" y="241" class="number">1</text>
+    <rect x="209" y="186" width="102" height="76" rx="8" class="input"/><text x="260" y="207" class="small">a[1]</text><text x="260" y="241" class="number">2</text>
+    <rect x="349" y="186" width="102" height="76" rx="8" class="input"/><text x="400" y="207" class="small">a[2]</text><text x="400" y="241" class="number">3</text>
+    <rect x="489" y="186" width="102" height="76" rx="8" class="input"/><text x="540" y="207" class="small">a[3]</text><text x="540" y="241" class="number">4</text>
+    <rect x="681" y="186" width="78" height="76" rx="8" class="input"/><text x="720" y="207" class="small">a[4]</text><text x="720" y="241" class="number">5</text>
+    <rect x="786" y="186" width="78" height="76" rx="8" class="input"/><text x="825" y="207" class="small">a[5]</text><text x="825" y="241" class="number">6</text>
+    <rect x="891" y="186" width="78" height="76" rx="8" class="invalid"/><text x="930" y="214" class="small">i = 6</text><text x="930" y="240" class="small">没有输入</text>
+    <rect x="996" y="186" width="78" height="76" rx="8" class="invalid"/><text x="1035" y="214" class="small">i = 7</text><text x="1035" y="240" class="small">没有输入</text>
+  </g>
+  <g class="flow"><path d="M120 266 V365"/><path d="M260 266 V365"/><path d="M400 266 V365"/><path d="M540 266 V365"/><path d="M720 266 V365"/><path d="M825 266 V365"/></g>
+  <g fill="none" stroke="#8b9298" stroke-width="2.5" stroke-dasharray="5 4" marker-end="url(#gray-arrow)"><path d="M930 266 V365"/><path d="M1035 266 V365"/></g>
+  <g text-anchor="middle">
+    <g fill="#fbfcfc"><rect x="77" y="296" width="86" height="28"/><rect x="217" y="296" width="86" height="28"/><rect x="357" y="296" width="86" height="28"/><rect x="497" y="296" width="86" height="28"/><rect x="677" y="296" width="86" height="28"/><rect x="782" y="296" width="86" height="28"/><rect x="887" y="286" width="86" height="52"/><rect x="992" y="286" width="86" height="52"/></g>
+    <text x="120" y="316" class="label">线程 0</text><text x="260" y="316" class="label">线程 1</text><text x="400" y="316" class="label">线程 2</text><text x="540" y="316" class="label">线程 3</text>
+    <text x="720" y="316" class="label">线程 0</text><text x="825" y="316" class="label">线程 1</text><text x="930" y="306" class="label">线程 2</text><text x="930" y="329" class="small">写占位 0</text><text x="1035" y="306" class="label">线程 3</text><text x="1035" y="329" class="small">写占位 0</text>
+    <rect x="69" y="374" width="102" height="76" rx="8" class="tile"/><text x="120" y="397" class="mono">tile[0]</text><text x="120" y="431" class="number">1</text>
+    <rect x="209" y="374" width="102" height="76" rx="8" class="tile"/><text x="260" y="397" class="mono">tile[1]</text><text x="260" y="431" class="number">2</text>
+    <rect x="349" y="374" width="102" height="76" rx="8" class="tile"/><text x="400" y="397" class="mono">tile[2]</text><text x="400" y="431" class="number">3</text>
+    <rect x="489" y="374" width="102" height="76" rx="8" class="tile"/><text x="540" y="397" class="mono">tile[3]</text><text x="540" y="431" class="number">4</text>
+    <rect x="681" y="374" width="78" height="76" rx="8" class="tile"/><text x="720" y="397" class="mono">tile[0]</text><text x="720" y="431" class="number">5</text>
+    <rect x="786" y="374" width="78" height="76" rx="8" class="tile"/><text x="825" y="397" class="mono">tile[1]</text><text x="825" y="431" class="number">6</text>
+    <rect x="891" y="374" width="78" height="76" rx="8" class="invalid"/><text x="930" y="397" class="mono">tile[2]</text><text x="930" y="431" class="number">0</text>
+    <rect x="996" y="374" width="78" height="76" rx="8" class="invalid"/><text x="1035" y="397" class="mono">tile[3]</text><text x="1035" y="431" class="number">0</text>
+  </g>
+  <text x="44" y="486" class="label">此时先保证自己的写入完成，还不能猜测邻居的进度。</text>
+  <text x="670" y="486" class="label">无效线程不读取越界输入，但仍参与同步。</text>
+  <rect x="24" y="534" width="600" height="58" rx="9" fill="#fff3d7" stroke="#dcba69"/>
+  <rect x="650" y="534" width="446" height="58" rx="9" fill="#fff3d7" stroke="#dcba69"/>
+  <text x="324" y="570" text-anchor="middle" class="heading">4 个线程共同到达 __syncthreads()</text>
+  <text x="873" y="570" text-anchor="middle" class="heading">4 个线程共同到达屏障</text>
+  <text x="28" y="628" class="subtitle">两个屏障分别属于各自的 block；它们不要求两个 block 同时推进。</text>
+</svg>

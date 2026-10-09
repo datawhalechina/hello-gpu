@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 250" role="img">
+<title>float4 表达、地址对齐与标量尾部</title>
+<rect width="1240" height="250" fill="#f8faf9"/>
+<text x="24" y="35" font-family="sans-serif" font-size="22" fill="#173d4e">float4 表达、地址对齐与标量尾部</text>
+<rect x="24" y="64" width="285" height="126" rx="9" fill="#edf4f5" stroke="#497789"/>
+<text x="36" y="95" font-family="sans-serif" font-size="16" fill="#183c4a">先检查三个地址</text>
+<text x="36" y="127" font-family="sans-serif" font-size="16" fill="#183c4a">(a | b | c) &amp; 15</text>
+<text x="36" y="159" font-family="sans-serif" font-size="16" fill="#183c4a">是否满足 16 Byte 对齐</text>
+<rect x="329" y="64" width="285" height="126" rx="9" fill="#edf4f5" stroke="#497789"/>
+<text x="341" y="95" font-family="sans-serif" font-size="16" fill="#183c4a">对齐：向量索引 v</text>
+<text x="341" y="127" font-family="sans-serif" font-size="16" fill="#183c4a">对应 [4v, 4v+1, 4v+2, 4v+3]</text>
+<text x="341" y="159" font-family="sans-serif" font-size="16" fill="#183c4a">一次表达四个元素</text>
+<rect x="634" y="64" width="285" height="126" rx="9" fill="#edf4f5" stroke="#497789"/>
+<text x="646" y="95" font-family="sans-serif" font-size="16" fill="#183c4a">不足四个的尾部</text>
+<text x="646" y="127" font-family="sans-serif" font-size="16" fill="#183c4a">从 4 × floor(n/4) 开始</text>
+<text x="646" y="159" font-family="sans-serif" font-size="16" fill="#183c4a">逐元素检查并写出</text>
+<rect x="939" y="64" width="285" height="126" rx="9" fill="#edf4f5" stroke="#497789"/>
+<text x="951" y="95" font-family="sans-serif" font-size="16" fill="#183c4a">未对齐：标量循环</text>
+<text x="951" y="127" font-family="sans-serif" font-size="16" fill="#183c4a">每个线程走 grid-stride</text>
+<text x="951" y="159" font-family="sans-serif" font-size="16" fill="#183c4a">连续切片也可能偏移</text>
+<text x="24" y="226" font-family="sans-serif" font-size="15" fill="#445a62">float4 是源码的数据表达；不等同于硬件事务数量必然减少。</text></svg>

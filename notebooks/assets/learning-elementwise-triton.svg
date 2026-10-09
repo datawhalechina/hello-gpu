@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 250" role="img">
+<title>Triton 用逻辑 offsets 描述一个数据片段</title>
+<rect width="1240" height="250" fill="#f8faf9"/>
+<text x="24" y="35" font-family="sans-serif" font-size="22" fill="#173d4e">Triton 用逻辑 offsets 描述一个数据片段</text>
+<rect x="24" y="64" width="285" height="126" rx="9" fill="#edf4f5" stroke="#497789"/>
+<text x="36" y="95" font-family="sans-serif" font-size="16" fill="#183c4a">program p</text>
+<text x="36" y="127" font-family="sans-serif" font-size="16" fill="#183c4a">p × BLOCK 是片段起点</text>
+<text x="36" y="159" font-family="sans-serif" font-size="16" fill="#183c4a">不是物理线程号</text>
+<rect x="329" y="64" width="285" height="126" rx="9" fill="#edf4f5" stroke="#497789"/>
+<text x="341" y="95" font-family="sans-serif" font-size="16" fill="#183c4a">逻辑 offsets</text>
+<text x="341" y="127" font-family="sans-serif" font-size="16" fill="#183c4a">p × BLOCK + arange(BLOCK)</text>
+<text x="341" y="159" font-family="sans-serif" font-size="16" fill="#183c4a">一次表达一组元素</text>
+<rect x="634" y="64" width="285" height="126" rx="9" fill="#edf4f5" stroke="#497789"/>
+<text x="646" y="95" font-family="sans-serif" font-size="16" fill="#183c4a">mask = offsets &lt; n</text>
+<text x="646" y="127" font-family="sans-serif" font-size="16" fill="#183c4a">只读写有效位置</text>
+<text x="646" y="159" font-family="sans-serif" font-size="16" fill="#183c4a">保护最后一个片段</text>
+<rect x="939" y="64" width="285" height="126" rx="9" fill="#edf4f5" stroke="#497789"/>
+<text x="951" y="95" font-family="sans-serif" font-size="16" fill="#183c4a">编译器完成映射</text>
+<text x="951" y="127" font-family="sans-serif" font-size="16" fill="#183c4a">num_warps 是执行配置</text>
+<text x="951" y="159" font-family="sans-serif" font-size="16" fill="#183c4a">BLOCK 不等于线程数</text>
+<text x="24" y="226" font-family="sans-serif" font-size="15" fill="#445a62">图中 BLOCK 和 program 是逻辑抽象；没有固定 wave 宽度或历史性能值。</text></svg>
