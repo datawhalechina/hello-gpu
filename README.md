@@ -39,6 +39,12 @@
 
 https://datawhalechina.github.io/hello-gpu/
 
+## Notebook 动手学习
+
+[Notebook 学习入口](./notebooks/README.md)提供与正文小节对齐的 Part 0–2，共 9 章（第 0–8 章）。在已准备好的云环境中选择 Python 3 内核，直接逐章运行；HIP kernel 保留在教学单元中，用 PyTorch Tensor 调用，重复的编译、测量和绘图由公共包处理。
+
+可以从[第 4 章：第一个程序 + 性能分析](./notebooks/part0-intro/chapter4/chapter4.ipynb)体验完整流程，也可以按[章节清单](./notebooks/README.md#章节入口)顺序学习。
+
 ## 目录
 
 > 全书共 5 篇、20 章。显示章号由 `docs/.vitepress/outline.mjs` 自动生成，新增章节后运行 `npm run docs:sync-outline` 即可同步 README 与站点导航。

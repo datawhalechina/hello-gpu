@@ -1,0 +1,25 @@
+name: Notebook learning source checks
+
+on:
+  pull_request:
+    paths:
+      - 'notebooks/**'
+      - 'docs/**/index.md'
+      - '.github/workflows/notebook-learning.yml'
+  push:
+    branches: ['dev', 'main']
+    paths:
+      - 'notebooks/**'
+      - 'docs/**/index.md'
+      - '.github/workflows/notebook-learning.yml'
+
+jobs:
+  source-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python notebooks/tools/check_notebooks.py
+      - run: python -m compileall -q notebooks/common/src notebooks/tools

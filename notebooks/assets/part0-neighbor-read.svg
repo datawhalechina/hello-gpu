@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="690" viewBox="0 0 1120 690" role="img" aria-labelledby="title description">
+  <title id="title">邻居加法的第二步：屏障后读取 block 内下一个有效位置</title>
+  <desc id="description">固定图例 n 为 6、block 为 4，输入 a 为 1、2、3、4、5、6，b 为 10、20、30、40、50、60。Block 0 的线程依次读取 tile 1、2、3、0，加上各自位置的 b 得到 12、23、34、41。Block 1 的两个有效线程读取 tile 1、0，加上 b 得到 56、65。两个无效线程在参与屏障后跳过输出；没有线程使用占位零。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#47709b"/></marker>
+    <marker id="wrap-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#a07116"/></marker>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif; fill: #22313b; }
+      .title { font-size: 26px; font-weight: 700; }
+      .subtitle { font-size: 17px; fill: #576670; }
+      .heading { font-size: 20px; font-weight: 650; }
+      .label { font-size: 16px; }
+      .small { font-size: 14px; fill: #576670; }
+      .number { font-size: 26px; font-weight: 700; }
+      .mono { font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace; font-size: 16px; }
+      .panel { fill: #fbfcfc; stroke: #d8e1e3; stroke-width: 1.5; }
+      .tile { fill: #e6eef8; stroke: #90abc9; stroke-width: 1.5; }
+      .card { fill: #ffffff; stroke: #c6d1d6; stroke-width: 1.5; }
+      .invalid { fill: #f0f1f2; stroke: #b4bac0; stroke-width: 1.5; stroke-dasharray: 5 4; }
+      .flow { fill: none; stroke: #47709b; stroke-width: 2.3; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect width="1120" height="690" fill="#ffffff"/>
+  <text x="28" y="40" class="title">② 屏障后读取：下一个有效位置，加上原位置的 b</text>
+  <text x="28" y="74" class="subtitle">同一个固定图例：n = 6，block = 4；b = [10, 20, 30, 40, 50, 60]。以下均发生在各自屏障之后。</text>
+  <rect x="24" y="104" width="600" height="496" rx="12" class="panel"/>
+  <rect x="650" y="104" width="446" height="496" rx="12" class="panel"/>
+  <text x="44" y="140" class="heading">Block 0 · 四个有效位置内循环</text>
+  <text x="670" y="140" class="heading">Block 1 · 两个有效位置内循环</text>
+  <g text-anchor="middle">
+    <rect x="69" y="165" width="102" height="71" rx="8" class="tile"/><text x="120" y="188" class="mono">tile[0]</text><text x="120" y="221" class="number">1</text>
+    <rect x="209" y="165" width="102" height="71" rx="8" class="tile"/><text x="260" y="188" class="mono">tile[1]</text><text x="260" y="221" class="number">2</text>
+    <rect x="349" y="165" width="102" height="71" rx="8" class="tile"/><text x="400" y="188" class="mono">tile[2]</text><text x="400" y="221" class="number">3</text>
+    <rect x="489" y="165" width="102" height="71" rx="8" class="tile"/><text x="540" y="188" class="mono">tile[3]</text><text x="540" y="221" class="number">4</text>
+    <rect x="681" y="165" width="78" height="71" rx="8" class="tile"/><text x="720" y="188" class="mono">tile[0]</text><text x="720" y="221" class="number">5</text>
+    <rect x="786" y="165" width="78" height="71" rx="8" class="tile"/><text x="825" y="188" class="mono">tile[1]</text><text x="825" y="221" class="number">6</text>
+    <rect x="891" y="165" width="78" height="71" rx="8" class="invalid"/><text x="930" y="188" class="mono">tile[2]</text><text x="930" y="221" class="number">0</text>
+    <rect x="996" y="165" width="78" height="71" rx="8" class="invalid"/><text x="1035" y="188" class="mono">tile[3]</text><text x="1035" y="221" class="number">0</text>
+  </g>
+  <g class="flow"><path d="M260 240 L120 344"/><path d="M400 240 L260 344"/><path d="M540 240 L400 344"/><path d="M825 240 L720 344"/></g>
+  <g fill="none" stroke="#a07116" stroke-width="2.3" marker-end="url(#wrap-arrow)"><path d="M66 200 H48 V539 H540 V526"/><path d="M678 200 H665 V539 H825 V526"/></g>
+  <rect x="274" y="526" width="132" height="27" rx="4" fill="#fbfcfc"/><text x="340" y="545" text-anchor="middle" class="small">末位回到 tile[0]</text>
+  <text x="960" y="288" text-anchor="middle" class="small">占位 0 不被读取</text>
+  <g text-anchor="middle">
+    <rect x="69" y="350" width="102" height="171" rx="8" class="card"/><text x="120" y="378" class="label">线程 0</text><text x="120" y="405" class="small">读 tile[1]</text><text x="120" y="440" class="mono">2 + 10</text><text x="120" y="474" class="small">写 c[0]</text><text x="120" y="505" class="number">12</text>
+    <rect x="209" y="350" width="102" height="171" rx="8" class="card"/><text x="260" y="378" class="label">线程 1</text><text x="260" y="405" class="small">读 tile[2]</text><text x="260" y="440" class="mono">3 + 20</text><text x="260" y="474" class="small">写 c[1]</text><text x="260" y="505" class="number">23</text>
+    <rect x="349" y="350" width="102" height="171" rx="8" class="card"/><text x="400" y="378" class="label">线程 2</text><text x="400" y="405" class="small">读 tile[3]</text><text x="400" y="440" class="mono">4 + 30</text><text x="400" y="474" class="small">写 c[2]</text><text x="400" y="505" class="number">34</text>
+    <rect x="489" y="350" width="102" height="171" rx="8" class="card"/><text x="540" y="378" class="label">线程 3</text><text x="540" y="405" class="small">读 tile[0]</text><text x="540" y="440" class="mono">1 + 40</text><text x="540" y="474" class="small">写 c[3]</text><text x="540" y="505" class="number">41</text>
+    <rect x="681" y="350" width="78" height="171" rx="8" class="card"/><text x="720" y="378" class="label">线程 0</text><text x="720" y="405" class="small">读 tile[1]</text><text x="720" y="440" class="mono">6 + 50</text><text x="720" y="474" class="small">写 c[4]</text><text x="720" y="505" class="number">56</text>
+    <rect x="786" y="350" width="78" height="171" rx="8" class="card"/><text x="825" y="378" class="label">线程 1</text><text x="825" y="405" class="small">读 tile[0]</text><text x="825" y="440" class="mono">5 + 60</text><text x="825" y="474" class="small">写 c[5]</text><text x="825" y="505" class="number">65</text>
+    <rect x="891" y="350" width="78" height="171" rx="8" class="invalid"/><text x="930" y="378" class="label">线程 2</text><text x="930" y="423" class="small">已参与</text><text x="930" y="446" class="small">屏障</text><text x="930" y="490" class="small">跳过输出</text>
+    <rect x="996" y="350" width="78" height="171" rx="8" class="invalid"/><text x="1035" y="378" class="label">线程 3</text><text x="1035" y="423" class="small">已参与</text><text x="1035" y="446" class="small">屏障</text><text x="1035" y="490" class="small">跳过输出</text>
+  </g>
+  <text x="44" y="561" class="label">有效下标：0 → 1，1 → 2，2 → 3，3 → 0</text>
+  <text x="670" y="561" class="label">尾块只交换 5 与 6，不读占位值。</text>
+  <rect x="24" y="618" width="1072" height="48" rx="8" fill="#e4f4ee" stroke="#92bcaf"/>
+  <text x="560" y="649" text-anchor="middle" class="heading">手算结果 c = [12, 23, 34, 41, 56, 65] · 屏障只保证本 block 内的先写后读</text>
+</svg>

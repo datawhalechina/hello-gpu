@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hello-gpu-notebooks"
+version = "0.1.0"
+description = "Shared HIP/PyTorch teaching tools for Hello GPU notebooks"
+requires-python = ">=3.12"
+dependencies = ["torch>=2.11", "ipython>=9", "ninja>=1.13", "pandas>=3", "matplotlib>=3.10"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+hello_gpu = ["templates/*.cpp", "templates/*.hip"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
