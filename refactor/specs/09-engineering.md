@@ -19,13 +19,14 @@
 
 新版页面直接写在最终路径下。上线切换（任务 M-02）之前，旧导航不链接它们；新页面统一带 `head: [[meta, {name: robots, content: noindex}]]`。
 
-## 2. 分支与提交
+## 2. 分支、提交与 PR
 
-- 所有重构工作在 `refactor/v2` 分支上进行。
-- 一个任务一个提交，提交信息 `refactor(<任务编号>): <任务标题>`；结尾按仓库要求加 Co-Authored-By 行。
-- 开始任务前先 `git pull --ff-only origin refactor/v2`，工作区必须干净；不干净时先列出改动，问执行者怎么处理。
-- 提交后推送到 `origin/refactor/v2`。只推送这个分支；不强推，不改写已推送的历史，不合并到 main，不提交与任务无关的文件。
-- 每次推送都会触发 `.github/workflows/refactor-check.yml`（refactor:check、单测、构建）。
+- `refactor/v2` 是集成分支，只通过合并 PR 改动（GitHub Actions 自动提交的状态更新除外）。
+- 每段工作在 `work/<下一个作者关口编号>` 分支上进行（`npm run tasks -- sync` 自动切换或创建），一段对应一个到 `refactor/v2` 的 PR。作者合并 PR 即验收通过。
+- 一个任务一个提交，提交信息 `refactor(<任务编号>): <任务标题>`；PR 意见引起的小修改用 `fix(<任务编号>): <改了什么>`。
+- 开始前工作区必须干净；不干净时先列出改动，问执行者怎么处理。
+- 只推送当前工作分支；不强推，不改写已推送的历史，不直接推送 `refactor/v2` 和 main，不提交与任务无关的文件。
+- `.github/workflows/refactor-check.yml` 在 PR 和推送到 `refactor/v2` 时运行 refactor:check、单测和构建；`refactor-accept.yml` 在 PR 合并后把任务标为「已完成」。
 
 ## 3. 技术约定
 

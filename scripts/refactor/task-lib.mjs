@@ -323,25 +323,23 @@ export function appendToSection(text, section, line) {
 }
 
 // 固定提示词：看板展示、README 收录；`tasks check` 会确认 README 里的文字和这里一致。
+// 不绑定具体工具，任何 AI 编码助手都可以用。
 export const PROMPTS = [
   {
     key: 'loop',
-    label: '连续模式：用子代理连续做任务（推荐）',
-    text: '按 refactor/README.md 的「连续模式」推进 Hello GPU 重构：你只负责调度，每个任务派一个新的子代理按「会话流程」完成并推送，一个做完、核对无误再派下一个；遇到作者验收关口、没有可做的任务或同一任务失败两次就停下，最后汇总这次完成的任务、待确认事项和下一步。',
-  },
-  {
-    key: 'next',
-    label: '开工：领取下一个任务',
-    text: '按 refactor/README.md 的「会话流程」继续 Hello GPU 重构：领取下一个可开始的任务，完成后提交并推送到 refactor/v2 分支，最后告诉我做了什么、怎么验证的。',
+    label: '连续模式：连续做到下一个关口（推荐）',
+    text: '按 refactor/README.md 的「连续模式」推进 Hello GPU 重构：按顺序逐个完成任务（工具支持子代理时，每个任务交给一个新的子代理），每个任务都按「会话流程」完成并推送到当前工作分支；到达作者验收关口时按「到达作者验收关口」提交 PR 并停下，没有可做的任务或同一任务失败两次也停下，最后汇总这次完成的任务、待确认事项和下一步。',
   },
   {
     key: 'one',
-    label: '做指定的任务',
-    text: '按 refactor/README.md 的「会话流程」完成重构任务 <编号>，完成后提交并推送到 refactor/v2 分支，最后告诉我做了什么、怎么验证的。',
+    label: '只做一个指定的任务',
+    text: '按 refactor/README.md 的「会话流程」完成重构任务 <编号>，完成后提交并推送到当前工作分支，最后告诉我做了什么、怎么验证的。',
   },
-  { key: 'pass', label: '验收通过', text: '验收任务 <编号>：通过' },
-  { key: 'fail', label: '验收不通过', text: '验收任务 <编号>：不通过（原因：……）' },
-  { key: 'batch', label: '按阶段批量验收', text: '验收阶段 <阶段号>：除下面列出的任务外全部通过。<编号>：不通过（原因：……）' },
+  {
+    key: 'pr',
+    label: '处理作者在 PR 里的意见',
+    text: '按 refactor/README.md 的「处理 PR 意见」处理当前 PR 里作者的评论：逐条修改、验证并推送，再在 PR 里逐条回复。',
+  },
 ]
 
 export function promptText(key) {
@@ -351,3 +349,40 @@ export function promptText(key) {
 export function fillPrompt(text, id) {
   return id ? text.replaceAll('<编号>', id) : text
 }
+
+// 当前工作分支：work/<下一个还没完成的作者关口>。一段工作对应一个 PR，合并即验收通过。
+export function workBranch(tasks) {
+  const gate = sortTasks(tasks).find((t) => t.owner === 'author' && t.status !== 'done')
+  return gate ? { name: `work/${gate.id}`, gate } : null
+}
+
+// 从关卡任务的产出路径推出 outline.json 里的关卡 id（docs/<zone>/<slug>/ → <zone>-<slug>）。
+export function stageIdsOf(task) {
+  if (!['novice', 'forge', 'trial'].includes(task.area)) return []
+  return (task.outputs || [])
+    .map((o) => /^docs\/(novice|forge|trial)\/([^/]+)\/$/.exec(o))
+    .filter(Boolean)
+    .map((m) => `${m[1]}-${m[2]}`)
+}
+
+// 只改 outline.json 里该关卡对象的 status 一行，保留文件其余格式。
+export function setStageStatusText(text, id, from, to) {
+  const start = text.indexOf(`"id": "${id}"`)
+  if (start < 0) return text
+  const next = text.indexOf('"id": "', start + 1)
+  const end = next < 0 ? text.length : next
+  const seg = text.slice(start, end)
+  const rep = seg.replace(`"status": "${from}"`, `"status": "${to}"`)
+  return rep === seg ? text : text.slice(0, start) + rep + text.slice(end)
+}
+
+// 从完成记录里摘出「待确认」「遗留问题」（值为「无」的跳过），用于 PR 说明。
+export function recordNotes(task, label) {
+  const out = []
+  for (const line of (task.sections['完成记录'] || '').split('\n')) {
+    const m = new RegExp(`^\\s*-\\s*${label}[：:]\\s*(.+)$`).exec(line)
+    if (m && !/^无[。.]?$/.test(m[1].trim())) out.push(m[1].trim())
+  }
+  return out
+}
+

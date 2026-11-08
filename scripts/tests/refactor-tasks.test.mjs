@@ -127,3 +127,27 @@ test('到达的作者关口：依赖满足、未完成；关口没完成时后�
   assert.deepEqual(pendingGates(tasks), [])
   assert.deepEqual(availableTasks(tasks).map((t) => t.id), ['NV-01', 'S-01'])
 })
+
+test('工作分支、关卡 id 推断、outline 状态改写、完成记录摘要', async () => {
+  const { workBranch, stageIdsOf, setStageStatusText, recordNotes } = await import('../refactor/task-lib.mjs')
+  const tasks = [
+    load('F-01', { status: 'done', order: 10 }),
+    load('G-01', { owner: 'author', deps: ['F-01'], order: 20, status: 'done' }),
+    load('G-02', { owner: 'author', deps: ['G-01'], order: 30 }),
+  ]
+  assert.equal(workBranch(tasks).name, 'work/G-02')
+  tasks[2] = load('G-02', { owner: 'author', deps: ['G-01'], order: 30, status: 'done' })
+  assert.equal(workBranch(tasks), null)
+
+  assert.deepEqual(stageIdsOf({ area: 'novice', outputs: ['docs/novice/wavefront/', 'scripts/tests/x.mjs'] }), ['novice-wavefront'])
+  assert.deepEqual(stageIdsOf({ area: 'lab', outputs: ['docs/forge/softmax/'] }), [])
+
+  const text = '[\n  { "id": "novice-a", "status": "draft" },\n  { "id": "novice-b", "status": "draft" }\n]\n'
+  const next = setStageStatusText(text, 'novice-b', 'draft', 'ready')
+  assert.equal(next, '[\n  { "id": "novice-a", "status": "draft" },\n  { "id": "novice-b", "status": "ready" }\n]\n')
+  assert.equal(setStageStatusText(text, 'novice-x', 'draft', 'ready'), text)
+
+  const t = parseTask(make({ id: 'F-02', record: '- 做了什么：A\n- 待确认：按钮颜色\n- 遗留问题：无' }))
+  assert.deepEqual(recordNotes(t, '待确认'), ['按钮颜色'])
+  assert.deepEqual(recordNotes(t, '遗留问题'), [])
+})

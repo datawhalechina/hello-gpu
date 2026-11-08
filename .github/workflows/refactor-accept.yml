@@ -1,0 +1,42 @@
+name: Refactor accept on merge
+
+# 合并到 refactor/v2 的 PR = 作者验收通过：把待验收的任务和已到达的作者关口标为「已完成」。
+# 使用 pull_request_target 以便 fork 来的 PR 也有写权限；这里只检出合并后的 refactor/v2，不运行 PR 分支上的代码。
+on:
+  pull_request_target:
+    types: [closed]
+    branches: [refactor/v2]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refactor-accept
+  cancel-in-progress: false
+
+jobs:
+  accept:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout refactor/v2
+        uses: actions/checkout@v5
+        with:
+          ref: refactor/v2
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Mark tasks accepted
+        run: node scripts/refactor/tasks.mjs accept --note "PR #${{ github.event.pull_request.number }} 已合并"
+      - name: Commit and push
+        run: |
+          git add refactor/tasks docs/course/outline.json
+          if git diff --cached --quiet; then
+            echo "没有需要更新的任务状态"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(tasks): PR #${{ github.event.pull_request.number }} 已合并，标记验收通过"
+          git push origin HEAD:refactor/v2
