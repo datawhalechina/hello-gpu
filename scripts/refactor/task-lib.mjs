@@ -325,6 +325,11 @@ export function appendToSection(text, section, line) {
 // 固定提示词：看板展示、README 收录；`tasks check` 会确认 README 里的文字和这里一致。
 export const PROMPTS = [
   {
+    key: 'loop',
+    label: '连续模式：用子代理连续做任务（推荐）',
+    text: '按 refactor/README.md 的「连续模式」推进 Hello GPU 重构：你只负责调度，每个任务派一个新的子代理按「会话流程」完成并推送，一个做完、核对无误再派下一个；遇到作者验收关口、没有可做的任务或同一任务失败两次就停下，最后汇总这次完成的任务、待确认事项和下一步。',
+  },
+  {
     key: 'next',
     label: '开工：领取下一个任务',
     text: '按 refactor/README.md 的「会话流程」继续 Hello GPU 重构：领取下一个可开始的任务，完成后提交并推送到 refactor/v2 分支，最后告诉我做了什么、怎么验证的。',
@@ -338,6 +343,10 @@ export const PROMPTS = [
   { key: 'fail', label: '验收不通过', text: '验收任务 <编号>：不通过（原因：……）' },
   { key: 'batch', label: '按阶段批量验收', text: '验收阶段 <阶段号>：除下面列出的任务外全部通过。<编号>：不通过（原因：……）' },
 ]
+
+export function promptText(key) {
+  return PROMPTS.find((p) => p.key === key)?.text || ''
+}
 
 export function fillPrompt(text, id) {
   return id ? text.replaceAll('<编号>', id) : text

@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   STATUSES, STATUS_LABEL, PHASES, AREAS, PROMPTS, parseTask, sortTasks, indexById, unmetDeps,
-  availableTasks, waitingForAuthor, pendingGates, summarize, fillPrompt,
+  availableTasks, waitingForAuthor, pendingGates, summarize, fillPrompt, promptText,
 } from '../../../scripts/refactor/task-lib.mjs'
 
 type Task = ReturnType<typeof parseTask> & Record<string, any>
@@ -229,7 +229,7 @@ const DETAIL_SECTIONS = ['目标', '背景', '要做的事', '验收标准', '�
 
       <div class="panel">
         <h2><span class="eyebrow">PROMPTS</span>固定提示词</h2>
-        <p class="hint">执行者在仓库目录打开 Claude Code，新建会话，粘贴「开工」就能开始；验收用后三句。<code>&lt;编号&gt;</code> 换成任务编号，点开任务卡片可以复制已填好编号的版本。</p>
+        <p class="hint">执行者在仓库目录打开 Claude Code，粘贴「连续模式」，一个会话可以连续做到下一个作者关口；也可以用「开工」一次只做一个任务。<code>&lt;编号&gt;</code> 换成任务编号，点开任务卡片可以复制已填好编号的版本。</p>
         <div v-for="p in PROMPTS" :key="p.key" class="prompt">
           <div class="prompt-head">
             <span class="prompt-label">{{ p.label }}</span>
@@ -331,10 +331,10 @@ const DETAIL_SECTIONS = ['目标', '背景', '要做的事', '验收标准', '�
         </dl>
         <div class="drawer-prompts">
           <template v-if="selected.owner === 'ai'">
-            <button type="button" class="copy" @click="copy('d-one', fillPrompt(PROMPTS[1].text, selected.id))">{{ copied === 'd-one' ? '已复制' : '复制开工提示词' }}</button>
+            <button type="button" class="copy" @click="copy('d-one', fillPrompt(promptText('one'), selected.id))">{{ copied === 'd-one' ? '已复制' : '复制开工提示词' }}</button>
           </template>
-          <button type="button" class="copy" @click="copy('d-pass', fillPrompt(PROMPTS[2].text, selected.id))">{{ copied === 'd-pass' ? '已复制' : '复制「验收通过」' }}</button>
-          <button type="button" class="copy" @click="copy('d-fail', fillPrompt(PROMPTS[3].text, selected.id))">{{ copied === 'd-fail' ? '已复制' : '复制「验收不通过」' }}</button>
+          <button type="button" class="copy" @click="copy('d-pass', fillPrompt(promptText('pass'), selected.id))">{{ copied === 'd-pass' ? '已复制' : '复制「验收通过」' }}</button>
+          <button type="button" class="copy" @click="copy('d-fail', fillPrompt(promptText('fail'), selected.id))">{{ copied === 'd-fail' ? '已复制' : '复制「验收不通过」' }}</button>
         </div>
         <section v-for="name in DETAIL_SECTIONS" :key="name" class="sec">
           <h3>{{ name }}<span v-if="name === '验收标准'" class="mono sec-count">{{ selected.checks.done }}/{{ selected.checks.total }}</span></h3>
