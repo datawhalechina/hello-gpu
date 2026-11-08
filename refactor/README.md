@@ -18,7 +18,7 @@
 | `refactor/archive/` | v1 方案存档，只读 |
 | `docs/course/outline.json` | 课程结构的唯一数据源 |
 | `.github/workflows/refactor-check.yml` | PR 和推送到 `refactor/v2` 时自动检查 |
-| `.github/workflows/refactor-accept.yml` | PR 合并到 `refactor/v2` 后，自动把任务标为「已完成」 |
+| `.github/workflows/refactor-accept.yml` | PR 合并到 `refactor/v2` 后，自动把任务标为「已完成」（PR 要来自本仓库的 `work/G-xx` 分支，不要用 fork） |
 | `/preview/board/` | 网页看板（`npm run docs:dev` 后打开 `http://localhost:5173/hello-gpu/preview/board/`，端口以终端输出为准） |
 
 ## 开始之前（执行者只需做一次）

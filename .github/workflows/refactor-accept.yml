@@ -1,9 +1,10 @@
 name: Refactor accept on merge
 
 # 合并到 refactor/v2 的 PR = 作者验收通过：把待验收的任务和已到达的作者关口标为「已完成」。
-# 使用 pull_request_target 以便 fork 来的 PR 也有写权限；这里只检出合并后的 refactor/v2，不运行 PR 分支上的代码。
+# PR 需要来自本仓库的分支（work/G-xx）；fork 来的 PR 拿不到写权限，需要按 README 手动补记。
+# 只检出合并后的 refactor/v2 再运行。
 on:
-  pull_request_target:
+  pull_request:
     types: [closed]
     branches: [refactor/v2]
 
