@@ -1,0 +1,107 @@
+/*
+ * 试点关卡的设计 token（重构方案第 8、12 节）。
+ * 颜色只表达固定含义：线程、越界、跳过、正确、警告、焦点、模拟数据。
+ * 品牌绿 #306753 只用于站点导航和按钮，不进入示意图。
+ */
+:root {
+  --hg-thread: #3b74c4;
+  --hg-inactive: #8b919a;
+  --hg-ok: #2e9d5f;
+  --hg-ok-soft: rgba(46, 157, 95, 0.12);
+  --hg-error: #c8423b;
+  --hg-error-soft: rgba(200, 66, 59, 0.16);
+  --hg-warn: #b7791f;
+  --hg-warn-soft: rgba(183, 121, 31, 0.14);
+  --hg-focus: #7a5af8;
+  --hg-sim: #6366c9;
+  --hg-surface: rgba(127, 127, 127, 0.06);
+  --hg-border: rgba(127, 127, 127, 0.28);
+
+  /* 线程块的分类色：不含红色，避免和「越界」混淆 */
+  --hg-block-0: #3b74c4;
+  --hg-block-1: #2a9187;
+  --hg-block-2: #7d5bc6;
+  --hg-block-3: #c2732e;
+  --hg-block-4: #5d8a2f;
+  --hg-block-5: #b0549a;
+  --hg-block-6: #4f86a8;
+  --hg-block-7: #8a7a2e;
+
+  --motion-instant: 100ms;
+  --motion-fast: 200ms;
+  --motion-base: 300ms;
+  --motion-slow: 500ms;
+  --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --hgp-radius: 8px;
+}
+
+.dark {
+  --hg-thread: #7aa7e8;
+  --hg-inactive: #8f96a0;
+  --hg-ok: #5fca8d;
+  --hg-ok-soft: rgba(95, 202, 141, 0.14);
+  --hg-error: #f07a72;
+  --hg-error-soft: rgba(240, 122, 114, 0.18);
+  --hg-warn: #e3a64a;
+  --hg-warn-soft: rgba(227, 166, 74, 0.16);
+  --hg-focus: #a493ff;
+  --hg-sim: #9da0f0;
+  --hg-surface: rgba(255, 255, 255, 0.04);
+  --hg-border: rgba(255, 255, 255, 0.16);
+
+  --hg-block-0: #7aa7e8;
+  --hg-block-1: #5fc4b9;
+  --hg-block-2: #ad94ec;
+  --hg-block-3: #e8a066;
+  --hg-block-4: #95c167;
+  --hg-block-5: #e08ccb;
+  --hg-block-6: #82b6d6;
+  --hg-block-7: #c9b866;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-instant: 0ms;
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+    --motion-slow: 0ms;
+  }
+}
+
+/* 试点组件共用的按钮外观 */
+.hgp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--hg-border);
+  border-radius: var(--hgp-radius);
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-1);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--motion-instant) var(--ease-out), background var(--motion-instant) var(--ease-out);
+}
+.hgp-btn:hover:not(:disabled) {
+  border-color: var(--vp-c-brand-1);
+}
+.hgp-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.hgp-btn.primary {
+  border-color: var(--hg-button-bg);
+  background: var(--hg-button-bg);
+  color: var(--hg-button-text);
+}
+.hgp-btn.primary:hover:not(:disabled) {
+  background: var(--hg-button-hover);
+}
+.hgp-btn:focus-visible,
+.hgp-focusable:focus-visible {
+  outline: 2px solid var(--hg-focus);
+  outline-offset: 2px;
+}

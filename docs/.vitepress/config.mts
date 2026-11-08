@@ -33,6 +33,8 @@ export default defineConfig({
 
   cleanUrls: true,
   appearance: 'dark',
+  // Authoring rules for AI-assisted writing live beside the pages they govern.
+  srcExclude: ['**/AGENTS.md'],
 
   transformPageData(pageData) {
     // Keep the shared algorithm and experiment sections in the outline;
