@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>重构总览</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Noto+Sans+SC:wght@400;500;700;900&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0F172A}a:hover{color:#0F766E}
+</style>
+</helmet>
+<div style="min-height: 100%; background-color: #F5F7FB; background-image: radial-gradient(#D5DCE8 1px, transparent 1px); background-size: 22px 22px; color: #0F172A; font-family: 'Noto Sans SC', system-ui, sans-serif; font-size: 16px; line-height: 1.65;">
+<div style="max-width: 1120px; margin: 0 auto; padding: 32px 24px 64px; display: flex; flex-direction: column; gap: 32px;">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
+<div style="display: flex; align-items: center; gap: 12px;">
+<span style="font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.02em;">Hello GPU</span>
+<span style="padding: 3px 10px; border: 1px solid #99F6E4; border-radius: 999px; background: #F0FDFA; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #0F766E;">REFACTOR PREVIEW · V2</span>
+</div>
+<span style="font-size: 14px; color: #64748B;">画面只表达整体效果，文字、数字和细节都不代表最终版本</span>
+</header>
+
+<section style="display: flex; flex-wrap: wrap; align-items: center; gap: 28px; padding: 32px; border: 1px solid #1E293B; border-radius: 24px; background: #0B1220; color: #E2E8F0; box-shadow: 0 20px 48px rgba(15,23,42,0.18);">
+<svg viewBox="0 0 120 120" width="150" height="150" role="img" aria-label="吉祥物小核">
+<defs>
+<linearGradient id="hBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F0FDFA"></stop><stop offset="1" stop-color="#99F6E4"></stop></linearGradient>
+</defs>
+<circle cx="60" cy="62" r="56" fill="#14B8A6" opacity="0.10"></circle>
+<circle cx="60" cy="9" r="9" fill="#F59E0B" opacity="0.25"></circle>
+<path d="M60 22 V12" stroke="#E2E8F0" stroke-width="2.5" stroke-linecap="round"></path>
+<circle cx="60" cy="9" r="4.5" fill="#F59E0B" stroke="#0F172A" stroke-width="2"></circle>
+<rect x="13" y="50" width="13" height="5" rx="2.5" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="13" y="64" width="13" height="5" rx="2.5" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="94" y="50" width="13" height="5" rx="2.5" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="94" y="64" width="13" height="5" rx="2.5" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="40" y="97" width="14" height="11" rx="4" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="66" y="97" width="14" height="11" rx="4" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="24" y="22" width="72" height="78" rx="20" fill="url(#hBody)" stroke="#0F172A" stroke-width="2.5"></rect>
+<path d="M36 29 Q60 24 84 29" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"></path>
+<rect x="33" y="35" width="54" height="38" rx="11" fill="#0B1220" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="45" y="45" width="8" height="13" rx="4" fill="#5EEAD4"></rect>
+<rect x="67" y="45" width="8" height="13" rx="4" fill="#5EEAD4"></rect>
+<path d="M54 63 Q60 67.5 66 63" fill="none" stroke="#5EEAD4" stroke-width="2.5" stroke-linecap="round"></path>
+<rect x="49" y="78" width="22" height="14" rx="3.5" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.8"></rect>
+<path d="M52 86 L55 86 L57 81 L60 90 L63 83 L65 86 L68 86" fill="none" stroke="#0D9488" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<div style="flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.1em; color: #5EEAD4;">GPU KERNEL OPTIMIZATION · LEVEL-BASED</span>
+<h1 style="margin: 0; font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif; font-size: 42px; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; color: #FFFFFF;">重构完成后，Hello GPU 会变成一座可以闯关的芯片工坊城</h1>
+<p style="margin: 0; font-size: 17px; color: #CBD5E1;">零基础在浏览器里边玩边入门；PyTorch 工程师和算子工程师通过定级测试，直接从自己的区域开始。视觉是「精致科技风 + 一个有亲和力的吉祥物」：冷白底、点阵网格、细描边、等宽字体标签，配电光青强调色。</p>
+</div>
+</section>
+
+<section style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px;">
+<div style="padding: 22px 24px; border: 1px solid #E2E8F0; border-radius: 18px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(15,23,42,0.05);">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.08em; color: #64748B;">BEFORE · 现在</span>
+<ul style="margin: 10px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; color: #475569;">
+<li>按章节读的文档书，一页上千行</li>
+<li>第一步就要装好 RX 9070 XT 和 ROCm</li>
+<li>动画以「看」为主，读者很少需要动手</li>
+<li>Agent 到第 14 章才出现</li>
+</ul>
+</div>
+<div style="padding: 22px 24px; border: 1px solid #99F6E4; border-radius: 18px; background: #F0FDFA; box-shadow: 0 1px 2px rgba(15,23,42,0.05);">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.08em; color: #0F766E;">AFTER · 重构后</span>
+<ul style="margin: 10px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; color: #134E4A;">
+<li>按区域闯关的地图，一关 10–20 分钟</li>
+<li>新手村只要浏览器，模拟器里就能动手</li>
+<li>每个知识点都是：任务 → 先猜 → 动手 → 原理 → 拿星</li>
+<li>每个区域都有 Agent 支线，从 ReAct 一路走到多 Agent</li>
+</ul>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 14px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif; font-size: 28px; font-weight: 700; letter-spacing: -0.01em;">你会得到的 7 样东西</h2>
+<p style="margin: 0; color: #64748B;">点卡片可以跳到对应画面（在播放模式下）。</p>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px;">
+<sc-for list="{{deliverables}}" as="d" hint-placeholder-count="7">
+<a href="{{d.href}}" style="display: flex; flex-direction: column; gap: 8px; padding: 18px 20px; border: 1px solid #E2E8F0; border-radius: 16px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(15,23,42,0.05), 0 8px 24px rgba(15,23,42,0.05); text-decoration: none; color: #0F172A;">
+<span style="display: inline-flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.06em; color: #475569;"><span style="width: 8px; height: 8px; border-radius: 2px; background: {{d.color}};"></span>{{d.tag}}</span>
+<strong style="font-size: 18px;">{{d.title}}</strong>
+<span style="font-size: 14px; color: #475569;">{{d.desc}}</span>
+</a>
+</sc-for>
+</div>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 14px;">
+<h2 style="margin: 0; font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif; font-size: 28px; font-weight: 700; letter-spacing: -0.01em;">内容范围</h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px;">
+<sc-for list="{{zones}}" as="z" hint-placeholder-count="4">
+<div style="padding: 16px 18px; border: 1px solid {{z.line}}; border-radius: 16px; background: {{z.bg}}; color: {{z.ink}};">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: {{z.sub}};">{{z.code}}</span>
+<strong style="display: block; font-size: 20px;">{{z.name}}</strong>
+<div style="font-size: 14px; color: {{z.sub}};">{{z.lv}} · {{z.hw}}</div>
+<div style="font-size: 14px;">{{z.scope}}</div>
+</div>
+</sc-for>
+</div>
+<p style="margin: 0; color: #475569;">第一阶段先做完新手村，验证效果后再推进后面的区域。</p>
+</section>
+
+<section style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px;">
+<div style="padding: 22px 24px; border: 1px solid #E2E8F0; border-radius: 18px; background: #FFFFFF;">
+<h2 style="margin: 0 0 10px; font-size: 20px;">没有后端，学习进度怎么管</h2>
+<ul style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; color: #334155;">
+<li>进度、星星、等级、图鉴都存在浏览器本地，刷新和关掉浏览器都不会丢（1-3 试点已经做到）</li>
+<li>换设备：导出存档文件，或生成一串「存档码」，到新设备粘贴即可</li>
+<li>防止被清理：向浏览器申请「持久存储」，并在设置页提醒定期导出</li>
+<li>做不到的：自动跨设备同步、排行榜</li>
+</ul>
+</div>
+<div style="padding: 22px 24px; border: 1px solid #E2E8F0; border-radius: 18px; background: #FFFFFF;">
+<h2 style="margin: 0 0 10px; font-size: 20px;">这次明确不做</h2>
+<ul style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; color: #334155;">
+<li>登录、排行榜和任何后端</li>
+<li>推理框架、推理服务相关内容：本书只讲算子优化</li>
+<li>更换站点框架：继续用 VitePress + Vue，内容仍然用 Markdown 写</li>
+<li>mlsys-simulator 只借鉴它的工程方法，用在我们自己的算子级模拟器上</li>
+</ul>
+</div>
+</section>
+
+<section style="padding: 22px 24px; border: 1px solid #FDE68A; border-radius: 18px; background: #FFFBEB; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-size: 22px;">这一版按你的反馈改了什么</h2>
+<ol style="margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; color: #334155;">
+<li>整体从「可爱贴纸风」改成「精致科技风」：细描边、柔和阴影、点阵网格底纹、等宽字体标签，可爱只留给吉祥物</li>
+<li>小核重画成屏幕脸的芯片机器人，有 LED 眼睛、天线灯、引脚手脚和三种表情（画面 3）</li>
+<li>线程改成小核同款的线程小机器人，屏幕显示编号，搬的是立体数据块；货架改成显存格子（画面 2、3）</li>
+<li>已确认：做区域换装；关卡页保持一列长页 + 顶部进度</li>
+</ol>
+<p style="margin: 0; color: #78350F;">还需要你看的：科技感和高级感到位了吗？小核和线程小机器人够精致吗？</p>
+</section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1760}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      deliverables: [
+        { tag: '画面 1 · MAP', color: '#14B8A6', title: '工坊城地图 + 定级入口', desc: '首页是一张芯片版图式的地图：区域、关卡路径、星星和「你在这」。不知道从哪开始，就做 5 分钟定级。', href: 'Map.dc.html' },
+        { tag: '画面 2 · STAGE', color: '#38BDF8', title: '统一的关卡页', desc: '专注模式，顶部是等级、星星和进度；内容按任务、先猜、动手、原理、挑战、检查点推进。', href: 'Stage.dc.html' },
+        { tag: '画面 3 · CHARACTERS', color: '#F59E0B', title: '小核与线程小机器人', desc: '吉祥物负责引导和提示；线程是屏幕上显示编号的小机器人，数组是显存格子。', href: 'Characters.dc.html' },
+        { tag: '画面 4 · REWARDS', color: '#F472B6', title: '克制的奖励反馈', desc: '拿星、升级、徽章都有反馈，但不打扰：犯错不扣分，可以随时关掉动效。', href: 'Rewards.dc.html' },
+        { tag: '画面 5 · PROFILE', color: '#8B5CF6', title: '本地成长系统', desc: '等级、星星、徽章、图鉴和分享卡，全部存在浏览器里，不用登录；可以导出存档。', href: 'Me.dc.html' },
+        { tag: '画面 6 · HANDBOOK', color: '#FB923C', title: '冒险者手册', desc: '原来的工具区：环境安装、速查表、术语图鉴、GPU 图谱。同一套视觉，信息更密，可以搜索。', href: 'Handbook.dc.html' },
+        { tag: '画面 7、8 · THEMES / SIM', color: '#A3E635', title: '区域换装 + GPU 模拟器', desc: '越往后界面越硬核；模拟器按关卡需要分层建设，HIP 和 Python 两种写法共用一套。', href: 'Sim.dc.html' }
+      ],
+      zones: [
+        { code: 'ZONE 1', name: '新手村', lv: '推荐 Lv.1–10', hw: '浏览器即可', scope: '11 关 + Boss，看懂 GPU，造第一个 Agent', bg: '#FFFFFF', line: '#99F6E4', ink: '#0F172A', sub: '#0F766E' },
+        { code: 'ZONE 2', name: '铸造城', lv: '推荐 Lv.10–20', hw: '云 GPU 或本地', scope: '10 关，从 PyTorch 到 Kernel', bg: '#FFFFFF', line: '#FED7AA', ink: '#0F172A', sub: '#C2410C' },
+        { code: 'ZONE 3', name: '试炼场', lv: '推荐 Lv.20–30', hw: '真卡', scope: '10 关，逼近硬件极限 + 多 Agent', bg: '#1E1B33', line: '#4C4677', ink: '#F1F0FF', sub: '#C4B5FD' },
+        { code: 'ZONE 4', name: '无尽之塔', lv: '推荐 Lv.30+', hw: '视专题而定', scope: '一层一个前沿专题，持续更新', bg: '#0B1220', line: '#334155', ink: '#FFFFFF', sub: '#FCD34D' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

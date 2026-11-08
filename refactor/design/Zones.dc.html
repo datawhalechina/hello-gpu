@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>区域换装</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Noto+Sans+SC:wght@400;500;700;900&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1280px; height: 820px; box-sizing: border-box; padding: 32px 40px; background-color: #F5F7FB; background-image: radial-gradient(#D5DCE8 1px, transparent 1px); background-size: 22px 22px; color: #0F172A; font-family: 'Noto Sans SC', system-ui, sans-serif; display: flex; flex-direction: column; gap: 20px;">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;">
+<div>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.08em; color: #0F766E;">ZONE THEMES</span>
+<h1 style="margin: 2px 0 0; font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif; font-size: 32px; font-weight: 700; letter-spacing: -0.01em;">区域换装：等级越高，界面越硬核</h1>
+</div>
+<p style="margin: 0; max-width: 460px; font-size: 14px; color: #475569;">同一套组件，只换主题 token：底色、强调色、描边和动效幅度。另有「简洁模式」开关，一键收起装饰。</p>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; flex: 1;">
+<sc-for list="{{zones}}" as="z" hint-placeholder-count="4">
+<section style="display: flex; flex-direction: column; gap: 14px; padding: 18px; border: 1px solid {{z.frame}}; border-radius: 20px; background: {{z.bg}}; color: {{z.ink}}; box-shadow: {{z.shadow}};">
+<div style="display: flex; align-items: center; justify-content: space-between;">
+<div style="display: flex; flex-direction: column;">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: {{z.accentText}};">{{z.code}}</span>
+<strong style="font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif; font-size: 22px;">{{z.name}}</strong>
+</div>
+<span style="padding: 2px 8px; border: 1px solid {{z.accentLine}}; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: {{z.accentText}};">{{z.lv}}</span>
+</div>
+
+<svg viewBox="0 0 120 120" width="104" height="104" aria-hidden="true" style="align-self: center;">
+<circle cx="60" cy="62" r="54" fill="{{z.halo}}" opacity="0.14"></circle>
+<path d="M60 22 V12" stroke="{{z.wire}}" stroke-width="2.5" stroke-linecap="round"></path>
+<circle cx="60" cy="9" r="4.5" fill="{{z.antenna}}" stroke="#0F172A" stroke-width="2"></circle>
+<rect x="13" y="56" width="13" height="5" rx="2.5" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="94" y="56" width="13" height="5" rx="2.5" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="40" y="97" width="14" height="11" rx="4" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="66" y="97" width="14" height="11" rx="4" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="24" y="22" width="72" height="78" rx="20" fill="{{z.body}}" stroke="#0F172A" stroke-width="2.5"></rect>
+<rect x="33" y="35" width="54" height="38" rx="11" fill="#0B1220" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="45" y="45" width="8" height="13" rx="4" fill="{{z.eye}}"></rect>
+<rect x="67" y="45" width="8" height="13" rx="4" fill="{{z.eye}}"></rect>
+<path d="M54 63 Q60 67.5 66 63" fill="none" stroke="{{z.eye}}" stroke-width="2.5" stroke-linecap="round"></path>
+<g opacity="{{z.helmet}}"><path d="M26 30 Q60 4 94 30 Z" fill="#FBBF24" stroke="#0F172A" stroke-width="2.5" stroke-linejoin="round"></path><rect x="22" y="27" width="76" height="7" rx="3.5" fill="#F59E0B" stroke="#0F172A" stroke-width="2.5"></rect></g>
+<g opacity="{{z.visor}}"><rect x="30" y="41" width="60" height="22" rx="11" fill="#22D3EE" fill-opacity="0.25" stroke="#22D3EE" stroke-width="2.5"></rect></g>
+<g opacity="{{z.star}}"><path d="M60 0 L63 6 L70 7 L65 11 L66 18 L60 14.5 L54 18 L55 11 L50 7 L57 6 Z" fill="#FCD34D" stroke="#0F172A" stroke-width="1.5" stroke-linejoin="round"></path></g>
+</svg>
+<span style="align-self: center; font-size: 12px; color: {{z.sub}};">小核换装：{{z.outfit}}</span>
+
+<div style="padding: 12px 14px; border: 1px solid {{z.cardLine}}; border-radius: 12px; background: {{z.card}};">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em; color: {{z.accentText}};">MISSION</span>
+<p style="margin: 4px 0 0; font-size: 14px; font-weight: 700;">{{z.mission}}</p>
+</div>
+<div style="padding: 10px 12px; border: 1px solid {{z.codeLine}}; border-radius: 10px; background: {{z.code}}; color: {{z.codeInk}}; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.6; white-space: pre; overflow: hidden;">{{z.snippet}}</div>
+<div style="display: flex; align-items: center; gap: 8px;">
+<span style="flex: 1; height: 6px; border-radius: 999px; background: {{z.track}}; overflow: hidden;"><span style="display: block; width: 60%; height: 100%; background: {{z.accent}};"></span></span>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: {{z.sub}};">XP</span>
+</div>
+<p style="margin: 0; font-size: 13px; color: {{z.sub}};">{{z.mood}}</p>
+</section>
+</sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const off = { helmet: '0', visor: '0', star: '0' };
+    return {
+      zones: [
+        Object.assign({}, off, {
+          code: 'ZONE 1', name: '新手村', lv: 'Lv.1–10', outfit: '默认款',
+          bg: '#FFFFFF', ink: '#0F172A', sub: '#475569', frame: '#E2E8F0', shadow: '0 1px 2px rgba(15,23,42,0.05), 0 8px 24px rgba(15,23,42,0.06)',
+          accent: '#14B8A6', accentText: '#0F766E', accentLine: '#99F6E4', halo: '#14B8A6', wire: '#0F172A', antenna: '#F59E0B', body: '#CCFBF1', eye: '#5EEAD4',
+          card: '#F0FDFA', cardLine: '#99F6E4', code: '#0B1220', codeLine: '#0B1220', codeInk: '#FCD34D', track: '#E2E8F0',
+          mission: '派出刚好够用的线程，把数加完', snippet: 'i = blockIdx.x * blockDim.x\n    + threadIdx.x;',
+          mood: '冷白底 + 电光青，圆角最大，反馈最活泼'
+        }),
+        Object.assign({}, off, {
+          code: 'ZONE 2', name: '铸造城', lv: 'Lv.10–20', outfit: '安全帽', helmet: '1',
+          bg: '#FFFBF5', ink: '#1C1917', sub: '#57534E', frame: '#FED7AA', shadow: '0 1px 2px rgba(28,25,23,0.06), 0 8px 24px rgba(194,65,12,0.08)',
+          accent: '#F97316', accentText: '#C2410C', accentLine: '#FDBA74', halo: '#F97316', wire: '#1C1917', antenna: '#F97316', body: '#FFEDD5', eye: '#FDBA74',
+          card: '#FFF7ED', cardLine: '#FED7AA', code: '#1C1917', codeLine: '#1C1917', codeInk: '#FDBA74', track: '#E7E5E4',
+          mission: '用 Triton 写 Softmax，打败 torch', snippet: 'offs = pid * BLOCK\n     + tl.arange(0, BLOCK)',
+          mood: '暖白底 + 铜橙色，像精密的工坊，动效收敛'
+        }),
+        Object.assign({}, off, {
+          code: 'ZONE 3', name: '试炼场', lv: 'Lv.20–30', outfit: '青色护目镜', visor: '1',
+          bg: '#15132A', ink: '#F1F0FF', sub: '#B8B3D9', frame: '#3B3664', shadow: '0 20px 40px rgba(15,23,42,0.25)',
+          accent: '#22D3EE', accentText: '#67E8F9', accentLine: '#155E75', halo: '#8B5CF6', wire: '#E2E8F0', antenna: '#22D3EE', body: '#C4B5FD', eye: '#67E8F9',
+          card: '#1E1B38', cardLine: '#3B3664', code: '#0B0A18', codeLine: '#3B3664', codeInk: '#67E8F9', track: '#2A2650',
+          mission: '让 GEMM 逼近 Roofline 上限', snippet: 'tile = 128 x 128 x 32\nLDS: 32 KB / block',
+          mood: '深紫底 + 霓虹青，描边更细，几乎没有弹跳'
+        }),
+        Object.assign({}, off, {
+          code: 'ZONE 4', name: '无尽之塔', lv: 'Lv.30+', outfit: '金色星标', star: '1',
+          bg: '#0B1220', ink: '#FFFFFF', sub: '#AAB4CF', frame: '#253049', shadow: '0 20px 40px rgba(15,23,42,0.3)',
+          accent: '#FCD34D', accentText: '#FDE68A', accentLine: '#713F12', halo: '#FCD34D', wire: '#E2E8F0', antenna: '#FCD34D', body: '#93C5FD', eye: '#FDE68A',
+          card: '#111A2E', cardLine: '#253049', code: '#060B16', codeLine: '#253049', codeInk: '#FDE68A', track: '#1E293B',
+          mission: '第 7 层：量化 GEMM 与反量化', snippet: 'rocprofv3 --kernel-trace\n  --pmc ...',
+          mood: '深海军蓝 + 金色点缀，最接近专业工具'
+        })
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

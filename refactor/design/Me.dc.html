@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>我的成长</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Noto+Sans+SC:wght@400;500;700;900&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0F172A}a:hover{color:#0F766E}
+</style>
+</helmet>
+<div style="min-height: 100%; background-color: #F5F7FB; background-image: radial-gradient(#D5DCE8 1px, transparent 1px); background-size: 22px 22px; color: #0F172A; font-family: 'Noto Sans SC', system-ui, sans-serif; font-size: 16px; line-height: 1.65;">
+
+<nav style="display: flex; flex-wrap: wrap; align-items: center; gap: 18px; padding: 12px 28px; border-bottom: 1px solid #E2E8F0; background: rgba(255,255,255,0.92);">
+<span style="font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -0.02em;">Hello GPU</span>
+<a href="Map.dc.html" style="padding: 5px 4px; font-size: 14px; font-weight: 500; text-decoration: none; color: #475569;">地图</a>
+<a href="Handbook.dc.html" style="padding: 5px 4px; font-size: 14px; font-weight: 500; text-decoration: none; color: #475569;">冒险者手册</a>
+<a href="Me.dc.html" style="padding: 5px 12px; border-radius: 8px; background: #0F172A; color: #FFFFFF; font-size: 14px; font-weight: 600; text-decoration: none;">我的成长</a>
+</nav>
+
+<div style="max-width: 1120px; margin: 0 auto; padding: 28px 24px 56px; display: flex; flex-direction: column; gap: 22px;">
+
+<section style="display: flex; flex-wrap: wrap; align-items: center; gap: 24px; padding: 24px 28px; border: 1px solid #E2E8F0; border-radius: 22px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(15,23,42,0.05), 0 12px 32px rgba(15,23,42,0.06);">
+<svg viewBox="0 0 140 140" width="132" height="132" role="img" aria-label="等级 7，本级经验 60%">
+<circle cx="70" cy="70" r="60" fill="none" stroke="#E2E8F0" stroke-width="10"></circle>
+<circle cx="70" cy="70" r="60" fill="none" stroke="#14B8A6" stroke-width="10" stroke-linecap="round" stroke-dasharray="226 377" transform="rotate(-90 70 70)"></circle>
+<text x="70" y="62" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700" fill="#64748B">LEVEL</text>
+<text x="70" y="96" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="40" font-weight="700" fill="#0F172A">7</text>
+</svg>
+<div style="flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 8px;">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.08em; color: #0F766E;">LOCAL PROFILE · 本地存档</span>
+<h1 style="margin: 0; font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif; font-size: 32px; font-weight: 700; letter-spacing: -0.01em;">旅行者的成长记录</h1>
+<p style="margin: 0; color: #475569;">还差 120 XP 升到 Lv.8。进度保存在这台设备的浏览器里，不需要登录。</p>
+<div style="display: flex; flex-wrap: wrap; gap: 10px;">
+<sc-for list="{{stats}}" as="s" hint-placeholder-count="4">
+<span style="display: inline-flex; align-items: baseline; gap: 6px; padding: 6px 12px; border: 1px solid #E2E8F0; border-radius: 10px; background: #F8FAFC;"><strong style="font-family: 'Space Grotesk', sans-serif; font-size: 18px;">{{s.value}}</strong><span style="font-size: 13px; color: #475569;">{{s.label}}</span></span>
+</sc-for>
+</div>
+</div>
+</section>
+
+<section style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px;">
+<div style="padding: 20px 22px; border: 1px solid #E2E8F0; border-radius: 18px; background: #FFFFFF; display: flex; flex-direction: column; gap: 12px;">
+<h2 style="margin: 0; font-size: 18px;">各区域进度</h2>
+<sc-for list="{{zones}}" as="z" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<div style="display: flex; justify-content: space-between; font-size: 14px;"><strong>{{z.name}}</strong><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #475569;">{{z.text}}</span></div>
+<span style="display: block; height: 6px; border-radius: 999px; background: #E2E8F0; overflow: hidden;"><span style="display: block; width: {{z.pct}}; height: 100%; background: {{z.color}};"></span></span>
+</div>
+</sc-for>
+</div>
+
+<div style="padding: 20px 22px; border: 1px solid #E2E8F0; border-radius: 18px; background: #FFFFFF; display: flex; flex-direction: column; gap: 12px;">
+<div style="display: flex; justify-content: space-between; align-items: baseline;"><h2 style="margin: 0; font-size: 18px;">徽章</h2><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #475569;">4 / 12</span></div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;">
+<sc-for list="{{badges}}" as="b" hint-placeholder-count="12">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 4px;" role="img" aria-label="{{b.aria}}">
+<svg viewBox="0 0 60 60" width="52" height="52" aria-hidden="true">
+<path d="M30 4 L52 17 L52 43 L30 56 L8 43 L8 17 Z" fill="{{b.fill}}" stroke="{{b.line}}" stroke-width="2"></path>
+<text x="30" y="35" text-anchor="middle" font-family="Space Grotesk, Noto Sans SC, sans-serif" font-size="14" font-weight="700" fill="{{b.ink}}">{{b.glyph}}</text>
+</svg>
+<span style="font-size: 12px; text-align: center; line-height: 1.3; color: {{b.labelInk}};">{{b.name}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+
+<section style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px;">
+<div style="padding: 20px 22px; border: 1px solid #E2E8F0; border-radius: 18px; background: #FFFFFF; display: flex; flex-direction: column; gap: 12px;">
+<div style="display: flex; justify-content: space-between; align-items: baseline;"><h2 style="margin: 0; font-size: 18px;">图鉴</h2><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #475569;">18 TERMS</span></div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px;">
+<sc-for list="{{terms}}" as="t" hint-placeholder-count="12">
+<span style="padding: 3px 10px; border: 1px solid #E2E8F0; border-radius: 8px; background: #F8FAFC; font-size: 13px; color: #334155;">{{t.name}}</span>
+</sc-for>
+</div>
+<p style="margin: 0; font-size: 13px; color: #64748B;">点任意一个词，回到第一次学它的那一关复习。</p>
+</div>
+
+<div style="padding: 20px 22px; border: 1px solid #E2E8F0; border-radius: 18px; background: #FFFFFF; display: flex; flex-direction: column; gap: 12px;">
+<h2 style="margin: 0; font-size: 18px;">存档与换设备</h2>
+<div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: #334155;">
+<div style="display: flex; align-items: center; gap: 8px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #14B8A6;"></span>自动保存在本机浏览器 · 最后保存 2 分钟前</div>
+<div style="display: flex; align-items: center; gap: 8px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #14B8A6;"></span>已申请持久存储，浏览器不会自动清理</div>
+<div style="display: flex; align-items: center; gap: 8px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #F59E0B;"></span>上次导出存档：12 天前，建议再导出一次</div>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px dashed #CBD5E1; border-radius: 10px; background: #F8FAFC; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #334155; overflow: hidden;">
+<span style="flex: none; color: #64748B;">存档码</span>
+<span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">HGPU1-eJyrVkrOz0nNTVayUkrOz8...</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px;">
+<button type="button" style="min-height: 40px; padding: 0 14px; border: 0; border-radius: 10px; background: #0F172A; color: #FFFFFF; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">导出存档文件</button>
+<button type="button" style="min-height: 40px; padding: 0 14px; border: 1px solid #CBD5E1; border-radius: 10px; background: #FFFFFF; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">复制存档码</button>
+<button type="button" style="min-height: 40px; padding: 0 14px; border: 1px solid #CBD5E1; border-radius: 10px; background: #FFFFFF; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">导入存档</button>
+</div>
+</div>
+</section>
+
+<section style="display: flex; flex-wrap: wrap; align-items: center; gap: 22px; padding: 22px 26px; border: 1px solid #1E293B; border-radius: 20px; background: #0B1220; color: #E2E8F0; box-shadow: 0 20px 48px rgba(15,23,42,0.18);">
+<svg viewBox="0 0 120 120" width="92" height="92" aria-hidden="true" style="flex: none;">
+<defs><linearGradient id="shBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F0FDFA"></stop><stop offset="1" stop-color="#99F6E4"></stop></linearGradient></defs>
+<path d="M60 22 V12" stroke="#E2E8F0" stroke-width="2.5" stroke-linecap="round"></path>
+<circle cx="60" cy="9" r="4.5" fill="#F59E0B" stroke="#0F172A" stroke-width="2"></circle>
+<rect x="13" y="56" width="13" height="5" rx="2.5" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="94" y="56" width="13" height="5" rx="2.5" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="40" y="97" width="14" height="11" rx="4" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="66" y="97" width="14" height="11" rx="4" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="24" y="22" width="72" height="78" rx="20" fill="url(#shBody)" stroke="#0F172A" stroke-width="2.5"></rect>
+<rect x="33" y="35" width="54" height="38" rx="11" fill="#0B1220" stroke="#0F172A" stroke-width="2"></rect>
+<path d="M44 54 Q49 46 54 54 M66 54 Q71 46 76 54" fill="none" stroke="#5EEAD4" stroke-width="3" stroke-linecap="round"></path>
+<path d="M52 61 Q60 69 68 61" fill="none" stroke="#5EEAD4" stroke-width="2.5" stroke-linecap="round"></path>
+</svg>
+<div style="flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: #5EEAD4;">SHARE CARD · 分享卡预览</span>
+<strong style="font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif; font-size: 26px; color: #FFFFFF;">我在 Hello GPU 升到了 Lv.7</strong>
+<span style="font-size: 14px; color: #CBD5E1;">新手村 9 / 12 关 · 21 颗星 · 徽章「识破假加速」</span>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #64748B;">[站点地址]</span>
+</div>
+<button type="button" style="min-height: 42px; padding: 0 18px; border: 0; border-radius: 10px; background: #2DD4BF; color: #0B1220; font: inherit; font-weight: 700; cursor: pointer;">生成分享图</button>
+</section>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1150}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const data = [
+      ['首次通关', '1', true, '#CCFBF1', '#14B8A6'], ['零越界', '0', true, '#E0F2FE', '#38BDF8'], ['识破假加速', '!', true, '#EDE9FE', '#8B5CF6'], ['双语法', 'Py', true, '#FFEDD5', '#FB923C'],
+      ['三星达人', '★', false], ['新手村毕业', 'B', false], ['同步大师', '=', false], ['图鉴收集家', '典', false],
+      ['第一个 Agent', 'A', false], ['打败 torch', 'T', false], ['真机验证', '卡', false], ['登上高塔', '塔', false]
+    ];
+    const badges = data.map(([name, glyph, got, fill, line]) => ({
+      name, glyph: got ? glyph : '?',
+      fill: got ? fill : '#F1F5F9',
+      line: got ? line : '#CBD5E1',
+      ink: got ? '#0F172A' : '#94A3B8',
+      labelInk: got ? '#0F172A' : '#64748B',
+      aria: name + (got ? '，已获得' : '，未获得')
+    }));
+    const termNames = ['核函数 kernel', '线程 thread', '线程块 block', '网格 grid', '全局下标', '边界检查', 'wavefront', 'lane', '分支发散', '显存', '寄存器', 'LDS', '合并访存', 'cache line', '带宽', '同步', '归约', 'ReAct'];
+    return {
+      stats: [
+        { value: '21', label: '颗星' },
+        { value: '9', label: '关已通关' },
+        { value: '18', label: '个术语' },
+        { value: '4', label: '枚徽章' }
+      ],
+      zones: [
+        { name: '新手村', text: '9 / 12', pct: '75%', color: '#14B8A6' },
+        { name: '铸造城', text: '0 / 11', pct: '0%', color: '#FB923C' },
+        { name: '试炼场', text: '0 / 11', pct: '0%', color: '#8B5CF6' },
+        { name: '无尽之塔', text: '0 / 3 层', pct: '0%', color: '#F59E0B' }
+      ],
+      badges,
+      terms: termNames.map((name) => ({ name }))
+    };
+  }
+}
+</script>
+</body>
+</html>

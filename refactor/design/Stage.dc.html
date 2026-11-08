@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>关卡 1-3 线程分组</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Noto+Sans+SC:wght@400;500;700;900&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0F172A}a:hover{color:#0F766E}
+</style>
+</helmet>
+<div style="min-height: 100%; background-color: #F5F7FB; background-image: radial-gradient(#D5DCE8 1px, transparent 1px); background-size: 22px 22px; color: #0F172A; font-family: 'Noto Sans SC', system-ui, sans-serif; font-size: 16px; line-height: 1.65;">
+
+<nav style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 24px; border-bottom: 1px solid #E2E8F0; background: rgba(255,255,255,0.92);">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px;">
+<a href="Map.dc.html" style="display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 12px; border: 1px solid #E2E8F0; border-radius: 10px; background: #FFFFFF; font-size: 14px; font-weight: 600; text-decoration: none;">← 回地图</a>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.08em; color: #0F766E;">NOVICE · STAGE 1-3</span>
+<strong style="font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif; font-size: 20px; letter-spacing: -0.01em;">线程分组</strong>
+</div>
+<ol style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 0; padding: 0; list-style: none;" aria-label="本关进度">
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+<li style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: {{s.bg}}; color: {{s.ink}}; font-size: 13px; font-weight: 600;"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{s.dot}};"></span>{{s.name}}</li>
+</sc-for>
+</ol>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
+<span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700;">Lv.3</span>
+<span style="font-size: 16px; letter-spacing: 2px; color: #F59E0B;" aria-label="本关星级">{{starLine}}</span>
+<div style="display: inline-flex; padding: 3px; border: 1px solid #E2E8F0; border-radius: 10px; background: #F8FAFC;" role="group" aria-label="代码写法">
+<sc-for list="{{langs}}" as="l" hint-placeholder-count="2">
+<button type="button" aria-pressed="{{l.pressed}}" onClick="{{l.pick}}" style="min-height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: {{l.bg}}; color: {{l.ink}}; box-shadow: {{l.shadow}}; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; cursor: pointer;">{{l.name}}</button>
+</sc-for>
+</div>
+</div>
+</nav>
+
+<div style="max-width: 920px; margin: 0 auto; padding: 28px 20px 64px; display: flex; flex-direction: column; gap: 22px;">
+
+<section style="padding: 20px 22px; border: 1px solid #99F6E4; border-radius: 18px; background: linear-gradient(#F0FDFA, #F0FDFA); box-shadow: 0 1px 2px rgba(15,23,42,0.05);">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.08em; color: #0F766E;">MISSION</span>
+<p style="margin: 4px 0 10px; font-size: 19px; font-weight: 700;">派出刚好够用的线程，把 10 对数全部加完，而且谁都不能写到数组外面。</p>
+<ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px;">
+<sc-for list="{{starRows}}" as="r" hint-placeholder-count="3">
+<li style="display: flex; gap: 10px; align-items: center; font-size: 15px; color: {{r.ink}};"><span style="font-size: 18px; color: {{r.color}};">★</span>{{r.text}}</li>
+</sc-for>
+</ul>
+</section>
+
+<section style="display: flex; gap: 14px; align-items: flex-start;">
+<svg viewBox="0 0 120 120" width="68" height="68" role="img" aria-label="吉祥物小核" style="flex: none;">
+<defs><linearGradient id="sBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F0FDFA"></stop><stop offset="1" stop-color="#99F6E4"></stop></linearGradient></defs>
+<path d="M60 22 V12" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round"></path>
+<circle cx="60" cy="9" r="4.5" fill="#F59E0B" stroke="#0F172A" stroke-width="2"></circle>
+<rect x="13" y="56" width="13" height="5" rx="2.5" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="94" y="56" width="13" height="5" rx="2.5" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="40" y="97" width="14" height="11" rx="4" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="66" y="97" width="14" height="11" rx="4" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="24" y="22" width="72" height="78" rx="20" fill="url(#sBody)" stroke="#0F172A" stroke-width="2.5"></rect>
+<rect x="33" y="35" width="54" height="38" rx="11" fill="#0B1220" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="45" y="45" width="8" height="13" rx="4" fill="#5EEAD4"></rect>
+<rect x="67" y="45" width="8" height="13" rx="4" fill="#5EEAD4"></rect>
+<path d="M54 63 Q60 67.5 66 63" fill="none" stroke="#5EEAD4" stroke-width="2.5" stroke-linecap="round"></path>
+</svg>
+<p style="flex: 1; margin: 0; padding: 14px 18px; border: 1px solid #E2E8F0; border-radius: 16px; border-top-left-radius: 4px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(15,23,42,0.05);">工坊城接到一张新单子：把两排数逐个相加，结果写进第三排。线程按组上岗，每组人数一样。这一关，由你来安排它们。</p>
+</section>
+
+<section style="padding: 20px 22px; border: 1px solid #E2E8F0; border-radius: 18px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(15,23,42,0.05), 0 8px 24px rgba(15,23,42,0.05); display: flex; flex-direction: column; gap: 12px;">
+<div style="display: flex; align-items: center; gap: 10px;">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.08em; color: #6D28D9;">PREDICT</span>
+<strong style="font-size: 17px;">10 对数，每组 4 个线程，至少要派几组？</strong>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;">
+<sc-for list="{{options}}" as="o" hint-placeholder-count="4">
+<button type="button" aria-pressed="{{o.pressed}}" onClick="{{o.pick}}" style="min-height: 46px; border: 1.5px solid {{o.line}}; border-radius: 12px; background: {{o.bg}}; color: #0F172A; font: inherit; font-weight: 600; cursor: pointer;">{{o.label}}</button>
+</sc-for>
+</div>
+<sc-if value="{{showLock}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
+<button type="button" onClick="{{lock}}" style="min-height: 42px; padding: 0 18px; border: 0; border-radius: 10px; background: #0F172A; color: #FFFFFF; font: inherit; font-weight: 600; cursor: pointer;">锁定答案</button>
+<span style="font-size: 14px; color: #64748B;">猜错不扣分，第一反应最有用。</span>
+</div>
+</sc-if>
+<sc-if value="{{locked}}" hint-placeholder-val="{{false}}">
+<p style="margin: 0; padding: 10px 14px; border-radius: 10px; background: #F0FDFA; color: #134E4A;">{{verdict}} 3 组共 12 个线程，比数据多 2 个。多出来的 2 个会做什么？在下面亲手试试。</p>
+</sc-if>
+</section>
+
+<section style="padding: 20px 22px; border: 1px solid #E2E8F0; border-radius: 18px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(15,23,42,0.05), 0 8px 24px rgba(15,23,42,0.05); display: flex; flex-direction: column; gap: 16px;">
+<div style="display: flex; align-items: center; gap: 10px;">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.08em; color: #0369A1;">LAB</span>
+<strong style="font-size: 17px;">安排线程，看它们把数据写到哪里</strong>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px 28px; align-items: flex-end;">
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #475569;">blockDim.x · 每组人数</span>
+<div style="display: inline-flex; padding: 3px; border: 1px solid #E2E8F0; border-radius: 12px; background: #F8FAFC;" role="group" aria-label="每组人数">
+<sc-for list="{{bdOptions}}" as="o" hint-placeholder-count="3">
+<button type="button" aria-pressed="{{o.pressed}}" onClick="{{o.pick}}" style="min-width: 48px; min-height: 40px; border: 0; border-radius: 9px; background: {{o.bg}}; color: {{o.ink}}; box-shadow: {{o.shadow}}; font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; cursor: pointer;">{{o.v}}</button>
+</sc-for>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #475569;">gridDim.x · 组数</span>
+<div style="display: inline-flex; align-items: center; gap: 4px; padding: 3px; border: 1px solid #E2E8F0; border-radius: 12px; background: #F8FAFC;">
+<button type="button" aria-label="组数减 1" disabled="{{decOff}}" onClick="{{dec}}" style="min-width: 40px; min-height: 40px; border: 0; border-radius: 9px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(15,23,42,0.12); font-size: 18px; font-weight: 700; cursor: pointer;">−</button>
+<strong style="min-width: 36px; text-align: center; font-family: 'Space Grotesk', sans-serif; font-size: 20px;">{{gd}}</strong>
+<button type="button" aria-label="组数加 1" disabled="{{incOff}}" onClick="{{inc}}" style="min-width: 40px; min-height: 40px; border: 0; border-radius: 9px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(15,23,42,0.12); font-size: 18px; font-weight: 700; cursor: pointer;">+</button>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #475569;">i · 拿数的规则</span>
+<div style="display: inline-flex; flex-wrap: wrap; padding: 3px; border: 1px solid #E2E8F0; border-radius: 12px; background: #F8FAFC;" role="group" aria-label="拿数的规则">
+<sc-for list="{{formulaOptions}}" as="o" hint-placeholder-count="2">
+<button type="button" aria-pressed="{{o.pressed}}" onClick="{{o.pick}}" style="min-height: 40px; padding: 0 12px; border: 0; border-radius: 9px; background: {{o.bg}}; color: {{o.ink}}; box-shadow: {{o.shadow}}; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; font-weight: 700; cursor: pointer;">{{o.label}}</button>
+</sc-for>
+</div>
+</div>
+</div>
+
+<div style="border: 1px solid #1E293B; border-radius: 14px; background: #0B1220; overflow: hidden;">
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; border-bottom: 1px solid #1E293B;">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #94A3B8;">{{fileName}}</span>
+<button type="button" onClick="{{toggleGuard}}" style="min-height: 30px; padding: 0 12px; border: 1px dashed {{guardLine}}; border-radius: 8px; background: {{guardBg}}; color: {{guardInk}}; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; cursor: pointer;">{{guardLabel}}</button>
+</div>
+<div style="padding: 12px 16px; font-family: 'JetBrains Mono', monospace; font-size: 14px; line-height: 1.85; overflow-x: auto;">
+<sc-for list="{{codeLines}}" as="c" hint-placeholder-count="6">
+<div style="display: flex; gap: 14px; white-space: pre;"><span style="width: 16px; text-align: right; color: #475569;">{{c.no}}</span><span style="color: {{c.ink}};">{{c.text}}</span></div>
+</sc-for>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<div style="display: flex; justify-content: space-between; align-items: baseline;">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.06em; color: #475569;">LAUNCH · {{gd}} BLOCKS × {{bd}} THREADS = {{total}}</span>
+<span style="font-size: 12px; color: #64748B;">屏幕上的数字是 threadIdx.x</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 12px;">
+<sc-for list="{{blocks}}" as="b" hint-placeholder-count="3">
+<div style="padding: 8px 10px 6px; border: 1px solid #E2E8F0; border-radius: 14px; background: #F8FAFC;">
+<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #334155;">
+<span style="width: 10px; height: 10px; border-radius: 3px; background: {{b.color}};"></span>{{b.code}}
+</div>
+<div style="display: flex; gap: 0;">
+<sc-for list="{{b.workers}}" as="w" hint-placeholder-count="4">
+<div role="img" aria-label="{{w.aria}}" style="display: flex; flex-direction: column; align-items: center; width: 54px;">
+<svg viewBox="0 0 60 68" width="54" height="61" aria-hidden="true">
+<ellipse cx="28" cy="65" rx="15" ry="2.5" fill="#0F172A" opacity="0.10"></ellipse>
+<g transform="{{w.tilt}}">
+<path d="M28 13 V7" stroke="#0F172A" stroke-width="1.6" stroke-linecap="round"></path>
+<circle cx="28" cy="5.5" r="3" fill="{{w.led}}" stroke="#0F172A" stroke-width="1.3"></circle>
+<rect x="8" y="30" width="6" height="4" rx="2" fill="#CBD5E1" stroke="#0F172A" stroke-width="1.3"></rect>
+<rect x="42" y="30" width="6" height="4" rx="2" fill="#CBD5E1" stroke="#0F172A" stroke-width="1.3"></rect>
+<rect x="18" y="55" width="7" height="7" rx="2.5" fill="#CBD5E1" stroke="#0F172A" stroke-width="1.4"></rect>
+<rect x="31" y="55" width="7" height="7" rx="2.5" fill="#CBD5E1" stroke="#0F172A" stroke-width="1.4"></rect>
+<rect x="13" y="13" width="30" height="44" rx="10" fill="#FFFFFF" stroke="#0F172A" stroke-width="1.8"></rect>
+<path d="M13 47 H43 Q43 57 33 57 H23 Q13 57 13 47 Z" fill="{{w.stripe}}" stroke="#0F172A" stroke-width="1.8"></path>
+<rect x="17" y="18" width="22" height="16" rx="5" fill="{{w.screen}}"></rect>
+<g opacity="{{w.openEyes}}"><rect x="21.5" y="22" width="4" height="7" rx="2" fill="{{w.eye}}"></rect><rect x="30.5" y="22" width="4" height="7" rx="2" fill="{{w.eye}}"></rect></g>
+<g opacity="{{w.closedEyes}}"><path d="M21 26.5h5M30 26.5h5" stroke="#94A3B8" stroke-width="1.8" stroke-linecap="round"></path></g>
+<text x="28" y="44" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700" fill="#0F172A">{{w.tid}}</text>
+<g opacity="{{w.boxOn}}">
+<path d="M44 34 l6 -3 l6 3 l-6 3 z" fill="#FEF3C7" stroke="#0F172A" stroke-width="1.2" stroke-linejoin="round"></path>
+<path d="M44 34 v7 l6 3 v-7 z" fill="#FCD34D" stroke="#0F172A" stroke-width="1.2" stroke-linejoin="round"></path>
+<path d="M56 34 v7 l-6 3 v-7 z" fill="#F59E0B" stroke="#0F172A" stroke-width="1.2" stroke-linejoin="round"></path>
+</g>
+</g>
+<g opacity="{{w.alertOn}}"><circle cx="49" cy="10" r="7" fill="#DC2626"></circle><path d="M49 6v5" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"></path><circle cx="49" cy="14" r="1.2" fill="#FFFFFF"></circle></g>
+<g opacity="{{w.zzzOn}}"><text x="44" y="13" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700" fill="#64748B">z</text><text x="50" y="7" font-family="JetBrains Mono, monospace" font-size="7" font-weight="700" fill="#64748B">z</text></g>
+</svg>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: {{w.labelInk}}; white-space: nowrap;">{{w.label}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.06em; color: #475569;">GLOBAL MEMORY · c[0..9]</span>
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch;">
+<div style="display: flex; flex-wrap: wrap; gap: 6px; padding: 10px; border: 1px solid #E2E8F0; border-radius: 14px; background: #F8FAFC;">
+<sc-for list="{{boxes}}" as="x" hint-placeholder-count="10">
+<div role="img" aria-label="{{x.aria}}" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 50px; height: 48px; border: 1.5px {{x.border}} {{x.line}}; border-radius: 10px; background: {{x.bg}};">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #64748B;">{{x.addr}}</span>
+<strong style="font-size: 14px; color: {{x.markInk}};">{{x.mark}}</strong>
+<sc-if value="{{x.dup}}" hint-placeholder-val="{{false}}">
+<span style="position: absolute; top: -9px; right: -9px; padding: 0 6px; border-radius: 999px; background: #F59E0B; color: #0F172A; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;">{{x.dupText}}</span>
+</sc-if>
+</div>
+</sc-for>
+</div>
+<sc-if value="{{hasOutside}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1.5px dashed #DC2626; border-radius: 14px; background: repeating-linear-gradient(45deg, #FEF2F2 0 8px, #FFFFFF 8px 16px);">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: #B91C1C;">OUT OF BOUNDS · 越界</span>
+<div style="display: flex; gap: 6px;">
+<sc-for list="{{outside}}" as="o" hint-placeholder-count="2">
+<div style="display: grid; place-items: center; width: 50px; height: 36px; border: 1.5px solid #DC2626; border-radius: 10px; background: #FFFFFF; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #B91C1C;">{{o.addr}}</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+</div>
+</div>
+
+<p style="margin: 0; padding: 12px 16px; border-radius: 12px; background: {{summaryBg}}; color: {{summaryInk}}; font-weight: 600;">{{summary}}</p>
+
+<sc-if value="{{showHint}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; gap: 10px; align-items: center;">
+<span style="display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: #FEF3C7; color: #B45309; font-weight: 700;" aria-hidden="true">?</span>
+<p style="margin: 0; font-size: 15px; color: #334155;">小核：{{hintText}}</p>
+</div>
+</sc-if>
+</section>
+
+<section style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border: 1px solid #DDD6FE; border-radius: 18px; background: #F5F3FF;">
+<div>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.08em; color: #6D28D9;">NEW TERM</span>
+<strong style="margin-left: 8px; font-size: 17px;">线程块（block）</strong>
+<p style="margin: 4px 0 0; color: #475569;">一组人数相同的线程。组的编号是 blockIdx.x，每组人数是 blockDim.x。</p>
+</div>
+<span style="padding: 4px 12px; border-radius: 999px; background: #FFFFFF; border: 1px solid #DDD6FE; font-size: 13px; font-weight: 600; color: #6D28D9;">已收入图鉴</span>
+</section>
+
+<section style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border: 1px solid #E2E8F0; border-radius: 18px; background: #FFFFFF;">
+<div>
+<strong style="font-size: 17px;">检查点 · 3 道小题</strong>
+<p style="margin: 4px 0 0; color: #475569;">做完就完成本关，获得 100 XP。原理、挑战和 Agent 支线这里省略。</p>
+</div>
+<a href="Rewards.dc.html" style="display: inline-flex; align-items: center; min-height: 42px; padding: 0 18px; border-radius: 10px; background: #0F172A; color: #FFFFFF; font-weight: 600; text-decoration: none;">开始检查点</a>
+</section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":2000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = Object.assign({ lang: 'hip', bd: 4, gd: 3, formula: 'local', guard: false, pick: null, locked: false }, this.state || {});
+    const set = (patch) => this.setState(Object.assign({}, st, patch));
+    const n = 10;
+    const stripes = ['#38BDF8', '#2DD4BF', '#A78BFA', '#FB923C', '#F472B6', '#A3E635'];
+    const tints = ['#E0F2FE', '#CCFBF1', '#EDE9FE', '#FFEDD5', '#FCE7F3', '#ECFCCB'];
+    const counts = Array.from({ length: n }, () => 0);
+    const firstBlock = Array.from({ length: n }, () => -1);
+    const outsideSet = {};
+    let oob = 0;
+    let skip = 0;
+    const blocks = [];
+    for (let b = 0; b < st.gd; b++) {
+      const workers = [];
+      for (let t = 0; t < st.bd; t++) {
+        const i = st.formula === 'global' ? b * st.bd + t : t;
+        let state = 'write';
+        if (st.guard && !(i < n)) { state = 'skip'; skip++; }
+        else if (i >= n) { state = 'oob'; oob++; outsideSet[i] = true; }
+        else { counts[i]++; if (firstBlock[i] < 0) firstBlock[i] = b; }
+        workers.push({
+          tid: String(t),
+          stripe: state === 'skip' ? '#CBD5E1' : stripes[b % 6],
+          tilt: state === 'oob' ? 'rotate(12 28 34)' : 'rotate(0 28 34)',
+          led: state === 'oob' ? '#DC2626' : (state === 'skip' ? '#94A3B8' : '#2DD4BF'),
+          screen: state === 'oob' ? '#450A0A' : (state === 'skip' ? '#1E293B' : '#0B1220'),
+          eye: state === 'oob' ? '#F87171' : '#5EEAD4',
+          openEyes: state === 'skip' ? '0' : '1',
+          closedEyes: state === 'skip' ? '1' : '0',
+          boxOn: state === 'write' ? '1' : '0',
+          alertOn: state === 'oob' ? '1' : '0',
+          zzzOn: state === 'skip' ? '1' : '0',
+          label: state === 'skip' ? 'idle' : (state === 'oob' ? 'c[' + i + '] !' : 'c[' + i + ']'),
+          labelInk: state === 'oob' ? '#B91C1C' : (state === 'skip' ? '#94A3B8' : '#334155'),
+          aria: '第 ' + b + ' 组第 ' + t + ' 个线程，' + (state === 'skip' ? '检查后跳过' : state === 'oob' ? '写到了数组外面的位置 ' + i : '写入 c[' + i + ']')
+        });
+      }
+      blocks.push({ code: 'block ' + b + ' · blockIdx.x = ' + b, color: stripes[b % 6], workers });
+    }
+    const boxes = counts.map((c, i) => ({
+      addr: 'c[' + i + ']',
+      bg: c > 0 ? tints[firstBlock[i] % 6] : '#FFFFFF',
+      line: c > 0 ? stripes[firstBlock[i] % 6] : '#DC2626',
+      border: c > 0 ? 'solid' : 'dashed',
+      mark: c > 0 ? '✓' : '?',
+      markInk: c > 0 ? '#0F766E' : '#B91C1C',
+      dup: c > 1,
+      dupText: '×' + c,
+      aria: 'c[' + i + ']' + (c === 0 ? '，没人算' : c > 1 ? '，被写了 ' + c + ' 次' : '，已写入')
+    }));
+    const covered = counts.filter((c) => c > 0).length;
+    const dups = counts.filter((c) => c > 1).length;
+    const outside = Object.keys(outsideSet).map((k) => ({ addr: 'c[' + k + ']' }));
+    const s1 = covered === n;
+    const s2 = s1 && oob === 0;
+    const s3 = s2 && st.gd === Math.ceil(n / st.bd) && st.formula === 'global';
+    const parts = [];
+    parts.push(s1 ? '10 个数全部算好了' : '10 个数里算好了 ' + covered + ' 个，还有 ' + (n - covered) + ' 个没人算');
+    if (dups > 0) parts.push(dups + ' 个数被重复计算');
+    if (oob > 0) parts.push(oob + ' 个线程写到了数组外面');
+    if (skip > 0) parts.push(skip + ' 个线程检查后跳过');
+    let hintText = '';
+    if (!s1 && st.formula === 'local') hintText = '每组都按「我在组里排第几」拿数，大家都挤在前几个格子。换个规则试试？';
+    else if (oob > 0) hintText = '多出来的线程需要什么？点代码右上角的「加上边界检查」。';
+    else if (s2 && !s3) hintText = '已经全对了。组数还能更少吗？';
+    const hip = st.lang === 'hip';
+    const iExpr = st.formula === 'global' ? 'blockIdx.x * blockDim.x + threadIdx.x' : 'threadIdx.x';
+    const raw = hip
+      ? [['__global__ void add(', '#C4B5FD'], ['    float* a, float* b, float* c, int n) {', '#E2E8F0'], ['    int i = ' + iExpr + ';', '#FCD34D']]
+          .concat(st.guard ? [['    if (i < n)', '#5EEAD4'], ['        c[i] = a[i] + b[i];', '#E2E8F0']] : [['    c[i] = a[i] + b[i];', '#E2E8F0']])
+          .concat([['}', '#E2E8F0']])
+      : [['@kernel', '#C4B5FD'], ['def add(a, b, c, n):', '#E2E8F0'], ['    i = ' + iExpr, '#FCD34D']]
+          .concat(st.guard ? [['    if i < n:', '#5EEAD4'], ['        c[i] = a[i] + b[i]', '#E2E8F0']] : [['    c[i] = a[i] + b[i]', '#E2E8F0']]);
+    const codeLines = raw.map(([text, ink], k) => ({ no: String(k + 1), text, ink }));
+    const seg = (on) => ({ bg: on ? '#FFFFFF' : 'transparent', ink: on ? '#0F172A' : '#64748B', shadow: on ? '0 1px 2px rgba(15,23,42,0.12)' : 'none' });
+    return {
+      steps: ['热身', '探索', '原理', '挑战', '检查点'].map((name, k) => ({
+        name,
+        bg: k === 1 ? '#0F172A' : (k === 0 ? '#CCFBF1' : 'transparent'),
+        ink: k === 1 ? '#FFFFFF' : (k === 0 ? '#134E4A' : '#64748B'),
+        dot: k === 0 ? '#14B8A6' : (k === 1 ? '#5EEAD4' : '#CBD5E1')
+      })),
+      starLine: (s1 ? '★' : '☆') + (s2 ? '★' : '☆') + (s3 ? '★' : '☆'),
+      langs: [{ name: 'HIP', v: 'hip' }, { name: 'Python', v: 'python' }].map((l) => Object.assign({ name: l.name, pressed: String(st.lang === l.v), pick: () => set({ lang: l.v }) }, seg(st.lang === l.v))),
+      starRows: [
+        { text: '所有数都算好了', on: s1 },
+        { text: '没有线程写到数组外面', on: s2 },
+        { text: '派出的组数最少，而且规则换一种每组人数也成立', on: s3 }
+      ].map((r) => ({ text: r.text, color: r.on ? '#F59E0B' : '#CBD5E1', ink: r.on ? '#0F172A' : '#475569' })),
+      options: ['2 组', '3 组', '4 组', '我不确定'].map((label, k) => ({
+        label,
+        pressed: String(st.pick === k),
+        bg: st.locked && k === 1 ? '#CCFBF1' : (st.pick === k ? '#F5F3FF' : '#FFFFFF'),
+        line: st.locked && k === 1 ? '#14B8A6' : (st.pick === k ? '#8B5CF6' : '#E2E8F0'),
+        pick: () => { if (!st.locked) set({ pick: k }); }
+      })),
+      showLock: !st.locked && st.pick !== null,
+      locked: st.locked,
+      lock: () => set({ locked: true }),
+      verdict: st.pick === 1 ? '猜对了。' : '没猜中也没关系。',
+      bdOptions: [2, 4, 8].map((v) => Object.assign({ v: String(v), pressed: String(st.bd === v), pick: () => set({ bd: v }) }, seg(st.bd === v))),
+      gd: String(st.gd),
+      bd: String(st.bd),
+      total: String(st.gd * st.bd),
+      decOff: st.gd <= 1,
+      incOff: st.gd >= 6,
+      dec: () => set({ gd: Math.max(1, st.gd - 1) }),
+      inc: () => set({ gd: Math.min(6, st.gd + 1) }),
+      formulaOptions: [
+        { label: 'threadIdx.x', v: 'local' },
+        { label: 'blockIdx.x * blockDim.x + threadIdx.x', v: 'global' }
+      ].map((o) => Object.assign({ label: o.label, pressed: String(st.formula === o.v), pick: () => set({ formula: o.v }) }, seg(st.formula === o.v))),
+      fileName: hip ? 'vector_add.hip' : 'vector_add.py',
+      codeLines,
+      toggleGuard: () => set({ guard: !st.guard }),
+      guardLabel: st.guard ? '✓ 已加边界检查' : '+ 加上边界检查',
+      guardBg: st.guard ? 'rgba(45,212,191,0.12)' : 'transparent',
+      guardLine: st.guard ? '#2DD4BF' : '#64748B',
+      guardInk: st.guard ? '#5EEAD4' : '#CBD5E1',
+      blocks,
+      boxes,
+      outside,
+      hasOutside: outside.length > 0,
+      summary: parts.join('；') + '。',
+      summaryBg: s2 ? '#F0FDFA' : '#FFFBEB',
+      summaryInk: s2 ? '#134E4A' : '#78350F',
+      showHint: hintText !== '',
+      hintText
+    };
+  }
+}
+</script>
+</body>
+</html>

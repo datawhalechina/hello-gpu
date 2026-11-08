@@ -1,0 +1,29 @@
+name: Refactor checks
+
+on:
+  push:
+    branches: [refactor/v2]
+  pull_request:
+    branches: [refactor/v2]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install
+      - name: Refactor checks
+        run: npm run refactor:check
+      - name: Unit tests
+        run: npm test
+      - name: Build
+        run: npm run docs:build

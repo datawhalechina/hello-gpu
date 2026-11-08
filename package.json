@@ -8,7 +8,13 @@
     "docs:build-atlas": "node scripts/build-atlas.mjs",
     "docs:dev": "npm run docs:sync-outline && npm run docs:build-images && npm run docs:build-atlas && vitepress dev docs",
     "docs:build": "npm run docs:sync-outline && npm run docs:build-images && npm run docs:build-atlas && vitepress build docs && npm run docs:check-chapter-ui",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "test": "node --test scripts/tests/*.test.mjs",
+    "tasks": "node scripts/refactor/tasks.mjs",
+    "tasks:next": "node scripts/refactor/tasks.mjs next",
+    "tasks:check": "node scripts/refactor/tasks.mjs check",
+    "outline:md": "node scripts/refactor/outline-md.mjs",
+    "refactor:check": "npm run tasks:check && node scripts/refactor/outline-md.mjs --check"
   },
   "dependencies": {
     "markdown-it-container": "^4.0.0",
@@ -19,6 +25,7 @@
     "vue": "^3.5.0"
   },
   "devDependencies": {
+    "esbuild": "0.25.12",
     "sharp": "^0.33.5"
   },
   "engines": {

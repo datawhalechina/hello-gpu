@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>工坊城地图</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Noto+Sans+SC:wght@400;500;700;900&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0F172A}a:hover{color:#0F766E}
+@keyframes pulse{0%{transform:translate(-50%,-50%) scale(0.8);opacity:0.7}100%{transform:translate(-50%,-50%) scale(1.8);opacity:0}}
+.pulse{animation:pulse 1.8s ease-out infinite}
+@media (prefers-reduced-motion: reduce){.pulse{animation:none;opacity:0.35}}
+</style>
+</helmet>
+<div style="min-height: 100%; background-color: #F5F7FB; background-image: radial-gradient(#D5DCE8 1px, transparent 1px); background-size: 22px 22px; color: #0F172A; font-family: 'Noto Sans SC', system-ui, sans-serif; font-size: 16px; line-height: 1.65;">
+
+<nav style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 28px; border-bottom: 1px solid #E2E8F0; background: rgba(255,255,255,0.92);">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 18px;">
+<span style="font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -0.02em;">Hello GPU</span>
+<a href="Map.dc.html" style="padding: 5px 12px; border-radius: 8px; background: #0F172A; color: #FFFFFF; font-size: 14px; font-weight: 600; text-decoration: none;">地图</a>
+<a href="Handbook.dc.html" style="padding: 5px 4px; font-size: 14px; font-weight: 500; text-decoration: none; color: #475569;">冒险者手册</a>
+<a href="Me.dc.html" style="padding: 5px 4px; font-size: 14px; font-weight: 500; text-decoration: none; color: #475569;">我的成长</a>
+</div>
+<div style="display: flex; align-items: center; gap: 14px;">
+<span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700;">Lv.3</span>
+<span style="display: inline-flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #475569;">
+<span style="display: inline-block; width: 120px; height: 6px; border-radius: 999px; background: #E2E8F0; overflow: hidden;"><span style="display: block; width: 40%; height: 100%; background: #14B8A6;"></span></span>
+120/300 XP
+</span>
+<span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700;"><span style="color: #F59E0B;">★</span> 8</span>
+</div>
+</nav>
+
+<div style="max-width: 1200px; margin: 0 auto; padding: 28px 24px 56px; display: flex; flex-direction: column; gap: 24px;">
+
+<section style="display: flex; flex-wrap: wrap; align-items: center; gap: 20px; padding: 20px 24px; border: 1px solid #E2E8F0; border-radius: 20px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(15,23,42,0.05), 0 8px 24px rgba(15,23,42,0.05);">
+<svg viewBox="0 0 120 120" width="88" height="88" role="img" aria-label="吉祥物小核" style="flex: none;">
+<defs><linearGradient id="pBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F0FDFA"></stop><stop offset="1" stop-color="#99F6E4"></stop></linearGradient></defs>
+<path d="M60 22 V12" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round"></path>
+<circle cx="60" cy="9" r="4.5" fill="#F59E0B" stroke="#0F172A" stroke-width="2"></circle>
+<rect x="13" y="56" width="13" height="5" rx="2.5" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="94" y="56" width="13" height="5" rx="2.5" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="40" y="97" width="14" height="11" rx="4" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="66" y="97" width="14" height="11" rx="4" fill="#CBD5E1" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="24" y="22" width="72" height="78" rx="20" fill="url(#pBody)" stroke="#0F172A" stroke-width="2.5"></rect>
+<rect x="33" y="35" width="54" height="38" rx="11" fill="#0B1220" stroke="#0F172A" stroke-width="2"></rect>
+<rect x="45" y="45" width="8" height="13" rx="4" fill="#5EEAD4"></rect>
+<rect x="67" y="45" width="8" height="13" rx="4" fill="#5EEAD4"></rect>
+<path d="M54 63 Q60 67.5 66 63" fill="none" stroke="#5EEAD4" stroke-width="2.5" stroke-linecap="round"></path>
+</svg>
+<div style="flex: 1 1 420px; min-width: 0;">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.08em; color: #0F766E;">WELCOME BACK</span>
+<p style="margin: 2px 0 0; font-size: 18px;">你上次停在 <strong>1-3 线程分组</strong>。第一次来、不知道从哪开始？先做个 5 分钟定级。</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 10px;">
+<a href="Stage.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 10px; background: #0F172A; color: #FFFFFF; font-weight: 600; text-decoration: none;">继续：1-3 线程分组</a>
+<button type="button" style="min-height: 44px; padding: 0 18px; border: 1px solid #CBD5E1; border-radius: 10px; background: #FFFFFF; font: inherit; font-weight: 600; cursor: pointer;">定级测试 · 8 题</button>
+</div>
+</section>
+
+<section style="position: relative; width: 100%; aspect-ratio: 1200 / 640; border: 1px solid #1E293B; border-radius: 22px; background-color: #0B1220; background-image: radial-gradient(#1E293B 1px, transparent 1px); background-size: 18px 18px; box-shadow: 0 20px 48px rgba(15,23,42,0.18); overflow: hidden;">
+<svg viewBox="0 0 1200 640" width="100%" height="100%" aria-hidden="true" style="position: absolute; inset: 0;">
+<defs>
+<pattern id="pads" width="28" height="12" patternUnits="userSpaceOnUse"><rect x="6" y="2" width="14" height="8" rx="2" fill="#1E293B"></rect></pattern>
+</defs>
+<rect x="0" y="6" width="1200" height="12" fill="url(#pads)"></rect>
+<rect x="0" y="622" width="1200" height="12" fill="url(#pads)"></rect>
+<rect x="40" y="40" width="400" height="560" rx="18" fill="#14B8A6" fill-opacity="0.08" stroke="#2DD4BF" stroke-width="1.5"></rect>
+<rect x="470" y="60" width="300" height="540" rx="18" fill="#FB923C" fill-opacity="0.06" stroke="#FB923C" stroke-opacity="0.7" stroke-width="1.5"></rect>
+<rect x="800" y="80" width="210" height="520" rx="18" fill="#A78BFA" fill-opacity="0.06" stroke="#A78BFA" stroke-opacity="0.7" stroke-width="1.5"></rect>
+<rect x="1040" y="120" width="130" height="480" rx="18" fill="#FCD34D" fill-opacity="0.05" stroke="#FCD34D" stroke-opacity="0.6" stroke-width="1.5"></rect>
+<path d="M1070 180h70M1070 230h70M1070 280h70M1070 330h70M1070 380h70M1070 430h70M1070 480h70M1070 530h70" stroke="#FCD34D" stroke-opacity="0.25" stroke-width="1.5"></path>
+<path d="M80 540 L150 540 L150 470 L110 470 L110 390" fill="none" stroke="#2DD4BF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M110 390 L190 390 L190 320 L130 320 L130 240 L210 240 L210 170 L300 170 L300 120 L330 120 L330 210 L290 210 L290 300 L360 300 L360 380 L300 380 L300 460 L380 460 L380 540 L500 540 L500 520 L560 520 L560 440 L520 440 L520 350 L620 350 L620 280 L690 280 L690 170 L820 170 L820 500 L880 500 L880 410 L840 410 L840 320 L930 320 L930 240 L950 240 L950 150" fill="none" stroke="#475569" stroke-width="2" stroke-dasharray="6 8" stroke-linejoin="round"></path>
+</svg>
+
+<sc-for list="{{zoneTags}}" as="z" hint-placeholder-count="4">
+<span style="position: absolute; left: {{z.left}}; top: {{z.top}}; padding: 3px 10px; border: 1px solid {{z.line}}; border-radius: 6px; background: rgba(11,18,32,0.85); color: {{z.ink}}; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; white-space: nowrap;">{{z.text}}</span>
+</sc-for>
+
+<span class="pulse" style="position: absolute; left: 9.17%; top: 60.94%; width: 64px; height: 64px; border-radius: 50%; border: 2px solid #F59E0B;" aria-hidden="true"></span>
+
+<sc-for list="{{nodes}}" as="n" hint-placeholder-count="12">
+<a href="Stage.dc.html" aria-label="{{n.aria}}" style="position: absolute; left: {{n.left}}; top: {{n.top}}; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 3px; text-decoration: none;">
+<span style="display: grid; place-items: center; width: {{n.size}}; height: {{n.size}}; border: 1.5px solid {{n.line}}; border-radius: 50%; background: {{n.bg}}; box-shadow: {{n.glow}}; color: {{n.ink}}; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;">{{n.label}}</span>
+<span style="font-size: 10px; letter-spacing: 1px; color: #F59E0B;">{{n.stars}}</span>
+</a>
+</sc-for>
+
+<span style="position: absolute; left: 9.17%; top: 51%; transform: translate(-50%, -50%); padding: 2px 8px; border-radius: 6px; background: #F59E0B; color: #0B1220; font-size: 12px; font-weight: 700; white-space: nowrap;">你在这</span>
+</section>
+
+<section style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px;">
+<sc-for list="{{zoneCards}}" as="c" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 6px; padding: 16px 18px; border: 1px solid {{c.line}}; border-radius: 16px; background: {{c.bg}}; color: {{c.ink}};">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: {{c.sub}};">{{c.code}}</span>
+<strong style="font-size: 19px;">{{c.name}}</strong>
+<span style="font-size: 13px; color: {{c.sub}};">{{c.meta}}</span>
+<span style="display: block; height: 6px; border-radius: 999px; background: {{c.track}}; overflow: hidden;"><span style="display: block; width: {{c.pct}}; height: 100%; background: {{c.bar}};"></span></span>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">{{c.progress}}</span>
+</div>
+</sc-for>
+</section>
+
+<p style="margin: 0; font-size: 14px; color: #64748B;">区域从不上锁：推荐等级只是建议。</p>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1280}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const pos = (x, y) => ({ left: (x / 1200 * 100).toFixed(2) + '%', top: (y / 640 * 100).toFixed(2) + '%' });
+    const pts = [
+      ['1-1', 80, 540, 'done', '★★★'], ['1-2', 150, 470, 'done', '★★'], ['1-3', 110, 390, 'current', ''],
+      ['1-4', 190, 320, 'open', ''], ['1-5', 130, 240, 'open', ''], ['1-6', 210, 170, 'open', ''],
+      ['1-7', 300, 120, 'open', ''], ['1-8', 330, 210, 'open', ''], ['1-9', 290, 300, 'open', ''],
+      ['1-10', 360, 380, 'open', ''], ['1-11', 300, 460, 'open', ''], ['BOSS', 380, 540, 'boss', ''],
+      ['2-1', 500, 520, 'later', ''], ['2-2', 560, 440, 'later', ''], ['2-3', 520, 350, 'later', ''], ['2-4', 620, 280, 'later', ''], ['…', 690, 170, 'later', ''],
+      ['3-1', 820, 500, 'later', ''], ['3-2', 880, 410, 'later', ''], ['3-3', 840, 320, 'later', ''], ['…', 930, 240, 'later', ''], ['BOSS', 950, 150, 'later', '']
+    ];
+    const look = {
+      done: { bg: '#14B8A6', line: '#5EEAD4', ink: '#0B1220', size: '42px', glow: '0 0 0 4px rgba(20,184,166,0.18)' },
+      current: { bg: '#F59E0B', line: '#FCD34D', ink: '#0B1220', size: '52px', glow: '0 0 24px rgba(245,158,11,0.55)' },
+      open: { bg: '#111A2E', line: '#475569', ink: '#E2E8F0', size: '42px', glow: 'none' },
+      boss: { bg: '#111A2E', line: '#F472B6', ink: '#F9A8D4', size: '50px', glow: '0 0 0 4px rgba(244,114,182,0.15)' },
+      later: { bg: '#0F172A', line: '#334155', ink: '#64748B', size: '38px', glow: 'none' }
+    };
+    const nodes = pts.map(([label, x, y, state, stars]) => Object.assign({ label, stars }, pos(x, y), look[state], {
+      aria: '关卡 ' + label + (state === 'done' ? '，已通关' : state === 'current' ? '，进行中' : '')
+    }));
+    const zoneTags = [
+      Object.assign({ text: 'ZONE 1 · 新手村 · Lv.1–10', line: '#2DD4BF', ink: '#5EEAD4' }, pos(56, 50)),
+      Object.assign({ text: 'ZONE 2 · 铸造城 · Lv.10–20', line: '#FB923C', ink: '#FDBA74' }, pos(486, 70)),
+      Object.assign({ text: 'ZONE 3 · 试炼场', line: '#A78BFA', ink: '#C4B5FD' }, pos(816, 90)),
+      Object.assign({ text: 'ZONE 4 · 无尽之塔', line: '#FCD34D', ink: '#FDE68A' }, pos(1046, 130))
+    ];
+    const zoneCards = [
+      { code: 'ZONE 1', name: '新手村', meta: '浏览器即可 · 11 关 + Boss', progress: '2 / 12 已通关', pct: '17%', bg: '#FFFFFF', line: '#99F6E4', ink: '#0F172A', sub: '#0F766E', track: '#E2E8F0', bar: '#14B8A6' },
+      { code: 'ZONE 2', name: '铸造城', meta: '云 GPU 或本地 · 10 关 + Boss', progress: '0 / 11', pct: '0%', bg: '#FFFFFF', line: '#FED7AA', ink: '#0F172A', sub: '#C2410C', track: '#E2E8F0', bar: '#FB923C' },
+      { code: 'ZONE 3', name: '试炼场', meta: '真卡 · 10 关 + Boss', progress: '0 / 11', pct: '0%', bg: '#1E1B33', line: '#4C4677', ink: '#F1F0FF', sub: '#C4B5FD', track: '#2E2A4A', bar: '#A78BFA' },
+      { code: 'ZONE 4', name: '无尽之塔', meta: '一层一个前沿专题', progress: '已开放 3 层', pct: '0%', bg: '#0B1220', line: '#334155', ink: '#FFFFFF', sub: '#FCD34D', track: '#1E293B', bar: '#FCD34D' }
+    ];
+    return { nodes, zoneTags, zoneCards };
+  }
+}
+</script>
+</body>
+</html>

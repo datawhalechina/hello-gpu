@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>线程小机器人 GPU 模拟器</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=Noto+Sans+SC:wght@400;500;700;900&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="min-height: 100%; background-color: #F5F7FB; background-image: radial-gradient(#D5DCE8 1px, transparent 1px); background-size: 22px 22px; color: #0F172A; font-family: 'Noto Sans SC', system-ui, sans-serif; font-size: 15px; line-height: 1.65;">
+<div style="max-width: 1120px; margin: 0 auto; padding: 32px 24px 56px; display: flex; flex-direction: column; gap: 22px;">
+
+<div>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.08em; color: #0F766E;">GPU-SIM · BROWSER ONLY</span>
+<h1 style="margin: 2px 0 0; font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif; font-size: 34px; font-weight: 700; letter-spacing: -0.01em;">GPU 模拟器：按关卡需要分层建设</h1>
+<p style="margin: 6px 0 0; color: #475569;">全部在浏览器里运行，不需要显卡。关卡需要什么才做什么，每一层都只为具体关卡服务。</p>
+</div>
+
+<section style="padding: 18px 20px; border: 1px solid #1E293B; border-radius: 18px; background: #0B1220; color: #E2E8F0;">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: #5EEAD4;">SHARED CORE · 共同的底座</span>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px;">
+<sc-for list="{{pipeline}}" as="p" hint-placeholder-count="6">
+<span style="display: inline-flex; align-items: center; gap: 10px;">
+<span style="padding: 7px 12px; border: 1px solid {{p.line}}; border-radius: 10px; background: {{p.bg}}; color: {{p.ink}}; font-size: 14px; font-weight: 600;">{{p.name}}</span>
+<span style="font-family: 'JetBrains Mono', monospace; color: #475569;" aria-hidden="true">{{p.arrow}}</span>
+</span>
+</sc-for>
+</div>
+<p style="margin: 10px 0 0; font-size: 14px; color: #94A3B8;">同一份事件时间线同时驱动三件事：小机器人动画、星级判定、回归测试。HIP 写法和 Python 写法得到完全相同的结果。</p>
+</section>
+
+<section style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px;">
+<sc-for list="{{layers}}" as="l" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 12px; padding: 18px 20px; border: 1px solid #E2E8F0; border-radius: 18px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(15,23,42,0.05);">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+<div>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: #64748B;">{{l.code}}</span>
+<strong style="display: block; font-size: 17px;">{{l.name}}</strong>
+</div>
+<span style="padding: 2px 10px; border: 1px solid {{l.tagLine}}; border-radius: 999px; background: {{l.tagBg}}; color: {{l.tagInk}}; font-size: 12px; font-weight: 700;">{{l.status}}</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 44px; padding: 10px; border-radius: 12px; background: #F8FAFC;">
+<sc-for list="{{l.cells}}" as="c" hint-placeholder-count="8">
+<span style="display: grid; place-items: center; width: 30px; height: 30px; border: 1.5px {{c.border}} {{c.line}}; border-radius: 8px; background: {{c.bg}}; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: {{c.ink}};">{{c.t}}</span>
+</sc-for>
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #475569;">{{l.caption}}</span>
+</div>
+<p style="margin: 0; font-size: 14px; color: #475569;">{{l.desc}}</p>
+</div>
+</sc-for>
+</section>
+
+<section style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px;">
+<div style="padding: 18px 20px; border: 1px solid #FDE68A; border-radius: 18px; background: #FFFBEB;">
+<h2 style="margin: 0 0 10px; font-size: 18px;">从 mlsys-simulator 借鉴的工程方法</h2>
+<ol style="margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; color: #334155;">
+<li>确定性：同样的代码和参数，一定得到同样的结果，方便判星和测试</li>
+<li>事件时间线：模拟器只输出事件，动画、判星、测试都从事件读</li>
+<li>手算标准例：每层先准备能手算的小例子，当回归测试的标准答案</li>
+<li>证据标签：模拟数据和实测数据分开标注，模拟永远不冒充实测</li>
+<li>校准与留出验证：L4 计时模型用真机数据校准，并保留一部分数据做独立验证</li>
+</ol>
+</div>
+<div style="padding: 18px 20px; border: 1px solid #E2E8F0; border-radius: 18px; background: #FFFFFF;">
+<h2 style="margin: 0 0 10px; font-size: 18px;">设计原则</h2>
+<ul style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; color: #334155;">
+<li>可以单步：任何时刻都能暂停，看每个线程在做什么</li>
+<li>在后台线程（Web Worker）运行，设指令数上限，写出死循环也不会卡住页面</li>
+<li>HIP 和 Python 两种写法解析成同一棵语法树</li>
+<li>判星逻辑是纯函数，和模拟器一起有单元测试</li>
+<li>不模拟推理框架和推理服务，只服务算子优化的关卡</li>
+</ul>
+</div>
+</section>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const names = ['HIP 写法', 'Python 写法', '同一棵语法树', '锁步解释器', '事件时间线', '动画 · 判星 · 测试'];
+    const pipeline = names.map((name, i) => ({
+      name,
+      bg: i === 3 ? 'rgba(45,212,191,0.12)' : '#111A2E',
+      line: i === 3 ? '#2DD4BF' : '#253049',
+      ink: i === 3 ? '#5EEAD4' : '#E2E8F0',
+      arrow: i === 0 ? '+' : (i < names.length - 1 ? '→' : '')
+    }));
+    const cell = (t, kind) => {
+      const k = {
+        a: { bg: '#E0F2FE', line: '#38BDF8', ink: '#0F172A', border: 'solid' },
+        b: { bg: '#CCFBF1', line: '#2DD4BF', ink: '#0F172A', border: 'solid' },
+        off: { bg: '#FFFFFF', line: '#CBD5E1', ink: '#94A3B8', border: 'dashed' },
+        hot: { bg: '#FFEDD5', line: '#FB923C', ink: '#0F172A', border: 'solid' },
+        idle: { bg: '#FFFFFF', line: '#E2E8F0', ink: '#CBD5E1', border: 'solid' }
+      }[kind];
+      return Object.assign({ t }, k);
+    };
+    return {
+      pipeline,
+      layers: [
+        {
+          code: 'L1 · LOGIC', name: '逻辑层：谁算哪个数', status: '已完成（1-3）', tagBg: '#F0FDFA', tagLine: '#99F6E4', tagInk: '#0F766E',
+          cells: [0, 1, 2, 3, 4, 5].map((t) => cell(String(t), t < 3 ? 'a' : 'b')), caption: '→ c[0..9] · 越界 · 重复',
+          desc: '服务关卡：1-2、1-3。只回答「每个线程把数据写到哪」。'
+        },
+        {
+          code: 'L2 · LOCKSTEP', name: '锁步执行：一队线程同时走一行', status: '下一步', tagBg: '#FFFBEB', tagLine: '#FDE68A', tagInk: '#B45309',
+          cells: [0, 1, 2, 3, 4, 5, 6, 7].map((t) => cell(String(t), t % 2 === 0 ? 'a' : 'off')), caption: 'mask 10101010',
+          desc: '服务关卡：1-4 wavefront、1-5 分支发散、1-9 归约同步（能检测缺少同步导致的数据竞争）。'
+        },
+        {
+          code: 'L3 · MEMORY', name: '访存：一次要搬几个 cache line', status: '之后', tagBg: '#F8FAFC', tagLine: '#E2E8F0', tagInk: '#475569',
+          cells: [0, 1, 2, 3, 4, 5, 6, 7].map((t) => cell('', t % 2 === 0 ? 'hot' : 'idle')), caption: '跨步访问 → 4 次事务',
+          desc: '服务关卡：1-6 数据住在哪、1-7 排好队一起取；之后加上 LDS bank 冲突。'
+        },
+        {
+          code: 'L4 · TIMING', name: '示意计时：哪种写法更好', status: '之后', tagBg: '#F8FAFC', tagLine: '#E2E8F0', tagInk: '#475569',
+          cells: [cell('C', 'a'), cell('C', 'a'), cell('M', 'hot'), cell('M', 'hot'), cell('M', 'hot'), cell('S', 'b')], caption: '计算 · 访存 · 同步（模拟值）',
+          desc: '服务关卡：1-8 测一测有多快及以后。只用来比较写法，关卡末尾附真机对照。'
+        }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
