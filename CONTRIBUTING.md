@@ -177,3 +177,15 @@ git checkout dev && git pull datawhale dev
 
 **Q：我的 fork 要不要也设保护规则？**
 不需要。fork 是个人草稿本，保护规则只设在上游 `datawhalechina/hello-gpu`。
+
+## 新版课程检查
+
+新版页面、模拟器和实验室的维护需要 Node.js 22.18 或更高版本，以及 Python 3.12 或更高版本。提交前运行：
+
+```bash
+npm run course:check
+npm test
+npm run docs:build
+```
+
+修改 `notebooks/src/` 后运行 `npm run nb:build`，提交源文件和生成的 Notebook。课程结构在 `docs/course/outline.json`，组件及徽章的校验规则在 `scripts/course/rules.json`。

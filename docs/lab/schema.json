@@ -1,0 +1,419 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "实验档案馆的一条记录",
+  "description": "文件放在 docs/lab/data/<关卡 id>/<路线>-<设备>-<日期>.json：一次真卡运行的完整记录，正文里的实测数字都从这里引用。条目 id 是「<关卡 id>/<文件名去掉 .json>」，浏览页 /lab/#<条目 id>。示例放在 _example/，写 example: true。看 kernel 的关卡（2-5 一行 PyTorch 背后）另有 traces：hg.trace() 记下的时间线，格式见 $defs/trace。这份 schema 管字段的形状；字段之间要对得上的规则（文件名和凭证、环境和凭证、样本和测量数据、trace 里的序号和时间……）由 scripts/course/lab-data-check.mjs 检查（npm run course:check）。",
+  "type": "object",
+  "required": ["version", "collector", "date", "credential", "environment", "samples", "cells"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "给编辑器用的 schema 路径：../../schema.json"
+    },
+    "version": {
+      "const": 1,
+      "description": "档案格式的版本"
+    },
+    "example": {
+      "const": true,
+      "description": "示例，不是实测：只在 docs/lab/data/_example/ 里写，也必须写；正文不能引用示例条目"
+    },
+    "collector": {
+      "$ref": "#/$defs/text",
+      "description": "采集人：GitHub 用户名或署名"
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "examples": ["2026-11-08"],
+      "description": "测量日期（UTC），和凭证的 at 是同一天，也就是文件名里的日期"
+    },
+    "note": {
+      "$ref": "#/$defs/text",
+      "description": "补充说明（可选）：用的是哪份实现、条件有什么特别"
+    },
+    "credential": {
+      "$ref": "#/$defs/credential"
+    },
+    "environment": {
+      "$ref": "#/$defs/environment"
+    },
+    "samples": {
+      "type": "array",
+      "description": "原始计时样本，一个实现一组（hg.bench() 或 hg.compare() 里每个实现的 samples_ms）；没有计时的关卡写 []",
+      "items": { "$ref": "#/$defs/series" }
+    },
+    "cells": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Notebook 的关键单元，按 Notebook 里的顺序：代码和它的输出（文本、表格、图表数据）。观摩模式按这个顺序回放",
+      "items": { "$ref": "#/$defs/cell" }
+    },
+    "traces": {
+      "type": "array",
+      "minItems": 1,
+      "description": "hg.trace() 记下的 trace（可选）：Notebook 每运行一次 hg.trace()，就在 artifact 目录的 traces/ 下存一个 JSON 文件，按 Notebook 里的顺序原样抄进来。网页的 trace 浏览器读这里；没有 trace 的条目不写这个字段",
+      "items": { "$ref": "#/$defs/trace" }
+    }
+  },
+  "$defs": {
+    "text": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "version": {
+      "type": ["string", "null"],
+      "pattern": "\\S",
+      "description": "版本号；查不到写 null"
+    },
+    "gfx": {
+      "type": "string",
+      "pattern": "^gfx[0-9a-f]+$",
+      "examples": ["gfx1201"],
+      "description": "架构"
+    },
+    "positive": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "device": {
+      "type": "object",
+      "required": ["name", "gfx", "cus"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "$ref": "#/$defs/text", "description": "GPU 名称，例如 AMD Radeon RX 9070 XT" },
+        "gfx": { "$ref": "#/$defs/gfx" },
+        "cus": { "type": "integer", "minimum": 1, "description": "计算单元（CU）个数" }
+      }
+    },
+    "credential": {
+      "type": "object",
+      "description": "hg.submit() 生成的通关凭证，原样抄进来（Notebook 把它存在 .artifacts/lab/<关卡 id>/ 下）",
+      "required": ["v", "stage", "route", "at", "device", "env", "checks", "metrics"],
+      "additionalProperties": false,
+      "properties": {
+        "v": { "const": 1 },
+        "stage": {
+          "type": "string",
+          "pattern": "^[a-z]+(?:-[a-z0-9]+)+$",
+          "examples": ["forge-softmax"],
+          "description": "关卡 id 或真卡副本 id"
+        },
+        "route": { "enum": ["hip", "triton", "shared"] },
+        "at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+          "examples": ["2026-11-08T10:00:00Z"],
+          "description": "凭证的生成时间（UTC）"
+        },
+        "device": { "$ref": "#/$defs/device" },
+        "env": { "$ref": "#/$defs/versions" },
+        "checks": {
+          "type": "object",
+          "required": ["passed", "total"],
+          "additionalProperties": false,
+          "properties": {
+            "passed": { "type": "integer", "minimum": 0 },
+            "total": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "description": "测量数据：名字是小写字母开头的小写字母、数字和下划线（median_ms、gbps、torch_ms……），值是有限的正数",
+          "propertyNames": { "pattern": "^[a-z][a-z0-9_]*$", "examples": ["median_ms", "gbps", "torch_ms"] },
+          "additionalProperties": { "$ref": "#/$defs/positive" }
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "description": "完整环境：在哪跑的、GPU（hg.device_card()）、实测峰值、软件版本、系统、相关的环境变量、Notebook 所在的仓库提交",
+      "required": ["platform", "device", "peak", "software", "system", "commit"],
+      "additionalProperties": false,
+      "properties": {
+        "platform": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "examples": ["local", "aup-learning-cloud"],
+          "description": "docs/course/lab-platforms.json 里的平台 id；自己的机器写 local"
+        },
+        "device": {
+          "type": "object",
+          "description": "hg.device_card() 的设备信息",
+          "required": ["name", "gfx", "cus", "wave", "memory_bytes"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "$ref": "#/$defs/text" },
+            "gfx": { "$ref": "#/$defs/gfx" },
+            "cus": { "type": "integer", "minimum": 1 },
+            "wave": { "type": ["integer", "null"], "minimum": 1, "description": "wave 大小；PyTorch 和 rocminfo 都没给时写 null" },
+            "memory_bytes": { "type": "integer", "minimum": 1, "description": "显存字节数" }
+          }
+        },
+        "peak": {
+          "type": ["object", "null"],
+          "description": "hg.peak() 测出的这张卡的峰值；还没测过写 null",
+          "required": ["gbps", "tflops"],
+          "additionalProperties": false,
+          "properties": {
+            "gbps": { "$ref": "#/$defs/positive", "description": "显存拷贝带宽（十进制 GB/s）" },
+            "tflops": { "$ref": "#/$defs/positive", "description": "FP32 FMA 吞吐（TFLOPS）" }
+          }
+        },
+        "software": {
+          "type": "object",
+          "required": ["rocm", "hip", "torch", "triton", "python"],
+          "additionalProperties": false,
+          "properties": {
+            "rocm": { "$ref": "#/$defs/version" },
+            "hip": { "$ref": "#/$defs/version", "description": "PyTorch 报告的 HIP 版本（torch.version.hip）" },
+            "torch": { "$ref": "#/$defs/version" },
+            "triton": { "$ref": "#/$defs/version" },
+            "python": { "$ref": "#/$defs/text" }
+          }
+        },
+        "system": {
+          "type": "object",
+          "required": ["os", "kernel", "cpu"],
+          "additionalProperties": false,
+          "properties": {
+            "os": { "$ref": "#/$defs/text", "description": "操作系统，例如 Ubuntu 24.04.3 LTS" },
+            "kernel": { "$ref": "#/$defs/text", "description": "Linux 内核版本（uname -r）" },
+            "cpu": { "$ref": "#/$defs/text" }
+          }
+        },
+        "variables": {
+          "type": "object",
+          "description": "会影响结果的环境变量（可选），例如 GPU_ENABLE_WGP_MODE、HSA_OVERRIDE_GFX_VERSION；没设置的不写",
+          "propertyNames": { "pattern": "^[A-Z_][A-Z0-9_]*$", "examples": ["GPU_ENABLE_WGP_MODE"] },
+          "additionalProperties": { "type": "string" }
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{7,40}$",
+          "examples": ["3f9c2ab"],
+          "description": "Notebook 所在的仓库提交（git rev-parse --short HEAD）"
+        }
+      }
+    },
+    "series": {
+      "type": "object",
+      "required": ["label", "method", "warmup", "repeat", "ms"],
+      "additionalProperties": false,
+      "properties": {
+        "label": { "$ref": "#/$defs/text", "description": "实现的名字，和 hg.compare() 里的名字一样，例如 mine、torch" },
+        "note": { "$ref": "#/$defs/text", "description": "条件（可选），例如 4096×4096，FP32" },
+        "method": { "$ref": "#/$defs/text", "description": "计时方式（Measurement.method），例如 GPU current-stream events" },
+        "warmup": { "type": "integer", "minimum": 0, "description": "预热次数" },
+        "repeat": { "type": "integer", "minimum": 1, "description": "计时次数，等于 ms 的个数" },
+        "ms": {
+          "type": "array",
+          "minItems": 1,
+          "description": "每次的耗时（毫秒），按测量的先后",
+          "items": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "cell": {
+      "type": "object",
+      "required": ["section", "outputs"],
+      "additionalProperties": false,
+      "properties": {
+        "section": {
+          "enum": ["准备", "动手", "挑战", "交成绩", "练习"],
+          "description": "在 Notebook 的哪一节（07 第 5 节）"
+        },
+        "title": { "$ref": "#/$defs/text", "description": "一句话说明这个单元在做什么（可选）" },
+        "lang": { "enum": ["python", "hip"], "description": "代码的语言，不写是 python；hip 是 %%hip 单元" },
+        "code": { "$ref": "#/$defs/text", "description": "单元里的代码（可选；只放输出时不写）" },
+        "outputs": {
+          "type": "array",
+          "description": "这个单元的关键输出；只有代码、没有输出时写 []",
+          "items": { "$ref": "#/$defs/output" }
+        }
+      }
+    },
+    "output": {
+      "oneOf": [
+        { "$ref": "#/$defs/textOutput" },
+        { "$ref": "#/$defs/tableOutput" },
+        { "$ref": "#/$defs/chartOutput" }
+      ]
+    },
+    "textOutput": {
+      "type": "object",
+      "required": ["kind", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "text" },
+        "text": { "$ref": "#/$defs/text", "description": "打印出来的文字，原样保留换行" }
+      }
+    },
+    "tableOutput": {
+      "type": "object",
+      "required": ["kind", "columns", "rows"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "table" },
+        "caption": { "$ref": "#/$defs/text" },
+        "columns": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/text" } },
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "description": "每行和 columns 一样长；格子是文字、数或 null（空格子）",
+          "items": { "type": "array", "items": { "type": ["string", "number", "null"] } }
+        }
+      }
+    },
+    "chartOutput": {
+      "type": "object",
+      "required": ["kind", "chart", "x", "y", "series"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "chart" },
+        "caption": { "$ref": "#/$defs/text" },
+        "chart": { "enum": ["line", "bar"], "description": "line 是折线（横轴是数），bar 是柱状（横轴是类别）" },
+        "x": {
+          "type": "object",
+          "required": ["label", "values"],
+          "additionalProperties": false,
+          "properties": {
+            "label": { "$ref": "#/$defs/text" },
+            "unit": { "$ref": "#/$defs/text" },
+            "scale": { "enum": ["linear", "log"], "description": "不写是 linear；log 只能用在 line 图、值都是正数的轴" },
+            "values": { "type": "array", "minItems": 1, "items": { "type": ["number", "string"] } }
+          }
+        },
+        "y": {
+          "type": "object",
+          "required": ["label"],
+          "additionalProperties": false,
+          "properties": {
+            "label": { "$ref": "#/$defs/text" },
+            "unit": { "$ref": "#/$defs/text" },
+            "scale": { "enum": ["linear", "log"] }
+          }
+        },
+        "series": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["name", "values"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "$ref": "#/$defs/text" },
+              "values": {
+                "type": "array",
+                "description": "和 x.values 一样长；没有数据的点写 null",
+                "items": { "type": ["number", "null"] }
+              }
+            }
+          }
+        }
+      }
+    },
+    "versions": {
+      "type": "object",
+      "description": "ROCm、PyTorch、Triton 的版本，同通关凭证的 env",
+      "required": ["rocm", "torch", "triton"],
+      "additionalProperties": false,
+      "properties": {
+        "rocm": { "$ref": "#/$defs/version" },
+        "torch": { "$ref": "#/$defs/version" },
+        "triton": { "$ref": "#/$defs/version" }
+      }
+    },
+    "trace": {
+      "type": "object",
+      "description": "一次 hg.trace() 的结果，trace 格式 v1（hello_gpu 的 lab.py 写，网页的 trace 浏览器读）。hg.trace({名字: 无参函数}) 用 torch.profiler 记每一行：先调用几次预热（不记），再记 runs 遍，每遍之后等 GPU 算完，留下「从开始到算完」排在中间的那一遍。记三类事件：CPU 上的 PyTorch 算子（ops）、CPU 上的运行时调用（launches，例如启动 kernel 的 hipLaunchKernel）、GPU 上的事件（gpu：kernel、拷贝、填充）。时间单位都是微秒（µs），从这一行开始算起：CPU 进入这一行是 0。GPU 和 CPU 的时钟由 profiler 对齐。profiler 自己也要记账，CPU 上的时间比不开 profiler 时长一些，GPU 上 kernel 的时间不受影响",
+      "required": ["v", "at", "device", "env", "lines"],
+      "additionalProperties": false,
+      "properties": {
+        "v": { "const": 1, "description": "trace 格式的版本" },
+        "at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+          "examples": ["2026-11-11T10:00:00Z"],
+          "description": "采集时间（UTC）"
+        },
+        "device": { "$ref": "#/$defs/device" },
+        "env": { "$ref": "#/$defs/versions" },
+        "lines": {
+          "type": "array",
+          "minItems": 1,
+          "description": "每一行一条，顺序同 hg.trace() 里的写法；运行出错的行不记",
+          "items": { "$ref": "#/$defs/traceLine" }
+        }
+      }
+    },
+    "traceLine": {
+      "type": "object",
+      "required": ["name", "runs", "span_us", "cpu_us", "gpu_us", "ops", "launches", "gpu"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "$ref": "#/$defs/text", "examples": ["mlp", "steps"], "description": "这一行的名字：hg.trace({名字: 调用}) 里的名字；同一份 trace 里不重复" },
+        "runs": { "type": "integer", "minimum": 1, "description": "记了几遍；这里留下的是「从开始到算完」排在中间的那一遍" },
+        "span_us": { "type": "number", "minimum": 0, "description": "从开始到算完：CPU 交完这一行、GPU 上最后一个事件结束，取晚的那个" },
+        "cpu_us": { "type": "number", "minimum": 0, "description": "CPU 交完这一行用的时间：从进入这一行到返回（这时 GPU 可能还在算）" },
+        "gpu_us": { "type": "number", "minimum": 0, "description": "GPU 忙的时间：gpu 里各事件的时间段合在一起的长度，重叠的部分只算一次" },
+        "ops": {
+          "type": "array",
+          "description": "CPU 上的 PyTorch 算子，按开始时间排：这一行直接调用的算子，加上启动过东西的算子和它们的上层算子",
+          "items": { "$ref": "#/$defs/traceOp" }
+        },
+        "launches": {
+          "type": "array",
+          "description": "CPU 上的运行时调用，按开始时间排：启动 kernel（hipLaunchKernel、hipExtModuleLaunchKernel……）、拷贝、填充",
+          "items": { "$ref": "#/$defs/traceLaunch" }
+        },
+        "gpu": {
+          "type": "array",
+          "description": "GPU 上的事件，按开始时间排",
+          "items": { "$ref": "#/$defs/traceGpu" }
+        }
+      }
+    },
+    "index": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "同一行里另一组事件的序号，从 0 数；没有是 null"
+    },
+    "traceOp": {
+      "type": "object",
+      "required": ["name", "start", "dur", "parent"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "$ref": "#/$defs/text", "examples": ["aten::matmul"], "description": "算子名" },
+        "start": { "type": "number", "description": "开始（µs）" },
+        "dur": { "type": "number", "minimum": 0, "description": "持续多久（µs）" },
+        "parent": { "$ref": "#/$defs/index", "description": "上一层算子在 ops 里的序号，排在它前面；这一行直接调用的算子是 null" }
+      }
+    },
+    "traceLaunch": {
+      "type": "object",
+      "required": ["name", "start", "dur", "op"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "$ref": "#/$defs/text", "examples": ["hipLaunchKernel"], "description": "运行时 API 的名字" },
+        "start": { "type": "number", "description": "开始（µs）" },
+        "dur": { "type": "number", "minimum": 0, "description": "持续多久（µs）" },
+        "op": { "$ref": "#/$defs/index", "description": "在哪个算子里调用的：ops 里最里层那个的序号；不在算子里是 null" }
+      }
+    },
+    "traceGpu": {
+      "type": "object",
+      "required": ["name", "kind", "start", "dur", "stream", "op", "launch"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "$ref": "#/$defs/text", "description": "kernel 的完整名字（C++ 名字已还原），或者拷贝、填充的名字" },
+        "kind": { "enum": ["kernel", "memcpy", "memset"], "description": "kernel、拷贝或填充" },
+        "start": { "type": "number", "description": "开始（µs）" },
+        "dur": { "type": "number", "minimum": 0, "description": "持续多久（µs）" },
+        "stream": { "type": "integer", "minimum": 0, "description": "在第几条队列（stream）上：按在这一行里第一次出现的先后从 0 数" },
+        "op": { "$ref": "#/$defs/index", "description": "启动它的算子在 ops 里的序号（最里层那个）；找不到是 null" },
+        "launch": { "$ref": "#/$defs/index", "description": "启动它的运行时调用在 launches 里的序号；找不到是 null" }
+      }
+    }
+  }
+}

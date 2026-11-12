@@ -1,0 +1,154 @@
+{
+  "note": "关卡和副本使用的组件登记表。scripts/course/stage-check.mjs 校验登记、全局注册和页面用法，组件行为约束在 scripts/course/rules.json。页面自己的 scenes/*.vue 通过本页 import 使用。",
+  "components": [
+    {
+      "name": "StageLayout",
+      "layout": true,
+      "use": "关卡专注模式外壳",
+      "behavior": "顶部状态栏：回地图、区域、关卡号和标题、进度点、等级与经验、本关星级、写法 / 路线切换、提示按钮"
+    },
+    {
+      "name": "Mission",
+      "use": "任务卡与星级标准",
+      "behavior": "显示已获得的星"
+    },
+    {
+      "name": "Predict",
+      "use": "先猜",
+      "behavior": "锁定后才揭晓；只记第一次"
+    },
+    {
+      "name": "Knob",
+      "use": "分段选择、步进器、开关",
+      "behavior": "键盘可操作，显示单位和范围"
+    },
+    {
+      "name": "Sandbox",
+      "use": "代码沙盒（HIP / Python 风格）",
+      "behavior": "填空模式与完整模式；运行、单步、重置；错误定位到行"
+    },
+    {
+      "name": "RobotGrid",
+      "use": "线程机器人网格 + 显存格子",
+      "behavior": "由模拟器事件驱动；悬停联动高亮"
+    },
+    {
+      "name": "WaveView",
+      "use": "锁步执行视图",
+      "behavior": "当前行高亮、执行掩码、lane 利用率"
+    },
+    {
+      "name": "MemoryView",
+      "use": "访存视图",
+      "behavior": "地址、cache line「车次」、事务数"
+    },
+    {
+      "name": "LaunchLab",
+      "use": "一维启动实验台",
+      "behavior": "—"
+    },
+    {
+      "name": "ScenePlayer",
+      "use": "讲解动画",
+      "behavior": "播放、拖动、键盘、减弱动效"
+    },
+    {
+      "name": "ConceptCard",
+      "use": "新术语卡",
+      "behavior": "进入视口后收入图鉴"
+    },
+    {
+      "name": "DeepDive",
+      "use": "深入一点（折叠）",
+      "behavior": "默认折叠"
+    },
+    {
+      "name": "LangCode",
+      "use": "新手村按写法偏好显示 HIP / Python 代码块",
+      "behavior": "—"
+    },
+    {
+      "name": "RouteBlock",
+      "use": "铸造城、试炼场按路线显示 HIP / Triton 内容",
+      "behavior": "只显示读者当前路线；可切换"
+    },
+    {
+      "name": "LabCard",
+      "use": "实验室入口与成绩导入",
+      "behavior": "打开 Notebook、粘贴通关码、自动读取链接里的成绩、观摩模式"
+    },
+    {
+      "name": "EvidenceCard",
+      "use": "模拟 / 实测数据标记",
+      "behavior": "实测要写硬件、版本、日期、档案条目"
+    },
+    {
+      "name": "Checkpoint",
+      "use": "关卡末 2–3 道迁移题",
+      "behavior": "每个选项都有解释；全部作答后完成关卡"
+    },
+    {
+      "name": "AgentConsole",
+      "use": "Agent 控制台",
+      "behavior": "逐条显示思考、行动、观察；单步、回放、对比读者选择"
+    },
+    {
+      "name": "Mascot",
+      "use": "吉祥物、线程小机器人",
+      "behavior": "表情、配饰、状态由 props 决定"
+    },
+    {
+      "name": "ThreadBot",
+      "use": "吉祥物、线程小机器人",
+      "behavior": "表情、配饰、状态由 props 决定"
+    },
+    {
+      "name": "Toast",
+      "layout": true,
+      "use": "奖励反馈",
+      "behavior": "由 RewardLayer 按课程进度播放反馈，关卡页不直接调用"
+    },
+    {
+      "name": "StarBurst",
+      "layout": true,
+      "use": "奖励反馈",
+      "behavior": "由 RewardLayer 按课程进度播放反馈，关卡页不直接调用"
+    },
+    {
+      "name": "LevelUp",
+      "layout": true,
+      "use": "奖励反馈",
+      "behavior": "由 RewardLayer 按课程进度播放反馈，关卡页不直接调用"
+    },
+    {
+      "name": "HintLadder",
+      "use": "提示阶梯",
+      "behavior": "没过 2 / 4 / 6 次依次解锁方向提示、位置提示、看答案；在挑战里看答案本关最高 2 星"
+    },
+    {
+      "name": "Solution",
+      "use": "副本的题解",
+      "behavior": "通关（★1）或在挑战里看过答案以后才展开；之前只说明怎么解锁，不显示题解内容"
+    },
+    {
+      "name": "ExternalProblem",
+      "use": "外部题链接卡",
+      "behavior": "只写 id：题名、来源、许可证、关联关卡、原题链接和我们的原创题解都从 external-problems.json 读；没有插槽和文字属性，不放题面"
+    },
+    {
+      "name": "AgentCode",
+      "use": "读者自己的 Python Agent（1-14）",
+      "behavior": "补 ReAct 循环里的空、运行（Pyodide 按需加载、有进度）、逐步显示思考 / 行动 / 观察并和规则 Agent 对比；报错写成现象 + 原因 + 怎么改；加载失败时退化为规则 Agent 的回放"
+    },
+    {
+      "name": "LlmSettings",
+      "use": "可选：读者自己的大模型来当 Agent（1-14）",
+      "behavior": "选接口（OpenAI 兼容 / Anthropic）、填地址、模型名和自己的 Key；大模型每一步只回一个 JSON 行动，页面校验过才在模拟器上执行，不合法就提示并停下；逐步和规则 Agent 对比。Key 只存在 sessionStorage；不判星、不发经验值"
+    },
+    {
+      "name": "DeviceCard",
+      "use": "我的 GPU 卡片：导入并显示读者自己的 GPU（2-1、「我的成长」页）",
+      "behavior": "粘贴 hg.device_card() 打印的导入码（HGCARD1.）导入，存进本地存档；可以存几张，选一张当前的；显示名称、gfx、计算单元数、wave 大小、显存、实测峰值（2-4 测过才有）、软件版本；导入失败写现象 + 原因 + 怎么改。当前那张给 1-2 的全景图和 2-4 的 Roofline 用"
+    }
+  ]
+}

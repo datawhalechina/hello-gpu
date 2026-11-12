@@ -1,0 +1,50 @@
+{
+  "/part0-intro/chapter0/": ["novice-thousand-additions"],
+  "/part0-intro/chapter1/": ["forge-your-gpu"],
+  "/part0-intro/chapter2/": [
+    "novice-thousand-additions",
+    "novice-gpu-panorama",
+    "novice-assign-threads",
+    "novice-thread-groups",
+    "novice-wavefront",
+    "trial-rdna4-microarch"
+  ],
+  "/part0-intro/chapter3/": [
+    "novice-gpu-panorama",
+    "novice-memory-hierarchy",
+    "novice-coalescing",
+    "novice-lds-sync",
+    "novice-latency-hiding",
+    "trial-rdna4-microarch",
+    "trial-occupancy",
+    "trial-memory-advanced"
+  ],
+  "/part0-intro/chapter4/": ["novice-gpu-panorama", "novice-timing", "forge-first-real-kernel"],
+  "/part1-profiling/chapter5/": ["novice-timing", "forge-trusted-timing"],
+  "/part1-profiling/chapter6/": ["novice-coalescing", "forge-behind-pytorch", "trial-counters-trace"],
+  "/part1-profiling/chapter7/": ["forge-roofline"],
+  "/part2-kernels/chapter8/": [
+    "novice-coalescing",
+    "forge-first-real-kernel",
+    "forge-route-advanced",
+    "forge-fusion",
+    "trial-counters-trace",
+    "trial-memory-advanced",
+    "trial-experiment-method"
+  ],
+  "/part2-kernels/chapter9/": ["novice-divergence", "novice-reduction", "forge-reduction-practice", "trial-wave-cooperation"],
+  "/part2-kernels/chapter10/": ["forge-softmax"],
+  "/part2-kernels/chapter11/": ["trial-gemm-tiling", "trial-gemm-matrix-cores"],
+  "/part2-kernels/chapter12/": ["forge-fusion", "trial-attention"],
+  "/part2-kernels/chapter13/": ["forge-norm"],
+  "/part3-agent/chapter14/": ["novice-meet-agent", "novice-first-agent"],
+  "/part3-agent/chapter15/": ["forge-agent-tools"],
+  "/part3-agent/chapter16/": ["forge-reliable-loop"],
+  "/part3-agent/chapter17/": ["forge-reliable-loop", "trial-experiment-method"],
+  "/part4-models-agent/chapter18/": ["forge-behind-pytorch"],
+  "/part4-models-agent/chapter19/": ["trial-boss"],
+  "/appendix/appendix-a-env-install/": ["forge-your-gpu"],
+  "/appendix/appendix-b-switch-gpu/": ["forge-your-gpu"],
+  "/appendix/appendix-c-kfd-bare-metal/": ["forge-behind-pytorch", "trial-read-isa"],
+  "/appendix/programming-models/": ["novice-thread-groups", "forge-first-real-kernel"]
+}

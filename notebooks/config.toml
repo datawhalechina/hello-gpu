@@ -18,3 +18,7 @@ bandwidth_gbs = 0.0
 compute_tflops = 0.0
 source = ""
 matrix_size = 512
+
+[lab]
+# hg.submit() 生成的通关链接指向的站点（不写时就是这个地址）；自己部署的镜像站改这里。
+site = "https://datawhalechina.github.io/hello-gpu"

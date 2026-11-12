@@ -388,6 +388,19 @@ hello-gpu/
   </a>
 </div>
 
+## 新版课程与本地预览
+
+新版首页提供地图、新手村关卡、定级测试和旧版教程入口。课程结构见 `docs/course/outline.json`；未开放的区域在地图中标明状态。
+
+维护站点需要 Node.js 22.18 或更高版本，以及 Python 3.12 或更高版本（用于 Notebook 源码检查）。
+
+```bash
+npm install
+npm run docs:dev
+```
+
+提交前运行 `npm run course:check`、`npm test` 和 `npm run docs:build`。实验室 Notebook 的源文件在 `notebooks/src/`，修改后运行 `npm run nb:build`，并提交对应的 `.ipynb`。构建工具和课程校验代码位于 `scripts/course/`。
+
 ## 参与贡献
 
 &emsp;&emsp;我们欢迎所有形式的贡献！无论是：

@@ -1,0 +1,262 @@
+{
+  "$schema": "../../schema.json",
+  "version": 1,
+  "collector": "amdjiahangpan",
+  "date": "2026-11-11",
+  "note": "R-01 的参考运行：Notebook 里标了 TODO 的地方换成参考解，按读者的顺序（2-1 → 2-2 HIP → 2-2 Triton → 2-3 → 2-4）从空的 artifact 目录开始各跑一遍，末尾另接几个练习单元。代码是仓库提交 8130dde 加上同一个 PR 里 R-01 的修改（hello_gpu：hg.check_env 查编译器和 Python.h，FMA 测试改成累加写法、计时前先连着跑 0.2 秒，check_timer 认 PyTorch 的报错；Notebook：2-3 练习 2、2-4 FMA 测试的说明）。环境：本地 pip 装的 ROCm 10.0.0（uv 建的环境），Docker 容器里只挂了一块 R9700。",
+  "credential": {
+    "v": 1,
+    "stage": "forge-first-real-kernel",
+    "route": "hip",
+    "at": "2026-11-11T08:26:42Z",
+    "device": {
+      "name": "AMD Radeon AI PRO R9700",
+      "gfx": "gfx1201",
+      "cus": 64
+    },
+    "env": {
+      "rocm": "10.0.0",
+      "torch": "2.13.0+rocm10.0.0",
+      "triton": "3.8.0+git4cff872c.rocm10.0.0"
+    },
+    "checks": {
+      "passed": 7,
+      "total": 7
+    },
+    "metrics": {
+      "median_ms": 1.3214409947395325,
+      "p10_ms": 1.32053302526474,
+      "p90_ms": 1.322433054447174,
+      "gbps": 609.4153058712492,
+      "torch_ms": 1.3283609747886658
+    }
+  },
+  "environment": {
+    "platform": "local",
+    "device": {
+      "name": "AMD Radeon AI PRO R9700",
+      "gfx": "gfx1201",
+      "cus": 64,
+      "wave": 32,
+      "memory_bytes": 34208743424
+    },
+    "peak": null,
+    "software": {
+      "rocm": "10.0.0",
+      "hip": "7.15.26333",
+      "torch": "2.13.0+rocm10.0.0",
+      "triton": "3.8.0+git4cff872c.rocm10.0.0",
+      "python": "3.12.3"
+    },
+    "system": {
+      "os": "Ubuntu 24.04.5 LTS（Docker 容器 ubuntu:24.04）",
+      "kernel": "6.17.0-23-generic",
+      "cpu": "AMD Ryzen Threadripper PRO 9975WX 32-Cores"
+    },
+    "commit": "8130dde"
+  },
+  "samples": [
+    {
+      "label": "torch",
+      "note": "n = 2²⁶ 的 FP32 加法，每次读写 12 × 2²⁶ 字节",
+      "method": "GPU current-stream events",
+      "warmup": 5,
+      "repeat": 30,
+      "ms": [
+        1.3265409469604492,
+        1.3289419412612915,
+        1.3289810419082642,
+        1.3281010389328003,
+        1.3291410207748413,
+        1.3285410404205322,
+        1.3266220092773438,
+        1.3283809423446655,
+        1.3255809545516968,
+        1.3264210224151611,
+        1.3292210102081299,
+        1.3285809755325317,
+        1.3286609649658203,
+        1.3283820152282715,
+        1.326261043548584,
+        1.3292609453201294,
+        1.326380968093872,
+        1.328341007232666,
+        1.3257410526275635,
+        1.3290220499038696,
+        1.3290209770202637,
+        1.328421950340271,
+        1.326861023902893,
+        1.3255809545516968,
+        1.3275810480117798,
+        1.3286609649658203,
+        1.3280220031738281,
+        1.327741026878357,
+        1.3285019397735596,
+        1.3274610042572021
+      ]
+    },
+    {
+      "label": "mine",
+      "note": "n = 2²⁶ 的 FP32 加法，每次读写 12 × 2²⁶ 字节",
+      "method": "GPU current-stream events",
+      "warmup": 5,
+      "repeat": 30,
+      "ms": [
+        1.3221410512924194,
+        1.3220210075378418,
+        1.3223010301589966,
+        1.3204610347747803,
+        1.321702003479004,
+        1.3224209547042847,
+        1.3206210136413574,
+        1.3213809728622437,
+        1.3214210271835327,
+        1.3204610347747803,
+        1.3222609758377075,
+        1.3214609622955322,
+        1.3227009773254395,
+        1.3209409713745117,
+        1.3216609954833984,
+        1.3215420246124268,
+        1.3223010301589966,
+        1.320781946182251,
+        1.322780966758728,
+        1.3205410242080688,
+        1.3213410377502441,
+        1.3210610151290894,
+        1.3215409517288208,
+        1.3210209608078003,
+        1.3211809396743774,
+        1.3207809925079346,
+        1.3225419521331787,
+        1.322221040725708,
+        1.32082200050354,
+        1.3201409578323364
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "section": "准备",
+      "title": "一键检查：HIP 路线看「ROCm 和 PyTorch 版本一致」「HIP 编译工具」两行",
+      "code": "import torch\nimport hello_gpu as hg\n\ntorch.manual_seed(0)\nenv = hg.check_env()",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "环境检查\n  ✓ PyTorch 是 ROCm 版：PyTorch 2.13.0+rocm10.0.0，HIP 7.15.26333\n  ✓ 看得到 GPU：AMD Radeon AI PRO R9700（gfx1201）\n  ✓ GPU 算得对：在 GPU 上算了 1024 个数，和 CPU 算的一样\n  ✓ ROCm 和 PyTorch 版本一致：PyTorch 为 ROCm 10.0.0 编译，装的 ROCm 是 10.0.0\n  ✓ HIP 编译工具（HIP 路线用）：hipcc 在 /work/repo/notebooks/part0-intro/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/bin/hipcc，ninja、C++ 编译器和 Python.h 也有\n  ✓ Triton（Triton 路线用）：Triton 3.8.0+git4cff872c.rocm10.0.0，C 编译器和 Python.h 也有\n全部通过，可以做实验。"
+        }
+      ]
+    },
+    {
+      "section": "动手",
+      "title": "编译：第一版 kernel 一个线程算一个元素，先不写边界检查",
+      "lang": "hip",
+      "code": "%%hip vector_add --entry vector_add\n__global__ void vector_add(const float* a, const float* b, float* out, int n) {\n    int i = blockIdx.x * blockDim.x + threadIdx.x;  // 全局下标：第几组 × 每组几个 + 组里第几个\n    out[i] = a[i] + b[i];                           // 先不写 if (i < n)\n}",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "vector_add · 编译完成 · 14.07 s · 现在可以用 vector_add(a, b) 调用"
+        }
+      ]
+    },
+    {
+      "section": "动手",
+      "title": "先跑一次小的：4096 个 1 加 4096 个 1",
+      "code": "x = torch.ones(4096, device=\"cuda\")\nvector_add(x, x, out=torch.empty_like(x))",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "tensor([2., 2., 2.,  ..., 2., 2., 2.], device='cuda:0')"
+        }
+      ]
+    },
+    {
+      "section": "动手",
+      "title": "运行：主机端五步，结果和 CPU 上的 h_a + h_b 一模一样",
+      "code": "n = 1 << 20\nh_a, h_b = torch.randn(n), torch.randn(n)  # 主机内存里的两个输入\nd_a = torch.empty(n, device=\"cuda\")        # ① 申请显存，相当于 hipMalloc\nd_b = torch.empty(n, device=\"cuda\")\nd_out = torch.empty(n, device=\"cuda\")\nd_a.copy_(h_a)                             # ② 拷进显存，相当于 hipMemcpy（主机 → 设备）\nd_b.copy_(h_b)\nvector_add(d_a, d_b, out=d_out)            # ③ 启动，相当于 vector_add<<<n / 256, 256>>>，马上返回\ntorch.cuda.synchronize()                   # ④ 等 GPU 算完，相当于 hipDeviceSynchronize\nh_out = d_out.cpu()                        # ⑤ 拷回主机，相当于 hipMemcpy（设备 → 主机）\ntorch.equal(h_out, h_a + h_b)",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "True"
+        }
+      ]
+    },
+    {
+      "section": "动手",
+      "title": "校验：7 个长度加护栏，第一版只有组大小整数倍的长度能过",
+      "code": "lengths = [1, 255, 256, 1000, 1024, 1 << 20, (1 << 20) + 1]\nfirst = hg.check(vector_add, torch.add, lengths, inputs=2, guard=True)",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "校验 7 个形状（float32，rtol=1.3e-06，atol=1e-05；输出前后各留 65536 个元素的护栏）\n  ✗ 1：越界写：输出后面 255 个位置被改写了，kernel 写到了输出外面\n  ✗ 255：越界写：输出后面 1 个位置被改写了，kernel 写到了输出外面\n  ✓ 256（最大绝对误差 0）\n  ✗ 1000：越界写：输出后面 24 个位置被改写了，kernel 写到了输出外面\n  ✓ 1024（最大绝对误差 0）\n  ✓ 1048576（最大绝对误差 0）\n  ✗ 1048577：越界写：输出后面 255 个位置被改写了，kernel 写到了输出外面\n通过 3/7"
+        }
+      ]
+    },
+    {
+      "section": "挑战",
+      "title": "补上边界检查：让 i >= n 的线程什么也不做",
+      "lang": "hip",
+      "code": "%%hip vector_add --entry vector_add\n__global__ void vector_add(const float* a, const float* b, float* out, int n) {\n    int i = blockIdx.x * blockDim.x + threadIdx.x;\n    if (i < n) out[i] = a[i] + b[i];  // TODO：只让 i < n 的线程读写\n}",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "vector_add · 编译完成 · 13.73 s · 现在可以用 vector_add(a, b) 调用"
+        }
+      ]
+    },
+    {
+      "section": "挑战",
+      "title": "再校验 7 个长度，全部 ✓ 才拿得到 ★1",
+      "code": "checks = hg.check(vector_add, torch.add, lengths, inputs=2, guard=True)",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "校验 7 个形状（float32，rtol=1.3e-06，atol=1e-05；输出前后各留 65536 个元素的护栏）\n  ✓ 1（最大绝对误差 0）\n  ✓ 255（最大绝对误差 0）\n  ✓ 256（最大绝对误差 0）\n  ✓ 1000（最大绝对误差 0）\n  ✓ 1024（最大绝对误差 0）\n  ✓ 1048576（最大绝对误差 0）\n  ✓ 1048577（最大绝对误差 0）\n通过 7/7"
+        }
+      ]
+    },
+    {
+      "section": "挑战",
+      "title": "和 torch 比有效带宽：n = 2²⁶",
+      "code": "n = 1 << 26\nx = torch.randn(n, device=\"cuda\")\ny = torch.randn_like(x)\nout = torch.empty_like(x)\nresult = hg.compare(\n    {\"torch\": lambda: torch.add(x, y, out=out), \"mine\": lambda: vector_add(x, y, out=out)},\n    bytes_moved=12 * n,  # 每个元素读 4 + 4 字节，写 4 字节\n)\nmetrics = result.metrics(\"mine\")",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "      中位数 ms p10 ms p90 ms 带宽 GB/s 相对 torch\ntorch     1.328  1.326  1.329     606.2      1.00×\nmine      1.321  1.321  1.322     609.4      1.01×\n（还没有这张卡的实测峰值，所以没有占峰值的比例：2-4 关运行 hg.peak() 之后就有了）"
+        }
+      ]
+    },
+    {
+      "section": "交成绩",
+      "code": "hg.submit(\"forge-first-real-kernel\", \"hip\", checks=checks, metrics=metrics)",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "通关凭证：2-2 第一个真 kernel（HIP 路线）\n  校验：7/7 通过\n  测量：median_ms 1.321 · p10_ms 1.321 · p90_ms 1.322 · gbps 609.4 · torch_ms 1.328\n通关链接（在浏览器里打开，成绩会导入关卡页）：\nhttps://datawhalechina.github.io/hello-gpu/forge/first-real-kernel/#lab=HGPU1.TY_LasMwEEV_xWhbW-gxsiTvAtl0UVpCV90UVZYfJH4gK6EQ8u8dlZIUCTHDOXPFXMmFNLwkW3J9IA3pltiHqhvjlqoY3Kk6hjiHEylJXM4pG8O4YucSloKJuuIc7zszjagbEB_I2nAZPapXMrspj-xe9sXBtWGZi91z8XZ4LQ5WM4Zq330jx5cLxrH35400NdxKEuZLToiLn9DgjOJBIS3RD_lryiVlTxk_WBzTMiOU1CDrxwS-64wWnv7zMNsPwR-3HL-6bQstaXROTu6EFfIpYJT_FabQjm7-nLDhVAoOwKwFLa2SQpVk5ezOmJKSCSVq0IDEPogAJAoANM-o_1rzlsxS4AqB0VyAFX_L3aeMREWDNqaulbndfgA\n通关码（也可以粘贴到关卡页的「导入成绩」里）：\nHGPU1.TY_LasMwEEV_xWhbW-gxsiTvAtl0UVpCV90UVZYfJH4gK6EQ8u8dlZIUCTHDOXPFXMmFNLwkW3J9IA3pltiHqhvjlqoY3Kk6hjiHEylJXM4pG8O4YucSloKJuuIc7zszjagbEB_I2nAZPapXMrspj-xe9sXBtWGZi91z8XZ4LQ5WM4Zq330jx5cLxrH35400NdxKEuZLToiLn9DgjOJBIS3RD_lryiVlTxk_WBzTMiOU1CDrxwS-64wWnv7zMNsPwR-3HL-6bQstaXROTu6EFfIpYJT_FabQjm7-nLDhVAoOwKwFLa2SQpVk5ezOmJKSCSVq0IDEPogAJAoANM-o_1rzlsxS4AqB0VyAFX_L3aeMREWDNqaulbndfgA\n凭证 JSON 已保存：/work/repo/notebooks/.artifacts/lab/forge-first-real-kernel/20261111T082642Z-d4f6458f.json\n星级由关卡页按本关规则计算。\nSubmission('forge-first-real-kernel'，HIP 路线)"
+        }
+      ]
+    },
+    {
+      "section": "练习",
+      "title": "练习 2：组大小换成 64、256、1024",
+      "code": "blocks = {f\"block{b}\": (lambda b=b: vector_add(x, y, out=out, block=b)) for b in (64, 256, 1024)}\nsizes = hg.compare({\"torch\": lambda: torch.add(x, y, out=out), **blocks}, bytes_moved=12 * n)",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "          中位数 ms p10 ms p90 ms 带宽 GB/s 相对 torch\ntorch         1.328  1.326  1.329     606.5      1.00×\nblock64       1.322  1.321  1.323     609.3      1.00×\nblock256      1.322  1.321  1.323     609.3      1.00×\nblock1024     1.321   1.32  1.322     609.6      1.01×\n（还没有这张卡的实测峰值，所以没有占峰值的比例：2-4 关运行 hg.peak() 之后就有了）"
+        }
+      ]
+    },
+    {
+      "section": "练习",
+      "title": "练习 3：拷进一个数组和整个 kernel 各要多久",
+      "code": "copy_in = hg.bench(lambda: d_a.copy_(h_a), label=\"② 拷进一个数组\")\nkernel = hg.bench(lambda: vector_add(d_a, d_b, out=d_out), label=\"③ 整个 kernel\")\nprint(f\"拷进一个数组是整个 kernel 的 {copy_in.median_ms / kernel.median_ms:.1f} 倍\")",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "② 拷进一个数组：中位数 0.0967 ms（p10 0.09624，p90 0.09718；预热 5 次，计时 30 次）\n③ 整个 kernel：中位数 0.01352 ms（p10 0.0134，p90 0.01365；预热 5 次，计时 30 次）\n拷进一个数组是整个 kernel 的 7.2 倍"
+        }
+      ]
+    }
+  ]
+}

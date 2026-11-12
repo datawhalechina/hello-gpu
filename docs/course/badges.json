@@ -1,0 +1,93 @@
+[
+  {
+    "id": "first-clear",
+    "name": "首次通关",
+    "desc": "你把第一关从头做到了尾。",
+    "icon": "flag",
+    "condition": "完成第一关"
+  },
+  {
+    "id": "no-out-of-bounds",
+    "name": "零越界",
+    "desc": "边界检查写对了，一次都没有写到数组外面。",
+    "icon": "shield",
+    "condition": "在挑战里一次都没有越界写就拿到 3 星"
+  },
+  {
+    "id": "spot-fake-speedup",
+    "name": "识破假加速",
+    "desc": "你看出了一份测错的提速报告。",
+    "icon": "magnifier",
+    "condition": "在任意「识破」环节选对"
+  },
+  {
+    "id": "sync-master",
+    "name": "同步大师",
+    "desc": "LDS 共享和归约两关的星全部拿到，同步点放对了位置。",
+    "icon": "sync",
+    "condition": "完成 1-9、1-10 的全部星"
+  },
+  {
+    "id": "dual-syntax",
+    "name": "双语法",
+    "desc": "同一关你用 HIP 风格和 Python 风格各通关了一次。",
+    "icon": "brackets",
+    "condition": "新手村同一关用 HIP 风格和 Python 风格都通关"
+  },
+  {
+    "id": "dual-route",
+    "name": "双路线",
+    "desc": "同一关你用 HIP 路线和 Triton 路线各通关了一次。",
+    "icon": "route",
+    "condition": "铸造城或试炼场同一关用两条路线都通关"
+  },
+  {
+    "id": "first-agent",
+    "name": "第一个 Agent",
+    "desc": "你写出了第一个会自己调参的 Agent。",
+    "icon": "bot",
+    "condition": "完成 1-14"
+  },
+  {
+    "id": "beat-torch",
+    "name": "打败 torch",
+    "desc": "在真卡上，你手写的算子比 torch 快。",
+    "icon": "flame",
+    "condition": "在任意真卡关卡拿到「比 torch 快」的星"
+  },
+  {
+    "id": "real-machine",
+    "name": "真机验证",
+    "desc": "你在真卡上跑完了实验室，并把通关码导了回来。",
+    "icon": "chip",
+    "condition": "第一次导入真卡实验室的通关码"
+  },
+  {
+    "id": "zone-graduate-novice",
+    "name": "新手村毕业",
+    "desc": "你通过了新手村的 Boss。",
+    "icon": "trophy",
+    "condition": "通过新手村的 Boss"
+  },
+  {
+    "id": "zone-graduate-forge",
+    "name": "铸造城毕业",
+    "desc": "你通过了铸造城的 Boss。",
+    "icon": "trophy",
+    "condition": "通过铸造城的 Boss"
+  },
+  {
+    "id": "zone-graduate-trial",
+    "name": "试炼场毕业",
+    "desc": "你通过了试炼场的 Boss。",
+    "icon": "trophy",
+    "condition": "通过试炼场的 Boss"
+  },
+  {
+    "id": "codex-collector",
+    "name": "图鉴收集家",
+    "desc": "一个区域的新术语，你一个不落地收齐了。",
+    "icon": "book",
+    "condition": "收集一个区域的全部新术语"
+  }
+]

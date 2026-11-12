@@ -1,0 +1,139 @@
+{
+  "note": "实验室能在哪里跑（L-06）：实验环境指南 /handbook/setup/ 和 LabCard 的「在云平台上打开」都从这里读。facts 是平台的 GPU 和软件版本，写法同 hardware.json：source 指向 sources 里的一条，where 写在出处的哪个位置；查不到的写 \"[待实测]\"，不写 source。云平台（kind: cloud）有 open：LabCard 上的链接和两三步说明，link 里的 {repo} 换成教程仓库去掉 https:// 的部分，steps 里的 {path} 换成 Notebook 在仓库里的路径，反引号里的字显示成代码。id 是指南里这个平台那一节的锚点。scripts/course/course-data-check.mjs 检查这份文件。",
+  "sources": {
+    "radeon-cloud-images": {
+      "title": "选择镜像（AMD Radeon Cloud 文档）",
+      "url": "https://amd-aim.github.io/radeon-cloud-docs/zh-cn/guides/images/",
+      "checked": "2026-11-10"
+    },
+    "aup-values": {
+      "title": "AUP Learning Cloud 源码：runtime/values.yaml（默认部署配置）",
+      "url": "https://github.com/AMDResearch/aup-learning-cloud/blob/main/runtime/values.yaml",
+      "checked": "2026-11-10"
+    },
+    "aup-base-image": {
+      "title": "AUP Learning Cloud 源码：GPU 基础镜像说明（dockerfiles/Base/README.md）",
+      "url": "https://github.com/AMDResearch/aup-learning-cloud/blob/main/dockerfiles/Base/README.md",
+      "checked": "2026-11-10"
+    },
+    "rocm-gpu-specs": {
+      "title": "AMD GPU specifications（ROCm 文档）",
+      "url": "https://rocm.docs.amd.com/en/latest/reference/gpu-specs.html",
+      "checked": "2026-11-10"
+    },
+    "rocm-10-install": {
+      "title": "Install AMD ROCm 10.0.0（ROCm 文档）",
+      "url": "https://rocm.docs.amd.com/en/docs-10.0.0/install/rocm.html",
+      "checked": "2026-11-10"
+    },
+    "hello-gpu-ch1": {
+      "title": "Hello GPU 旧版第 1 章 环境准备（2026-09-19 在 RX 9070 XT、原生 Ubuntu 24.04.5 上复测）",
+      "url": "https://datawhalechina.github.io/hello-gpu/part0-intro/chapter1/",
+      "checked": "2026-11-10"
+    }
+  },
+  "platforms": [
+    {
+      "id": "radeon-cloud",
+      "name": "AMD Radeon Cloud",
+      "kind": "cloud",
+      "facts": {
+        "gpu": { "label": "GPU", "value": "[待实测]" },
+        "gfx": { "label": "gfx 架构", "value": "[待实测]" },
+        "rocm": {
+          "label": "ROCm",
+          "value": "10",
+          "source": "radeon-cloud-images",
+          "where": "镜像列表说明 › 通用镜像：rocm10-pytorch 是「基于 ROCm 10 的官方 rocm/pytorch 镜像」，「Hello GPU 这个 Notebook 用的就是它」；没写小版本"
+        },
+        "torch": { "label": "PyTorch", "value": "[待实测]" },
+        "triton": { "label": "Triton", "value": "[待实测]" }
+      },
+      "open": {
+        "label": "打开 Radeon Cloud",
+        "link": "https://developer.amd.com.cn/radeon/",
+        "steps": [
+          "登录后在「模板库」里搜 Hello GPU，点「启动」；实例就绪后点「打开 Notebook」。",
+          "模板先打开旧版第 0 章。在左边的文件浏览器里回到仓库根目录，打开 `{path}`。"
+        ]
+      }
+    },
+    {
+      "id": "aup-learning-cloud",
+      "name": "AUP Learning Cloud",
+      "kind": "cloud",
+      "facts": {
+        "gpu": {
+          "label": "GPU",
+          "value": "AMD Radeon 8060S",
+          "source": "aup-values",
+          "where": "custom.accelerators.strix-halo：AMD Radeon™ 8060S (Strix Halo iGPU)；resources.metadata.gpu（Basic GPU Environment）只开放这一种。这是开源仓库的默认配置，托管平台以启动页为准"
+        },
+        "gfx": {
+          "label": "gfx 架构",
+          "value": "gfx1151",
+          "source": "rocm-gpu-specs",
+          "where": "AMD Ryzen APU 表，Ryzen AI Max+ 395 一行：Radeon 8060S，LLVM target name 列"
+        },
+        "rocm": {
+          "label": "ROCm",
+          "value": "7.13.0",
+          "source": "aup-base-image",
+          "where": "GPU Base Image：ROCm 7.13.0 Core SDK。这是开源镜像的定义，托管平台以 hg.device_card() 打印的为准"
+        },
+        "torch": {
+          "label": "PyTorch",
+          "value": "2.9.1+rocm7.13.0",
+          "source": "aup-base-image",
+          "where": "GPU Base Image：torch==2.9.1+rocm7.13.0。这是开源镜像的定义，托管平台以 hg.device_card() 打印的为准"
+        },
+        "triton": { "label": "Triton", "value": "[待实测]" }
+      },
+      "open": {
+        "label": "打开 AUP 启动页",
+        "link": "https://tpe.aupcloud.io/hub/git/{repo}",
+        "steps": [
+          "登录后，启动页已经填好仓库地址：选「Basic GPU Environment」和 Radeon 8060S，点「Launch Server」。",
+          "仓库克隆在 `~/hello-gpu`。在左边的文件浏览器里打开 `hello-gpu/{path}`。"
+        ]
+      }
+    },
+    {
+      "id": "local",
+      "name": "本地",
+      "kind": "local",
+      "facts": {
+        "gpu": {
+          "label": "GPU",
+          "value": "AMD Radeon RX 9070 XT",
+          "source": "rocm-10-install",
+          "where": "支持的 GPU › Radeon GPU：AMD Radeon RX 9070 XT (gfx1201)"
+        },
+        "gfx": {
+          "label": "gfx 架构",
+          "value": "gfx1201",
+          "source": "rocm-gpu-specs",
+          "where": "AMD Radeon GPUs 表，Radeon RX 9070 XT 一行的 LLVM target name 列"
+        },
+        "rocm": {
+          "label": "ROCm",
+          "value": "10.0.0",
+          "source": "hello-gpu-ch1",
+          "where": "1.3 节：激活环境后 rocm-sdk version 输出 10.0.0"
+        },
+        "torch": {
+          "label": "PyTorch",
+          "value": "2.13.0+rocm10.0.0",
+          "source": "hello-gpu-ch1",
+          "where": "1.5 节 check_torch_rocm.py 的输出：torch: 2.13.0+rocm10.0.0"
+        },
+        "triton": {
+          "label": "Triton",
+          "value": "3.8.0+git4cff872c.rocm10.0.0",
+          "source": "hello-gpu-ch1",
+          "where": "1.3 节 uv sync 的安装列表：triton==3.8.0+git4cff872c.rocm10.0.0"
+        }
+      }
+    }
+  ]
+}
