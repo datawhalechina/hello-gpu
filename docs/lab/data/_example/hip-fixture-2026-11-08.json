@@ -1,0 +1,184 @@
+{
+  "$schema": "../../schema.json",
+  "version": 1,
+  "example": true,
+  "collector": "示例（没有真实的采集人）",
+  "date": "2026-11-08",
+  "note": "示例，不是实测：设备、软件版本和所有数字都是伪造的，只用来演示档案的格式和浏览页。",
+  "credential": {
+    "v": 1,
+    "stage": "forge-softmax",
+    "route": "hip",
+    "at": "2026-11-08T10:00:00Z",
+    "device": {
+      "name": "Fixture GPU（伪造数据）",
+      "gfx": "gfx9999",
+      "cus": 10
+    },
+    "env": {
+      "rocm": "0.0.0-fixture",
+      "torch": "0.0.0+fixture",
+      "triton": null
+    },
+    "checks": {
+      "passed": 5,
+      "total": 5
+    },
+    "metrics": {
+      "median_ms": 0.36565000000000003,
+      "p10_ms": 0.3644,
+      "p90_ms": 0.368,
+      "gbps": 367.0661233419937,
+      "peak_gbps": 610,
+      "torch_ms": 0.45035000000000003
+    }
+  },
+  "environment": {
+    "platform": "local",
+    "device": {
+      "name": "Fixture GPU（伪造数据）",
+      "gfx": "gfx9999",
+      "cus": 10,
+      "wave": 32,
+      "memory_bytes": 1073741824
+    },
+    "peak": {
+      "gbps": 610,
+      "tflops": 40
+    },
+    "software": {
+      "rocm": "0.0.0-fixture",
+      "hip": "0.0.0-fixture",
+      "torch": "0.0.0+fixture",
+      "triton": null,
+      "python": "0.0.0-fixture"
+    },
+    "system": {
+      "os": "Fixture OS（伪造数据）",
+      "kernel": "0.0.0-fixture",
+      "cpu": "Fixture CPU（伪造数据）"
+    },
+    "variables": {
+      "GPU_ENABLE_WGP_MODE": "1"
+    },
+    "commit": "0000000"
+  },
+  "samples": [
+    {
+      "label": "mine",
+      "note": "4096×4096，FP32",
+      "method": "GPU current-stream events",
+      "warmup": 5,
+      "repeat": 30,
+      "ms": [
+        0.3791, 0.3651, 0.368, 0.3656, 0.365, 0.3644, 0.3676, 0.3657, 0.3643, 0.3644, 0.3644,
+        0.3671, 0.3658, 0.3644, 0.3656, 0.3671, 0.3666, 0.3643, 0.3752, 0.3654, 0.3644, 0.3674,
+        0.3666, 0.3662, 0.3668, 0.368, 0.3676, 0.3655, 0.3648, 0.3645
+      ]
+    },
+    {
+      "label": "torch",
+      "note": "4096×4096，FP32",
+      "method": "GPU current-stream events",
+      "warmup": 5,
+      "repeat": 30,
+      "ms": [
+        0.4688, 0.4487, 0.4508, 0.451, 0.4517, 0.4488, 0.4522, 0.4522, 0.4506, 0.4482, 0.4477,
+        0.4503, 0.4516, 0.4495, 0.4493, 0.4521, 0.4494, 0.46, 0.45, 0.4497, 0.4476, 0.4498, 0.4626,
+        0.4504, 0.4615, 0.4521, 0.451, 0.4493, 0.4476, 0.4495
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "section": "准备",
+      "title": "确认这台机器上的 GPU 和软件版本",
+      "code": "import torch\nimport hello_gpu as hg\nhg.device_card()",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "我的 GPU 卡片\n  名称：Fixture GPU（伪造数据）\n  架构：gfx9999\n  CU 数：10\n  wave 大小：32\n  显存：1.0 GiB\n  软件：ROCm 0.0.0-fixture · PyTorch 0.0.0+fixture · Triton 未找到\n  实测峰值：610.0 GB/s · 40.00 TFLOPS\n  rocminfo：CU 数和 wave 大小和上面一致"
+        }
+      ]
+    },
+    {
+      "section": "动手",
+      "title": "一行里有很大的数时，直接算 exp 会溢出",
+      "code": "x = torch.tensor([1000.0, 1001.0, 1002.0], device=\"cuda\")\ntorch.exp(x)",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "tensor([inf, inf, inf], device='cuda:0')"
+        }
+      ]
+    },
+    {
+      "section": "动手",
+      "title": "每行越长，耗时跟着变长",
+      "code": "widths = [256, 512, 1024, 2048, 4096]\ninputs = {w: torch.randn(4096, w, device=\"cuda\") for w in widths}\nmine = [hg.bench(lambda: softmax_hip(inputs[w]), label=f\"mine-{w}\").median_ms for w in widths]\nbase = [hg.bench(lambda: torch.softmax(inputs[w], dim=-1), label=f\"torch-{w}\").median_ms for w in widths]",
+      "outputs": [
+        {
+          "kind": "chart",
+          "chart": "line",
+          "caption": "4096 行，每行的元素数从 256 到 4096",
+          "x": {
+            "label": "每行元素数",
+            "scale": "log",
+            "values": [256, 512, 1024, 2048, 4096]
+          },
+          "y": {
+            "label": "耗时中位数",
+            "unit": "ms"
+          },
+          "series": [
+            {
+              "name": "mine",
+              "values": [0.0274, 0.0489, 0.0947, 0.1861, 0.3657]
+            },
+            {
+              "name": "torch",
+              "values": [0.0338, 0.0612, 0.1176, 0.2283, 0.4504]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "挑战",
+      "title": "多种形状都要算对",
+      "code": "checks = hg.check(softmax_hip, lambda x: torch.softmax(x, dim=-1),\n                  shapes=[7, (33, 1000), (1, 4096), (4096, 1024), (4096, 4096)])",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "校验 5 个形状（float32，rtol=1.3e-06，atol=1e-05）\n  ✓ 7（最大绝对误差 5.96e-08）\n  ✓ 33×1000（最大绝对误差 2.98e-08）\n  ✓ 1×4096（最大绝对误差 7.45e-09）\n  ✓ 4096×1024（最大绝对误差 2.98e-08）\n  ✓ 4096×4096（最大绝对误差 1.49e-08）\n通过 5/5"
+        }
+      ]
+    },
+    {
+      "section": "挑战",
+      "title": "和 torch 比耗时和带宽",
+      "code": "x = torch.randn(4096, 4096, device=\"cuda\")\nresult = hg.compare({\"torch\": lambda: torch.softmax(x, dim=-1), \"mine\": lambda: softmax_hip(x)},\n                    bytes_moved=2 * x.numel() * 4)",
+      "outputs": [
+        {
+          "kind": "table",
+          "caption": "4096×4096，FP32；带宽按读一遍、写一遍算",
+          "columns": ["实现", "中位数 ms", "p10 ms", "p90 ms", "带宽 GB/s", "占峰值带宽", "相对 torch"],
+          "rows": [
+            ["torch", "0.4504", "0.4481", "0.4602", "298.0", "48.9%", "1.00×"],
+            ["mine", "0.3657", "0.3644", "0.368", "367.1", "60.2%", "1.23×"]
+          ]
+        }
+      ]
+    },
+    {
+      "section": "交成绩",
+      "code": "hg.submit(\"forge-softmax\", \"hip\", checks=checks, metrics=result.metrics(\"mine\"))",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "通关凭证：2-9 Softmax（HIP 路线）\n  校验：5/5 通过\n  测量：median_ms 0.3657 · p10_ms 0.3644 · p90_ms 0.368 · gbps 367.1 · peak_gbps 610 · torch_ms 0.4504\n通关链接（在浏览器里打开，成绩会导入关卡页）：\nhttps://datawhalechina.github.io/hello-gpu/forge/softmax/#lab=HGPU1.VU67TgMxEPwVNC2-kx3fObE_AFoKaGgi4_gup-Qesn1RpOgkSigo6akpEB-Qz0GRqPILyCQQWK1Wmpmd2d1gBcUIfNClhULRutImvi1CrdcgcG0fIj-vOhDoAIURHYmEsYROrhlVNPYtCGZ2VRkLtUGj62i5qNahd_bs8upmv3342L5-3r_snt93T2_77SMIymINFaeUUoLA9B6K0YHANquY41pTQ4GmNKVJcUgDQWidmf_w5394V4W2gWr65XIgMHNrFj7mdNp7O4PKozfoJVQ-ENQ2uMp8L9R2VulmWnsomnKRi5yeihN0jP6KWUbQyROeEJR3nYfiYpxSIdiI84xJyccEndWL6UEVjB4_PzqznPJ_Z4bhCw\n通关码（也可以粘贴到关卡页的「导入成绩」里）：\nHGPU1.VU67TgMxEPwVNC2-kx3fObE_AFoKaGgi4_gup-Qesn1RpOgkSigo6akpEB-Qz0GRqPILyCQQWK1Wmpmd2d1gBcUIfNClhULRutImvi1CrdcgcG0fIj-vOhDoAIURHYmEsYROrhlVNPYtCGZ2VRkLtUGj62i5qNahd_bs8upmv3342L5-3r_snt93T2_77SMIymINFaeUUoLA9B6K0YHANquY41pTQ4GmNKVJcUgDQWidmf_w5394V4W2gWr65XIgMHNrFj7mdNp7O4PKozfoJVQ-ENQ2uMp8L9R2VulmWnsomnKRi5yeihN0jP6KWUbQyROeEJR3nYfiYpxSIdiI84xJyccEndWL6UEVjB4_PzqznPJ_Z4bhCw\n凭证 JSON 已保存：.artifacts/lab/forge-softmax/20261108T100000Z-00000000.json\n星级由关卡页按本关规则计算。"
+        }
+      ]
+    }
+  ]
+}

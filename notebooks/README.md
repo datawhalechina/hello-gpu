@@ -12,6 +12,10 @@
 
 修改代码后，可以用 **Restart Kernel and Run All Cells** 检查结果是否依赖此前留下的变量。首次运行 HIP 单元会编译，后续相同源码可以复用缓存。第 0 章的基础单元不要求 GPU，后续 GPU 实验要求当前 Python 内核能够访问 ROCm GPU。
 
+## 新版实验室（铸造城、试炼场）
+
+新版教程里需要真卡的关卡各有一本实验室 Notebook：源文件在 `src/<区域>/<slug>.md`，`npm run nb:build` 生成到 `forge/`、`trial/` 下面，格式见 [07 实验室规范](../course/specs/07-notebook.md)。在哪个平台跑、怎样从零准备到跑通第一个环境检查，见[实验环境指南](../docs/handbook/setup/index.md)。
+
 ## 章节入口
 
 | 篇 | Notebook | 动手内容 |

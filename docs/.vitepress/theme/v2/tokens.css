@@ -1,0 +1,327 @@
+/*
+ * Hello GPU v2 设计 token（任务 F-01）
+ *
+ * 新版页面和组件的颜色、圆角、阴影、字体、动效都从这里取值，组件里不写死十六进制值。
+ * 这个文件只注册字体、定义变量，不给 body、h1 等元素加样式，旧版页面的外观不受影响。
+ *
+ * 三个开关：
+ * - 亮暗：跟随 VitePress 的 html.dark。
+ * - 区域：布局根元素写 data-zone="novice|forge|trial"，覆盖底色、点阵和强调色（01 第 4 节）。
+ *   其他语义色的含义和取值不变；试炼场是深色区域，亮色模式下也使用暗色变体。
+ * - 强制亮暗：容器写 data-hg-theme="light|dark"，里面的 token 固定为亮色或暗色
+ *   （预览页的亮暗对比、深色英雄区）。可以写在区域容器本身、外层或里层，不要嵌套相反的值。
+ */
+
+/* 字体自托管（@fontsource），只引入 latin 子集和规范用到的字重；中文用系统字体。 */
+@import '@fontsource/space-grotesk/latin-600.css';
+@import '@fontsource/space-grotesk/latin-700.css';
+@import '@fontsource/jetbrains-mono/latin-500.css';
+@import '@fontsource/jetbrains-mono/latin-700.css';
+
+/* ---------- 不随亮暗、区域变化 ---------- */
+:root {
+  /* 字体（01 第 3 节）：标题和数字用 Space Grotesk 600/700，等宽用 JetBrains Mono 500/700 */
+  --hg-font-body: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --hg-font-display: "Space Grotesk", var(--hg-font-body);
+  --hg-font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* 字号（01 第 3 节）；规范给区间的项取一个值 */
+  --hg-text-h1: clamp(32px, 26px + 1.5vw, 40px); /* 32–40px */
+  --hg-text-card-title: 18px; /* 17–19px */
+  --hg-text-body: 16px; /* 新手村正文 */
+  --hg-text-handbook: 15px; /* 手册正文 */
+  --hg-text-label: 12px; /* 眉标、代码区文件名栏（等宽） */
+  --hg-leading-body: 1.65;
+  --hg-tracking-h1: -0.01em;
+  --hg-tracking-eyebrow: 0.08em; /* 眉标：等宽、全大写 */
+
+  /* 形状与阴影（01 第 2.5 节） */
+  --hg-radius-card: 18px; /* 16–20px */
+  --hg-radius-control: 10px; /* 10–12px */
+  --hg-radius-tag: 6px; /* 标签和小块 6–8px */
+  --hg-radius-pill: 999px;
+  --hg-border-width: 1px; /* 描边一律 1px，插画线条除外 */
+  --hg-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 8px 24px rgba(15, 23, 42, 0.06);
+  --hg-shadow-hero: 0 20px 48px rgba(15, 23, 42, 0.18); /* 只给深色英雄区 */
+  --hg-dot-gap: 22px; /* 点阵间距；点的颜色是 --hg-dot，组合好的底纹是 --hg-dot-pattern */
+
+  /* 线程块分类色（01 第 2.3 节）：只区分第几组，不表达对错；按 blockIdx % 6 取色 */
+  --hg-group-0: #38BDF8;
+  --hg-group-1: #2DD4BF;
+  --hg-group-2: #A78BFA;
+  --hg-group-3: #FB923C;
+  --hg-group-4: #F472B6;
+  --hg-group-5: #A3E635;
+
+  /* 代码区（01 第 2.4 节）：亮暗主题和各区域都一样 */
+  --hg-code-bg: #0B1220;
+  --hg-code-ink: #E2E8F0;
+  --hg-code-line-number: #475569;
+  --hg-code-keyword: #C4B5FD;
+  --hg-code-highlight: #FCD34D; /* 当前重点行、读者要改的表达式 */
+  --hg-code-safe: #5EEAD4; /* 边界检查等「安全」代码 */
+  --hg-code-file: #94A3B8; /* 顶部文件名栏的文字 */
+  --hg-code-dot: #1E293B; /* 代码区、深色英雄区、地图面板上更暗的点阵（取自设计稿 Map） */
+
+  /* 时长（02 第 2 节） */
+  --motion-instant: 100ms; /* 悬停、按下 */
+  --motion-fast: 200ms; /* 小元素状态变化 */
+  --motion-base: 300ms; /* 布局过渡、颜色变化 */
+  --motion-slow: 500ms; /* 场景切换、放大缩小 */
+  --motion-scrub: 420ms; /* 拖动时间轴时的补间 */
+  /* 讲解动画每步：基础时长 + 旁白字数 × 每字时长，不超过上限 */
+  --motion-step-base: 1500ms;
+  --motion-step-per-char: 60ms;
+  --motion-step-max: 8000ms;
+
+  /* 缓动（02 第 2 节；曲线取自 easings.net） */
+  --motion-ease-out: cubic-bezier(0.33, 1, 0.68, 1); /* easeOutCubic：进入 */
+  --motion-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1); /* easeInOutCubic：来回移动 */
+  --motion-ease-in: ease-in; /* 离开 */
+}
+
+/* ---------- 中性色、语义色：亮色 ---------- */
+:root,
+[data-hg-theme="light"] {
+  /* 01 第 2.1 节（--hg-bg、--hg-dot 随区域变化，在下面的区域部分） */
+  --hg-surface: #FFFFFF;
+  --hg-surface-2: #F8FAFC;
+  --hg-border: #E2E8F0;
+  --hg-border-strong: #CBD5E1;
+  --hg-ink: #0F172A;
+  --hg-ink-2: #475569;
+  --hg-ink-3: #64748B;
+
+  /* 01 第 2.2 节（--hg-accent 系列随区域变化，在下面的区域部分） */
+  --hg-violet: #8B5CF6;
+  --hg-violet-ink: #6D28D9;
+  --hg-sky-ink: #0369A1;
+  --hg-amber: #F59E0B;
+  --hg-amber-ink: #B45309;
+  --hg-error: #DC2626;
+  --hg-error-ink: #B91C1C;
+  --hg-error-soft: #FEF2F2;
+  --hg-idle: #94A3B8;
+
+  /* 分类色的浅底（01 第 2.3 节） */
+  --hg-group-0-soft: #E0F2FE;
+  --hg-group-1-soft: #CCFBF1;
+  --hg-group-2-soft: #EDE9FE;
+  --hg-group-3-soft: #FFEDD5;
+  --hg-group-4-soft: #FCE7F3;
+  --hg-group-5-soft: #ECFCCB;
+}
+
+/* ---------- 中性色、语义色：暗色（试炼场永远使用这一套） ---------- */
+.dark,
+[data-hg-theme="dark"],
+[data-zone="trial"] {
+  --hg-surface: #111A2E;
+  --hg-surface-2: #0F172A;
+  --hg-border: #253049;
+  --hg-border-strong: #334155;
+  --hg-ink: #E2E8F0;
+  --hg-ink-2: #AAB4CF;
+  --hg-ink-3: #8391B3;
+
+  --hg-violet: #A78BFA;
+  --hg-violet-ink: #C4B5FD;
+  --hg-sky-ink: #7DD3FC;
+  --hg-amber: #FBBF24;
+  --hg-amber-ink: #FCD34D;
+  --hg-error: #F87171;
+  --hg-error-ink: #FCA5A5;
+  --hg-error-soft: rgba(248, 113, 113, 0.14);
+  --hg-idle: #64748B;
+
+  /* 规范只给了亮色浅底；暗色按语义色 soft 的写法，取同色 14% 透明度 */
+  --hg-group-0-soft: rgba(56, 189, 248, 0.14);
+  --hg-group-1-soft: rgba(45, 212, 191, 0.14);
+  --hg-group-2-soft: rgba(167, 139, 250, 0.14);
+  --hg-group-3-soft: rgba(251, 146, 60, 0.14);
+  --hg-group-4-soft: rgba(244, 114, 182, 0.14);
+  --hg-group-5-soft: rgba(163, 230, 53, 0.14);
+}
+
+/*
+ * ---------- 区域（01 第 4 节）：底色、点阵、强调色 ----------
+ * --hg-accent / --hg-accent-ink / --hg-accent-soft 是 01 第 2.2 节的强调色（填充 / 文字 / 底色），
+ * 含义固定为「进度、完成、可操作的焦点」，颜色随区域变化。
+ * --hg-accent-2 是区域的第二强调色（试炼场的紫；其他区域与 --hg-accent 相同），用于光晕等装饰。
+ *
+ * 每个区域先写亮色规则、再写暗色规则；暗色规则里的 :where(.dark) 不增加优先级，
+ * 这样写在外层或区域本身的 data-hg-theme 能盖过页面的亮暗模式。
+ */
+
+/* 新手村 = 默认区域：冷白底 + 电光青 */
+:root,
+[data-hg-theme="light"],
+[data-zone="novice"],
+[data-hg-theme="light"] [data-zone="novice"],
+[data-zone="novice"][data-hg-theme="light"] {
+  --hg-bg: #F5F7FB;
+  --hg-dot: #D5DCE8;
+  --hg-accent: #14B8A6;
+  --hg-accent-ink: #0F766E;
+  --hg-accent-soft: #F0FDFA;
+  --hg-accent-2: #14B8A6;
+}
+
+.dark,
+[data-hg-theme="dark"],
+:where(.dark) [data-zone="novice"],
+[data-hg-theme="dark"] [data-zone="novice"],
+[data-zone="novice"][data-hg-theme="dark"] {
+  --hg-bg: #0B1220;
+  --hg-dot: #1E293B;
+  --hg-accent: #2DD4BF;
+  --hg-accent-ink: #5EEAD4;
+  --hg-accent-soft: rgba(45, 212, 191, 0.12);
+  --hg-accent-2: #2DD4BF;
+}
+
+/* 铸造城：暖白底 + 铜橙；点阵和浅底取自设计稿 Zones */
+[data-zone="forge"],
+[data-hg-theme="light"] [data-zone="forge"],
+[data-zone="forge"][data-hg-theme="light"],
+[data-zone="forge"] [data-hg-theme="light"] {
+  --hg-bg: #FFFBF5;
+  --hg-dot: #E7E5E4;
+  --hg-accent: #F97316;
+  --hg-accent-ink: #C2410C;
+  --hg-accent-soft: #FFF7ED;
+  --hg-accent-2: #F97316;
+}
+
+/* 铸造城的暗色：规范未给，底色和点阵沿用默认暗色，强调色按新手村的亮暗对应关系取浅一级的橙 */
+:where(.dark) [data-zone="forge"],
+[data-hg-theme="dark"] [data-zone="forge"],
+[data-zone="forge"][data-hg-theme="dark"],
+[data-zone="forge"] [data-hg-theme="dark"] {
+  --hg-bg: #0B1220;
+  --hg-dot: #1E293B;
+  --hg-accent: #FB923C;
+  --hg-accent-ink: #FDBA74;
+  --hg-accent-soft: rgba(251, 146, 60, 0.12);
+  --hg-accent-2: #FB923C;
+}
+
+/* 试炼场：深紫底 + 霓虹青 + 紫，亮暗模式下都一样；强调色文字和点阵取自设计稿 Zones */
+[data-zone="trial"],
+[data-zone="trial"] [data-hg-theme="dark"] {
+  --hg-bg: #15132A;
+  --hg-dot: #2A2650;
+  --hg-accent: #22D3EE;
+  --hg-accent-ink: #67E8F9;
+  --hg-accent-soft: rgba(34, 211, 238, 0.12);
+  --hg-accent-2: #8B5CF6;
+}
+
+/*
+ * 点阵底纹：用法 background-image: var(--hg-dot-pattern); background-size: var(--hg-dot-gap) var(--hg-dot-gap);
+ * 它在每个区域、强制亮暗的容器上重新计算；只在局部改 --hg-dot 的元素要自己写 radial-gradient。
+ */
+:root,
+[data-hg-theme],
+[data-zone] {
+  --hg-dot-pattern: radial-gradient(var(--hg-dot) 1px, transparent 1px);
+}
+
+/* 弹跳（easeOutBack，轻微过冲）只给奖励和吉祥物；铸造城、试炼场不弹跳（02 第 2 节） */
+:root,
+[data-zone="novice"] {
+  --motion-ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+[data-zone="forge"],
+[data-zone="trial"] {
+  --motion-ease-out-back: var(--motion-ease-out);
+}
+
+/*
+ * 减弱动效（02 第 4 节）：时长归零、取消过冲，用这些 token 的过渡会直接切换。
+ * 讲解动画每步的时长是阅读时间，不归零。自定义 @keyframes 和 JS 动画要自己判断。
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-instant: 0ms;
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+    --motion-slow: 0ms;
+    --motion-scrub: 0ms;
+  }
+
+  :root,
+  [data-zone] {
+    --motion-ease-out-back: var(--motion-ease-out);
+  }
+}
+
+/*
+ * 站点自己的减弱动效开关：布局根元素写 data-hg-motion="reduce" 时，和系统设置一样处理
+ * （读者在设置里关掉动效，04 第 8 节的「简洁模式」也包含这一项）。
+ * 组件里的自定义 @keyframes 要同时判断这两处，写法见 docs/components/kit/Mascot.vue。
+ */
+[data-hg-motion='reduce'] {
+  --motion-instant: 0ms;
+  --motion-fast: 0ms;
+  --motion-base: 0ms;
+  --motion-slow: 0ms;
+  --motion-scrub: 0ms;
+  --motion-ease-out-back: var(--motion-ease-out);
+}
+
+/*
+ * ---------- 插画（01 第 5 节）：小核、线程小机器人、星星、徽章 ----------
+ * 颜色取自设计稿 Characters、Zones、Rewards；亮暗主题和各区域都不变（插画自带底色和深墨描边）。
+ * 渐变只允许用在小核身体、星星这类插画内部。
+ */
+:root {
+  --hg-art-line: #0F172A; /* 插画线条：深墨色 1.6–2.5px */
+  --hg-art-metal: #CBD5E1; /* 引脚、脚、举起的手 */
+  --hg-art-white: #FFFFFF; /* 高光、线程机器人身体、胸口面板 */
+  --hg-art-screen: #0B1220; /* 屏幕 */
+  --hg-art-screen-top: #1E293B; /* 屏幕渐变顶部、熄屏 */
+  --hg-art-screen-alert: #450A0A; /* 越界时的红屏 */
+  --hg-art-led: #5EEAD4; /* LED 眼睛和嘴 */
+  --hg-art-led-alert: #F87171; /* 越界时的眼睛 */
+  --hg-art-led-off: #94A3B8; /* 熄屏闭眼、待机天线灯、跳过时的色条 */
+  --hg-art-antenna: #F59E0B; /* 小核头顶的天线灯（琥珀） */
+  --hg-art-antenna-on: #2DD4BF; /* 线程机器人正常工作时的天线灯 */
+  --hg-art-body-top: #F0FDFA; /* 小核身体渐变（浅青） */
+  --hg-art-body: #99F6E4;
+  --hg-art-blush: #FDA4AF; /* 腮红 */
+  --hg-art-pulse: #0D9488; /* 胸口脉冲图标 */
+  --hg-art-trim: #14B8A6; /* 身体下角的装饰线 */
+  --hg-art-bulb: #FEF3C7; /* 提示灯泡、数据块顶面 */
+  --hg-art-gold: #FCD34D; /* 星星亮面、数据块侧面 */
+  --hg-art-amber: #F59E0B; /* 星星、数据块暗面、×2 标 */
+  --hg-art-spark: #38BDF8; /* 小火花 */
+  --hg-art-alert: #DC2626; /* 越界叹号底 */
+  --hg-art-sync: #A78BFA; /* 等待同步时的天线灯 */
+  --hg-art-zzz: #64748B; /* 跳过时头顶的 z */
+  --hg-art-skip-stripe: #CBD5E1; /* 检查后跳过：色条变灰 */
+  --hg-art-shadow: rgba(15, 23, 42, 0.12); /* 脚下的投影 */
+
+  /* 区域装扮（设计稿 Zones）：铸造城黄色安全帽，试炼场青色护目镜 */
+  --hg-art-helmet: #FBBF24;
+  --hg-art-helmet-brim: #F59E0B;
+  --hg-art-forge-body: #FFEDD5;
+  --hg-art-forge-led: #FDBA74;
+  --hg-art-forge-antenna: #F97316;
+  --hg-art-visor: #22D3EE;
+  --hg-art-trial-body: #C4B5FD;
+  --hg-art-trial-led: #67E8F9;
+  --hg-art-trial-antenna: #22D3EE;
+  --hg-art-trial-wire: #E2E8F0; /* 深色底上的天线杆 */
+}
+
+/*
+ * ---------- 世界地图（P-01，设计稿 Map）----------
+ * 地图面板永远是深色（面板写 data-hg-theme="dark"），这两个颜色只用在面板里：
+ * Boss 节点外圈的粉色描边和点里的文字。Boss 另外还靠更大的点、双圈和 BOSS 字样区分，不只靠颜色。
+ */
+:root {
+  --hg-map-boss: #F472B6;
+  --hg-map-boss-ink: #F9A8D4;
+}

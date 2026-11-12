@@ -1,14 +1,11 @@
 ---
-layout: page
-sidebar: false
-aside: false
+layout: hg
 title: Hello GPU
-description: 从第一个 Kernel，到经典算子优化，再到算子优化 Agent。沿着理解、测量、优化与自动化的路径动手实践。
-pageClass: hg-home-page
+description: 闯关学 AMD GPU 编程：先在浏览器里看懂 GPU 怎么执行，再到真卡上把算子推近硬件上限。开始或继续冒险、三个区域、定级测试、旧版教程入口和项目信息。
 ---
 
 <script setup>
-import HomePage from './.vitepress/theme/HomePage.vue'
+import HomeV2 from './.vitepress/theme/v2/HomeV2.vue'
 </script>
 
-<HomePage />
+<HomeV2 />

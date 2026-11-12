@@ -55,3 +55,18 @@ docs/superpowers/
 /MEMO-9070XT-VERIFY.md
 /code/part3-agent/HANDOFF.md
 /assets/architecture/
+
+# Maintainer workspaces and internal previews are not tutorial sources.
+.omp/
+.codex/
+.agent-work/
+.local-keep/
+/refactor/
+/docs/preview/
+/scripts/agent-pipeline/
+/scripts/refactor/
+/skills/
+**/CLAUDE.md
+
+# VitePress intermediate files, including interrupted builds.
+docs/.vitepress/.temp/

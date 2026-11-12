@@ -1,0 +1,53 @@
+{
+  "note": "外部练习题索引：别的题库里和本书各关对得上的题，按推荐区域分组，页面在 /dungeon/external/。外部题只放链接：题名照原站写、不翻译，题面不翻译、不改编、不复述，题解（solution: true 的题，页面在 /dungeon/external/<id>/）里的思路和代码是我们原创的。sources 是题库：name 是卡片上写的来源，url 是题库的地址（每道题的链接都要在它下面，许可证才不会标错），license 和 licenseUrl 是许可证和它的全文，checked 是最近一次核对题目链接和许可证的日期。题目的 id 是「题库键-名字」，也是索引页上的锚点；zone 是推荐区域，stages 是关联关卡（同区域、按大纲顺序）。外部题不发经验值：做没做完只有原站知道。scripts/course/course-data-check.mjs 检查这份数据，stage-check.mjs 检查题解页。",
+  "sources": {
+    "leetgpu": {
+      "name": "LeetGPU",
+      "url": "https://leetgpu.com/challenges",
+      "license": "CC BY-NC-ND 4.0",
+      "licenseUrl": "https://github.com/AlphaGPU/leetgpu-challenges/blob/main/LICENSE",
+      "checked": "2026-11-11"
+    },
+    "gpu-mode": {
+      "name": "GPU MODE reference-kernels",
+      "url": "https://github.com/gpu-mode/reference-kernels",
+      "license": "June 9 Researcher Reciprocity License 1.0",
+      "licenseUrl": "https://github.com/gpu-mode/reference-kernels/blob/main/LICENSE",
+      "checked": "2026-11-11"
+    },
+    "gpu-puzzles": {
+      "name": "GPU-Puzzles",
+      "url": "https://github.com/srush/GPU-Puzzles",
+      "license": "MIT",
+      "licenseUrl": "https://github.com/srush/GPU-Puzzles/blob/main/LICENSE",
+      "checked": "2026-11-11"
+    }
+  },
+  "problems": [
+    { "id": "gpu-puzzles-map", "title": "Puzzle 1: Map", "source": "gpu-puzzles", "url": "https://github.com/srush/GPU-Puzzles#puzzle-1-map", "zone": "novice", "stages": ["novice-assign-threads"] },
+    { "id": "leetgpu-vector-addition", "title": "Vector Addition", "source": "leetgpu", "url": "https://leetgpu.com/challenges/vector-addition", "zone": "novice", "stages": ["novice-assign-threads", "novice-thread-groups"] },
+    { "id": "gpu-puzzles-guards", "title": "Puzzle 3 - Guards", "source": "gpu-puzzles", "url": "https://github.com/srush/GPU-Puzzles#puzzle-3---guards", "zone": "novice", "stages": ["novice-thread-groups"] },
+    { "id": "gpu-puzzles-blocks", "title": "Puzzle 6 - Blocks", "source": "gpu-puzzles", "url": "https://github.com/srush/GPU-Puzzles#puzzle-6---blocks", "zone": "novice", "stages": ["novice-thread-groups"] },
+    { "id": "leetgpu-matrix-transpose", "title": "Matrix Transpose", "source": "leetgpu", "url": "https://leetgpu.com/challenges/matrix-transpose", "zone": "novice", "stages": ["novice-thread-groups", "novice-coalescing"] },
+    { "id": "gpu-puzzles-shared", "title": "Puzzle 8 - Shared", "source": "gpu-puzzles", "url": "https://github.com/srush/GPU-Puzzles#puzzle-8---shared", "zone": "novice", "stages": ["novice-lds-sync"] },
+    { "id": "gpu-puzzles-dot-product", "title": "Puzzle 10 - Dot Product", "source": "gpu-puzzles", "url": "https://github.com/srush/GPU-Puzzles#puzzle-10---dot-product", "zone": "novice", "stages": ["novice-lds-sync", "novice-reduction"] },
+    { "id": "gpu-puzzles-prefix-sum", "title": "Puzzle 12 - Prefix Sum", "source": "gpu-puzzles", "url": "https://github.com/srush/GPU-Puzzles#puzzle-12---prefix-sum", "zone": "novice", "stages": ["novice-lds-sync", "novice-reduction"] },
+    { "id": "leetgpu-histogramming", "title": "Histogramming", "source": "leetgpu", "url": "https://leetgpu.com/challenges/histogramming", "zone": "novice", "stages": ["novice-lds-sync", "novice-reduction"] },
+    { "id": "leetgpu-swish-gated-linear-unit", "title": "Swish-Gated Linear Unit", "source": "leetgpu", "url": "https://leetgpu.com/challenges/swish-gated-linear-unit", "zone": "forge", "stages": ["forge-fusion"] },
+    { "id": "leetgpu-dot-product", "title": "Dot Product", "source": "leetgpu", "url": "https://leetgpu.com/challenges/dot-product", "zone": "forge", "stages": ["forge-fusion", "forge-reduction-practice"] },
+    { "id": "leetgpu-reduction", "title": "Reduction", "source": "leetgpu", "url": "https://leetgpu.com/challenges/reduction", "zone": "forge", "stages": ["forge-reduction-practice"], "solution": true },
+    { "id": "gpu-mode-vectorsum", "title": "pmpp_v2/vectorsum_py", "source": "gpu-mode", "url": "https://github.com/gpu-mode/reference-kernels/tree/main/problems/pmpp_v2/vectorsum_py", "zone": "forge", "stages": ["forge-reduction-practice"] },
+    { "id": "leetgpu-row-wise-argmax", "title": "Row-wise Argmax", "source": "leetgpu", "url": "https://leetgpu.com/challenges/row-wise-argmax", "zone": "forge", "stages": ["forge-reduction-practice"] },
+    { "id": "leetgpu-softmax", "title": "Softmax", "source": "leetgpu", "url": "https://leetgpu.com/challenges/softmax", "zone": "forge", "stages": ["forge-softmax"], "solution": true },
+    { "id": "leetgpu-rms-normalization", "title": "RMS Normalization", "source": "leetgpu", "url": "https://leetgpu.com/challenges/rms-normalization", "zone": "forge", "stages": ["forge-norm"] },
+    { "id": "leetgpu-layer-normalization", "title": "Layer Normalization", "source": "leetgpu", "url": "https://leetgpu.com/challenges/layer-normalization", "zone": "forge", "stages": ["forge-norm"] },
+    { "id": "leetgpu-fused-residual-add-rms-norm", "title": "Fused Residual Add and RMS Norm", "source": "leetgpu", "url": "https://leetgpu.com/challenges/fused-residual-add-and-rms-norm", "zone": "forge", "stages": ["forge-fusion", "forge-norm"], "solution": true },
+    { "id": "leetgpu-sparse-matrix-vector-multiplication", "title": "Sparse Matrix-Vector Multiplication", "source": "leetgpu", "url": "https://leetgpu.com/challenges/sparse-matrix-vector-multiplication", "zone": "trial", "stages": ["trial-memory-advanced", "trial-wave-cooperation"] },
+    { "id": "leetgpu-sorting", "title": "Sorting", "source": "leetgpu", "url": "https://leetgpu.com/challenges/sorting", "zone": "trial", "stages": ["trial-wave-cooperation"] },
+    { "id": "gpu-mode-prefixsum", "title": "pmpp_v2/prefixsum_py", "source": "gpu-mode", "url": "https://github.com/gpu-mode/reference-kernels/tree/main/problems/pmpp_v2/prefixsum_py", "zone": "trial", "stages": ["trial-wave-cooperation"] },
+    { "id": "leetgpu-gemm", "title": "General Matrix Multiplication (GEMM)", "source": "leetgpu", "url": "https://leetgpu.com/challenges/general-matrix-multiplication-gemm", "zone": "trial", "stages": ["trial-gemm-tiling", "trial-gemm-matrix-cores"] },
+    { "id": "leetgpu-2d-convolution", "title": "2D Convolution", "source": "leetgpu", "url": "https://leetgpu.com/challenges/2d-convolution", "zone": "trial", "stages": ["trial-gemm-tiling"] },
+    { "id": "leetgpu-int8-quantized-matmul", "title": "INT8 Quantized MatMul", "source": "leetgpu", "url": "https://leetgpu.com/challenges/int8-quantized-matmul", "zone": "trial", "stages": ["trial-gemm-matrix-cores"] },
+    { "id": "leetgpu-softmax-attention", "title": "Softmax Attention", "source": "leetgpu", "url": "https://leetgpu.com/challenges/softmax-attention", "zone": "trial", "stages": ["trial-attention"] }
+  ]
+}

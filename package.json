@@ -8,20 +8,32 @@
     "docs:build-atlas": "node scripts/build-atlas.mjs",
     "docs:dev": "npm run docs:sync-outline && npm run docs:build-images && npm run docs:build-atlas && vitepress dev docs",
     "docs:build": "npm run docs:sync-outline && npm run docs:build-images && npm run docs:build-atlas && vitepress build docs && npm run docs:check-chapter-ui",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "test": "node --test scripts/tests/*.test.mjs",
+    "nb:build": "node scripts/course/nb-build.mjs",
+    "nb:check": "node scripts/course/nb-check.mjs",
+    "course:check": "npm run docs:check-outline && node scripts/course/course-data-check.mjs && node scripts/course/stage-check.mjs && npm run nb:check && node scripts/course/lab-data-check.mjs"
   },
   "dependencies": {
+    "@codemirror/commands": "6.11.1",
+    "@codemirror/language": "6.13.1",
+    "@codemirror/state": "6.7.6",
+    "@codemirror/view": "6.43.15",
+    "@fontsource/jetbrains-mono": "5.3.0",
+    "@fontsource/space-grotesk": "5.3.0",
     "markdown-it-container": "^4.0.0",
     "markdown-it-footnote": "^4.0.0",
     "markdown-it-mathjax3": "^4.3.2",
     "mermaid": "^11.14.0",
+    "pyodide": "314.0.7",
     "vitepress": "2.0.0-alpha.18",
     "vue": "^3.5.0"
   },
   "devDependencies": {
+    "esbuild": "0.25.12",
     "sharp": "^0.33.5"
   },
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": ">=22.18.0"
   }
 }

@@ -1,0 +1,301 @@
+/*
+ * 新版页面外壳与正文排版（F-06）
+ *
+ * 这个文件不是 scoped 样式，所有选择器都以 .hg-shell / .hg-prose 开头，
+ * 这两个类只出现在新版布局里，旧版页面（默认主题的 .vp-doc）不受影响。
+ * HgLayout、关卡布局 StageLayout（F-10）和副本布局 DungeonLayout（X-01）都渲染 Markdown 正文，排版规则放在这里共用。
+ *
+ * 取值全部来自 课程规则：字体和字号第 3 节、颜色第 2.1–2.2 节、
+ * 圆角和描边第 2.5 节、代码区第 2.4 节（深色代码区在亮暗主题下都一样）。
+ */
+
+/* 顶栏是吸顶的，锚点跳转要留出它的高度；旧版页面在 custom.css 里另有设置。 */
+html:has(.hg-shell) {
+  scroll-padding-top: 80px;
+}
+
+/* 关卡页和副本页的状态栏更高（手机上有两行，第二行放写法 / 路线切换），锚点和进度点跳转要留出更多。 */
+html:has(.hg-stage) {
+  scroll-padding-top: 96px;
+}
+
+@media (max-width: 767px) {
+  html:has(.hg-stage) {
+    scroll-padding-top: 112px;
+  }
+}
+
+/* ---------- 新版布局共用的外壳（HgLayout、StageLayout、DungeonLayout）---------- */
+
+.hg-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--hg-bg);
+  background-image: var(--hg-dot-pattern);
+  background-size: var(--hg-dot-gap) var(--hg-dot-gap);
+  color: var(--hg-ink);
+  font-family: var(--hg-font-body);
+}
+
+/* 简洁模式（01 第 4 节、04 第 8 节）：收起点阵底纹。 */
+.hg-shell.is-plain {
+  background-image: none;
+}
+
+.hg-shell .hg-skip {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 30;
+  padding: 8px 14px;
+  border: var(--hg-border-width) solid var(--hg-border-strong);
+  border-radius: var(--hg-radius-control);
+  background: var(--hg-surface);
+  color: var(--hg-ink);
+  font-size: 14px;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.hg-shell .hg-skip:focus-visible {
+  outline: 2px solid var(--hg-accent);
+  outline-offset: 2px;
+  transform: none;
+}
+
+.hg-shell .hg-main {
+  flex: 1 0 auto;
+  width: 100%;
+  max-width: var(--hg-shell-max);
+  margin: 0 auto;
+  padding: 28px 24px 56px;
+  outline: none;
+}
+
+@media (max-width: 767px) {
+  .hg-shell .hg-main {
+    padding: 22px 16px 40px;
+  }
+}
+
+/* 关卡页和副本页（StageLayout、DungeonLayout）的正文版心比通用页面窄（设计稿 Stage：920px），读起来更专注。 */
+.hg-shell.hg-stage {
+  --hg-shell-max: 920px;
+}
+
+/* frontmatter 的 stage / dungeon 写错时布局画的红框（F-09：构建时见到它就失败）。 */
+.hg-shell .hg-stage-error {
+  margin: 0 0 24px;
+  padding: 14px 18px;
+  border: 2px dashed var(--hg-error);
+  border-radius: var(--hg-radius-card);
+  background: var(--hg-error-soft);
+  color: var(--hg-error-ink);
+  font-weight: 600;
+}
+
+.hg-prose {
+  font-size: var(--hg-text-body);
+  line-height: var(--hg-leading-body);
+  color: var(--hg-ink);
+}
+
+.hg-prose > :first-child {
+  margin-top: 0;
+}
+
+.hg-prose h1,
+.hg-prose h2,
+.hg-prose h3,
+.hg-prose h4 {
+  font-family: var(--hg-font-display);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--hg-ink);
+}
+
+.hg-prose h1 {
+  margin: 0 0 16px;
+  font-size: var(--hg-text-h1);
+  letter-spacing: var(--hg-tracking-h1);
+}
+
+.hg-prose h2 {
+  margin: 44px 0 14px;
+  padding-top: 20px;
+  border-top: var(--hg-border-width) solid var(--hg-border);
+  font-size: 26px;
+  letter-spacing: var(--hg-tracking-h1);
+}
+
+.hg-prose h3 {
+  margin: 30px 0 10px;
+  font-size: 20px;
+}
+
+.hg-prose h4 {
+  margin: 24px 0 8px;
+  font-size: var(--hg-text-card-title);
+}
+
+.hg-prose p,
+.hg-prose ul,
+.hg-prose ol {
+  margin: 0 0 16px;
+}
+
+.hg-prose ul,
+.hg-prose ol {
+  padding-left: 22px;
+}
+
+/* VitePress 的 base.css 把所有列表的项目符号清掉了，默认主题只在 .vp-doc 里加回来，这里同样加回。 */
+.hg-prose ul {
+  list-style: disc;
+}
+
+.hg-prose ol {
+  list-style: decimal;
+}
+
+.hg-prose li {
+  margin: 4px 0;
+}
+
+.hg-prose a {
+  color: var(--hg-accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.hg-prose a:hover {
+  text-decoration-thickness: 2px;
+}
+
+.hg-prose a:focus-visible {
+  outline: 2px solid var(--hg-accent);
+  outline-offset: 2px;
+}
+
+.hg-prose strong {
+  font-weight: 700;
+}
+
+.hg-prose blockquote {
+  margin: 20px 0;
+  padding: 2px 0 2px 16px;
+  border-left: 2px solid var(--hg-border-strong);
+  color: var(--hg-ink-2);
+}
+
+.hg-prose hr {
+  margin: 36px 0;
+  border: 0;
+  border-top: var(--hg-border-width) solid var(--hg-border);
+}
+
+.hg-prose img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 标题的锚点链接：悬停或聚焦时才显示（默认主题的 .vp-doc 样式对新版页面不生效）。 */
+.hg-prose .header-anchor {
+  margin-left: 0.3em;
+  color: var(--hg-ink-3);
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity var(--motion-fast) var(--motion-ease-out);
+}
+
+.hg-prose .header-anchor::before {
+  content: '#';
+}
+
+.hg-prose :is(h1, h2, h3, h4):hover .header-anchor,
+.hg-prose .header-anchor:focus-visible {
+  opacity: 1;
+}
+
+/* 表格 */
+.hg-prose table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  margin: 0 0 20px;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.hg-prose th,
+.hg-prose td {
+  padding: 8px 14px;
+  border: var(--hg-border-width) solid var(--hg-border);
+  text-align: left;
+}
+
+.hg-prose th {
+  background: var(--hg-surface-2);
+  font-weight: 600;
+}
+
+/* 行内代码 */
+.hg-prose :not(pre) > code {
+  padding: 2px 6px;
+  border: var(--hg-border-width) solid var(--hg-border);
+  border-radius: var(--hg-radius-tag);
+  background: var(--hg-surface-2);
+  font-family: var(--hg-font-mono);
+  font-size: 0.9em;
+  color: var(--hg-ink);
+}
+
+/* 代码区（01 第 2.4 节）：亮暗主题下都是深色底，顶部有文件名栏。 */
+.hg-prose div[class*='language-'] {
+  position: relative;
+  margin: 0 0 20px;
+  border-radius: var(--hg-radius-card);
+  background: var(--hg-code-bg);
+  overflow: hidden;
+}
+
+.hg-prose div[class*='language-'] > span.lang {
+  display: block;
+  padding: 8px 18px 0;
+  font-family: var(--hg-font-mono);
+  font-size: var(--hg-text-label);
+  color: var(--hg-code-file);
+}
+
+.hg-prose div[class*='language-'] > button.copy {
+  display: none;
+}
+
+.hg-prose div[class*='language-'] pre {
+  margin: 0;
+  padding: 12px 18px 16px;
+  background: transparent;
+  overflow-x: auto;
+}
+
+.hg-prose div[class*='language-'] code {
+  font-family: var(--hg-font-mono);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--hg-code-ink);
+}
+
+/* 深色代码区在亮色主题下也要用 shiki 的暗色配色，否则对比度不够。 */
+html:not(.dark) .hg-prose .shiki span {
+  color: var(--shiki-dark, var(--hg-code-ink)) !important;
+  font-style: var(--shiki-dark-font-style, inherit) !important;
+  font-weight: var(--shiki-dark-font-weight, inherit) !important;
+  text-decoration: var(--shiki-dark-text-decoration, inherit) !important;
+}
+
+.hg-prose .line-number,
+.hg-prose .line-numbers-wrapper {
+  color: var(--hg-code-line-number);
+}
