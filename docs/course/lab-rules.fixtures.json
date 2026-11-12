@@ -1,0 +1,485 @@
+{
+  "note": "实验室的共享测试样例（07-notebook.md 第 8、9 节）。Python（notebooks/common/tests/test_lab_rules.py，hello_gpu.stars / hello_gpu.codes）和网页的 TypeScript（L-02 的 scripts/tests/course-lab.test.mjs）都跑这一份，结果必须一致。cases：星级求值，每条写 stars（规则，格式同 outline.json 的 lab.stars）或 stage（用 outline.json 里这一关的 lab.stars），credential 只需要 checks 和 metrics，earned 是逐颗的期望结果；凭证里缺数或数不合格只算没拿到，不报错。invalid：两边的求值器都必须报错的规则。codes：Python 和 Node 各自编码的通关码（HGPU1.）和 GPU 卡片导入码（HGCARD1.），两边解码后都必须等于 payload。各关的实验室任务把本关的样例加进 cases（写 stage），不要改已有的样例。设备和版本是伪造的测试数据，数字只是格式示例，不是实测值。",
+  "cases": [
+    {
+      "name": "规范示例：三颗星都拿到（带宽正好是峰值的 60%）",
+      "stars": [
+        { "text": "多种形状都通过校验", "rule": { "checksAll": true } },
+        { "text": "达到你这张卡实测峰值带宽的 60%", "rule": { "ratio": ["gbps", "peak_gbps"], "gte": 0.6 } },
+        { "text": "比同一张卡上的 torch 快", "rule": { "ratio": ["torch_ms", "median_ms"], "gte": 1.0 } }
+      ],
+      "credential": {
+        "checks": { "passed": 5, "total": 5 },
+        "metrics": { "median_ms": 0.123, "gbps": 366, "peak_gbps": 610, "torch_ms": 0.15 }
+      },
+      "earned": [true, true, true]
+    },
+    {
+      "name": "有一个形状没通过：没有第一颗星，其他星照常判断",
+      "stars": [
+        { "text": "多种形状都通过校验", "rule": { "checksAll": true } },
+        { "text": "达到你这张卡实测峰值带宽的 60%", "rule": { "ratio": ["gbps", "peak_gbps"], "gte": 0.6 } },
+        { "text": "比同一张卡上的 torch 快", "rule": { "ratio": ["torch_ms", "median_ms"], "gte": 1.0 } }
+      ],
+      "credential": {
+        "checks": { "passed": 4, "total": 5 },
+        "metrics": { "median_ms": 0.123, "gbps": 400, "peak_gbps": 610, "torch_ms": 0.15 }
+      },
+      "earned": [false, true, true]
+    },
+    {
+      "name": "带宽差一点到 60%，比 torch 慢",
+      "stars": [
+        { "text": "达到你这张卡实测峰值带宽的 60%", "rule": { "ratio": ["gbps", "peak_gbps"], "gte": 0.6 } },
+        { "text": "比同一张卡上的 torch 快", "rule": { "ratio": ["torch_ms", "median_ms"], "gte": 1.0 } }
+      ],
+      "credential": {
+        "checks": { "passed": 5, "total": 5 },
+        "metrics": { "median_ms": 0.2, "gbps": 365.9, "peak_gbps": 610, "torch_ms": 0.15 }
+      },
+      "earned": [false, false]
+    },
+    {
+      "name": "和 torch 一样快也算（gte 是大于等于）",
+      "stars": [
+        { "text": "不比 torch 慢", "rule": { "ratio": ["torch_ms", "median_ms"], "gte": 1 } }
+      ],
+      "credential": { "checks": { "passed": 3, "total": 3 }, "metrics": { "median_ms": 0.5, "torch_ms": 0.5 } },
+      "earned": [true]
+    },
+    {
+      "name": "整数阈值：正好快一倍",
+      "stars": [
+        { "text": "比朴素实现快一倍", "rule": { "ratio": ["naive_ms", "median_ms"], "gte": 2 } }
+      ],
+      "credential": { "checks": { "passed": 3, "total": 3 }, "metrics": { "median_ms": 0.15, "naive_ms": 0.3 } },
+      "earned": [true]
+    },
+    {
+      "name": "先算 a ÷ b 再和 gte 比（4.18 ÷ 1.9 在浮点里略小于 2.2），不能改写成 a ≥ gte × b",
+      "stars": [
+        { "text": "比朴素实现快 2.2 倍", "rule": { "ratio": ["naive_ms", "median_ms"], "gte": 2.2 } }
+      ],
+      "credential": { "checks": { "passed": 1, "total": 1 }, "metrics": { "median_ms": 1.9, "naive_ms": 4.18 } },
+      "earned": [false]
+    },
+    {
+      "name": "凭证里没有 torch_ms：这颗星不算，也不报错",
+      "stars": [
+        { "text": "多种形状都通过校验", "rule": { "checksAll": true } },
+        { "text": "比同一张卡上的 torch 快", "rule": { "ratio": ["torch_ms", "median_ms"], "gte": 1.0 } }
+      ],
+      "credential": { "checks": { "passed": 2, "total": 2 }, "metrics": { "median_ms": 0.1 } },
+      "earned": [true, false]
+    },
+    {
+      "name": "测量值是 0、负数、字符串或布尔值：都不算",
+      "stars": [
+        { "text": "带宽", "rule": { "ratio": ["gbps", "peak_gbps"], "gte": 0.5 } },
+        { "text": "torch", "rule": { "ratio": ["torch_ms", "median_ms"], "gte": 1.0 } },
+        { "text": "朴素", "rule": { "ratio": ["naive_ms", "median_ms"], "gte": 1.0 } },
+        { "text": "布尔", "rule": { "ratio": ["flag_ms", "base_ms"], "gte": 0.5 } }
+      ],
+      "credential": {
+        "checks": { "passed": 1, "total": 1 },
+        "metrics": { "median_ms": 0.1, "gbps": 0, "peak_gbps": 600, "torch_ms": -1, "naive_ms": "0.3", "flag_ms": true, "base_ms": 1 }
+      },
+      "earned": [false, false, false, false]
+    },
+    {
+      "name": "passed 写成 5.0：和 5 是同一个数",
+      "stars": [
+        { "text": "多种形状都通过校验", "rule": { "checksAll": true } }
+      ],
+      "credential": { "checks": { "passed": 5.0, "total": 5 }, "metrics": {} },
+      "earned": [true]
+    },
+    {
+      "name": "total 是 0（一个形状都没校验）：不算",
+      "stars": [
+        { "text": "零个形状", "rule": { "checksAll": true } }
+      ],
+      "credential": { "checks": { "passed": 0, "total": 0 }, "metrics": {} },
+      "earned": [false]
+    },
+    {
+      "name": "passed 比 total 大：不算",
+      "stars": [
+        { "text": "多种形状都通过校验", "rule": { "checksAll": true } }
+      ],
+      "credential": { "checks": { "passed": 6, "total": 5 }, "metrics": {} },
+      "earned": [false]
+    },
+    {
+      "name": "passed 不是整数：不算",
+      "stars": [
+        { "text": "多种形状都通过校验", "rule": { "checksAll": true } }
+      ],
+      "credential": { "checks": { "passed": 4.5, "total": 4.5 }, "metrics": {} },
+      "earned": [false]
+    },
+    {
+      "name": "凭证缺 checks 和 metrics：全部不算，不报错",
+      "stars": [
+        { "text": "多种形状都通过校验", "rule": { "checksAll": true } },
+        { "text": "比同一张卡上的 torch 快", "rule": { "ratio": ["torch_ms", "median_ms"], "gte": 1.0 } }
+      ],
+      "credential": {},
+      "earned": [false, false]
+    },
+    {
+      "name": "凭证自带的结论一律不看，只按规则算",
+      "stars": [
+        { "text": "比同一张卡上的 torch 快", "rule": { "ratio": ["torch_ms", "median_ms"], "gte": 1.0 } }
+      ],
+      "credential": {
+        "checks": { "passed": 1, "total": 1 },
+        "metrics": { "median_ms": 0.2, "torch_ms": 0.1 },
+        "stars": [true, true, true],
+        "earned": [true]
+      },
+      "earned": [false]
+    },
+    {
+      "name": "多出来的字段（例如徽章标记）不影响求值",
+      "stars": [
+        { "text": "比同一张卡上的 torch 快", "rule": { "ratio": ["torch_ms", "median_ms"], "gte": 1.0 }, "badge": "beat-torch" }
+      ],
+      "credential": { "checks": { "passed": 1, "total": 1 }, "metrics": { "median_ms": 0.1, "torch_ms": 0.2 } },
+      "earned": [true]
+    },
+    {
+      "name": "没有星的规则：结果是空列表",
+      "stars": [],
+      "credential": { "checks": { "passed": 1, "total": 1 }, "metrics": { "median_ms": 0.1 } },
+      "earned": []
+    },
+    {
+      "name": "2-1：三个数都读对，矩阵够大，算上拷进拷回 GPU 也比 CPU 快：三颗星",
+      "stage": "forge-your-gpu",
+      "credential": {
+        "checks": { "passed": 3, "total": 3 },
+        "metrics": { "median_ms": 0.45, "trip_ms": 3.2, "cpu_ms": 12.3, "n": 1024 }
+      },
+      "earned": [true, true, true]
+    },
+    {
+      "name": "2-1：CU 数填成了 WGP 的个数，矩阵太小，GPU 两种都比 CPU 慢：一颗星也没有",
+      "stage": "forge-your-gpu",
+      "credential": {
+        "checks": { "passed": 2, "total": 3 },
+        "metrics": { "median_ms": 0.02, "trip_ms": 0.15, "cpu_ms": 0.004, "n": 32 }
+      },
+      "earned": [false, false, false]
+    },
+    {
+      "name": "2-1：数据已在显存里时 GPU 快，算上拷进拷回还是 CPU 快：没有第三颗星",
+      "stage": "forge-your-gpu",
+      "credential": {
+        "checks": { "passed": 3, "total": 3 },
+        "metrics": { "median_ms": 0.03, "trip_ms": 0.3, "cpu_ms": 0.2, "n": 256 }
+      },
+      "earned": [true, true, false]
+    },
+    {
+      "name": "2-1：和 CPU 一样快也算（gte 1 是不慢于 CPU）；凭证里没有 trip_ms 时第三颗星不算",
+      "stage": "forge-your-gpu",
+      "credential": {
+        "checks": { "passed": 3, "total": 3 },
+        "metrics": { "median_ms": 0.5, "cpu_ms": 0.5, "n": 512 }
+      },
+      "earned": [true, true, false]
+    },
+    {
+      "name": "2-2：7 个长度都对，有效带宽是 torch 的 98%：三颗星",
+      "stage": "forge-first-real-kernel",
+      "credential": {
+        "checks": { "passed": 7, "total": 7 },
+        "metrics": { "median_ms": 1.25, "p10_ms": 1.24, "p90_ms": 1.27, "gbps": 644.2, "torch_ms": 1.225 }
+      },
+      "earned": [true, true, true]
+    },
+    {
+      "name": "2-2：第一版没写边界检查，不能整除的长度都越界写了，校验 3/7：没有 ★1；后两颗按规则照样判（网页上 ★1 没过一颗星都不发）",
+      "stage": "forge-first-real-kernel",
+      "credential": {
+        "checks": { "passed": 3, "total": 7 },
+        "metrics": { "median_ms": 1.22, "gbps": 660.1, "torch_ms": 1.225 }
+      },
+      "earned": [false, true, true]
+    },
+    {
+      "name": "2-2：有效带宽是 torch 的 85%：有 ★2，没有 ★3",
+      "stage": "forge-first-real-kernel",
+      "credential": {
+        "checks": { "passed": 7, "total": 7 },
+        "metrics": { "median_ms": 1.44, "gbps": 559.2, "torch_ms": 1.225 }
+      },
+      "earned": [true, true, false]
+    },
+    {
+      "name": "2-2：块开得太小，有效带宽不到 torch 的一半：只有 ★1",
+      "stage": "forge-first-real-kernel",
+      "credential": {
+        "checks": { "passed": 7, "total": 7 },
+        "metrics": { "median_ms": 3.1, "gbps": 259.8, "torch_ms": 1.225 }
+      },
+      "earned": [true, false, false]
+    },
+    {
+      "name": "2-2：比值正好是 0.95 也算（gte 是不小于）：三颗星",
+      "stage": "forge-first-real-kernel",
+      "credential": {
+        "checks": { "passed": 7, "total": 7 },
+        "metrics": { "median_ms": 1, "gbps": 805.3, "torch_ms": 0.95 }
+      },
+      "earned": [true, true, true]
+    },
+    {
+      "name": "2-2：凭证里没有 torch_ms（没和 torch 比）：后两颗都不算",
+      "stage": "forge-first-real-kernel",
+      "credential": {
+        "checks": { "passed": 7, "total": 7 },
+        "metrics": { "median_ms": 1.25, "gbps": 644.2 }
+      },
+      "earned": [true, false, false]
+    },
+    {
+      "name": "2-3：计时函数三种情况都对上，数组装得进缓存，热缓存也测得稳：三颗星",
+      "stage": "forge-trusted-timing",
+      "credential": {
+        "checks": { "passed": 3, "total": 3 },
+        "metrics": { "median_ms": 0.031, "p10_ms": 0.0295, "p90_ms": 0.0322, "cold_ms": 0.084, "cold_p10_ms": 0.082, "cold_p90_ms": 0.087 }
+      },
+      "earned": [true, true, true]
+    },
+    {
+      "name": "2-3：计时函数没等 GPU 算完就停表，三种情况只对上 1 种：没有 ★1；后两颗按规则照样判（网页上 ★1 没过一颗星都不发）",
+      "stage": "forge-trusted-timing",
+      "credential": {
+        "checks": { "passed": 1, "total": 3 },
+        "metrics": { "median_ms": 0.031, "p10_ms": 0.0295, "p90_ms": 0.0322, "cold_ms": 0.084 }
+      },
+      "earned": [false, true, true]
+    },
+    {
+      "name": "2-3：数组太大，缓存装不下，冷热差不多：有 ★2，没有 ★3",
+      "stage": "forge-trusted-timing",
+      "credential": {
+        "checks": { "passed": 3, "total": 3 },
+        "metrics": { "median_ms": 1.252, "p10_ms": 1.248, "p90_ms": 1.262, "cold_ms": 1.255, "gbps": 643.3, "cold_gbps": 641.8 }
+      },
+      "earned": [true, true, false]
+    },
+    {
+      "name": "2-3：数组太小，一次加法太短，热缓存的波动超过一成：有 ★3，没有 ★2",
+      "stage": "forge-trusted-timing",
+      "credential": {
+        "checks": { "passed": 3, "total": 3 },
+        "metrics": { "median_ms": 0.0121, "p10_ms": 0.0102, "p90_ms": 0.0148, "cold_ms": 0.0196 }
+      },
+      "earned": [true, false, true]
+    },
+    {
+      "name": "2-3：p10 正好是 p90 的 0.9 倍、冷缓存的中位数正好等于热缓存的 p90 也算（gte 是不小于）：三颗星",
+      "stage": "forge-trusted-timing",
+      "credential": {
+        "checks": { "passed": 3, "total": 3 },
+        "metrics": { "median_ms": 0.95, "p10_ms": 0.9, "p90_ms": 1, "cold_ms": 1 }
+      },
+      "earned": [true, true, true]
+    },
+    {
+      "name": "2-3：凭证里没有 cold_ms（只测了热缓存）：没有 ★3",
+      "stage": "forge-trusted-timing",
+      "credential": {
+        "checks": { "passed": 3, "total": 3 },
+        "metrics": { "median_ms": 0.031, "p10_ms": 0.0295, "p90_ms": 0.0322 }
+      },
+      "earned": [true, true, false]
+    },
+    {
+      "name": "2-4：工作量五种形状都对，2²⁶ 个数的加法跑到峰值带宽，k = 4096 的矩阵乘过了拐点：三颗星",
+      "stage": "forge-roofline",
+      "credential": {
+        "checks": { "passed": 5, "total": 5 },
+        "metrics": { "add_ms": 1.31, "add_gbps": 614.7, "add_intensity": 0.08333, "mm_ms": 13.0, "mm_tflops": 10.57, "mm_intensity": 682.7, "mm_roof_tflops": 24.3, "ridge": 39.68, "peak_gbps": 612.4, "peak_tflops": 24.3 }
+      },
+      "earned": [true, true, true]
+    },
+    {
+      "name": "2-4：TODO 原样交上来：工作量没写（0/5），加法只有 2¹² 个数，矩阵乘的点没画：一颗星也没有",
+      "stage": "forge-roofline",
+      "credential": {
+        "checks": { "passed": 0, "total": 5 },
+        "metrics": { "add_ms": 0.0098, "add_gbps": 5.016, "add_intensity": 0.08333, "ridge": 39.68, "peak_gbps": 612.4, "peak_tflops": 24.3 }
+      },
+      "earned": [false, false, false]
+    },
+    {
+      "name": "2-4：字节数数成了个数（少乘 4），校验 0/5：没有 ★1；k = 64 的矩阵乘算术强度被放大 4 倍，按规则过了拐点（网页上 ★1 没过一颗星都不发）",
+      "stage": "forge-roofline",
+      "credential": {
+        "checks": { "passed": 0, "total": 5 },
+        "metrics": { "add_ms": 1.31, "add_gbps": 614.7, "mm_ms": 0.62, "mm_intensity": 124.1, "ridge": 39.68, "peak_gbps": 612.4, "peak_tflops": 24.3 }
+      },
+      "earned": [false, true, true]
+    },
+    {
+      "name": "2-4：有效带宽正好是峰值带宽的 0.8 倍、矩阵乘的算术强度正好等于拐点也算（gte 是不小于）：三颗星",
+      "stage": "forge-roofline",
+      "credential": {
+        "checks": { "passed": 5, "total": 5 },
+        "metrics": { "add_gbps": 400, "mm_intensity": 50, "ridge": 50, "peak_gbps": 500, "peak_tflops": 25 }
+      },
+      "earned": [true, true, true]
+    },
+    {
+      "name": "2-4：矩阵乘的 k 还是 16，算术强度不到 8，在拐点左边：没有 ★3",
+      "stage": "forge-roofline",
+      "credential": {
+        "checks": { "passed": 5, "total": 5 },
+        "metrics": { "add_ms": 1.31, "add_gbps": 614.7, "mm_ms": 0.21, "mm_tflops": 2.557, "mm_intensity": 7.938, "ridge": 39.68, "peak_gbps": 612.4, "peak_tflops": 24.3 }
+      },
+      "earned": [true, true, false]
+    },
+    {
+      "name": "2-4：加法只有 2²⁰ 个数，数据装进了缓存，有效带宽比峰值带宽还高：照样算 ★2",
+      "stage": "forge-roofline",
+      "credential": {
+        "checks": { "passed": 5, "total": 5 },
+        "metrics": { "add_ms": 0.00863, "add_gbps": 1458, "mm_ms": 13.0, "mm_intensity": 682.7, "ridge": 39.68, "peak_gbps": 612.4, "peak_tflops": 24.3 }
+      },
+      "earned": [true, true, true]
+    },
+    {
+      "name": "2-5：mine 改成一个 kernel 算完（tanh 近似的 GELU），数据大时 GPU 上快 8.9 倍，数据小时从开始到算完快 6.3 倍：三颗星",
+      "stage": "forge-behind-pytorch",
+      "credential": {
+        "checks": { "passed": 3, "total": 3 },
+        "metrics": { "steps_kernels": 8, "steps_gpu_ms": 2.342, "steps_span_ms": 2.354, "mine_kernels": 1, "mine_gpu_ms": 0.262, "mine_span_ms": 0.2744, "steps_small_kernels": 8, "steps_small_gpu_ms": 0.016, "steps_small_span_ms": 0.0914, "mine_small_kernels": 1, "mine_small_gpu_ms": 0.002, "mine_small_span_ms": 0.0144 }
+      },
+      "earned": [true, true, true]
+    },
+    {
+      "name": "2-5：TODO 原样交上来：mine 没写（0/3），在 GPU 上什么也不做，hg.trace 不交它的数：一颗星也没有",
+      "stage": "forge-behind-pytorch",
+      "credential": {
+        "checks": { "passed": 0, "total": 3 },
+        "metrics": { "steps_kernels": 8, "steps_gpu_ms": 2.342, "steps_span_ms": 2.354, "steps_small_kernels": 8, "steps_small_gpu_ms": 0.016, "steps_small_span_ms": 0.0914 }
+      },
+      "earned": [false, false, false]
+    },
+    {
+      "name": "2-5：mine 照抄 gelu_steps，算得一样（3/3），kernel 一个没少：只有 ★1",
+      "stage": "forge-behind-pytorch",
+      "credential": {
+        "checks": { "passed": 3, "total": 3 },
+        "metrics": { "steps_kernels": 8, "steps_gpu_ms": 2.342, "steps_span_ms": 2.354, "mine_kernels": 8, "mine_gpu_ms": 2.35, "mine_span_ms": 2.361, "steps_small_kernels": 8, "steps_small_span_ms": 0.0914, "mine_small_kernels": 8, "mine_small_span_ms": 0.0921 }
+      },
+      "earned": [true, false, false]
+    },
+    {
+      "name": "2-5：mine 用了默认的 GELU（不是 tanh 近似），一个 kernel 但结果对不上（0/3）：没有 ★1；按规则 ★2、★3 成立（网页上 ★1 没过一颗星都不发）",
+      "stage": "forge-behind-pytorch",
+      "credential": {
+        "checks": { "passed": 0, "total": 3 },
+        "metrics": { "steps_gpu_ms": 2.342, "mine_gpu_ms": 0.263, "steps_small_span_ms": 0.0914, "mine_small_span_ms": 0.0146 }
+      },
+      "earned": [false, true, true]
+    },
+    {
+      "name": "2-5：只省掉两步，还剩 6 个 kernel：数据大时快 1.29 倍、数据小时快 1.32 倍，都不到 2 倍：只有 ★1",
+      "stage": "forge-behind-pytorch",
+      "credential": {
+        "checks": { "passed": 3, "total": 3 },
+        "metrics": { "steps_kernels": 8, "steps_gpu_ms": 2.342, "mine_kernels": 6, "mine_gpu_ms": 1.822, "steps_small_kernels": 8, "steps_small_span_ms": 0.0914, "mine_small_kernels": 6, "mine_small_span_ms": 0.0694 }
+      },
+      "earned": [true, false, false]
+    },
+    {
+      "name": "2-5：数据大时快 8 倍，数据小时只快 1.5 倍：没有 ★3",
+      "stage": "forge-behind-pytorch",
+      "credential": {
+        "checks": { "passed": 3, "total": 3 },
+        "metrics": { "steps_gpu_ms": 2.4, "mine_gpu_ms": 0.3, "steps_small_span_ms": 0.09, "mine_small_span_ms": 0.06 }
+      },
+      "earned": [true, true, false]
+    },
+    {
+      "name": "2-5：两边都正好快 2 倍也算（gte 是不小于）：三颗星",
+      "stage": "forge-behind-pytorch",
+      "credential": {
+        "checks": { "passed": 3, "total": 3 },
+        "metrics": { "steps_gpu_ms": 1.0, "mine_gpu_ms": 0.5, "steps_small_span_ms": 0.1, "mine_small_span_ms": 0.05 }
+      },
+      "earned": [true, true, true]
+    }
+  ],
+  "invalid": [
+    { "name": "绝对数字的规则（只允许相对值）", "stars": [{ "text": "带宽超过 500 GB/s", "rule": { "metric": "gbps", "gte": 500 } }] },
+    { "name": "checksAll 写成 false", "stars": [{ "text": "校验", "rule": { "checksAll": false } }] },
+    { "name": "checksAll 多写了别的键", "stars": [{ "text": "校验", "rule": { "checksAll": true, "gte": 1 } }] },
+    { "name": "ratio 只有一个名字", "stars": [{ "text": "带宽", "rule": { "ratio": ["gbps"], "gte": 0.6 } }] },
+    { "name": "ratio 两个名字相同", "stars": [{ "text": "带宽", "rule": { "ratio": ["gbps", "gbps"], "gte": 0.6 } }] },
+    { "name": "ratio 缺 gte", "stars": [{ "text": "带宽", "rule": { "ratio": ["gbps", "peak_gbps"] } }] },
+    { "name": "gte 是 0", "stars": [{ "text": "带宽", "rule": { "ratio": ["gbps", "peak_gbps"], "gte": 0 } }] },
+    { "name": "gte 是字符串", "stars": [{ "text": "带宽", "rule": { "ratio": ["gbps", "peak_gbps"], "gte": "0.6" } }] },
+    { "name": "gte 是布尔值", "stars": [{ "text": "带宽", "rule": { "ratio": ["gbps", "peak_gbps"], "gte": true } }] },
+    { "name": "测量项名字有大写字母", "stars": [{ "text": "带宽", "rule": { "ratio": ["GBps", "peak_gbps"], "gte": 0.6 } }] },
+    { "name": "规则里多了不认识的键", "stars": [{ "text": "带宽", "rule": { "ratio": ["gbps", "peak_gbps"], "gte": 0.6, "lte": 2 } }] },
+    { "name": "缺少规则", "stars": [{ "text": "带宽" }] },
+    { "name": "缺少说明", "stars": [{ "rule": { "checksAll": true } }] },
+    { "name": "说明是空的", "stars": [{ "text": " ", "rule": { "checksAll": true } }] },
+    { "name": "星不是对象", "stars": ["多种形状都通过校验"] },
+    { "name": "stars 不是列表", "stars": { "text": "多种形状都通过校验", "rule": { "checksAll": true } } },
+    { "name": "后面的星写错也要报错", "stars": [{ "text": "校验", "rule": { "checksAll": true } }, { "text": "带宽", "rule": { "ratio": ["gbps", "peak_gbps"], "gte": -1 } }] }
+  ],
+  "codes": [
+    {
+      "name": "Python（hello_gpu.codes.encode，submit() 用的同一个函数）编的通关码",
+      "by": "python",
+      "code": "HGPU1.TU47TsQwFLwKei1JZGe1EfgA0FJAQ7MyzstHG9uR7USRVpEooaCkp6ZAHCDHQStR7RV43tVK2Jb1Zt7MaHYwguAJ-CBrBAGVdTWm3lZBywkScHYIkW_anpAMNOYsL1LOU3Z1z5lg8T3SrsSxVSTdgZE6Wm7aKQwOL27vHg7Ly8_y-fv8sX__3r99HZZXMtTVRCr6r-kQVoOnKmxOAM0Yc5xVmhQso5tWpzTSBetUc-Yv__GuDdaAMEPXUYhqUG19zOml91iCWEdvkB1NtNdIBnUUaCxbaTaaAMt4vqJuTz2BVVFkLIEe5XZzYgrOInOscNav5_kP",
+      "payload": {
+        "v": 1, "stage": "forge-softmax", "route": "hip", "at": "2026-11-08T10:00:00Z",
+        "device": { "name": "Fixture GPU（伪造数据）", "gfx": "gfx9999", "cus": 10 },
+        "env": { "rocm": "0.0.0-fixture", "torch": "0.0.0+fixture", "triton": null },
+        "checks": { "passed": 5, "total": 5 },
+        "metrics": { "median_ms": 0.123, "gbps": 366.0, "peak_gbps": 610.0, "torch_ms": 0.15 }
+      }
+    },
+    {
+      "name": "Python（hello_gpu.codes.encode，device_card() 用的同一个函数）编的 GPU 卡片导入码，带实测峰值",
+      "by": "python",
+      "code": "HGCARD1.q1YqU7Iy1FFKLFGyUjIyMDLTNTTUNbAIMTSwMgChKCUdpZTUsszkVCWraqW8xFwgreSWWVFSWpSq4B4Q-n5Px5M9q142LHg2dcOz3nXv93QCNaSnVQBVAUlLIADyk0uLgZYY6CiVJ5YB9Rsb6SjlpubmF1XGJ1WWpILlzI3NTQwtjExqdZRS88pAdhXlJ-cCTTHQA0LdNIiNQLNK8ouSM2Di2kjiRZkl-XkYGoDmFaQmZoMMTE8qAFplZgiUBipPy8kHcU2AvNpaAA",
+      "payload": {
+        "v": 1, "at": "2026-11-08T10:00:00Z",
+        "device": { "name": "Fixture GPU（伪造数据）", "gfx": "gfx9999", "cus": 10, "wave": 32, "memory_bytes": 1073741824 },
+        "env": { "rocm": "0.0.0-fixture", "torch": "0.0.0+fixture", "triton": "0.0.0-fixture" },
+        "peak": { "gbps": 610.0, "tflops": 40.0 }
+      }
+    },
+    {
+      "name": "Node（CompressionStream('deflate-raw')，和浏览器同一套接口）编的通关码，共用路线",
+      "by": "node",
+      "code": "HGPU1.JY0xTsQwFESvgqblJ3I2CiL_ANBSQEODjOMkFom9sp1opVUkSigo6akpEAfIcdBKVHsFZLaZZua92WMGF4QQZafBaJ3vdOadawdjNQjeTTEVoZdeNyDICMZGbC6yoshEfSsuuRQsxD0IjZ6N0uA9rBwTdWV2cfL67Prm7ri-_Kyfv88fh_fvw9vXcX0FoWt34JR1XdcgqCmAC7EQtJ2Txzs1gu00DITovOrBELnIxXl7UoMQvYnOnlYLQfVaPYUEb2UIugGXiY1yAJcLYdTRG_U_GHVjpH0Y02leEbrHbQBXQuTVsvwB",
+      "payload": {
+        "v": 1, "stage": "forge-roofline", "route": "shared", "at": "2026-11-09T08:30:00Z",
+        "device": { "name": "Fixture GPU（伪造数据）", "gfx": "gfx9999", "cus": 10 },
+        "env": { "rocm": null, "torch": "0.0.0+fixture", "triton": null },
+        "checks": { "passed": 3, "total": 3 },
+        "metrics": { "median_ms": 1.5, "gbps": 500.5 }
+      }
+    },
+    {
+      "name": "Node 编的 GPU 卡片导入码，不知道 wave 大小、还没测峰值",
+      "by": "node",
+      "code": "HGCARD1.NY47CsJAFEW3Ird1lDeJaOYtQFsLbWwkxokG8oFxEhUJWGphaW9tIS4gyxHByi2IBpvT3AP37FCApYBvwXDI6bakbJEakccuMdEEAnNdRIEG75D6iQajH21sbnRjMBy_q8Ojur72l-f5_jzd3tURAotwA_5SKaUgEOQrsCSBtV9ocJrHsUCik8xsp7Ot1b-15_Y60nM6pYBOi--byYLkb9vMBEswqE1taoZ1AASsiWyW1lZZfgA",
+      "payload": {
+        "v": 1, "at": "2026-11-09T08:30:00Z",
+        "device": { "name": "Fixture GPU（伪造数据）", "gfx": "gfx9999", "cus": 10, "wave": null, "memory_bytes": 1073741824 },
+        "env": { "rocm": null, "torch": "0.0.0+fixture", "triton": null }
+      }
+    }
+  ]
+}

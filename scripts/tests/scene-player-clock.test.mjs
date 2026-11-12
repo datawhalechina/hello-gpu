@@ -3,7 +3,10 @@ import test from 'node:test'
 import { readFile } from 'node:fs/promises'
 import { createRenderer, defineComponent, nextTick, ref } from 'vue'
 import { parse, compileScript } from '@vue/compiler-sfc'
-import { transformWithEsbuild } from 'vite'
+import { transform } from 'esbuild'
+
+// esbuild 是固定版本的开发依赖；不从 vite 导入，避免依赖 vite 恰好被安装在顶层。
+const transformWithEsbuild = (code, file, options) => transform(code, { ...options, sourcefile: file })
 
 // Load the actual sources without a browser or build. Only module specifiers are
 // rewritten so Node can resolve the Vue SFC's extensionless TypeScript imports.

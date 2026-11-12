@@ -1,0 +1,308 @@
+{
+  "note": "定级测试题库（Q-01）。三组题按区域顺序作答（新手村 → 铸造城 → 试炼场），一组答对的比例低于 passRate 就停下，推荐从这个区域开始。每题的 stages 是答对后可以豁免的关卡：同一个区域、1–3 关、按大纲顺序、不含 Boss；Boss 以外每关恰好挂在一道题上，Boss 在整组通过时豁免。kind：choice 选择、estimate 估值、code 读代码；只有 code 题写 code，代码按行写成数组，新手村的题 hip、python 两种写法都给（模拟器能跑的同一个程序），铸造城、试炼场给一种（PyTorch 写 python，汇编写 asm）。选项和 Checkpoint 的选项同一个形状 { label, correct, why }：每个选项都写 why，恰好一个 correct。正确选项别总放在同一个位置。计分和推荐在 placement.ts，格式检查在 scripts/course/course-data-check.mjs。",
+  "passRate": 0.7,
+  "groups": [
+    { "zone": "novice", "questions": [
+      {
+        "id": "novice-two-jobs", "kind": "estimate", "stages": ["novice-thousand-additions"],
+        "q": "两张单子各 600 道题：甲单的题互不相关，乙单每道题都要用上一道的得数。教授做一道要 1 秒，学徒做一道要 5 秒。每张单子交给 1 位教授快，还是交给 600 个学徒快？",
+        "options": [
+          { "label": "两张都是学徒快：人多", "why": "乙单只能一道接一道做，600 个学徒也只能轮流动笔：600 × 5 = 3000 秒，教授只要 600 秒。" },
+          { "label": "两张都是教授快：他算得快", "why": "甲单的题互不相关，600 个学徒同时动笔，5 秒就做完；教授一道接一道，要 600 秒。" },
+          { "label": "甲单学徒快，乙单教授快", "correct": true, "why": "甲单拆得开：学徒 5 秒，教授 600 秒。乙单每道都要等上一道，拆不开：学徒 3000 秒，教授 600 秒。" },
+          { "label": "两张一样快：题目一样多", "why": "题目一样多，能不能同时做却不一样：甲单拆得开，乙单每一步都要等上一步。" }
+        ]
+      },
+      {
+        "id": "novice-keep-on-gpu", "kind": "choice", "stages": ["novice-gpu-panorama", "novice-memory-hierarchy"],
+        "q": "一批照片要在 GPU 上连做三步：调亮、调对比度、加滤镜，每步一个 kernel。照片一开始在 CPU 的内存里。怎样安排，结果对而且最省时间？",
+        "options": [
+          { "label": "每一步之前拷进显存，做完马上拷回 CPU", "why": "能算对，可照片在 CPU 和 GPU 之间来回搬了 6 趟。三步都在 GPU 上，中间结果留在显存里就行。" },
+          { "label": "开头拷进显存，三步都在显存里做，最后拷回一次", "correct": true, "why": "数据在 CPU 和 GPU 之间只跑一个来回。中间结果一直留在显存里，下一步就近读。" },
+          { "label": "开头拷进显存，三步做完就行，结果会自己回到 CPU 的内存里", "why": "结果写在显存里，不会自己回去。不拷回，CPU 那边看到的还是原来的照片。" },
+          { "label": "不用拷：kernel 直接读写 CPU 内存里的照片", "why": "CPU 的内存在 GPU 外面。就算能直接读写，每读写一次都要跨过两边之间的通道，三步要跨很多趟。" }
+        ]
+      },
+      {
+        "id": "novice-who-writes", "kind": "code", "stages": ["novice-assign-threads", "novice-thread-groups"],
+        "q": "n = 10，每组 4 个线程（blockDim.x = 4），派了 3 组。第 2 组（blockIdx.x = 2）里排第 3 的线程（threadIdx.x = 3）做什么？",
+        "code": {
+          "hip": [
+            "__global__ void twice(float* a, float* c, int n) {",
+            "    int i = blockIdx.x * blockDim.x + threadIdx.x;",
+            "    if (i < n) {",
+            "        c[i] = a[i] * 2;",
+            "    }",
+            "}"
+          ],
+          "python": [
+            "@kernel",
+            "def twice(a, c, n):",
+            "    i = blockIdx.x * blockDim.x + threadIdx.x",
+            "    if i < n:",
+            "        c[i] = a[i] * 2"
+          ]
+        },
+        "options": [
+          { "label": "写 c[3]", "why": "这是只拿 threadIdx.x 当下标。每组都从 0 数起，3 组里排第 3 的线程会去抢同一格。" },
+          { "label": "写 c[5]", "why": "这是 blockIdx.x + threadIdx.x，少乘了每组的线程数。" },
+          { "label": "写 c[11]", "why": "全局下标确实是 2 × 4 + 3 = 11，可 c 只有 10 格，边界检查 i < n 不让它写。" },
+          { "label": "什么都不做", "correct": true, "why": "全局下标是 2 × 4 + 3 = 11，不小于 n = 10，边界检查让它什么都不写。" }
+        ]
+      },
+      {
+        "id": "novice-split-path", "kind": "code", "stages": ["novice-wavefront", "novice-divergence"],
+        "q": "每组 64 个线程，相邻的 32 个线程编成一个 wavefront，同一时刻执行同一行。把条件 t % 2 == 0 换成 t < 32，每个 wavefront 花在 if、else 两段上的步数会怎样？按一行一步算。",
+        "code": {
+          "hip": [
+            "__global__ void k(float* a) {",
+            "    int t = threadIdx.x;",
+            "    if (t % 2 == 0) {",
+            "        a[t] = a[t] * 2;",
+            "        a[t] = a[t] + 1;",
+            "    } else {",
+            "        a[t] = a[t] - 1;",
+            "        a[t] = a[t] * 3;",
+            "    }",
+            "}"
+          ],
+          "python": [
+            "@kernel",
+            "def k(a):",
+            "    t = threadIdx.x",
+            "    if t % 2 == 0:",
+            "        a[t] = a[t] * 2",
+            "        a[t] = a[t] + 1",
+            "    else:",
+            "        a[t] = a[t] - 1",
+            "        a[t] = a[t] * 3"
+          ]
+        },
+        "options": [
+          { "label": "减半：每个 wavefront 只走一段", "correct": true, "why": "换成 t < 32 以后，t = 0～31 这个 wavefront 整队走 if，t = 32～63 整队走 else，各走 2 步。原来每个 wavefront 里两种线程都有，两段都要走，共 4 步。" },
+          { "label": "不变：两种条件都是一半线程走 if", "why": "一半对一半没错，可 wavefront 是 32 个相邻的线程。t % 2 == 0 让每个 wavefront 里两种线程都有，两段都要走。" },
+          { "label": "翻倍：后一个 wavefront 要等前一个走完", "why": "两个 wavefront 各走各的，不互相等。t < 32 让每个 wavefront 里的线程意见一致，只走一段。" },
+          { "label": "不变：GPU 会把走同一段的线程自动凑成一队", "why": "wavefront 在开工前就按 threadIdx.x 排好了，每 32 个相邻线程一队，不会按分支重新凑。" }
+        ]
+      },
+      {
+        "id": "novice-two-fixes", "kind": "choice", "stages": ["novice-coalescing", "novice-latency-hiding"],
+        "q": "一个 kernel 大部分时间在等显存送数据。有两种改法：甲，把相邻线程的访问步长从 32 改成 1；乙，让每个线程少用一些寄存器，一个 SIMD 上能同时住下更多 wavefront。它们各自起什么作用？",
+        "options": [
+          { "label": "甲让等待被别的 wavefront 盖住，乙让要搬的 cache line 变少", "why": "正好说反了。搬几个 cache line，看一个 wavefront 要的数挨得紧不紧；等待能不能盖住，看 SIMD 上住了几个 wavefront。" },
+          { "label": "两个都让要搬的 cache line 变少", "why": "乙没有改读哪些地址，要搬的一个都没少。它让 SIMD 等数据时有别的 wavefront 可换。" },
+          { "label": "甲让要搬的 cache line 变少，乙让等待被别的 wavefront 盖住", "correct": true, "why": "步长为 1 时，32 个相邻线程要的数挨在一起，装进最少的几个 cache line。乙没有少搬，靠的是一个 wavefront 等数据时，SIMD 换另一个来算。" },
+          { "label": "两个都没用：显存就这么慢，只能换一张更快的卡", "why": "甲少搬，乙把等待盖住，在同一张卡上都能变快。" }
+        ]
+      },
+      {
+        "id": "novice-block-sum", "kind": "choice", "stages": ["novice-lds-sync", "novice-reduction"],
+        "q": "一组 256 个线程，要把这一组的 256 个数加起来。哪种做法又对又快？",
+        "options": [
+          { "label": "每个线程直接 out[0] = out[0] + a[t]", "why": "好几个线程同时读到同一个旧的 out[0]，各加各的再写回，有人加的数被盖掉。这是数据竞争。" },
+          { "label": "让 0 号线程一个人从头加到尾", "why": "结果对，可 255 次加法一个接一个做，其余 255 个线程都闲着。" },
+          { "label": "每个线程用原子操作把 a[t] 加到 out[0] 上", "why": "结果对，可同一个地址上的原子加只能一个一个排队，256 次就排 256 个。" },
+          { "label": "放进 LDS 两两相加，每轮参与的线程减半，每轮结束全组同步一次", "correct": true, "why": "8 轮就加完（256 → 128 → … → 1）。同步保证下一轮读到的都是上一轮加好的数。" },
+          { "label": "放进 LDS 两两相加，每轮参与的线程减半，轮与轮之间不同步，省时间", "why": "不同步时，有的线程可能先跑进下一轮，读到还没加好的数，结果时对时错。" }
+        ]
+      },
+      {
+        "id": "novice-too-fast", "kind": "estimate", "stages": ["novice-timing"],
+        "q": "vector add 处理 1 亿个 float：读 a、b，写 c，一共要搬 1.2 GB。程序记下时间，启动 kernel，马上再记一次时间，相差 0.02 ms。假设这张卡的显存每秒最多搬 600 GB。这个 0.02 ms 能信吗？",
+        "options": [
+          { "label": "能信：GPU 线程多，1 亿个数一下就算完", "why": "按 0.02 ms 算，有效带宽是 1.2 GB ÷ 0.02 ms = 6 万 GB/s，是显存最快速度的 100 倍，搬不了这么快。" },
+          { "label": "不能信：CPU 启动 kernel 后不等它算完", "correct": true, "why": "kernel 是异步启动的，测到的只是把它交出去的时间。第二次记时间之前先等 GPU 算完（同步），测到的才是 kernel 的时间。" },
+          { "label": "能信：数据都在缓存里，读缓存比读显存快", "why": "1.2 GB 比缓存大得多，装不下；何况这是第一次运行，数据还在显存里。" },
+          { "label": "不能信：第一次运行要预热，多跑几次取平均就准了", "why": "预热能排掉只发生一次的开销，可这里的毛病是没等 GPU 算完。不同步，跑多少次测到的都只是启动。" }
+        ]
+      },
+      {
+        "id": "novice-agent-next", "kind": "choice", "stages": ["novice-meet-agent", "novice-first-agent"],
+        "q": "一个调参 Agent 在模拟器上调 vector add：现在每组 64 个线程、访问步长 4，结果已经算对。它刚看完访存，观察是「搬了 96 个 cache line，理想是 24 个（模拟）」。按「思考 → 行动 → 观察」，下一步最合理的是？",
+        "options": [
+          { "label": "把步长改成 1，再运行、计时，看搬的和用时降没降", "correct": true, "why": "思考：搬的是理想的 4 倍，相邻线程拿的数隔得太远。行动：改步长。改完再看新的观察，确认真的变好了。" },
+          { "label": "交卷：结果已经算对了", "why": "算对只是起点。观察说搬的是理想的 4 倍，还有明显能改的地方。" },
+          { "label": "把每组线程数从 64 加到 256：线程越多越快", "why": "观察里的问题是搬得多，和每组几个线程无关。改了组的大小，相邻线程拿的数照样隔 4 个，搬的不会少。" },
+          { "label": "参数不改，再看一次访存，确认观察没有错", "why": "模拟器每次跑的结果都一样，同样的参数再看一次，观察一模一样，白花一步。" }
+        ]
+      }
+    ] },
+    { "zone": "forge", "questions": [
+      {
+        "id": "forge-few-blocks", "kind": "choice", "stages": ["forge-your-gpu", "forge-route-advanced"],
+        "q": "以 RX 9070 XT 为例：64 个计算单元（CU），每两个 CU 组成一个 WGP，一个线程块整组落在一个 WGP 里。一个 kernel 每组 1024 个线程，只派了 8 组。最大的问题是什么？",
+        "options": [
+          { "label": "每组线程太多，超过了一组的上限", "why": "RDNA 4 上一组最多 1024 个线程，没有超。" },
+          { "label": "组太少：最多 8 个 WGP 有活，其余 24 个空着", "correct": true, "why": "64 个 CU 是 32 个 WGP。活按组分，组数决定能用上几个 WGP：要么多派几组，要么让每组少些线程、多分几组。" },
+          { "label": "没问题：一共 8192 个线程，比这张卡的 4096 个流处理器还多", "why": "线程总数够，可它们挤在 8 个 WGP 里。能用上多少个 WGP 看组数，不看线程总数。" },
+          { "label": "wavefront 不满：1024 不是 32 的整数倍", "why": "1024 = 32 × 32，每个 wave32 都是满的。" }
+        ]
+      },
+      {
+        "id": "forge-accept-or-not", "kind": "choice", "stages": ["forge-first-real-kernel", "forge-reliable-loop"],
+        "q": "Agent 交来一个候选 kernel：在 n = 4096 上和 torch 的结果一致，比旧版快 3%。同一个版本反复测，耗时上下波动约 5%。该接受吗？",
+        "options": [
+          { "label": "接受：结果和 torch 一致，又快了 3%", "why": "3% 落在 5% 的波动里，可能只是噪声。只测了 4096 一个长度，凑不成整组的长度没有校验。" },
+          { "label": "接受：再测一次，如果还是更快就行", "why": "再测一次也只多一个样本，波动照样能让它看起来快。要新旧两版交替测很多轮再比。" },
+          { "label": "不接受：快不到 10% 的改动都不该要", "why": "门槛要看噪声多大，不是固定的 10%。噪声小的时候，稳定的 3% 也是真的快。" },
+          { "label": "先不接受：3% 在波动内，有零头的长度也没测", "correct": true, "why": "要说更快，新旧两版交替多测几轮，比中位数。要说正确，要测多种形状，尤其是 4097 这种除不尽每组线程数的。" }
+        ]
+      },
+      {
+        "id": "forge-sync-timing", "kind": "code", "stages": ["forge-trusted-timing", "forge-roofline"],
+        "q": "下面这段代码打印出的带宽，是你这张卡用拷贝测试实测的峰值带宽的几十倍。最可能是哪里错了？",
+        "code": {
+          "python": [
+            "import time, torch",
+            "",
+            "n = 1 << 28                          # 每个数组 1 GiB",
+            "a = torch.randn(n, device='cuda')",
+            "b = torch.randn(n, device='cuda')",
+            "c = torch.empty_like(a)",
+            "for _ in range(10):",
+            "    torch.add(a, b, out=c)           # 预热",
+            "t0 = time.perf_counter()",
+            "for _ in range(100):",
+            "    torch.add(a, b, out=c)",
+            "t1 = time.perf_counter()",
+            "print(3 * n * 4 * 100 / (t1 - t0) / 1e9, 'GB/s')"
+          ]
+        },
+        "options": [
+          { "label": "计时前后没有同步，GPU 还没算完就记下了 t1", "correct": true, "why": "kernel 是异步启动的，CPU 交出调用就往下走，测到的是交出 100 次调用的时间。t0、t1 之前都要 torch.cuda.synchronize()，或者改用 GPU 事件计时。ROCm 上的 PyTorch 也用 torch.cuda 这套接口。" },
+          { "label": "kernel 写得比拷贝测试还好，超过了实测的峰值", "why": "实测的峰值带宽是这张卡搬数据的天花板。vector add 每个数只加一下，不可能比上限高出几十倍。" },
+          { "label": "三个数组都在缓存里，读缓存比读显存快", "why": "三个数组一共 3 GiB，缓存装不下，每一轮都要从显存搬。" },
+          { "label": "预热只有 10 次太少，要预热 100 次才准", "why": "预热只排掉一次性的开销。不同步，预热再多，测到的也只是交出调用的时间。" }
+        ]
+      },
+      {
+        "id": "forge-three-kernels", "kind": "estimate", "stages": ["forge-behind-pytorch", "forge-fusion"],
+        "q": "x 是显存里的 1 亿个 float32（0.4 GB）。y = torch.relu(x * 2 + 1) 照常一个算子一个算子地执行，GPU 一共要读写多少字节？写成一个融合 kernel 呢？",
+        "options": [
+          { "label": "两种都是 0.8 GB：都只读 x、写 y", "why": "照常执行时，x * 2 和 + 1 的结果都要先写进显存，下一个 kernel 再读出来。" },
+          { "label": "照常 1.2 GB，融合后 0.4 GB", "why": "这是只数了读、没数写。每个 kernel 都要读一遍、写一遍。" },
+          { "label": "照常 2.4 GB，融合后 0.8 GB", "correct": true, "why": "照常是三个 kernel：乘、加、relu，每个读 0.4 GB、写 0.4 GB，中间结果写进显存又读出来。融合后只读一遍 x、写一遍 y。" },
+          { "label": "两种都是 2.4 GB：融合只省了启动次数", "why": "融合省掉的主要是中间结果的读写。逐元素运算受访存限制，字节少了三分之二，耗时也跟着降。" }
+        ]
+      },
+      {
+        "id": "forge-rmsnorm-plan", "kind": "choice", "stages": ["forge-reduction-practice", "forge-norm"],
+        "q": "RMSNorm：y = x ÷ sqrt(mean(x²) + ε) × w。每行 4096 个数，交给一个 256 线程的 block。哪种写法最快？",
+        "options": [
+          { "label": "三个 kernel：先算 x²，再求每行的均值，最后算 y", "why": "x² 和均值都要写进显存再读回来，x 也要读两遍。这个算子受访存限制，多搬的就是多花的时间。" },
+          { "label": "一个 kernel：x 读进寄存器，块内归约出平方和，再算 y", "correct": true, "why": "x 只从显存读一遍，y 写一遍。归约在 block 里做完（wave 内先合，再经 LDS 合），不用等别的 block。" },
+          { "label": "两个 kernel：先把每个数的 x² 原子加到这一行的和上，再算 y", "why": "同一个地址上的原子加只能排队做；第二个 kernel 还要把 x 从显存再读一遍。" },
+          { "label": "一个 kernel，只让 0 号线程循环算平方和，再算整行的 y", "why": "4096 个数一个接一个加，block 里其余 255 个线程都闲着。" }
+        ]
+      },
+      {
+        "id": "forge-softmax-overflow", "kind": "estimate", "stages": ["forge-softmax"],
+        "q": "一行 logits 是 [80, 90, 100]，用 float32 直接算 exp(x) ÷ sum(exp(x))，不先减最大值。float32 能表示的最大数约 3.4 × 10³⁸。算出来是什么？",
+        "options": [
+          { "label": "约 [0, 0.00005, 0.99995]，和先减最大值一样", "why": "exp(90) 约 1.2 × 10³⁹，已经超过 float32 的上限，变成了 inf。先减最大值时算的是 exp(−20)、exp(−10)、exp(0)，不会溢出。" },
+          { "label": "程序报错停下", "why": "浮点溢出不报错，安安静静地变成 inf，再传成 NaN。所以要先减最大值，再用各种输入校验。" },
+          { "label": "[0, 0, 1]：太大的数被压成最大值", "why": "溢出得到的是 inf，不是最大的有限数。inf 再参与除法，得到的是 NaN，不是 1。" },
+          { "label": "[0, NaN, NaN]", "correct": true, "why": "exp(80) 约 5.5 × 10³⁴，还表示得了；exp(90)、exp(100) 溢出成 inf，和也是 inf。有限数 ÷ inf 得 0，inf ÷ inf 得 NaN。" }
+        ]
+      },
+      {
+        "id": "forge-tool-feedback", "kind": "choice", "stages": ["forge-torch-integration", "forge-agent-tools"],
+        "q": "Agent 用工具把候选 kernel 注册成 PyTorch 算子、替换进模型，工具回报「失败」。回报里写什么，Agent 最容易改对？",
+        "options": [
+          { "label": "哪一步失败、在哪个形状上、误差多大或报错的关键几行", "correct": true, "why": "结构化的原因让 Agent 知道改哪里：是编译、数值校验还是计时。数值校验要对照原来的 torch 实现，比模型前向的输出。" },
+          { "label": "只回一个词：失败", "why": "Agent 不知道错在编译、数值还是计时，只能乱改。" },
+          { "label": "工具直接抛出异常，让整个流程停下来", "why": "流程停了，Agent 拿不到观察，没法走下一步。失败也要作为观察交回去。" },
+          { "label": "悄悄换回 torch 原来的算子，回报「成功」", "why": "失败被藏起来，Agent 以为改对了，后面的计时和结论全是假的。" }
+        ]
+      }
+    ] },
+    { "zone": "trial", "questions": [
+      {
+        "id": "trial-scalar-vector", "kind": "code", "stages": ["trial-rdna4-microarch", "trial-read-isa"],
+        "q": "下面是一段示意的 RDNA 汇编，算全局下标 i = blockIdx.x × blockDim.x + threadIdx.x。s15 里是 blockIdx.x，s2 里是 blockDim.x，v0 里是 threadIdx.x，结果放在 v1。为什么乘法用 s_ 开头的指令，加法用 v_ 开头的指令？",
+        "code": {
+          "asm": [
+            "s_mul_i32     s2, s15, s2    ; blockIdx.x × blockDim.x",
+            "v_add_nc_u32  v1, s2, v0     ; 再加上 threadIdx.x"
+          ]
+        },
+        "options": [
+          { "label": "向量单元不会做乘法，只能交给标量单元", "why": "向量单元也有乘法指令，比如 v_mul_lo_u32。这里用标量指令，是因为乘的两个数对整个 wave 都一样。" },
+          { "label": "s_ 指令只给第 0 个 lane 算，其余 lane 等它算完再各算一遍", "why": "标量指令整个 wave 只执行一次，没有哪个 lane 再算一遍。结果在 SGPR 里，v_ 指令直接拿它当操作数。" },
+          { "label": "乘积全 wave 一样，算一次就够；threadIdx.x 每个 lane 不同", "correct": true, "why": "s_ 指令由标量单元执行，一个 wave 只算一次，结果放在 SGPR 里，所有 lane 都读得到；v_ 指令在 SIMD 上每个 lane 各算一份，结果放在 VGPR 里。" },
+          { "label": "s_ 指令算整数，v_ 指令算小数", "why": "v_add_nc_u32 就是整数加法，向量单元也算整数。分工看的是这个值全 wave 一样，还是每个 lane 不同。" }
+        ]
+      },
+      {
+        "id": "trial-low-occupancy", "kind": "choice", "stages": ["trial-counters-trace", "trial-occupancy"],
+        "q": "用 rocprofv3 看一个访存为主的 kernel：每个 SIMD 平均只住 4 个 wave（上限 16 个），显存带宽只用到实测峰值的 30%，wave 大部分时间在等数据。编译报告显示每个线程用了很多 VGPR，没用 LDS。哪个改动最可能让它变快？",
+        "options": [
+          { "label": "减少每个线程用的 VGPR，让每个 SIMD 住下更多 wave", "correct": true, "why": "wave 少、带宽没用满、又在等数据：等待没有被盖住。VGPR 是这里卡住 wave 数的那一项，降下来就能多住几个，一个等数据时换另一个上。" },
+          { "label": "把每组线程从 256 加到 1024，让每组多几个 wave", "why": "每个 SIMD 住几个 wave 被 VGPR 卡住，和每组几个线程无关；每个 wave 用的 VGPR 没变，住下的 wave 不会变多。" },
+          { "label": "把 float 换成 double，每次读得更多", "why": "每个数的字节翻倍，要搬的数据也翻倍，等数据的时间只会更长。" },
+          { "label": "不用改：带宽只用了 30%，说明它不受访存限制", "why": "带宽没用满，是因为同时在路上的读请求太少（wave 太少），不是不需要读。等数据的周期多，说明它慢在访存延迟上。" }
+        ]
+      },
+      {
+        "id": "trial-bank-conflict", "kind": "estimate", "stages": ["trial-memory-advanced"],
+        "q": "假设 LDS 有 32 个 bank，每个 4 字节宽，相邻的 4 字节依次落在相邻的 bank 上。一个 32 × 32 的 float 矩阵按行存在 LDS 里，wave32 的第 k 个 lane 读第 k 行第 0 列。这次读要分几轮？每行末尾多留一个空位（每行 33 个 float）以后呢？",
+        "options": [
+          { "label": "1 轮；留空位后还是 1 轮", "why": "32 个 lane 读的地址各不相同，可都落在同一个 bank 上，一个 bank 一轮只能读一个字。" },
+          { "label": "32 轮；留空位后还是 32 轮", "why": "多一个空位，第 k 行的开头就往后错开 k 个 bank，32 行的第 0 列正好铺满 32 个 bank。" },
+          { "label": "2 轮；留空位后 1 轮", "why": "冲突的路数等于挤在同一个 bank 上的 lane 数，这里 32 个 lane 全在一个 bank 上。" },
+          { "label": "32 轮；留空位后 1 轮", "correct": true, "why": "每行 128 字节，正好绕 32 个 bank 一圈，第 0 列全落在同一个 bank，只能分 32 轮。每行 33 个以后，第 k 行第 0 列落在第 k 个 bank，一轮读完。" }
+        ]
+      },
+      {
+        "id": "trial-wave-sum", "kind": "estimate", "stages": ["trial-wave-cooperation"],
+        "q": "一个 wave32 要把 32 个 lane 各自的数加起来，用跨 lane 操作，不经过 LDS：每一步，每个 lane 从隔 d 个的 lane 取一个数加上，d 从 16 开始每步减半。要几步？中间要不要 barrier？",
+        "options": [
+          { "label": "31 步，不要 barrier", "why": "31 次是一个接一个加的次数。这里每一步 32 个 lane 同时加，要合的数每步减半。" },
+          { "label": "5 步，不要 barrier", "correct": true, "why": "d = 16、8、4、2、1，5 步合完。同一个 wave 的 lane 一起执行同一条指令，跨 lane 操作直接交换数据，不用等别的 wave。" },
+          { "label": "5 步，每步之后都要 barrier", "why": "barrier 是让一个 block 里的几个 wave 等齐用的。这里只有一个 wave，它的 lane 本来就一起执行。" },
+          { "label": "16 步：每步合并一对数", "why": "每一步所有 lane 一起加，不是一对一对地来。数的个数每步减半，log₂32 = 5 步。" }
+        ]
+      },
+      {
+        "id": "trial-matrix-cores", "kind": "choice", "stages": ["trial-gemm-tiling", "trial-gemm-matrix-cores"],
+        "q": "一个分块 GEMM 原来受算力限制。改用矩阵核心（WMMA）以后算力上限提高了，实测它变成了受访存限制。下一步最直接的改法是？",
+        "options": [
+          { "label": "把分块变小，让占用率高一些", "why": "分块越小，读进来的每个数被复用的次数越少，要从显存搬的总量越多，访存更吃紧。" },
+          { "label": "换回普通的 FMA 指令：矩阵核心太快，访存跟不上", "why": "换回去以后算力上限降下来，它又受算力限制，可比现在慢。该做的是让访存跟上。" },
+          { "label": "把分块变大，让读进来的每个数被多用几次", "correct": true, "why": "分块边长翻倍，读进来的每个数参与的乘加也翻倍，算术强度跟着翻倍，在 Roofline 上回到受算力限制的那一侧。代价是 LDS 和寄存器用得更多，要盯着占用率。" },
+          { "label": "把 FP16 换成 FP32，算得更准", "why": "每个数的字节翻倍，要搬的数据也翻倍，访存更吃紧。" }
+        ]
+      },
+      {
+        "id": "trial-online-softmax", "kind": "estimate", "stages": ["trial-attention"],
+        "q": "在线 softmax 一块一块地读一行。读完前两块时，最大值 m = 5，指数和 l = Σ exp(x − 5) = 3.0。第三块只有一个数：8。更新以后 l 约等于多少？",
+        "options": [
+          { "label": "约 1.15", "correct": true, "why": "最大值变成 8，旧的和要乘 exp(5 − 8) ≈ 0.05 换算到新的基准：3.0 × 0.05 + exp(8 − 8) ≈ 0.15 + 1 = 1.15。前两块不用重读。" },
+          { "label": "4.0", "why": "这是直接 3.0 + exp(8 − 8)。旧的和是按 m = 5 算的，基准变了，要先乘 exp(5 − 8)。" },
+          { "label": "约 61.3", "why": "换算方向反了：旧的和要乘 exp(旧最大值 − 新最大值) = exp(−3)，不是 exp(3)。" },
+          { "label": "约 0.15", "why": "只换算了旧的和，忘了加上第三块的 exp(8 − 8) = 1。" }
+        ]
+      },
+      {
+        "id": "trial-shape-report", "kind": "choice", "stages": ["trial-experiment-method"],
+        "q": "你的优化在 4096 × 4096 上快了 20%，在 1000 × 1000 上慢了 5%，在 4097 × 4097 上算错了。报告怎么写？",
+        "options": [
+          { "label": "写「快了 20%」：大形状才重要", "why": "只挑好看的形状是选择性报告；4097 上算错，说明这一版还不能用。" },
+          { "label": "先修好 4097，再写清哪些形状快、哪些慢，慢的也留下", "correct": true, "why": "正确是前提。适用边界和负结果写清楚，别人才知道什么时候该用它，下一轮也不会重复踩坑。" },
+          { "label": "三个形状取平均，写「平均快了 5%」", "why": "平均把一个错误和两个快慢不一的结果揉成一个数，看不出它在哪里能用。" },
+          { "label": "把 4097 和 1000 从测试里删掉，只留下 4096 的结果", "why": "删掉不利的形状，错误还在，只是看不见了。" }
+        ]
+      },
+      {
+        "id": "trial-who-decides", "kind": "choice", "stages": ["trial-multi-agent", "trial-geak"],
+        "q": "你要搭一个多 Agent 的算子优化系统：有角色提方案，有角色写 kernel，还要评测。哪种分工最可靠？",
+        "options": [
+          { "label": "由一个 LLM 自由决定下一步找谁、什么时候停", "why": "走向每次都可能不同，难复现，也管不住花了多少轮。流程该由程序控制。" },
+          { "label": "每个角色各开一个对话，最后投票选出结果", "why": "票数不是证据。哪个版本更好，要看校验和计时的结果。" },
+          { "label": "评测也交给 LLM：让它读代码，判断对不对、快不快", "why": "读代码猜不出真实耗时，也发现不了只在某些形状上出现的错。评测要真跑。" },
+          { "label": "程序管流程和评测，LLM 只负责提方案、写 kernel", "correct": true, "why": "流程可复现、成本可控；评测真的编译、在多个形状上校验、实测计时，对不对、快不快由实测说了算。结果记进台账，下一轮知道哪些路走过了。" }
+        ]
+      }
+    ] }
+  ]
+}

@@ -1,0 +1,356 @@
+{
+  "$schema": "../../schema.json",
+  "version": 1,
+  "collector": "amdjiahangpan",
+  "date": "2026-11-11",
+  "note": "R-01 的参考运行：Notebook 里标了 TODO 的地方换成参考解，按读者的顺序（2-1 → 2-2 HIP → 2-2 Triton → 2-3 → 2-4）从空的 artifact 目录开始各跑一遍，末尾另接几个练习单元。代码是仓库提交 8130dde 加上同一个 PR 里 R-01 的修改（hello_gpu：hg.check_env 查编译器和 Python.h，FMA 测试改成累加写法、计时前先连着跑 0.2 秒，check_timer 认 PyTorch 的报错；Notebook：2-3 练习 2、2-4 FMA 测试的说明）。环境：本地 pip 装的 ROCm 10.0.0（uv 建的环境），Docker 容器里只挂了一块 R9700。",
+  "credential": {
+    "v": 1,
+    "stage": "forge-trusted-timing",
+    "route": "shared",
+    "at": "2026-11-11T08:26:50Z",
+    "device": {
+      "name": "AMD Radeon AI PRO R9700",
+      "gfx": "gfx1201",
+      "cus": 64
+    },
+    "env": {
+      "rocm": "10.0.0",
+      "torch": "2.13.0+rocm10.0.0",
+      "triton": "3.8.0+git4cff872c.rocm10.0.0"
+    },
+    "checks": {
+      "passed": 3,
+      "total": 3
+    },
+    "metrics": {
+      "median_ms": 0.013319999910891056,
+      "p10_ms": 0.013275999668985605,
+      "p90_ms": 0.013441000133752823,
+      "cold_ms": 0.025599999353289604,
+      "cold_p10_ms": 0.025439999997615814,
+      "cold_p90_ms": 0.025840099342167376,
+      "gbps": 944.6630693827274,
+      "cold_gbps": 491.5200124168399
+    }
+  },
+  "environment": {
+    "platform": "local",
+    "device": {
+      "name": "AMD Radeon AI PRO R9700",
+      "gfx": "gfx1201",
+      "cus": 64,
+      "wave": 32,
+      "memory_bytes": 34208743424
+    },
+    "peak": null,
+    "software": {
+      "rocm": "10.0.0",
+      "hip": "7.15.26333",
+      "torch": "2.13.0+rocm10.0.0",
+      "triton": "3.8.0+git4cff872c.rocm10.0.0",
+      "python": "3.12.3"
+    },
+    "system": {
+      "os": "Ubuntu 24.04.5 LTS（Docker 容器 ubuntu:24.04）",
+      "kernel": "6.17.0-23-generic",
+      "cpu": "AMD Ryzen Threadripper PRO 9975WX 32-Cores"
+    },
+    "commit": "8130dde"
+  },
+  "samples": [
+    {
+      "label": "warm",
+      "note": "n = 2²⁰ 的 FP32 加法，热缓存",
+      "method": "GPU 事件",
+      "warmup": 5,
+      "repeat": 30,
+      "ms": [
+        0.01336000021547079,
+        0.01351999957114458,
+        0.013279999606311321,
+        0.013319999910891056,
+        0.013319999910891056,
+        0.013280999846756458,
+        0.013399999588727951,
+        0.013319999910891056,
+        0.013280999846756458,
+        0.013319999910891056,
+        0.013279999606311321,
+        0.01360000018030405,
+        0.013319999910891056,
+        0.013441000133752823,
+        0.01336000021547079,
+        0.013321000151336193,
+        0.013240000233054161,
+        0.013319999910891056,
+        0.013201000168919563,
+        0.013319999910891056,
+        0.013360999524593353,
+        0.013319999910891056,
+        0.013399999588727951,
+        0.013441000133752823,
+        0.013399999588727951,
+        0.013279999606311321,
+        0.013240000233054161,
+        0.013399999588727951,
+        0.013280999846756458,
+        0.013279999606311321
+      ]
+    },
+    {
+      "label": "cold",
+      "note": "n = 2²⁰ 的 FP32 加法，冷缓存",
+      "method": "GPU 事件",
+      "warmup": 5,
+      "repeat": 30,
+      "ms": [
+        0.02568100020289421,
+        0.02548000030219555,
+        0.025359999388456345,
+        0.025721000507473946,
+        0.025599999353289604,
+        0.02555999904870987,
+        0.02576100081205368,
+        0.025439999997615814,
+        0.025599999353289604,
+        0.02560099959373474,
+        0.025439999997615814,
+        0.025481000542640686,
+        0.025599999353289604,
+        0.025560999289155006,
+        0.02555999904870987,
+        0.02555999904870987,
+        0.025640999898314476,
+        0.025679999962449074,
+        0.025840999558568,
+        0.025679999962449074,
+        0.02563999965786934,
+        0.02592100016772747,
+        0.025960000231862068,
+        0.025560999289155006,
+        0.02552100084722042,
+        0.025839999318122864,
+        0.025640999898314476,
+        0.025679999962449074,
+        0.025439999997615814,
+        0.025560999289155006
+      ]
+    },
+    {
+      "label": "matmul",
+      "note": "2048×2048 的 FP32 矩阵乘，不预热",
+      "method": "GPU current-stream events",
+      "warmup": 0,
+      "repeat": 10,
+      "ms": [
+        49.99534606933594,
+        1.3514620065689087,
+        1.2587800025939941,
+        1.2802209854125977,
+        1.2568609714508057,
+        1.2454609870910645,
+        1.2473809719085693,
+        1.1987799406051636,
+        1.211380958557129,
+        1.1621389389038086
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "section": "准备",
+      "title": "一键检查：这一关不编译 kernel，前三项都是 ✓ 就能做",
+      "code": "import time\n\nimport torch\nimport hello_gpu as hg\n\ntorch.manual_seed(0)\nenv = hg.check_env()",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "环境检查\n  ✓ PyTorch 是 ROCm 版：PyTorch 2.13.0+rocm10.0.0，HIP 7.15.26333\n  ✓ 看得到 GPU：AMD Radeon AI PRO R9700（gfx1201）\n  ✓ GPU 算得对：在 GPU 上算了 1024 个数，和 CPU 算的一样\n  ✓ ROCm 和 PyTorch 版本一致：PyTorch 为 ROCm 10.0.0 编译，装的 ROCm 是 10.0.0\n  ✓ HIP 编译工具（HIP 路线用）：hipcc 在 /work/repo/notebooks/part0-intro/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/bin/hipcc，ninja、C++ 编译器和 Python.h 也有\n  ✓ Triton（Triton 路线用）：Triton 3.8.0+git4cff872c.rocm10.0.0，C 编译器和 Python.h 也有\n全部通过，可以做实验。"
+        }
+      ]
+    },
+    {
+      "section": "准备",
+      "title": "准备加法：输入、输出事先放进显存，先跑一次",
+      "code": "def make_add(n):\n    x = torch.randn(n, device=\"cuda\")\n    y = torch.randn_like(x)\n    out = torch.empty_like(x)\n\n    def add():\n        torch.add(x, y, out=out)\n\n    add()\n    torch.cuda.synchronize()  # 等准备的活都做完，免得算进后面的计时\n    return add",
+      "outputs": []
+    },
+    {
+      "section": "动手",
+      "title": "一个大加法：两个数组各 2²⁶ 个数",
+      "code": "n = 1 << 26\nadd = make_add(n)",
+      "outputs": []
+    },
+    {
+      "section": "动手",
+      "title": "停表的时机：add() 返回时和等 GPU 算完时各看一眼",
+      "code": "start = time.perf_counter()\nadd()\nreturned = time.perf_counter()\ntorch.cuda.synchronize()  # 等 GPU 把排着的活都做完\ndone = time.perf_counter()\nprint(f\"add() 返回：{(returned - start) * 1000:.3f} ms\")\nprint(f\"等 GPU 算完：{(done - start) * 1000:.3f} ms\")",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "add() 返回：0.089 ms\n等 GPU 算完：1.402 ms"
+        }
+      ]
+    },
+    {
+      "section": "动手",
+      "title": "先排两个加法，再用 CPU 计时和 GPU 事件同时量第三个",
+      "code": "begin = torch.cuda.Event(enable_timing=True)\nend = torch.cuda.Event(enable_timing=True)\nadd()\nadd()  # 先排两个加法，不等它们算完\nstart = time.perf_counter()\nbegin.record()  # 时间戳 1：排在两个加法后面\nadd()\nend.record()  # 时间戳 2\nend.synchronize()  # 等 GPU 走到时间戳 2\nprint(f\"CPU 计时：{(time.perf_counter() - start) * 1000:.3f} ms\")\nprint(f\"GPU 事件：{begin.elapsed_time(end):.3f} ms\")",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "CPU 计时：3.995 ms\nGPU 事件：1.328 ms"
+        }
+      ]
+    },
+    {
+      "section": "动手",
+      "title": "预热：还没用过的矩阵乘，不预热直接计时 10 次",
+      "code": "w = torch.randn(2048, 2048, device=\"cuda\")\n\ndef matmul():\n    torch.mm(w, w)\n\nfirst = hg.bench(matmul, warmup=0, repeat=10)\nprint(\"前三个样本（ms）：\", first.samples_ms[:3])\nprint(f\"平均数 {first.measurement.mean_ms:.3f} ms，中位数 {first.median_ms:.3f} ms\")",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "matmul：中位数 1.252 ms（p10 1.195，p90 6.216；预热 0 次，计时 10 次）\n前三个样本（ms）： (49.99534606933594, 1.3514620065689087, 1.2587800025939941)\n平均数 6.121 ms，中位数 1.252 ms"
+        }
+      ]
+    },
+    {
+      "section": "动手",
+      "title": "同一个加法测两轮，每轮先预热再计时 30 次",
+      "code": "one = hg.bench(add)\ntwo = hg.bench(add)\nprint(f\"第一轮的单个样本：最快 {min(one.samples_ms):.4f} ms，最慢 {max(one.samples_ms):.4f} ms\")\nprint(f\"两轮的中位数：{one.median_ms:.4f} ms、{two.median_ms:.4f} ms\")",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "add：中位数 1.328 ms（p10 1.327，p90 1.329；预热 5 次，计时 30 次）\nadd：中位数 1.328 ms（p10 1.326，p90 1.33；预热 5 次，计时 30 次）\n第一轮的单个样本：最快 1.3253 ms，最慢 1.3407 ms\n两轮的中位数：1.3283 ms、1.3280 ms"
+        }
+      ]
+    },
+    {
+      "section": "动手",
+      "title": "缓存冷热：三个数组一共 12 MiB 的小加法",
+      "code": "small = make_add(1 << 20)\ncache_small = hg.warm_cold(small, bytes_moved=12 * (1 << 20))",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "热缓存、冷缓存轮流测，各预热 5 次、计时 30 次；冷缓存每次计时之前先读一遍 512 MiB 的缓冲区\n  热缓存：中位数 0.01382 ms（p10 0.01344，p90 0.01396），有效带宽 910.5 GB/s\n  冷缓存：中位数 0.02604 ms（p10 0.02564，p90 0.0262），有效带宽 483.2 GB/s\n热缓存的 p10 ÷ p90 = 0.9625：越接近 1，中间八成样本挨得越紧，测得越稳\n冷缓存的中位数 ÷ 热缓存的 p90 = 1.87：不小于 1，冷缓存的中位数落在热缓存的波动范围之外，冷热分得开"
+        }
+      ]
+    },
+    {
+      "section": "动手",
+      "title": "三个数组一共 768 MiB 的大加法",
+      "code": "cache_big = hg.warm_cold(add, bytes_moved=12 * n)",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "热缓存、冷缓存轮流测，各预热 5 次、计时 30 次；冷缓存每次计时之前先读一遍 512 MiB 的缓冲区\n  热缓存：中位数 1.328 ms（p10 1.327，p90 1.329），有效带宽 606.4 GB/s\n  冷缓存：中位数 1.321 ms（p10 1.321，p90 1.322），有效带宽 609.5 GB/s\n热缓存的 p10 ÷ p90 = 0.998：越接近 1，中间八成样本挨得越紧，测得越稳\n冷缓存的中位数 ÷ 热缓存的 p90 = 0.994：小于 1，冷缓存的中位数还在热缓存的波动范围里，冷热分不开。数组太大，缓存装不下；或者一次调用太短，差别被启动的开销盖住了"
+        }
+      ]
+    },
+    {
+      "section": "挑战",
+      "title": "写计时函数：等 GPU 走到 end，返回 begin 到 end 的毫秒数",
+      "code": "def my_timer(fn):\n    begin.record()\n    fn()\n    end.record()\n    end.synchronize()  # TODO：等 GPU 走到 end\n    return begin.elapsed_time(end)  # TODO：返回 begin 到 end 的毫秒数\n\nchecks = hg.check_timer(my_timer)",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "核对你的计时函数：3 种情况，各计时 30 次（先预热 5 次），中位数和 hg 的 GPU 事件计时相差不到 1.5 倍算对上\n  ✓ 大数组加法（2²⁴ 个数）：你的 0.3389 ms，参考 0.3388 ms\n  ✓ 小数组加法（2¹⁸ 个数）：你的 0.01992 ms，参考 0.0192 ms\n  ✓ 小数组加法，前面还排着两个大数组加法：你的 0.02052 ms，参考 0.02144 ms\n通过 3/3"
+        }
+      ]
+    },
+    {
+      "section": "挑战",
+      "title": "冷热分开测：n = 2²⁰，两颗星都拿得到",
+      "code": "n = 1 << 20  # TODO：数组长度。改小，找一个两颗星都拿得到的长度\nmine = make_add(n)\ncache = hg.warm_cold(mine, bytes_moved=12 * n)\nmetrics = cache.metrics",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "热缓存、冷缓存轮流测，各预热 5 次、计时 30 次；冷缓存每次计时之前先读一遍 512 MiB 的缓冲区\n  热缓存：中位数 0.01332 ms（p10 0.01328，p90 0.01344），有效带宽 944.7 GB/s\n  冷缓存：中位数 0.0256 ms（p10 0.02544，p90 0.02584），有效带宽 491.5 GB/s\n热缓存的 p10 ÷ p90 = 0.9877：越接近 1，中间八成样本挨得越紧，测得越稳\n冷缓存的中位数 ÷ 热缓存的 p90 = 1.9：不小于 1，冷缓存的中位数落在热缓存的波动范围之外，冷热分得开"
+        }
+      ]
+    },
+    {
+      "section": "交成绩",
+      "code": "hg.submit(\"forge-trusted-timing\", \"shared\", checks=checks, metrics=metrics)",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "通关凭证：2-3 测得准（两条路线共用）\n  校验：3/3 通过\n  测量：median_ms 0.01332 · p10_ms 0.01328 · p90_ms 0.01344 · cold_ms 0.0256 · cold_p10_ms 0.02544 · cold_p90_ms 0.02584 · gbps 944.7 · cold_gbps 491.5\n通关链接（在浏览器里打开，成绩会导入关卡页）：\nhttps://datawhalechina.github.io/hello-gpu/forge/trusted-timing/#lab=HGPU1.TY_LboMwEEV_BXlbgmb8NrtI3XRRtYq66qZyjSGoASJwokpR_r3jtGmCwWI4Z-6YEzuyGku2JN9FVrN2mru4SvNhSbFZpX7ox46VbJ4OKeNl6-fY0AefqOLA9QqR7jewNde1gndiTTz2gewTG_2Qu9bPj8XGN3Eai_VT8bp5KTbOAJDatd_EaUcOSHU4LKzW8lyyOB5zwjyFgQyEihYJaZrDNo-uUFTwkPGNzX2aRoKissS6PsnQttbwUN15lB22MXwtOX7vl4X-pxY5OfkdvREfIkWFizDEpvfjx0AFNaMQ6PKFYOlRumR7hBvlRhHU2jqrNCii7o5KiQA5wyhuOY0M0665Yq7UJVkowa3TIP_wXT5XUlwcZzQqi_-Ku1OsBKAUyVEbYeiA3eeemJOy0lqAdsJyw82195dKh5XidDYuUVsacj7_AA\n通关码（也可以粘贴到关卡页的「导入成绩」里）：\nHGPU1.TY_LboMwEEV_BXlbgmb8NrtI3XRRtYq66qZyjSGoASJwokpR_r3jtGmCwWI4Z-6YEzuyGku2JN9FVrN2mru4SvNhSbFZpX7ox46VbJ4OKeNl6-fY0AefqOLA9QqR7jewNde1gndiTTz2gewTG_2Qu9bPj8XGN3Eai_VT8bp5KTbOAJDatd_EaUcOSHU4LKzW8lyyOB5zwjyFgQyEihYJaZrDNo-uUFTwkPGNzX2aRoKissS6PsnQttbwUN15lB22MXwtOX7vl4X-pxY5OfkdvREfIkWFizDEpvfjx0AFNaMQ6PKFYOlRumR7hBvlRhHU2jqrNCii7o5KiQA5wyhuOY0M0665Yq7UJVkowa3TIP_wXT5XUlwcZzQqi_-Ku1OsBKAUyVEbYeiA3eeemJOy0lqAdsJyw82195dKh5XidDYuUVsacj7_AA\n凭证 JSON 已保存：/work/repo/notebooks/.artifacts/lab/forge-trusted-timing/20261111T082650Z-ac801b4e.json\n星级由关卡页按本关规则计算。\nSubmission('forge-trusted-timing'，两条路线共用)"
+        }
+      ]
+    },
+    {
+      "section": "练习",
+      "title": "练习 3：m 从 2¹⁶ 每次翻倍到 2²⁶，冷热从哪里开始分不开",
+      "code": "import contextlib, io\n\nrows = []\nfor k in range(16, 27):\n    m = 1 << k\n    with contextlib.redirect_stdout(io.StringIO()):  # 每个 m 只打一行\n        wc = hg.warm_cold(make_add(m), bytes_moved=12 * m)\n    rows.append({\"m\": m, **wc.metrics})\n    print(f\"m = 2^{k}（三个数组 {12 * m / 2**20:g} MiB）：热缓存 {wc.warm.median_ms:.4g} ms，冷缓存 {wc.cold.median_ms:.4g} ms，\"\n          f\"p10 ÷ p90 = {wc.spread:.3f}，冷 ÷ 热的 p90 = {wc.separation:.3f}\")",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "m = 2^16（三个数组 0.75 MiB）：热缓存 0.00768 ms，冷缓存 0.01012 ms，p10 ÷ p90 = 0.931，冷 ÷ 热的 p90 = 1.240\nm = 2^17（三个数组 1.5 MiB）：热缓存 0.00804 ms，冷缓存 0.01104 ms，p10 ÷ p90 = 0.980，冷 ÷ 热的 p90 = 1.360\nm = 2^18（三个数组 3 MiB）：热缓存 0.02016 ms，冷缓存 0.0224 ms，p10 ÷ p90 = 0.990，冷 ÷ 热的 p90 = 1.106\nm = 2^19（三个数组 6 MiB）：热缓存 0.01032 ms，冷缓存 0.01716 ms，p10 ÷ p90 = 0.988，冷 ÷ 热的 p90 = 1.649\nm = 2^20（三个数组 12 MiB）：热缓存 0.01332 ms，冷缓存 0.02554 ms，p10 ÷ p90 = 0.985，冷 ÷ 热的 p90 = 1.906\nm = 2^21（三个数组 24 MiB）：热缓存 0.01974 ms，冷缓存 0.04584 ms，p10 ÷ p90 = 0.988，冷 ÷ 热的 p90 = 2.306\nm = 2^22（三个数组 48 MiB）：热缓存 0.03252 ms，冷缓存 0.08552 ms，p10 ÷ p90 = 0.991，冷 ÷ 热的 p90 = 2.620\nm = 2^23（三个数组 96 MiB）：热缓存 0.1719 ms，冷缓存 0.1664 ms，p10 ÷ p90 = 0.993，冷 ÷ 热的 p90 = 0.964\nm = 2^24（三个数组 192 MiB）：热缓存 0.3387 ms，冷缓存 0.3321 ms，p10 ÷ p90 = 0.996，冷 ÷ 热的 p90 = 0.979\nm = 2^25（三个数组 384 MiB）：热缓存 0.674 ms，冷缓存 0.6679 ms，p10 ÷ p90 = 0.996，冷 ÷ 热的 p90 = 0.990\nm = 2^26（三个数组 768 MiB）：热缓存 1.345 ms，冷缓存 1.338 ms，p10 ÷ p90 = 0.999，冷 ÷ 热的 p90 = 0.995"
+        },
+        {
+          "kind": "chart",
+          "chart": "line",
+          "caption": "加法的三个数组一共多大（横轴）和耗时的中位数；冷热两条线分开，就是装得进缓存",
+          "x": {
+            "label": "三个数组一共",
+            "unit": "MiB",
+            "scale": "log",
+            "values": [
+              0.75,
+              1.5,
+              3.0,
+              6.0,
+              12.0,
+              24.0,
+              48.0,
+              96.0,
+              192.0,
+              384.0,
+              768.0
+            ]
+          },
+          "y": {
+            "label": "耗时中位数",
+            "unit": "ms",
+            "scale": "log"
+          },
+          "series": [
+            {
+              "name": "热缓存",
+              "values": [
+                0.00768,
+                0.00804,
+                0.02016,
+                0.01032,
+                0.01332,
+                0.01974,
+                0.03252,
+                0.171923,
+                0.338705,
+                0.673991,
+                1.344581
+              ]
+            },
+            {
+              "name": "冷缓存",
+              "values": [
+                0.01012,
+                0.01104,
+                0.0224,
+                0.01716,
+                0.02554,
+                0.045841,
+                0.085522,
+                0.166402,
+                0.332086,
+                0.667851,
+                1.338322
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,452 @@
+{
+  "parallel": {
+    "term": "并行",
+    "en": "parallelism",
+    "zone": "novice",
+    "short": "很多份活同时开工，不排成一队一件件做。",
+    "analogy": "工坊城的 1000 个学徒，每人领一道题，同时动笔。",
+    "analogyLimit": "学徒看着各算各的。真实的 GPU 上，一小队执行通道听同一个口令，同一时刻做同一件事。",
+    "links": ["novice-thousand-additions"]
+  },
+  "data-dependency": {
+    "term": "数据依赖",
+    "en": "data dependency",
+    "zone": "novice",
+    "short": "后一步要用前一步算出来的结果，只能等它做完。",
+    "analogy": "累加只能派一个学徒从头加到尾：每一笔都要等上一笔的和。",
+    "analogyLimit": "比喻里只能一个人从头加到尾。换一种算法，求和也能先分段各算各的，再合起来。",
+    "links": ["novice-thousand-additions", "novice-reduction"]
+  },
+  "cu": {
+    "term": "计算单元",
+    "en": "compute unit (CU)",
+    "zone": "novice",
+    "short": "GPU 里一个能独立干活的单元，一整组线程会被派给它。",
+    "analogy": "工坊城里的一间车间。",
+    "analogyLimit": "车间之间不串门：不在同一个 WGP 的计算单元，要交换数据只能经过显存。同一个 WGP 的两间车间例外，它们合用一排货架（LDS）。",
+    "links": ["novice-gpu-panorama", "novice-thread-groups", "novice-lds-sync"]
+  },
+  "vram": {
+    "term": "显存",
+    "en": "device memory (VRAM)",
+    "zone": "novice",
+    "short": "GPU 自己的大内存，数据要先搬进来才能算。",
+    "analogy": "城外的大仓库：东西多，但跑一趟远。",
+    "analogyLimit": "比喻只说远近。显存真正的代价还看一次搬多少、地址齐不齐。",
+    "links": ["novice-gpu-panorama", "novice-memory-hierarchy", "novice-coalescing"]
+  },
+  "host-device": {
+    "term": "主机与设备",
+    "en": "host and device",
+    "zone": "novice",
+    "short": "CPU 这边叫主机，GPU 这边叫设备，数据要在两边之间拷来拷去。",
+    "analogy": "CPU 这边派活，GPU 这边是工坊城：原料先运进城外的大仓库（显存），成品做好了再运回 CPU 这边。",
+    "analogyLimit": "比喻里两边隔着一段路，每份原料都得运。有的电脑里 CPU 和 GPU 共用一块内存（比如很多笔记本电脑的集成显卡），可以少搬甚至不搬。",
+    "links": ["novice-gpu-panorama", "novice-timing"]
+  },
+  "kernel": {
+    "term": "kernel",
+    "en": "kernel",
+    "zone": "novice",
+    "short": "交给 GPU 跑的一份代码，成千上万个线程照着它各做一份。",
+    "analogy": "一张工作单，大家照着同一份做。",
+    "analogyLimit": "工作单上写的是同一件事，但每个线程处理的数据不一样。",
+    "links": ["novice-assign-threads", "novice-thread-groups", "novice-timing"]
+  },
+  "thread": {
+    "term": "线程",
+    "en": "thread",
+    "zone": "novice",
+    "short": "GPU 上最小的干活单位，每个线程只管自己那一份数据。",
+    "analogy": "一个线程小机器人。",
+    "analogyLimit": "机器人看着各忙各的，但它并不独占一条流水线：同一小队共用一条。",
+    "links": ["novice-assign-threads", "novice-thread-groups", "novice-wavefront"]
+  },
+  "block": {
+    "term": "线程块",
+    "en": "block",
+    "zone": "novice",
+    "short": "一起派出去的一组线程，整组落在同一个计算单元上。",
+    "analogy": "一组派到同一个车间的机器人。",
+    "analogyLimit": "派到哪间车间不由你挑，由硬件安排；一间车间也可能同时住下好几组。",
+    "links": ["novice-thread-groups", "novice-wavefront", "novice-lds-sync"]
+  },
+  "grid": {
+    "term": "网格",
+    "en": "grid",
+    "zone": "novice",
+    "short": "这次启动派出的全部线程块。",
+    "analogy": "这次派出的全部组。",
+    "analogyLimit": "组数可以远多于车间数：车间住满了，后面的组就排队，等前面的组做完再进去。",
+    "links": ["novice-thread-groups", "novice-first-agent"]
+  },
+  "global-index": {
+    "term": "全局下标",
+    "en": "global index",
+    "zone": "novice",
+    "short": "线程在整个网格里的编号，用它决定自己算哪个元素。",
+    "analogy": "机器人的工号：组号 × 每组人数 + 组内编号。",
+    "analogyLimit": "工号只是算出来的数，线程并不知道别人拿到了哪个号。",
+    "links": ["novice-thread-groups", "novice-coalescing", "novice-boss"]
+  },
+  "wavefront": {
+    "term": "wavefront",
+    "en": "wavefront",
+    "zone": "novice",
+    "short": "一起执行同一条指令的一小队线程，RDNA 上原生是 32 个一队。",
+    "analogy": "一起行动的小队，同一时刻做同一件事。",
+    "analogyLimit": "小队成员不能各走各的：遇到分岔路口只能先走一边，另一边原地等。",
+    "links": ["novice-wavefront", "novice-divergence", "novice-latency-hiding"]
+  },
+  "simd": {
+    "term": "SIMD",
+    "en": "single instruction, multiple data",
+    "zone": "novice",
+    "short": "一条指令同时作用在很多份数据上的执行部件。",
+    "analogy": "车间里的一条流水线，一声令下整排工位一起动。",
+    "analogyLimit": "流水线上的工位不能各做各的工序：一次只发一条指令。",
+    "links": ["novice-wavefront", "novice-divergence"]
+  },
+  "lane": {
+    "term": "lane",
+    "en": "lane",
+    "zone": "novice",
+    "short": "SIMD 上的一个执行通道，一个线程占一条。",
+    "analogy": "流水线上的一个工位。",
+    "analogyLimit": "真的工位空着能借给别人，lane 不行：wave 没坐满，或者有的线程这一步不干活，那几个 lane 只能空转，时间照样花掉。",
+    "links": ["novice-wavefront", "novice-divergence", "novice-boss"]
+  },
+  "branch-divergence": {
+    "term": "分支发散",
+    "en": "branch divergence",
+    "zone": "novice",
+    "short": "同一小队的线程走进了 if 的不同分支，两条路只能先后各走一遍。",
+    "analogy": "小队在岔路口分成两拨，只能先陪一拨走完，另一拨原地等。",
+    "analogyLimit": "等着的人不是在休息：流水线的时间照样在走。",
+    "links": ["novice-divergence", "novice-boss"]
+  },
+  "exec-mask": {
+    "term": "执行掩码",
+    "en": "execution mask",
+    "zone": "novice",
+    "short": "一串开关，标记这一步哪些 lane 真的干活、哪些空转。",
+    "analogy": "口令旁边附一排开关，一个工位一个：开着的工位照做，关着的这一步不动。",
+    "analogyLimit": "开关不是线程自己拨的：走到 if、else 时按条件重新拨一遍；整排都关着的那一段，整队直接跳过。",
+    "links": ["novice-divergence"]
+  },
+  "memory-hierarchy": {
+    "term": "存储层级",
+    "en": "memory hierarchy",
+    "zone": "novice",
+    "short": "寄存器、LDS、缓存、显存排成一层层，越近越快，也越小。",
+    "analogy": "工具台、车间货架、城外仓库：离手越远，拿一趟越久。",
+    "analogyLimit": "比喻只说远近。真实代价还看一次搬多少、搬得齐不齐。",
+    "links": ["novice-memory-hierarchy", "novice-coalescing", "novice-lds-sync"]
+  },
+  "register": {
+    "term": "寄存器",
+    "en": "register",
+    "zone": "novice",
+    "short": "线程私有的最快存储，放着它当前正在算的几个数。",
+    "analogy": "机器人手边的工具台。",
+    "analogyLimit": "工具台可以随便堆，寄存器总量是固定的：用得多，能同时待命的小队就少。",
+    "links": ["novice-memory-hierarchy", "novice-latency-hiding"]
+  },
+  "lds": {
+    "term": "LDS",
+    "en": "local data share (LDS)",
+    "zone": "novice",
+    "short": "同一个线程块共享的一小块快速存储，就在芯片上的 WGP 里。",
+    "analogy": "车间里的共享货架。",
+    "analogyLimit": "货架上给这一组开的格子，别的线程块看不到，也拿不到。",
+    "links": ["novice-memory-hierarchy", "novice-lds-sync", "novice-reduction"]
+  },
+  "coalescing": {
+    "term": "合并访存",
+    "en": "memory coalescing",
+    "zone": "novice",
+    "short": "一小队线程读相邻地址时，硬件把它们并成少数几次成块搬运。",
+    "analogy": "一车把整排货一次拉回来，不用一人跑一趟。",
+    "analogyLimit": "只有地址挨着才并得起来；隔着读，同样多的数得多搬几车。",
+    "links": ["novice-coalescing", "novice-first-agent", "novice-boss"]
+  },
+  "cache-line": {
+    "term": "cache line",
+    "en": "cache line",
+    "zone": "novice",
+    "short": "显存搬运的最小整块，哪怕只要一个数，也要整块搬。",
+    "analogy": "一车：装满装不满都算一趟。",
+    "analogyLimit": "模拟器里一车装多少是示意值，真卡上的大小以实测为准[待实测]。",
+    "links": ["novice-coalescing", "novice-boss"]
+  },
+  "stride": {
+    "term": "访问步长",
+    "en": "stride",
+    "zone": "novice",
+    "short": "相邻线程读的地址差几个元素，步长是 1 时最省。",
+    "analogy": "小队排成一排去仓库取货：相邻两个机器人要的货隔几格。",
+    "analogyLimit": "看的是同一步里相邻的两个线程，不是一个线程前后两次拿的数：一个线程自己连着拿，相邻线程照样可能隔得很远。",
+    "links": ["novice-coalescing", "novice-first-agent"]
+  },
+  "wgp": {
+    "term": "工作组处理器",
+    "en": "workgroup processor (WGP)",
+    "zone": "novice",
+    "short": "RDNA 上两个计算单元合成的一组，线程块和它的 LDS 都落在里面。",
+    "analogy": "两间打通的车间，合用一排货架。",
+    "analogyLimit": "怎么分组由硬件和编译器决定，写代码时管不着。",
+    "links": ["novice-lds-sync"]
+  },
+  "barrier": {
+    "term": "同步屏障",
+    "en": "barrier",
+    "zone": "novice",
+    "short": "让同一个线程块里的线程都走到这里，再一起往下走。",
+    "analogy": "整组机器人在货架前等齐，再一起开工。",
+    "analogyLimit": "只等得齐同一组：别的线程块不会在这里等你。",
+    "links": ["novice-lds-sync", "novice-reduction"]
+  },
+  "race-condition": {
+    "term": "数据竞争",
+    "en": "race condition",
+    "zone": "novice",
+    "short": "两个线程碰同一个位置，至少一个在写，中间又没有同步：结果看谁先到，跑一次一个样。",
+    "analogy": "两个机器人抢同一格货架：一个还没放好，另一个就伸手去取。",
+    "analogyLimit": "比喻里看得见谁先伸手；真卡上看不见，这一次对，下一次就可能错。",
+    "links": ["novice-lds-sync", "novice-reduction"]
+  },
+  "reduction": {
+    "term": "归约",
+    "en": "reduction",
+    "zone": "novice",
+    "short": "把一堆数合成一个结果，比如求和、求最大值。",
+    "analogy": "车间里的机器人两两交接：每一对里，一个把手上的数交给另一个，加起来接着交。一轮少一半人，最后一个人报出总数。",
+    "analogyLimit": "比喻里是手递手。真卡上数放在货架（LDS）的格子里，线程按编号去取；下一轮要等整组都加完这一轮，靠的是同步。",
+    "links": ["novice-reduction"]
+  },
+  "atomic": {
+    "term": "原子操作",
+    "en": "atomic operation",
+    "zone": "novice",
+    "short": "「读出来、改一改、写回去」中间不会被别人插队的操作。",
+    "analogy": "城外仓库里那一格挂着一本记账本：要往上加数的机器人排队，轮到谁，谁翻开、加上、写回去，下一个才能翻开。",
+    "analogyLimit": "比喻里谁先谁后看得见；真卡上的原子加先后不确定，只保证一个都不丢。排队要花时间，往同一格加的人越多，等得越久。",
+    "links": ["novice-reduction"]
+  },
+  "async-launch": {
+    "term": "异步启动",
+    "en": "asynchronous launch",
+    "zone": "novice",
+    "short": "CPU 把 kernel 交给 GPU 就接着往下走，不等它算完。",
+    "analogy": "CPU 把工作单送到工坊城门口就回去了，不在门口等着做完。",
+    "analogyLimit": "比喻里送单的人走了就不管了。真卡上 CPU 随时可以同步，等交出去的活都做完；交给同一条队列的工作单，按先后一份一份做。",
+    "links": ["novice-timing", "novice-boss"]
+  },
+  "bandwidth": {
+    "term": "有效带宽",
+    "en": "effective bandwidth",
+    "zone": "novice",
+    "short": "这次 kernel 该读写的字节数，除以它花的时间。",
+    "analogy": "数一数这一单该从城外仓库运进、运出多少货，再除以运了多久。",
+    "analogyLimit": "只数该运的货：车里白搬的、车间货架上倒手的都不算。它是算出来的，说不清时间花在了哪；真卡上数据装得进缓存时，算出来的数还可能超过显存的标称带宽。",
+    "links": ["novice-timing", "novice-first-agent"]
+  },
+  "warmup": {
+    "term": "预热",
+    "en": "warm-up",
+    "zone": "novice",
+    "short": "正式计时前先空跑几次，把只发生一次的开销排掉。",
+    "analogy": "工坊城接第一单前，要先开门、把工具摆出来，所以第一单总是最慢。",
+    "analogyLimit": "比喻里的准备只有开门摆工具。真卡上第一次慢的原因有好几种（比如初始化、把 kernel 的代码装上 GPU），多慢要实测；预热也不保证之后每一次都一样快。",
+    "links": ["novice-timing", "novice-boss"]
+  },
+  "latency-hiding": {
+    "term": "延迟隐藏",
+    "en": "latency hiding",
+    "zone": "novice",
+    "short": "一支小队在等数据时，SIMD 换另一支小队上来算，等待就被盖住了。",
+    "analogy": "小队去仓库取货时，让另一支小队先上工位。",
+    "analogyLimit": "等待没有变短，只是被别人的活盖住了；能同时住下的小队有限，大家的活太少也盖不住。",
+    "links": ["novice-latency-hiding"]
+  },
+  "occupancy": {
+    "term": "占用率",
+    "en": "occupancy",
+    "zone": "novice",
+    "short": "一条 SIMD 上同时住着的小队数，占它最多能住下的比例。",
+    "analogy": "一条流水线有固定几个名额，住了几支小队，就占了几成。",
+    "analogyLimit": "占用率只数住了几支，不管它们在干什么：住满了，要是大家都在等仓库，流水线照样空着；住得多也不一定更快。",
+    "links": ["novice-latency-hiding"]
+  },
+  "agent": {
+    "term": "Agent",
+    "en": "agent",
+    "zone": "novice",
+    "short": "能自己看结果、决定下一步、再动手的程序。",
+    "analogy": "CPU 这边一位会自己拿主意的派活员：派一张工作单进城试一试，读城里送回来的回报单，再决定下一单怎么派。",
+    "analogyLimit": "派活员会琢磨、会换思路；规则 Agent 只照几条写死的规则，同样的回报单每次都选同一步。它也看不见城里的机器人怎么干活，只读得到工具交回来的数。",
+    "links": ["novice-meet-agent", "novice-first-agent", "novice-boss"]
+  },
+  "react-loop": {
+    "term": "ReAct 循环",
+    "en": "ReAct loop",
+    "zone": "novice",
+    "short": "思考 → 行动 → 观察，转一圈再决定下一步。",
+    "analogy": "派活员的一圈：想好这次试什么，派一单进城，读回报单，再想下一圈。",
+    "analogyLimit": "一圈只用一样工具、只读这一样的观察。派活员到点会下班，循环却不会自己停：要么交卷，要么走满步数上限。",
+    "links": ["novice-meet-agent", "novice-first-agent"]
+  },
+  "autotune": {
+    "term": "自动调参",
+    "en": "auto-tuning",
+    "zone": "novice",
+    "short": "让程序自己试几组配置，挑出最快的那组。",
+    "analogy": "派活员把同一张工作单换几种派法各派一次，读回报单，挑出最快的那种。",
+    "analogyLimit": "派法只能从列出来的几种里挑，派活员不会自己发明新派法。回报单上的周期数是模拟的，同一种派法每次都一样；真卡上每次量都有出入，要多量几次再比。",
+    "links": ["novice-first-agent"]
+  },
+  "search-space": {
+    "term": "搜索空间",
+    "en": "search space",
+    "zone": "novice",
+    "short": "所有可以试的配置组合，比如线程块大小配上访问步长。",
+    "analogy": "派活员手上的一张派法表：每组几个机器人，配上相邻机器人隔几格取货，一格一种派法。",
+    "analogyLimit": "表是人列的：没列进来的派法，再怎么挑也挑不到。每多一个能调的参数，格子数就要乘上它有几种取值。",
+    "links": ["novice-first-agent"]
+  },
+  "out-of-bounds": {
+    "term": "越界",
+    "en": "out of bounds",
+    "zone": "novice",
+    "short": "线程算出的下标超出了数组的范围，读写到了数组外面：可能读到不相干的数，或者写坏别的数据。",
+    "analogy": "城外仓库里这一排只有 0～n − 1 号格子，机器人照着工作单算出 n 号，就把货放到了隔壁那一排的格子上。",
+    "analogyLimit": "比喻里隔壁总有一排格子。真卡上写到数组外面，可能悄悄改掉别的数据，也可能碰上不让写的地方、程序报错；模拟器把写到外面的单独放进越界区、读外面一律读到 0，那是模拟器的约定。",
+    "links": ["novice-boss"]
+  },
+  "fake-speedup": {
+    "term": "假加速",
+    "en": "fake speedup",
+    "zone": "novice",
+    "short": "看起来变快了，其实是没同步或者没预热，测错了。",
+    "analogy": "派活员把工作单送到城门口就看表：城里的机器人还没开工，量出来当然快。",
+    "analogyLimit": "比喻里只画了没等做完就看表这一种。没预热、两次量的条件不一样，也会量出不存在的提速；真卡上每次量都有出入，量一次就下结论也不稳。",
+    "links": ["novice-boss"]
+  },
+  "rocm": {
+    "term": "ROCm",
+    "en": "ROCm",
+    "zone": "forge",
+    "short": "AMD 的 GPU 计算软件栈：运行时、编译器、数学库和工具，PyTorch 的 AMD 版建在它上面。",
+    "analogy": "",
+    "analogyLimit": "",
+    "links": ["forge-your-gpu"]
+  },
+  "gfx-target": {
+    "term": "gfx 代号",
+    "en": "LLVM target name",
+    "zone": "forge",
+    "short": "编译器认 GPU 型号用的代号，例如 gfx1201；GPU 代码按它编译。",
+    "analogy": "",
+    "analogyLimit": "",
+    "links": ["forge-your-gpu"]
+  },
+  "program": {
+    "term": "program",
+    "en": "program",
+    "zone": "forge",
+    "short": "Triton kernel 的一份运行实例，算一块 tile；tl.program_id 是它的编号。",
+    "analogy": "一组机器人领一份整组的活：工作单上写的是这一组搬哪一块货。",
+    "analogyLimit": "工作单上不写组里有几个机器人、谁搬哪几件：一个 program 有几个线程，由 num_warps 和 wave 大小定；块里的元素怎么分，由编译器排。",
+    "links": ["forge-first-real-kernel"]
+  },
+  "tile": {
+    "term": "tile",
+    "en": "tile",
+    "zone": "forge",
+    "short": "一次当成一整块来算的一组数据，例如一个 program 管的 BLOCK 个相邻元素。",
+    "analogy": "一组机器人一起搬的一整块货。",
+    "analogyLimit": "货块多大由你在 kernel 里定（BLOCK，要是 2 的幂），和组里有几个机器人无关；最后一块可能伸到数组外面，要用 mask 挡住。",
+    "links": ["forge-first-real-kernel"]
+  },
+  "gpu-event": {
+    "term": "GPU 事件",
+    "en": "GPU event",
+    "zone": "forge",
+    "short": "排进 GPU 队列的时间戳：GPU 走到它才记下时刻，两个事件之差就是中间那段活的耗时。",
+    "analogy": "工作单队列里夹着的一张打卡单：工坊城做到这一张，就在上面盖上当时的时刻。",
+    "analogyLimit": "打卡单不干活，也不让工坊城停下来等你；CPU 要读两张打卡单之间的时间，得先等工坊城做到后一张。",
+    "links": ["forge-trusted-timing"]
+  },
+  "percentile": {
+    "term": "分位数",
+    "en": "percentile",
+    "zone": "forge",
+    "short": "样本从小到大排好，排在某个百分比位置上的数：p10 在 10% 处，中位数就是 p50。",
+    "analogy": "",
+    "analogyLimit": "",
+    "links": ["forge-trusted-timing"]
+  },
+  "cold-cache": {
+    "term": "冷缓存",
+    "en": "cold cache",
+    "zone": "forge",
+    "short": "计时前先把缓存里的数据换掉，要用的数都得从显存读；数据刚用过、还在缓存里时测，叫热缓存。",
+    "analogy": "城里的中转仓只留着最近搬过的货：热缓存时货还在中转仓，冷缓存时要回城外的大仓库搬。",
+    "analogyLimit": "中转仓放满了就换掉旧货，留哪些由硬件按规则定，kernel 点不了名；货多到中转仓放不下时，冷热都得回大仓库搬。",
+    "links": ["forge-trusted-timing"]
+  },
+  "arithmetic-intensity": {
+    "term": "算术强度",
+    "en": "arithmetic intensity",
+    "zone": "forge",
+    "short": "一个算子每搬 1 字节数据做几次浮点运算：浮点运算次数除以字节数，单位 FLOP/字节。",
+    "analogy": "每从城外的大仓库运进 1 份货，车间要在上面加工几道工序。",
+    "analogyLimit": "数的是算法要搬的字节，缓存替你省下的趟数不算；同样的运算换成 FP16，每个数只占一半字节，强度跟着翻倍。",
+    "links": ["forge-roofline"]
+  },
+  "roofline": {
+    "term": "屋顶线",
+    "en": "roofline",
+    "zone": "forge",
+    "short": "一个算子最快能到的算力：峰值带宽 × 算术强度，和峰值算力取小的；画出来是斜坡接平顶。",
+    "analogy": "工坊城一天能交多少货，要么卡在城门口运货的速度，要么卡在车间加工的速度，看哪个先到顶。",
+    "analogyLimit": "屋顶只管这两条上限：启动的开销、缓存、分支都不在里面。点离屋顶多远、为什么，要靠计时和别的工具查。",
+    "links": ["forge-roofline"]
+  },
+  "ridge-point": {
+    "term": "拐点",
+    "en": "ridge point",
+    "zone": "forge",
+    "short": "屋顶线上斜坡和平顶的交点，算术强度等于峰值算力 ÷ 峰值带宽；左边归带宽管，右边归算力管。",
+    "analogy": "",
+    "analogyLimit": "",
+    "links": ["forge-roofline"]
+  },
+  "profiler": {
+    "term": "profiler",
+    "en": "profiler",
+    "zone": "forge",
+    "short": "记下程序在 CPU、GPU 上各做了什么、各用多久的工具；PyTorch 自带一个：torch.profiler。",
+    "analogy": "",
+    "analogyLimit": "",
+    "links": ["forge-behind-pytorch"]
+  },
+  "trace": {
+    "term": "trace",
+    "en": "trace",
+    "zone": "forge",
+    "short": "按时间排好的一串事件：CPU 上的算子和运行时调用、GPU 上的 kernel，各自什么时候开始、持续多久。",
+    "analogy": "工坊城的值班日志：每张工作单几点交进城、哪个车间几点开工、几点完工，一条条记下来。",
+    "analogyLimit": "日志只记发生了什么、用了多久，不记为什么慢；记日志本身也花时间，CPU 上的事会被拉长一点。",
+    "links": ["forge-behind-pytorch"]
+  },
+  "launch-overhead": {
+    "term": "启动的开销",
+    "en": "launch overhead",
+    "zone": "forge",
+    "short": "CPU 交出一个 kernel 花的时间：走一遍 Python、算子分派和运行时调用，跟 kernel 算多少无关。",
+    "analogy": "派活的人每交一张工作单，都要先填单、登记、再跑一趟送进工坊城；单子上的活再小，这一趟也省不了。",
+    "analogyLimit": "派活的人交完一张就去交下一张，不等工坊城做完：活大时这一趟藏在前一张单子的工夫里，活小时工坊城才空着等。",
+    "links": ["forge-behind-pytorch"]
+  }
+}

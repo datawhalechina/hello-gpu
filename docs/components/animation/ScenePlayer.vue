@@ -279,6 +279,65 @@ onUnmounted(() => {
   text-align: left;
 }
 
+/*
+ * 新版外壳（.hg-shell，F-06 的 HgLayout / StageLayout）里换成 v2 设计 token（任务 F-08）：
+ * 只替换颜色、圆角和字体，时钟逻辑和结构一动不动，场景组件照旧继承 --ej-* 读颜色。
+ * 旧版章节页不在 .hg-shell 里，配色保持原样。
+ * 对应关系：A 蓝 / B 橙 / C 绿取线程块分类色（01 第 2.3 节），
+ * 活动状态取强调色的文字色、配 --hg-surface 当反色文字（亮暗两套都够对比度）。
+ */
+.hg-shell .ej {
+  --ej-bg: var(--hg-surface);
+  --ej-surface: var(--hg-surface-2);
+  --ej-panel: var(--hg-surface-2);
+  --ej-line: var(--hg-border);
+  --ej-line-strong: var(--hg-border-strong);
+  --ej-ink: var(--hg-ink);
+  --ej-ink-soft: var(--hg-ink-2);
+  --ej-ink-faint: var(--hg-ink-3);
+  --ej-a: var(--hg-group-0);
+  --ej-a-soft: var(--hg-group-0-soft);
+  --ej-b: var(--hg-group-3);
+  --ej-b-soft: var(--hg-group-3-soft);
+  --ej-c: var(--hg-group-1);
+  --ej-c-soft: var(--hg-group-1-soft);
+  --ej-active: var(--hg-accent-ink);
+  --ej-active-soft: var(--hg-accent-soft);
+  --ej-on-active: var(--hg-surface);
+  --ej-bad: var(--hg-idle);
+  --ej-bad-soft: color-mix(in srgb, var(--hg-idle) 16%, transparent);
+  --ej-shadow: color-mix(in srgb, var(--hg-ink) 8%, transparent);
+  border-radius: var(--hg-radius-card);
+  font-family: var(--hg-font-body);
+}
+
+.hg-shell .ej-eyebrow,
+.hg-shell .ej-count,
+.hg-shell .ej-chip,
+.hg-shell .ej-note,
+.hg-shell .ej-progress {
+  font-family: var(--hg-font-mono);
+}
+
+.hg-shell .ej-title,
+.hg-shell .ej-count b,
+.hg-shell .ej-progress strong {
+  font-family: var(--hg-font-display);
+}
+
+.hg-shell .ej-stage,
+.hg-shell .ej-btn {
+  border-radius: var(--hg-radius-control);
+}
+
+/* 主按钮用深墨底配反色文字，强调色只留给进度条和当前步骤（01 第 2.2 节）。 */
+.hg-shell .ej-btn.is-primary {
+  border-color: var(--hg-ink);
+  border-radius: var(--hg-radius-pill);
+  background: var(--hg-ink);
+  color: var(--hg-surface);
+}
+
 .ej:focus-visible {
   outline: 2px solid var(--ej-active);
   outline-offset: 3px;

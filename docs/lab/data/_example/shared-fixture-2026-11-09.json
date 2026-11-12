@@ -1,0 +1,145 @@
+{
+  "$schema": "../../schema.json",
+  "version": 1,
+  "example": true,
+  "collector": "示例（没有真实的采集人）",
+  "date": "2026-11-09",
+  "note": "示例，不是实测：设备、软件版本和所有数字都是伪造的，只用来演示档案的格式和浏览页。",
+  "credential": {
+    "v": 1,
+    "stage": "forge-roofline",
+    "route": "shared",
+    "at": "2026-11-09T08:30:00Z",
+    "device": {
+      "name": "Fixture GPU（伪造数据）",
+      "gfx": "gfx9999",
+      "cus": 10
+    },
+    "env": {
+      "rocm": "0.0.0-fixture",
+      "torch": "0.0.0+fixture",
+      "triton": null
+    },
+    "checks": {
+      "passed": 3,
+      "total": 3
+    },
+    "metrics": {
+      "median_ms": 1.0721500000000002,
+      "p10_ms": 1.06959,
+      "p90_ms": 1.07451,
+      "gbps": 500.74235135009087,
+      "peak_gbps": 610
+    }
+  },
+  "environment": {
+    "platform": "local",
+    "device": {
+      "name": "Fixture GPU（伪造数据）",
+      "gfx": "gfx9999",
+      "cus": 10,
+      "wave": 32,
+      "memory_bytes": 1073741824
+    },
+    "peak": {
+      "gbps": 610,
+      "tflops": 40
+    },
+    "software": {
+      "rocm": "0.0.0-fixture",
+      "hip": "0.0.0-fixture",
+      "torch": "0.0.0+fixture",
+      "triton": null,
+      "python": "0.0.0-fixture"
+    },
+    "system": {
+      "os": "Fixture OS（伪造数据）",
+      "kernel": "0.0.0-fixture",
+      "cpu": "Fixture CPU（伪造数据）"
+    },
+    "commit": "0000000"
+  },
+  "samples": [
+    {
+      "label": "copy",
+      "note": "256 MiB 拷贝，读一遍、写一遍",
+      "method": "GPU current-stream events",
+      "warmup": 5,
+      "repeat": 30,
+      "ms": [
+        1.0934, 1.0705, 1.0725, 1.0694, 1.0695, 1.0724, 1.0728, 1.0722, 1.0746, 1.071, 1.0726,
+        1.0708, 1.0696, 1.072, 1.0714, 1.0733, 1.0733, 1.0704, 1.0726, 1.0693, 1.0725, 1.07, 1.0741,
+        1.0721, 1.0732, 1.0852, 1.0745, 1.0697, 1.0704, 1.0708
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "section": "准备",
+      "code": "import torch\nimport hello_gpu as hg\nhg.device_card()",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "我的 GPU 卡片\n  名称：Fixture GPU（伪造数据）\n  架构：gfx9999\n  CU 数：10\n  wave 大小：32\n  显存：1.0 GiB\n  软件：ROCm 0.0.0-fixture · PyTorch 0.0.0+fixture · Triton 未找到\n  实测峰值：610.0 GB/s · 40.00 TFLOPS\n  rocminfo：CU 数和 wave 大小和上面一致"
+        }
+      ]
+    },
+    {
+      "section": "动手",
+      "title": "把几个 kernel 画到这张卡的屋顶线下面",
+      "code": "peak = hg.peak()\nai = [0.125, 0.25, 0.5, 1, 2, 4, 8, 16, 32, 64, 128]\nroof = [min(peak[\"tflops\"], a * peak[\"gbps\"] / 1000) for a in ai]\npoints = [measured.get(a) for a in ai]  # measured：前面几个单元测出的 {算术强度: TFLOPS}",
+      "outputs": [
+        {
+          "kind": "chart",
+          "chart": "line",
+          "caption": "两条轴都是对数刻度；没有测的点空着",
+          "x": {
+            "label": "算术强度",
+            "unit": "FLOP/B",
+            "scale": "log",
+            "values": [0.125, 0.25, 0.5, 1, 2, 4, 8, 16, 32, 64, 128]
+          },
+          "y": {
+            "label": "性能",
+            "unit": "TFLOPS",
+            "scale": "log"
+          },
+          "series": [
+            {
+              "name": "这张卡的上限",
+              "values": [0.07625, 0.1525, 0.305, 0.61, 1.22, 2.44, 4.88, 9.76, 19.52, 39.04, 40]
+            },
+            {
+              "name": "实测的 kernel",
+              "values": [0.0571, null, null, null, 0.8912, null, null, 6.874, null, null, null]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "挑战",
+      "title": "拷贝能跑到峰值带宽的多少",
+      "code": "src = torch.empty(2**26, device=\"cuda\")\ndst = torch.empty_like(src)\nresult = hg.compare({\"copy\": lambda: dst.copy_(src)}, bytes_moved=2 * src.numel() * 4)",
+      "outputs": [
+        {
+          "kind": "table",
+          "columns": ["实现", "中位数 ms", "p10 ms", "p90 ms", "带宽 GB/s", "占峰值带宽", "相对 copy"],
+          "rows": [
+            ["copy", "1.072", "1.07", "1.075", "500.7", "82.1%", "1.00×"]
+          ]
+        }
+      ]
+    },
+    {
+      "section": "交成绩",
+      "code": "hg.submit(\"forge-roofline\", \"shared\", checks={\"passed\": 3, \"total\": 3}, metrics=result.metrics(\"copy\"))",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "通关凭证：2-4 性能的天花板（两条路线共用）\n  校验：3/3 通过\n  测量：median_ms 1.072 · p10_ms 1.07 · p90_ms 1.075 · gbps 500.7 · peak_gbps 610\n通关链接（在浏览器里打开，成绩会导入关卡页）：\nhttps://datawhalechina.github.io/hello-gpu/forge/roofline/#lab=HGPU1.TY2xTsMwFEV_Bd0VJ3pOmgb7A2BlgIWlMomTRk3iyHaqSlUkRhgY2ZkZEB_Qz0GVmPoLyFSteMMb7nn3vC3WkJzBeVVrSFTG1jqyxlRt02swWDP6ANxSWV2CQXlIJJTMI84jEnd0JVOSRA9gKPW6KTTkFr3qQuu62fjR6oub2_vD7vl79_Hz9L5_-9q_fh52L2Coqw1k2EIIAYZidJCcJgbdr4PHmqKDBMUUU1QdbWDwxhbLU375L7eNNz1kP7btxFAsdbFywTMo53QJmYauVy1kOjF02tum-DvodNmoftGF_zHlCc_oPAnDwOnE5iITDIM4B_ks4wz14-AgM6I4nyVpxtOMSNBVzjBotVoc8ZzTNP0C\n通关码（也可以粘贴到关卡页的「导入成绩」里）：\nHGPU1.TY2xTsMwFEV_Bd0VJ3pOmgb7A2BlgIWlMomTRk3iyHaqSlUkRhgY2ZkZEB_Qz0GVmPoLyFSteMMb7nn3vC3WkJzBeVVrSFTG1jqyxlRt02swWDP6ANxSWV2CQXlIJJTMI84jEnd0JVOSRA9gKPW6KTTkFr3qQuu62fjR6oub2_vD7vl79_Hz9L5_-9q_fh52L2Coqw1k2EIIAYZidJCcJgbdr4PHmqKDBMUUU1QdbWDwxhbLU375L7eNNz1kP7btxFAsdbFywTMo53QJmYauVy1kOjF02tum-DvodNmoftGF_zHlCc_oPAnDwOnE5iITDIM4B_ks4wz14-AgM6I4nyVpxtOMSNBVzjBotVoc8ZzTNP0C\n凭证 JSON 已保存：.artifacts/lab/forge-roofline/20261109T083000Z-00000000.json\n星级由关卡页按本关规则计算。"
+        }
+      ]
+    }
+  ]
+}

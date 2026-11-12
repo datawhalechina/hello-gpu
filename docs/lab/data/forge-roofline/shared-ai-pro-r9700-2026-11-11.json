@@ -1,0 +1,896 @@
+{
+  "$schema": "../../schema.json",
+  "version": 1,
+  "collector": "amdjiahangpan",
+  "date": "2026-11-11",
+  "note": "R-01 的参考运行：Notebook 里标了 TODO 的地方换成参考解，按读者的顺序（2-1 → 2-2 HIP → 2-2 Triton → 2-3 → 2-4）从空的 artifact 目录开始各跑一遍，末尾另接几个练习单元。代码是仓库提交 8130dde 加上同一个 PR 里 R-01 的修改（hello_gpu：hg.check_env 查编译器和 Python.h，FMA 测试改成累加写法、计时前先连着跑 0.2 秒，check_timer 认 PyTorch 的报错；Notebook：2-3 练习 2、2-4 FMA 测试的说明）。环境：本地 pip 装的 ROCm 10.0.0（uv 建的环境），Docker 容器里只挂了一块 R9700。",
+  "credential": {
+    "v": 1,
+    "stage": "forge-roofline",
+    "route": "shared",
+    "at": "2026-11-11T08:27:09Z",
+    "device": {
+      "name": "AMD Radeon AI PRO R9700",
+      "gfx": "gfx1201",
+      "cus": 64
+    },
+    "env": {
+      "rocm": "10.0.0",
+      "torch": "2.13.0+rocm10.0.0",
+      "triton": "3.8.0+git4cff872c.rocm10.0.0"
+    },
+    "checks": {
+      "passed": 5,
+      "total": 5
+    },
+    "metrics": {
+      "add_ms": 0.33874601125717163,
+      "add_gbps": 594.3290409614755,
+      "add_tflops": 0.04952742008012295,
+      "add_intensity": 0.08333333333333333,
+      "add_roof_tflops": 0.048258454578161705,
+      "mm_ms": 0.49150800704956055,
+      "mm_gbps": 153.60374788845976,
+      "mm_tflops": 17.476693093086975,
+      "mm_intensity": 113.77777777777777,
+      "mm_roof_tflops": 47.97226426015832,
+      "ridge": 82.83913613254396,
+      "peak_gbps": 579.1014549379405,
+      "peak_tflops": 47.97226426015832
+    }
+  },
+  "environment": {
+    "platform": "local",
+    "device": {
+      "name": "AMD Radeon AI PRO R9700",
+      "gfx": "gfx1201",
+      "cus": 64,
+      "wave": 32,
+      "memory_bytes": 34208743424
+    },
+    "peak": {
+      "gbps": 579.1014549379405,
+      "tflops": 47.97226426015832
+    },
+    "software": {
+      "rocm": "10.0.0",
+      "hip": "7.15.26333",
+      "torch": "2.13.0+rocm10.0.0",
+      "triton": "3.8.0+git4cff872c.rocm10.0.0",
+      "python": "3.12.3"
+    },
+    "system": {
+      "os": "Ubuntu 24.04.5 LTS（Docker 容器 ubuntu:24.04）",
+      "kernel": "6.17.0-23-generic",
+      "cpu": "AMD Ryzen Threadripper PRO 9975WX 32-Cores"
+    },
+    "commit": "8130dde"
+  },
+  "samples": [
+    {
+      "label": "拷贝 512 MiB",
+      "note": "两块各 512 MiB 的缓冲区之间 copy_",
+      "method": "GPU current-stream events",
+      "warmup": 5,
+      "repeat": 30,
+      "ms": [
+        1.8681490421295166,
+        1.8568689823150635,
+        1.859349012374878,
+        1.8648289442062378,
+        1.8671890497207642,
+        1.8655489683151245,
+        1.8653490543365479,
+        1.8591090440750122,
+        1.8601089715957642,
+        1.8596290349960327,
+        1.8607889413833618,
+        1.8655890226364136,
+        1.8607089519500732,
+        1.8611090183258057,
+        1.8574689626693726,
+        1.8602290153503418,
+        1.8569480180740356,
+        1.8565089702606201,
+        1.863389015197754,
+        1.851868987083435,
+        1.8682689666748047,
+        1.8616689443588257,
+        1.8543490171432495,
+        1.8667089939117432,
+        1.8627090454101562,
+        1.8560680150985718,
+        1.8627079725265503,
+        1.8618290424346924,
+        1.8585890531539917,
+        1.8645089864730835
+      ]
+    },
+    {
+      "label": "拷贝 64 KiB",
+      "note": "两块各 64 KiB 的缓冲区之间 copy_",
+      "method": "GPU current-stream events",
+      "warmup": 5,
+      "repeat": 30,
+      "ms": [
+        0.007400000002235174,
+        0.007319999858736992,
+        0.007400000002235174,
+        0.007240000180900097,
+        0.007240999955683947,
+        0.007360000163316727,
+        0.007439999841153622,
+        0.007280000019818544,
+        0.007240000180900097,
+        0.007520999759435654,
+        0.007319999858736992,
+        0.007360000163316727,
+        0.007240000180900097,
+        0.007519999984651804,
+        0.007360000163316727,
+        0.007240000180900097,
+        0.007360000163316727,
+        0.007280000019818544,
+        0.007439999841153622,
+        0.007360000163316727,
+        0.007280000019818544,
+        0.007319999858736992,
+        0.007360000163316727,
+        0.007319999858736992,
+        0.007199999876320362,
+        0.007360000163316727,
+        0.007319999858736992,
+        0.007400000002235174,
+        0.007240000180900097,
+        0.007319999858736992
+      ]
+    },
+    {
+      "label": "add",
+      "note": "n = 2²⁴ 的 FP32 加法",
+      "method": "GPU current-stream events",
+      "warmup": 5,
+      "repeat": 30,
+      "ms": [
+        0.5566080212593079,
+        0.34024500846862793,
+        0.3384050130844116,
+        0.3387260138988495,
+        0.33932599425315857,
+        0.3392859995365143,
+        0.3393250107765198,
+        0.3388049900531769,
+        0.339805006980896,
+        0.33860599994659424,
+        0.338485985994339,
+        0.338485985994339,
+        0.34072598814964294,
+        0.33888500928878784,
+        0.33860498666763306,
+        0.3390060067176819,
+        0.33904600143432617,
+        0.3387660086154938,
+        0.3387260138988495,
+        0.33784499764442444,
+        0.33940500020980835,
+        0.3381659984588623,
+        0.3384459912776947,
+        0.33828601241111755,
+        0.33860498666763306,
+        0.3390049934387207,
+        0.3382450044155121,
+        0.33860599994659424,
+        0.3389259874820709,
+        0.3386859893798828
+      ]
+    },
+    {
+      "label": "mm",
+      "note": "4096×256 乘 256×4096 的 FP32 矩阵乘",
+      "method": "GPU current-stream events",
+      "warmup": 5,
+      "repeat": 30,
+      "ms": [
+        0.7395210266113281,
+        0.5143479704856873,
+        0.6860119700431824,
+        0.509797990322113,
+        0.501928985118866,
+        0.5000479817390442,
+        0.4988490045070648,
+        0.49932798743247986,
+        0.4986889958381653,
+        0.49880799651145935,
+        0.49960801005363464,
+        0.496288001537323,
+        0.4925679862499237,
+        0.494608998298645,
+        0.4910080134868622,
+        0.4920080006122589,
+        0.48868799209594727,
+        0.48796799778938293,
+        0.486407995223999,
+        0.4882879853248596,
+        0.4844079911708832,
+        0.4862479865550995,
+        0.4851680099964142,
+        0.4808880090713501,
+        0.48104700446128845,
+        0.4796079993247986,
+        0.4826880097389221,
+        0.4819679856300354,
+        0.47760799527168274,
+        0.47996801137924194
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "section": "准备",
+      "title": "一键检查：FMA 测试要编译 HIP kernel，两条路线都要「HIP 编译工具」是 ✓",
+      "code": "import torch\nimport hello_gpu as hg\n\ntorch.manual_seed(0)\nenv = hg.check_env()",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "环境检查\n  ✓ PyTorch 是 ROCm 版：PyTorch 2.13.0+rocm10.0.0，HIP 7.15.26333\n  ✓ 看得到 GPU：AMD Radeon AI PRO R9700（gfx1201）\n  ✓ GPU 算得对：在 GPU 上算了 1024 个数，和 CPU 算的一样\n  ✓ ROCm 和 PyTorch 版本一致：PyTorch 为 ROCm 10.0.0 编译，装的 ROCm 是 10.0.0\n  ✓ HIP 编译工具（HIP 路线用）：hipcc 在 /work/repo/notebooks/part0-intro/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/bin/hipcc，ninja、C++ 编译器和 Python.h 也有\n  ✓ Triton（Triton 路线用）：Triton 3.8.0+git4cff872c.rocm10.0.0，C 编译器和 Python.h 也有\n全部通过，可以做实验。"
+        }
+      ]
+    },
+    {
+      "section": "动手",
+      "title": "峰值带宽：拷贝 512 MiB",
+      "code": "src = torch.randn(1 << 27, device=\"cuda\")  # 2²⁷ 个 FP32 数，512 MiB\ndst = torch.empty_like(src)\ncopy = hg.bench(lambda: dst.copy_(src), label=\"拷贝 512 MiB\")\nmoved = 2 * src.numel() * 4  # 读一遍 src、写一遍 dst，每个数 4 字节\nprint(f\"有效带宽：{moved / copy.median_ms / 1e6:.1f} GB/s\")",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "拷贝 512 MiB：中位数 1.861 ms（p10 1.856，p90 1.867；预热 5 次，计时 30 次）\n有效带宽：577.0 GB/s"
+        }
+      ]
+    },
+    {
+      "section": "动手",
+      "title": "换成 64 KiB 再拷一次：量到的大多是启动的开销",
+      "code": "small = torch.randn(1 << 14, device=\"cuda\")  # 64 KiB\nsmall_dst = torch.empty_like(small)\ntiny = hg.bench(lambda: small_dst.copy_(small), label=\"拷贝 64 KiB\")\nprint(f\"有效带宽：{2 * small.numel() * 4 / tiny.median_ms / 1e6:.1f} GB/s\")",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "拷贝 64 KiB：中位数 0.00732 ms（p10 0.00724，p90 0.00744；预热 5 次，计时 30 次）\n有效带宽：17.9 GB/s"
+        }
+      ]
+    },
+    {
+      "section": "动手",
+      "title": "峰值算力：hg.peak() 把拷贝测试和 FMA 测试各做一遍",
+      "code": "peak = hg.peak()",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "现场测峰值：先做拷贝测试，再做 FMA 测试。第一次运行要编译 FMA 测试的 kernel，要等一会儿。\nAMD Radeon AI PRO R9700（gfx1201）的实测峰值，刚测出，已缓存：/work/repo/notebooks/.artifacts/lab/peak/gfx1201-64cu-amd-radeon-ai-pro-r9700.json\n  峰值带宽：579.1 GB/s\n    拷贝测试：两块各 512 MiB 的缓冲区之间 copy_，一次读写 1.07 GB，中位数 1.854 ms\n  峰值算力：47.97 TFLOPS\n    FMA 测试：839 万个线程，每个 16 条链 × 256 次 FMA，一次 687 亿次浮点运算，中位数 1.432 ms\n    每个线程只读两个数、写一个数：算术强度约 683 FLOP/字节，几乎全是计算"
+        }
+      ]
+    },
+    {
+      "section": "动手",
+      "title": "屋顶线：2²⁶ 个数的加法和 4096×4096 的矩阵乘",
+      "code": "n = 1 << 26\nx = torch.randn(n, device=\"cuda\")\ny = torch.randn_like(x)\nz = torch.empty_like(x)\na = torch.randn(4096, 4096, device=\"cuda\")\nb = torch.randn_like(a)\nc = torch.empty_like(a)\nroof = hg.roofline({\n    \"add\": (lambda: torch.add(x, y, out=z), n, 12 * n),\n    \"mm\": (lambda: torch.mm(a, b, out=c), 2 * 4096**3, 3 * 4 * 4096**2),\n})",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "屋顶线（这张卡的实测峰值）：带宽 579.1 GB/s，算力 47.97 TFLOPS\n拐点在算术强度 82.8 FLOP/字节：左边的算子归带宽管，最快是峰值带宽 × 算术强度；右边的归算力管，最快是峰值算力\n    算术强度 中位数 ms 算力 TFLOPS 带宽 GB/s 屋顶 TFLOPS 占屋顶 归谁管\nadd   0.0833     1.328      0.0505     606.4      0.0483 104.7%   带宽\nmm       683     9.161        15.0      22.0        48.0  31.3%   算力\nadd 比带宽屋顶还快：屋顶是拷贝测试量出来的参考，不是硬上限。高出一点，可能是测量的波动；高出很多，多半是数据装进了缓存（2-3 的缓存冷热），或者字节数数多了"
+        },
+        {
+          "kind": "chart",
+          "chart": "line",
+          "caption": "Notebook 里的图画成数据：两条轴都是对数刻度，点是实测，线是用实测峰值画的屋顶",
+          "x": {
+            "label": "算术强度",
+            "unit": "FLOP/字节",
+            "scale": "log",
+            "values": [
+              0.0625,
+              0.083333,
+              0.125,
+              0.25,
+              0.5,
+              1.0,
+              2.0,
+              4.0,
+              8.0,
+              16.0,
+              32.0,
+              64.0,
+              82.839136,
+              128.0,
+              256.0,
+              512.0,
+              682.666667,
+              1024.0,
+              2048.0
+            ]
+          },
+          "y": {
+            "label": "算力",
+            "unit": "TFLOPS",
+            "scale": "log"
+          },
+          "series": [
+            {
+              "name": "这张卡的屋顶（实测峰值）",
+              "values": [
+                0.036194,
+                0.048258,
+                0.072388,
+                0.144775,
+                0.289551,
+                0.579101,
+                1.158203,
+                2.316406,
+                4.632812,
+                9.265623,
+                18.531247,
+                37.062493,
+                47.972264,
+                47.972264,
+                47.972264,
+                47.972264,
+                47.972264,
+                47.972264,
+                47.972264
+              ]
+            },
+            {
+              "name": "add",
+              "values": [
+                null,
+                0.050533,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            },
+            {
+              "name": "mm",
+              "values": [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                15.002763,
+                null,
+                null
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "动手",
+      "title": "再打一次 GPU 卡片：带上了刚测的峰值",
+      "code": "card = hg.device_card()",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "我的 GPU 卡片\n  名称：AMD Radeon AI PRO R9700\n  架构：gfx1201\n  CU 数：64（PyTorch 的 multi_processor_count 是 32，数的是 WGP，一个 WGP 两个 CU）\n  wave 大小：32\n  显存：31.9 GiB\n  软件：ROCm 10.0.0 · PyTorch 2.13.0+rocm10.0.0 · Triton 3.8.0+git4cff872c.rocm10.0.0\n  实测峰值：579.1 GB/s · 47.97 TFLOPS\n  rocminfo：CU 数和 wave 大小和上面一致\n导入码（复制到网页的「我的 GPU 卡片」里）：\nHGCARD1.TY49T8QwDED_SuWVEDlO2nxsJ7EwIFDFxIJ6ubRU0OZUQuF06n_HnUCxbFnPfs4VVghKQFcgACE1t0pxPKMLZAO6FxBwSusYE4QrzN3EFQ4Pd1XbnVKeq8N99dQ-Vq23iDw69D_MOStCxX38-oTQGAHf3cqbmgRMacrL5fV4KYmZNoTOGi5mE5DmdT-z5DixRqHkx5aSl_i2_08qLfFmx39sGUueGWrpmA1jMbHvnaUo_82x-5y6910-HM98t7ZeKlSmNl5bb7BmU_-Rd2Ss9JaoMdSgqp2mbfsF"
+        }
+      ]
+    },
+    {
+      "section": "挑战",
+      "title": "数工作量：五种形状的浮点运算次数和字节数",
+      "code": "def mm_cost(m, k, n):\n    flops = 2 * m * k * n  # TODO：C 的每个数要做几次乘加？一次乘加算 2 次浮点运算\n    bytes_moved = 4 * (m * k + k * n + m * n)  # TODO：A、B、C 一共多少个数？每个 FP32 数 4 字节\n    return flops, bytes_moved\n\nchecks = hg.check_mm_cost(mm_cost)",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "核对 mm_cost：5 种形状，浮点运算次数和字节数都对，这种形状才算通过\n  ✓ 4096×4096 乘 4096×4096：1374 亿次浮点运算，201 MB\n  ✓ 4096×16 乘 16×4096：5.37 亿次浮点运算，67.6 MB\n  ✓ 8192×8192 乘 8192×1：1.34 亿次浮点运算，269 MB\n  ✓ 512×64 乘 64×2048：1.34 亿次浮点运算，4.85 MB\n  ✓ 1×1 乘 1×1：2 次浮点运算，12 字节\n通过 5/5"
+        }
+      ]
+    },
+    {
+      "section": "挑战",
+      "title": "拐点两边各放一个点：n = 2²⁴、k = 256",
+      "code": "n = 1 << 24  # TODO：加法的长度。改大，直到 add 的「占屋顶」到 80%\nk = 256  # TODO：矩阵乘中间那一维。改大，直到 mm 过了拐点\nx, y = torch.randn(n, device=\"cuda\"), torch.randn(n, device=\"cuda\")\nz = torch.empty_like(x)\na, b = torch.randn(4096, k, device=\"cuda\"), torch.randn(k, 4096, device=\"cuda\")\nc = torch.empty(4096, 4096, device=\"cuda\")\nmine = hg.roofline({\n    \"add\": (lambda: torch.add(x, y, out=z), n, 12 * n),\n    \"mm\": (lambda: torch.mm(a, b, out=c), *mm_cost(4096, k, 4096)),\n})\nmetrics = mine.metrics",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "屋顶线（这张卡的实测峰值）：带宽 579.1 GB/s，算力 47.97 TFLOPS\n拐点在算术强度 82.8 FLOP/字节：左边的算子归带宽管，最快是峰值带宽 × 算术强度；右边的归算力管，最快是峰值算力\n    算术强度 中位数 ms 算力 TFLOPS 带宽 GB/s 屋顶 TFLOPS 占屋顶 归谁管\nadd   0.0833    0.3387      0.0495     594.3      0.0483 102.6%   带宽\nmm       114    0.4915        17.5     153.6        48.0  36.4%   算力\nadd 比带宽屋顶还快：屋顶是拷贝测试量出来的参考，不是硬上限。高出一点，可能是测量的波动；高出很多，多半是数据装进了缓存（2-3 的缓存冷热），或者字节数数多了"
+        },
+        {
+          "kind": "chart",
+          "chart": "line",
+          "caption": "Notebook 里的图画成数据：两条轴都是对数刻度，点是实测，线是用实测峰值画的屋顶",
+          "x": {
+            "label": "算术强度",
+            "unit": "FLOP/字节",
+            "scale": "log",
+            "values": [
+              0.0625,
+              0.083333,
+              0.125,
+              0.25,
+              0.5,
+              1.0,
+              2.0,
+              4.0,
+              8.0,
+              16.0,
+              32.0,
+              64.0,
+              82.839136,
+              113.777778,
+              128.0,
+              256.0,
+              512.0,
+              1024.0,
+              2048.0
+            ]
+          },
+          "y": {
+            "label": "算力",
+            "unit": "TFLOPS",
+            "scale": "log"
+          },
+          "series": [
+            {
+              "name": "这张卡的屋顶（实测峰值）",
+              "values": [
+                0.036194,
+                0.048258,
+                0.072388,
+                0.144775,
+                0.289551,
+                0.579101,
+                1.158203,
+                2.316406,
+                4.632812,
+                9.265623,
+                18.531247,
+                37.062493,
+                47.972264,
+                47.972264,
+                47.972264,
+                47.972264,
+                47.972264,
+                47.972264,
+                47.972264
+              ]
+            },
+            {
+              "name": "add",
+              "values": [
+                null,
+                0.049527,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            },
+            {
+              "name": "mm",
+              "values": [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                17.476693,
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "交成绩",
+      "code": "hg.submit(\"forge-roofline\", \"shared\", checks=checks, metrics=metrics)",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "通关凭证：2-4 性能的天花板（两条路线共用）\n  校验：5/5 通过\n  测量：add_ms 0.3387 · add_gbps 594.3 · add_tflops 0.04953 · add_intensity 0.08333 · add_roof_tflops 0.04826 · mm_ms 0.4915 · mm_gbps 153.6 · mm_tflops 17.48 · mm_intensity 113.8 · mm_roof_tflops 47.97 · ridge 82.84 · peak_gbps 579.1 · peak_tflops 47.97\n通关链接（在浏览器里打开，成绩会导入关卡页）：\nhttps://datawhalechina.github.io/hello-gpu/forge/roofline/#lab=HGPU1.dZJNb9swDIb_SqDrUoHUFyXfCvTSQ7Eh2KmXwpNlx2hsB7YabCjy30fZLdYcJguG5OflS4rWu7iICvdiyXWXRCXaae7S3TxN7akfk9iLeXrLBSzHek4Nf6gz7xQod4fI8yf4SlEF4ZlZky59ZPW7GOuhRN0_PewOdZOmcXf_uPtx-L47BAJgadf-Zs5vVIC8j2-LqJy57kUaL8VhnuLACgTJDwvyNMdjSS1RS_hW8D8293kaGWrpmXV9NrFtPakov-jYOx5TfF2K_bleFj5PZYtzrk-8Yj4ktoqroG6al4FXILX2ZBwgKktI6PR-hd2vM2MbjNQqgIHg0JC1G8ztaTqv0WCCVWQUgAdUKnwI-jGncenzn1Xj9e3YNOU33Dh5Zb2xxpJHhwRsNQwfRZqAljMAlXwO7Ma2GtFq6UCTIe85PpBb4aczkjTkXNDA07tAW-yXCpFbTjdjVdzUZ0gGUsoZxa2yXiu-O31TLpVX0uuA2qFW1ujA2c-pfv1sIAWJgHysoCmYcqiV_tf3ev0L\n通关码（也可以粘贴到关卡页的「导入成绩」里）：\nHGPU1.dZJNb9swDIb_SqDrUoHUFyXfCvTSQ7Eh2KmXwpNlx2hsB7YabCjy30fZLdYcJguG5OflS4rWu7iICvdiyXWXRCXaae7S3TxN7akfk9iLeXrLBSzHek4Nf6gz7xQod4fI8yf4SlEF4ZlZky59ZPW7GOuhRN0_PewOdZOmcXf_uPtx-L47BAJgadf-Zs5vVIC8j2-LqJy57kUaL8VhnuLACgTJDwvyNMdjSS1RS_hW8D8293kaGWrpmXV9NrFtPakov-jYOx5TfF2K_bleFj5PZYtzrk-8Yj4ktoqroG6al4FXILX2ZBwgKktI6PR-hd2vM2MbjNQqgIHg0JC1G8ztaTqv0WCCVWQUgAdUKnwI-jGncenzn1Xj9e3YNOU33Dh5Zb2xxpJHhwRsNQwfRZqAljMAlXwO7Ma2GtFq6UCTIe85PpBb4aczkjTkXNDA07tAW-yXCpFbTjdjVdzUZ0gGUsoZxa2yXiu-O31TLpVX0uuA2qFW1ujA2c-pfv1sIAWJgHysoCmYcqiV_tf3ev0L\n凭证 JSON 已保存：/work/repo/notebooks/.artifacts/lab/forge-roofline/20261111T082709Z-451eddf2.json\n星级由关卡页按本关规则计算。\nSubmission('forge-roofline'，两条路线共用)"
+        }
+      ]
+    },
+    {
+      "section": "练习",
+      "title": "练习 1：加法换几个长度，有的比带宽的屋顶还快",
+      "code": "adds = {}\nfor e in (12, 14, 16, 18, 20, 22, 24, 26):\n    t = [torch.randn(1 << e, device=\"cuda\") for _ in range(3)]\n    adds[f\"add{e}\"] = (lambda t=t: torch.add(t[0], t[1], out=t[2]), 1 << e, 12 << e)\nlengths = hg.roofline(adds)",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "屋顶线（这张卡的实测峰值）：带宽 579.1 GB/s，算力 47.97 TFLOPS\n拐点在算术强度 82.8 FLOP/字节：左边的算子归带宽管，最快是峰值带宽 × 算术强度；右边的归算力管，最快是峰值算力\n      算术强度 中位数 ms 算力 TFLOPS 带宽 GB/s 屋顶 TFLOPS 占屋顶 归谁管\nadd12   0.0833   0.00764    0.000536       6.4      0.0483   1.1%   带宽\nadd14   0.0833   0.00764     0.00214      25.7      0.0483   4.4%   带宽\nadd16   0.0833  0.007881     0.00832      99.8      0.0483  17.2%   带宽\nadd18   0.0833   0.02002      0.0131     157.1      0.0483  27.1%   带宽\nadd20   0.0833    0.0136      0.0771     925.2      0.0483 159.8%   带宽\nadd22   0.0833   0.03312       0.127    1519.7      0.0483 262.4%   带宽\nadd24   0.0833    0.3391      0.0495     593.8      0.0483 102.5%   带宽\nadd26   0.0833     1.334      0.0503     603.5      0.0483 104.2%   带宽\nadd20 比带宽屋顶还快：屋顶是拷贝测试量出来的参考，不是硬上限。高出一点，可能是测量的波动；高出很多，多半是数据装进了缓存（2-3 的缓存冷热），或者字节数数多了\nadd22 比带宽屋顶还快：屋顶是拷贝测试量出来的参考，不是硬上限。高出一点，可能是测量的波动；高出很多，多半是数据装进了缓存（2-3 的缓存冷热），或者字节数数多了\nadd24 比带宽屋顶还快：屋顶是拷贝测试量出来的参考，不是硬上限。高出一点，可能是测量的波动；高出很多，多半是数据装进了缓存（2-3 的缓存冷热），或者字节数数多了\nadd26 比带宽屋顶还快：屋顶是拷贝测试量出来的参考，不是硬上限。高出一点，可能是测量的波动；高出很多，多半是数据装进了缓存（2-3 的缓存冷热），或者字节数数多了"
+        },
+        {
+          "kind": "chart",
+          "chart": "line",
+          "caption": "Notebook 里的图画成数据：两条轴都是对数刻度，点是实测，线是用实测峰值画的屋顶",
+          "x": {
+            "label": "算术强度",
+            "unit": "FLOP/字节",
+            "scale": "log",
+            "values": [
+              0.0625,
+              0.083333,
+              0.125,
+              0.25,
+              0.5,
+              1.0,
+              2.0,
+              4.0,
+              8.0,
+              16.0,
+              32.0,
+              64.0,
+              82.839136,
+              128.0,
+              256.0,
+              512.0,
+              1024.0,
+              2048.0
+            ]
+          },
+          "y": {
+            "label": "算力",
+            "unit": "TFLOPS",
+            "scale": "log"
+          },
+          "series": [
+            {
+              "name": "这张卡的屋顶（实测峰值）",
+              "values": [
+                0.036194,
+                0.048258,
+                0.072388,
+                0.144775,
+                0.289551,
+                0.579101,
+                1.158203,
+                2.316406,
+                4.632812,
+                9.265623,
+                18.531247,
+                37.062493,
+                47.972264,
+                47.972264,
+                47.972264,
+                47.972264,
+                47.972264,
+                47.972264
+              ]
+            },
+            {
+              "name": "add12",
+              "values": [
+                null,
+                0.000536,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            },
+            {
+              "name": "add14",
+              "values": [
+                null,
+                0.002145,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            },
+            {
+              "name": "add16",
+              "values": [
+                null,
+                0.008316,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            },
+            {
+              "name": "add18",
+              "values": [
+                null,
+                0.013094,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            },
+            {
+              "name": "add20",
+              "values": [
+                null,
+                0.077101,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            },
+            {
+              "name": "add22",
+              "values": [
+                null,
+                0.126638,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            },
+            {
+              "name": "add24",
+              "values": [
+                null,
+                0.049481,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            },
+            {
+              "name": "add26",
+              "values": [
+                null,
+                0.050293,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "练习",
+      "title": "练习 3：矩阵乘换成 FP16，冒出了 FP32 FMA 的屋顶",
+      "code": "a16 = torch.randn(4096, 4096, device=\"cuda\", dtype=torch.half)\nb16 = torch.randn_like(a16)\nc16 = torch.empty_like(a16)\nhalf = hg.roofline({\"mm16\": (lambda: torch.mm(a16, b16, out=c16), 2 * 4096**3, 3 * 2 * 4096**2)})",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "屋顶线（这张卡的实测峰值）：带宽 579.1 GB/s，算力 47.97 TFLOPS\n拐点在算术强度 82.8 FLOP/字节：左边的算子归带宽管，最快是峰值带宽 × 算术强度；右边的归算力管，最快是峰值算力\n     算术强度 中位数 ms 算力 TFLOPS 带宽 GB/s 屋顶 TFLOPS 占屋顶 归谁管\nmm16     1365     1.027         134      98.0        48.0 278.9%   算力\nmm16 比算力屋顶还快：FMA 测试量的是 FP32 的向量运算，低精度的矩阵乘可能用上矩阵核心，不归这条线管。也检查一下浮点运算次数有没有数多"
+        },
+        {
+          "kind": "chart",
+          "chart": "line",
+          "caption": "Notebook 里的图画成数据：两条轴都是对数刻度，点是实测，线是用实测峰值画的屋顶",
+          "x": {
+            "label": "算术强度",
+            "unit": "FLOP/字节",
+            "scale": "log",
+            "values": [
+              0.0625,
+              0.125,
+              0.25,
+              0.5,
+              1.0,
+              2.0,
+              4.0,
+              8.0,
+              16.0,
+              32.0,
+              64.0,
+              82.839136,
+              128.0,
+              256.0,
+              512.0,
+              1024.0,
+              1365.333333,
+              2048.0
+            ]
+          },
+          "y": {
+            "label": "算力",
+            "unit": "TFLOPS",
+            "scale": "log"
+          },
+          "series": [
+            {
+              "name": "这张卡的屋顶（实测峰值）",
+              "values": [
+                0.036194,
+                0.072388,
+                0.144775,
+                0.289551,
+                0.579101,
+                1.158203,
+                2.316406,
+                4.632812,
+                9.265623,
+                18.531247,
+                37.062493,
+                47.972264,
+                47.972264,
+                47.972264,
+                47.972264,
+                47.972264,
+                47.972264,
+                47.972264
+              ]
+            },
+            {
+              "name": "mm16",
+              "values": [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                133.815625,
+                null
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

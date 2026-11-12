@@ -1,0 +1,234 @@
+{
+  "note": "硬件参数（09 第 4 节）：正文和组件从这里读，不手写参数。每个参数写清出处：source 指向 sources 里的一条，where 写在出处的哪个位置；单位照出处的写法。查不到的值写成 \"[待实测]\"，不写 source。只收官方资料（产品页、ROCm 文档、ISA 指南、白皮书）；实测数字放实验档案馆 docs/lab/data/，不放这里。scripts/course/course-data-check.mjs 检查这份文件。",
+  "sources": {
+    "amd-rx-9070-xt": {
+      "title": "AMD Radeon RX 9070 XT 产品规格",
+      "url": "https://www.amd.com/en/products/graphics/desktops/radeon/9000-series/amd-radeon-rx-9070xt.html",
+      "checked": "2026-11-11"
+    },
+    "amd-radeon-ai-pro-r9700": {
+      "title": "AMD Radeon AI PRO R9700 产品规格",
+      "url": "https://www.amd.com/en/products/graphics/workstations/radeon-ai-pro/ai-9000-series/amd-radeon-ai-pro-r9700.html",
+      "checked": "2026-11-11"
+    },
+    "rocm-gpu-specs": {
+      "title": "AMD GPU specifications（ROCm 文档）",
+      "url": "https://rocm.docs.amd.com/en/latest/reference/gpu-specs.html",
+      "checked": "2026-11-11"
+    },
+    "rdna4-isa": {
+      "title": "\"RDNA4\" Instruction Set Architecture Reference Guide（AMD，2025-04-07）",
+      "url": "https://gpuopen.com/download/rdna4-instruction-set-architecture.pdf",
+      "checked": "2026-11-10"
+    }
+  },
+  "devices": {
+    "rx-9070-xt": {
+      "name": "AMD Radeon RX 9070 XT",
+      "params": {
+        "arch": {
+          "label": "架构",
+          "value": "RDNA 4",
+          "source": "rocm-gpu-specs",
+          "where": "AMD Radeon GPUs 表，Radeon RX 9070 XT 一行的 Architecture 列（写作 RDNA4）"
+        },
+        "gfx": {
+          "label": "LLVM 目标名",
+          "value": "gfx1201",
+          "source": "rocm-gpu-specs",
+          "where": "AMD Radeon GPUs 表，Radeon RX 9070 XT 一行的 LLVM target name 列"
+        },
+        "cuCount": {
+          "label": "计算单元（CU）",
+          "value": 64,
+          "unit": "个",
+          "source": "amd-rx-9070-xt",
+          "where": "GPU › Compute Units"
+        },
+        "streamProcessors": {
+          "label": "流处理器",
+          "value": 4096,
+          "unit": "个",
+          "source": "amd-rx-9070-xt",
+          "where": "GPU › Stream Processors"
+        },
+        "cusPerWgp": {
+          "label": "每个 WGP 的计算单元",
+          "value": 2,
+          "unit": "个",
+          "source": "rdna4-isa",
+          "where": "1.1 节表 2 Basic Terms：Compute Unit (CU) — One half of a WGP"
+        },
+        "simdsPerCu": {
+          "label": "每个计算单元的 SIMD",
+          "value": 2,
+          "unit": "条",
+          "source": "rdna4-isa",
+          "where": "1.1 节表 2 Basic Terms：Compute Unit (CU) — Contains 2 SIMD32's"
+        },
+        "lanesPerSimd": {
+          "label": "每条 SIMD 的 lane",
+          "value": 32,
+          "unit": "个",
+          "source": "rdna4-isa",
+          "where": "1.1 节表 2 Basic Terms：SIMD32 — operates on 32 work-items in parallel"
+        },
+        "waveSizes": {
+          "label": "wave 大小",
+          "value": [32, 64],
+          "unit": "个线程",
+          "source": "rocm-gpu-specs",
+          "where": "AMD Radeon GPUs 表，Radeon RX 9070 XT 一行的 Wavefront Size 列（32 or 64）"
+        },
+        "vgprsPerThread": {
+          "label": "每个线程最多的向量寄存器",
+          "value": 256,
+          "unit": "个",
+          "source": "rdna4-isa",
+          "where": "3.3.2.1 节 VGPR Allocation and Alignment：a shader may have up to 256 VGPRs"
+        },
+        "ldsPerWgp": {
+          "label": "每个 WGP 的 LDS",
+          "value": 128,
+          "unit": "KB",
+          "source": "rdna4-isa",
+          "where": "1.2.2.1 节 Local Data Share (LDS)：Each work-group processor (WGP) has a 128kB memory space"
+        },
+        "ldsPerBlock": {
+          "label": "每个线程块最多的 LDS",
+          "value": 64,
+          "unit": "KB",
+          "source": "rdna4-isa",
+          "where": "2.3 节 Work-groups：Waves in a work-group may share an allocation of LDS space up to 64kB"
+        },
+        "l2Cache": {
+          "label": "L2 缓存",
+          "value": 8,
+          "unit": "MiB",
+          "source": "rocm-gpu-specs",
+          "where": "AMD Radeon GPUs 表，Radeon RX 9070 XT 一行的 L2 Cache (MiB) 列"
+        },
+        "infinityCache": {
+          "label": "Infinity Cache",
+          "value": 64,
+          "unit": "MB",
+          "source": "amd-rx-9070-xt",
+          "where": "GPU Memory › AMD Infinity Cache Technology"
+        },
+        "vramSize": {
+          "label": "显存容量",
+          "value": 16,
+          "unit": "GB",
+          "source": "amd-rx-9070-xt",
+          "where": "GPU Memory › Max Memory Size"
+        },
+        "vramType": {
+          "label": "显存类型",
+          "value": "GDDR6",
+          "source": "amd-rx-9070-xt",
+          "where": "GPU Memory › Memory Type"
+        },
+        "bus": {
+          "label": "和 CPU 之间的通道",
+          "value": "PCIe 5.0 x16",
+          "source": "amd-rx-9070-xt",
+          "where": "Connectivity › Bus Type"
+        },
+        "memoryBandwidth": {
+          "label": "显存带宽（标称峰值）",
+          "value": 640,
+          "unit": "GB/s",
+          "source": "amd-rx-9070-xt",
+          "where": "GPU Memory › Memory Bandwidth（写作 Up to 640 GB/s）"
+        },
+        "peakFp32": {
+          "label": "FP32 向量算力（标称峰值）",
+          "value": 48.7,
+          "unit": "TFLOPS",
+          "source": "amd-rx-9070-xt",
+          "where": "GPU › Peak Single Precision (FP32 Vector) Performance（写作 48.7 TFLOPs）"
+        },
+        "peakFp16Matrix": {
+          "label": "FP16 矩阵算力（标称峰值）",
+          "value": 195,
+          "unit": "TFLOPS",
+          "source": "amd-rx-9070-xt",
+          "where": "GPU › Peak Half Precision (FP16 Matrix) Performance（写作 195 TFLOPs）"
+        },
+        "boostClock": {
+          "label": "加速频率（标称最高）",
+          "value": 2970,
+          "unit": "MHz",
+          "source": "amd-rx-9070-xt",
+          "where": "GPU › Boost Frequency（写作 Up to 2970 MHz）"
+        }
+      }
+    },
+    "ai-pro-r9700": {
+      "name": "AMD Radeon AI PRO R9700",
+      "params": {
+        "arch": {
+          "label": "架构",
+          "value": "RDNA 4",
+          "source": "rocm-gpu-specs",
+          "where": "AMD Radeon GPUs 表，Radeon AI PRO R9700 一行的 Architecture 列（写作 RDNA4）"
+        },
+        "gfx": {
+          "label": "LLVM 目标名",
+          "value": "gfx1201",
+          "source": "rocm-gpu-specs",
+          "where": "AMD Radeon GPUs 表，Radeon AI PRO R9700 一行的 LLVM target name 列"
+        },
+        "cuCount": {
+          "label": "计算单元（CU）",
+          "value": 64,
+          "unit": "个",
+          "source": "amd-radeon-ai-pro-r9700",
+          "where": "GPU Specifications › Compute Units"
+        },
+        "l2Cache": {
+          "label": "L2 缓存",
+          "value": 8,
+          "unit": "MiB",
+          "source": "rocm-gpu-specs",
+          "where": "AMD Radeon GPUs 表，Radeon AI PRO R9700 一行的 L2 Cache (MiB) 列"
+        },
+        "infinityCache": {
+          "label": "Infinity Cache",
+          "value": 64,
+          "unit": "MB",
+          "source": "amd-radeon-ai-pro-r9700",
+          "where": "GPU Memory › AMD Infinity Cache Technology"
+        },
+        "vramSize": {
+          "label": "显存容量",
+          "value": 32,
+          "unit": "GB",
+          "source": "amd-radeon-ai-pro-r9700",
+          "where": "GPU Memory › Dedicated Memory Size"
+        },
+        "memoryBandwidth": {
+          "label": "显存带宽（标称峰值）",
+          "value": 640,
+          "unit": "GB/s",
+          "source": "amd-radeon-ai-pro-r9700",
+          "where": "GPU Memory › Peak Memory Bandwidth（写作 640 GB/s）"
+        },
+        "peakFp32": {
+          "label": "FP32 向量算力（标称峰值）",
+          "value": 47.8,
+          "unit": "TFLOPS",
+          "source": "amd-radeon-ai-pro-r9700",
+          "where": "GPU Specifications › Peak Single Precision (FP32 Vector) Performance（写作 47.8 TFLOPs）"
+        },
+        "boostClock": {
+          "label": "加速频率（标称最高）",
+          "value": 2920,
+          "unit": "MHz",
+          "source": "amd-radeon-ai-pro-r9700",
+          "where": "GPU Specifications › Boost Frequency（写作 Up to 2920 MHz）"
+        }
+      }
+    }
+  }
+}

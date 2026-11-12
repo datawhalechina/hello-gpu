@@ -1,0 +1,327 @@
+{
+  "$schema": "../../schema.json",
+  "version": 1,
+  "collector": "amdjiahangpan",
+  "date": "2026-11-11",
+  "note": "R-01 的参考运行：Notebook 里标了 TODO 的地方换成参考解，按读者的顺序（2-1 → 2-2 HIP → 2-2 Triton → 2-3 → 2-4）从空的 artifact 目录开始各跑一遍，末尾另接几个练习单元。代码是仓库提交 8130dde 加上同一个 PR 里 R-01 的修改（hello_gpu：hg.check_env 查编译器和 Python.h，FMA 测试改成累加写法、计时前先连着跑 0.2 秒，check_timer 认 PyTorch 的报错；Notebook：2-3 练习 2、2-4 FMA 测试的说明）。环境：本地 pip 装的 ROCm 10.0.0（uv 建的环境），Docker 容器里只挂了一块 R9700。",
+  "credential": {
+    "v": 1,
+    "stage": "forge-your-gpu",
+    "route": "shared",
+    "at": "2026-11-11T08:26:06Z",
+    "device": {
+      "name": "AMD Radeon AI PRO R9700",
+      "gfx": "gfx1201",
+      "cus": 64
+    },
+    "env": {
+      "rocm": "10.0.0",
+      "torch": "2.13.0+rocm10.0.0",
+      "triton": "3.8.0+git4cff872c.rocm10.0.0"
+    },
+    "checks": {
+      "passed": 3,
+      "total": 3
+    },
+    "metrics": {
+      "median_ms": 0.18101301975548267,
+      "trip_ms": 0.4481526557356119,
+      "cpu_ms": 3.0024810694158077,
+      "n": 1024.0
+    }
+  },
+  "environment": {
+    "platform": "local",
+    "device": {
+      "name": "AMD Radeon AI PRO R9700",
+      "gfx": "gfx1201",
+      "cus": 64,
+      "wave": 32,
+      "memory_bytes": 34208743424
+    },
+    "peak": null,
+    "software": {
+      "rocm": "10.0.0",
+      "hip": "7.15.26333",
+      "torch": "2.13.0+rocm10.0.0",
+      "triton": "3.8.0+git4cff872c.rocm10.0.0",
+      "python": "3.12.3"
+    },
+    "system": {
+      "os": "Ubuntu 24.04.5 LTS（Docker 容器 ubuntu:24.04）",
+      "kernel": "6.17.0-23-generic",
+      "cpu": "AMD Ryzen Threadripper PRO 9975WX 32-Cores"
+    },
+    "commit": "8130dde"
+  },
+  "samples": [
+    {
+      "label": "gpu",
+      "note": "1024×1024 的 FP32 矩阵乘，墙钟时间，数据已在显存里",
+      "method": "CPU perf_counter",
+      "warmup": 5,
+      "repeat": 30,
+      "ms": [
+        0.1881229691207409,
+        0.18570292741060257,
+        0.18393294885754585,
+        0.18486380577087402,
+        0.18411315977573395,
+        0.18407311290502548,
+        0.40537677705287933,
+        0.1829727552831173,
+        0.18227286636829376,
+        0.17848284915089607,
+        0.37007685750722885,
+        0.18151290714740753,
+        0.18101325258612633,
+        0.1814328134059906,
+        0.18120277673006058,
+        0.1812828704714775,
+        0.1806928776204586,
+        0.18101278692483902,
+        0.18101278692483902,
+        0.17651310190558434,
+        0.17966283485293388,
+        0.17984304577112198,
+        0.1796032302081585,
+        0.1793927513062954,
+        0.17891312018036842,
+        0.17873290926218033,
+        0.18083304166793823,
+        0.17855316400527954,
+        0.17840322107076645,
+        0.17887307330965996
+      ]
+    },
+    {
+      "label": "trip",
+      "note": "1024×1024 的 FP32 矩阵乘，墙钟时间，算上拷进拷回",
+      "method": "CPU perf_counter",
+      "warmup": 5,
+      "repeat": 30,
+      "ms": [
+        0.45910710468888283,
+        0.5401801317930222,
+        0.48461789265275,
+        0.45492779463529587,
+        0.4543578252196312,
+        0.4551568999886513,
+        0.45504793524742126,
+        0.4546483978629112,
+        0.45466795563697815,
+        0.4497379995882511,
+        0.4513268359005451,
+        0.4486376419663429,
+        0.4476676695048809,
+        0.4541776143014431,
+        0.4423772916197777,
+        0.44224783778190613,
+        0.43655699118971825,
+        0.4376680590212345,
+        0.4503373056650162,
+        0.43318793177604675,
+        0.4331967793405056,
+        0.4337979480624199,
+        0.4324070177972317,
+        0.43511809781193733,
+        0.43276697397232056,
+        0.43282797560095787,
+        0.43362705036997795,
+        0.43093692511320114,
+        0.43513812124729156,
+        0.47218799591064453
+      ]
+    },
+    {
+      "label": "cpu",
+      "note": "1024×1024 的 FP32 矩阵乘，墙钟时间",
+      "method": "CPU perf_counter",
+      "warmup": 5,
+      "repeat": 30,
+      "ms": [
+        3.0067111365497112,
+        2.993761096149683,
+        3.007341641932726,
+        2.9892409220337868,
+        3.006050828844309,
+        2.991961780935526,
+        3.009601030498743,
+        2.9943720437586308,
+        3.001351375132799,
+        2.992501948028803,
+        3.010440617799759,
+        2.9912819154560566,
+        3.0034310184419155,
+        2.995442133396864,
+        3.0015311203897,
+        2.9984121210873127,
+        3.0054510571062565,
+        2.9920018278062344,
+        3.0061108991503716,
+        2.9908320866525173,
+        3.0051409266889095,
+        2.996052149683237,
+        3.009551204741001,
+        4.71543101593852,
+        5.998763255774975,
+        6.001543253660202,
+        5.997633095830679,
+        5.9993029572069645,
+        1.3423832133412361,
+        2.9365606606006622
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "section": "准备",
+      "title": "一键检查：前三项是做实验的前提，后三项看 ROCm 版本和两条路线的工具",
+      "code": "import torch\nimport hello_gpu as hg\n\nenv = hg.check_env()",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "环境检查\n  ✓ PyTorch 是 ROCm 版：PyTorch 2.13.0+rocm10.0.0，HIP 7.15.26333\n  ✓ 看得到 GPU：AMD Radeon AI PRO R9700（gfx1201）\n  ✓ GPU 算得对：在 GPU 上算了 1024 个数，和 CPU 算的一样\n  ✓ ROCm 和 PyTorch 版本一致：PyTorch 为 ROCm 10.0.0 编译，装的 ROCm 是 10.0.0\n  ✓ HIP 编译工具（HIP 路线用）：hipcc 在 /work/repo/notebooks/part0-intro/.venv/lib/python3.12/site-packages/_rocm_sdk_devel/bin/hipcc，ninja、C++ 编译器和 Python.h 也有\n  ✓ Triton（Triton 路线用）：Triton 3.8.0+git4cff872c.rocm10.0.0，C 编译器和 Python.h 也有\n全部通过，可以做实验。"
+        }
+      ]
+    },
+    {
+      "section": "准备",
+      "title": "打出这张卡的 GPU 卡片，最后一行是导入码",
+      "code": "card = hg.device_card()",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "我的 GPU 卡片\n  名称：AMD Radeon AI PRO R9700\n  架构：gfx1201\n  CU 数：64（PyTorch 的 multi_processor_count 是 32，数的是 WGP，一个 WGP 两个 CU）\n  wave 大小：32\n  显存：31.9 GiB\n  软件：ROCm 10.0.0 · PyTorch 2.13.0+rocm10.0.0 · Triton 3.8.0+git4cff872c.rocm10.0.0\n  实测峰值：还没测（2-4 关运行 hg.peak() 后补上）\n  rocminfo：CU 数和 wave 大小和上面一致\n导入码（复制到网页的「我的 GPU 卡片」里）：\nHGCARD1.TY5ND4IwDIb_CunVuXQfGbgbiRcPRkM8eTE4BnKAJThRQvjvlpOmTd80T_u2M4xgBYMyggWJ0myFoLxgZqWxaK7AoPJj6zzYGfqyI4X8uE-KsvKhT_JDci5OSbFLEWm0qT_EqQqJgnr3eoI1msG7HGlTSQad78Iw3e5T9MSUlpilmkQvDHw_rmeG4DqyEcgpyCWGwT3W_7hQHDcr_rGhjaEnqHhGrGmjdnWdpdLxv7ll-QI"
+        }
+      ]
+    },
+    {
+      "section": "动手",
+      "title": "CU 有几个：PyTorch 报的是 WGP 的个数，rocminfo 和卡片报计算单元",
+      "code": "props = torch.cuda.get_device_properties(0)\ninfo = card[\"rocminfo\"] or {}\nprint(\"PyTorch 的 multi_processor_count：\", props.multi_processor_count)\nprint(\"rocminfo 的 Compute Unit：\", info.get(\"Compute Unit\", \"没读到\"))\nprint(\"卡片上的 CU 数：\", card[\"cus\"])",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "PyTorch 的 multi_processor_count： 32\nrocminfo 的 Compute Unit： 64\n卡片上的 CU 数： 64"
+        }
+      ]
+    },
+    {
+      "section": "动手",
+      "title": "wave 多大：RDNA 架构是 32",
+      "code": "print(\"PyTorch 的 warp_size：\", props.warp_size)\nprint(\"rocminfo 的 Wavefront Size：\", info.get(\"Wavefront Size\", \"没读到\"))\nprint(\"卡片上的 wave 大小：\", card[\"wave\"])",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "PyTorch 的 warp_size： 32\nrocminfo 的 Wavefront Size： 32(0x20)\n卡片上的 wave 大小： 32"
+        }
+      ]
+    },
+    {
+      "section": "动手",
+      "title": "显存多少：同一块显存，GiB 和 GB 差 7% 左右",
+      "code": "total = props.total_memory\nfree, _ = torch.cuda.mem_get_info()\nprint(f\"总量：{total} 字节 = {total / 2**30:.1f} GiB = {total / 1e9:.1f} GB\")\nprint(f\"空着：{free / 2**30:.1f} GiB\")",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "总量：34208743424 字节 = 31.9 GiB = 34.2 GB\n空着：31.6 GiB"
+        }
+      ]
+    },
+    {
+      "section": "挑战",
+      "title": "填全景图：照上面三段的读数填，hg.check_card 核对",
+      "code": "mine = {\n    \"cus\": 64,  # TODO：CU 数（PyTorch 报的不一定是它）\n    \"wave\": 32,  # TODO：wave 大小\n    \"memory_gib\": 31.9,  # TODO：显存总量，单位 GiB，保留一位小数\n}\nchecks = hg.check_card(mine)",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "核对你读出的三个数\n  ✓ CU 数：64\n  ✓ wave 大小：32\n  ✓ 显存（GiB）：31.9\n通过 3/3"
+        }
+      ]
+    },
+    {
+      "section": "挑战",
+      "title": "GPU 什么时候划算：1024×1024 的矩阵乘，两行「CPU ÷ GPU」都不小于 1",
+      "code": "n = 1024  # TODO：矩阵边长，最大 4096。改大，直到两行「CPU ÷ GPU」都不小于 1\nrace = hg.race(n)\nmetrics = race.metrics",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "1024×1024 的 FP32 矩阵乘：要算 2·n³ ≈ 21.5 亿次浮点运算，拷进拷回的只有 3·n² 个数（12.6 MB）\n墙钟时间的中位数（预热 5 次，计时 30 次）：\n  CPU（32 个线程）：3.002 ms\n  GPU，数据已在显存里：0.181 ms，CPU ÷ GPU = 16.6\n  GPU，算上拷进拷回：0.4482 ms，CPU ÷ GPU = 6.7\n两行的「CPU ÷ GPU」都不小于 1：数据已在显存里也好，算上拷进拷回也好，GPU 都比 CPU 快。"
+        }
+      ]
+    },
+    {
+      "section": "交成绩",
+      "code": "hg.submit(\"forge-your-gpu\", \"shared\", checks=checks, metrics=metrics)",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "通关凭证：2-1 开工准备（两条路线共用）\n  校验：3/3 通过\n  测量：median_ms 0.181 · trip_ms 0.4482 · cpu_ms 3.002 · n 1024\n通关链接（在浏览器里打开，成绩会导入关卡页）：\nhttps://datawhalechina.github.io/hello-gpu/forge/your-gpu/#lab=HGPU1.TY9Na8QgEIb_SvDarMyYaIy3hV56KC1LT70UMeaDbWIwZmlZ9r93XAotiszM884745VdmMGSbckOnhnWhzj4w3fY42FYd1ayGPaUwTba6Dsq2ESZAKEOiHTfQBuhDKh3Yp2_TI7UV7bYOXcdnx-Lk-18WIrjU_F6eilObQNA0qH_Ik4vCkDK3b4xo-pbyfxyyQ4xuJkUCJwOCVKIbsyjOVYcHjL-Y3FKYSFYcU1smFLt-l43wvF_OvJ2o3fnLduvdtvoP6bKzsl-UkR89mTl7oLZd5NdPmZKgKNGwAqwbaSstVDNfeb6S-taoxRKyqaSCrGlOet-Z7QpCKKg2hqlhoYaaU-kIofb7Qc\n通关码（也可以粘贴到关卡页的「导入成绩」里）：\nHGPU1.TY9Na8QgEIb_SvDarMyYaIy3hV56KC1LT70UMeaDbWIwZmlZ9r93XAotiszM884745VdmMGSbckOnhnWhzj4w3fY42FYd1ayGPaUwTba6Dsq2ESZAKEOiHTfQBuhDKh3Yp2_TI7UV7bYOXcdnx-Lk-18WIrjU_F6eilObQNA0qH_Ik4vCkDK3b4xo-pbyfxyyQ4xuJkUCJwOCVKIbsyjOVYcHjL-Y3FKYSFYcU1smFLt-l43wvF_OvJ2o3fnLduvdtvoP6bKzsl-UkR89mTl7oLZd5NdPmZKgKNGwAqwbaSstVDNfeb6S-taoxRKyqaSCrGlOet-Z7QpCKKg2hqlhoYaaU-kIofb7Qc\n凭证 JSON 已保存：/work/repo/notebooks/.artifacts/lab/forge-your-gpu/20261111T082606Z-e9f3e8c0.json\n星级由关卡页按本关规则计算。\nSubmission('forge-your-gpu'，两条路线共用)"
+        }
+      ]
+    },
+    {
+      "section": "练习",
+      "title": "练习 2：n 从 32 每次翻倍到 4096，两行「CPU ÷ GPU」怎么变",
+      "code": "import contextlib, io\n\nrows = []\nfor n in [32, 64, 128, 256, 512, 1024, 2048, 4096]:\n    with contextlib.redirect_stdout(io.StringIO()):  # 每个 n 只打一行\n        r = hg.race(n)\n    rows.append({\"n\": n, \"cpu_ms\": r.cpu.median_ms, \"gpu_ms\": r.gpu.median_ms, \"trip_ms\": r.trip.median_ms})\n    print(f\"n = {n:4d}：CPU ÷ GPU = {r.cpu.median_ms / r.gpu.median_ms:.3g}（数据已在显存里），\"\n          f\"{r.cpu.median_ms / r.trip.median_ms:.3g}（算上拷进拷回）\")",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "n =   32：CPU ÷ GPU = 0.0189（数据已在显存里），0.0113（算上拷进拷回）\nn =   64：CPU ÷ GPU = 0.0667（数据已在显存里），0.0311（算上拷进拷回）\nn =  128：CPU ÷ GPU = 0.222（数据已在显存里），0.0934（算上拷进拷回）\nn =  256：CPU ÷ GPU = 0.725（数据已在显存里），0.308（算上拷进拷回）\nn =  512：CPU ÷ GPU = 2.02（数据已在显存里），0.824（算上拷进拷回）\nn = 1024：CPU ÷ GPU = 16.3（数据已在显存里），6.47（算上拷进拷回）\nn = 2048：CPU ÷ GPU = 4.98（数据已在显存里），2.85（算上拷进拷回）\nn = 4096：CPU ÷ GPU = 3.87（数据已在显存里），2.01（算上拷进拷回）"
+        },
+        {
+          "kind": "chart",
+          "chart": "line",
+          "caption": "同一台机器：R9700 对 32 线程的 Threadripper PRO 9975WX；大于 1 就是 GPU 快",
+          "x": {
+            "label": "矩阵边长 n",
+            "scale": "log",
+            "values": [
+              32,
+              64,
+              128,
+              256,
+              512,
+              1024,
+              2048,
+              4096
+            ]
+          },
+          "y": {
+            "label": "CPU ÷ GPU",
+            "scale": "log"
+          },
+          "series": [
+            {
+              "name": "数据已在显存里",
+              "values": [
+                0.01887,
+                0.066678,
+                0.222293,
+                0.725159,
+                2.019725,
+                16.337587,
+                4.978246,
+                3.874053
+              ]
+            },
+            {
+              "name": "算上拷进拷回",
+              "values": [
+                0.011335,
+                0.031065,
+                0.093355,
+                0.307624,
+                0.824454,
+                6.470429,
+                2.853344,
+                2.00803
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

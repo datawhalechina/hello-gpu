@@ -1,0 +1,663 @@
+{
+  "$schema": "../../schema.json",
+  "version": 1,
+  "example": true,
+  "collector": "示例（没有真实的采集人）",
+  "date": "2026-11-11",
+  "note": "示例，不是实测：设备、软件版本和 trace 里的事件都是伪造的（hello_gpu 的 hg.trace 读模拟的 profiler 事件生成），只用来演示 trace 的格式和档案的浏览页。",
+  "credential": {
+    "v": 1,
+    "stage": "forge-behind-pytorch",
+    "route": "shared",
+    "at": "2026-11-11T08:00:50Z",
+    "device": {
+      "name": "Fixture GPU（伪造数据）",
+      "gfx": "gfx9999",
+      "cus": 10
+    },
+    "env": {
+      "rocm": "0.0.0-fixture",
+      "torch": "0.0.0+fixture",
+      "triton": null
+    },
+    "checks": {
+      "passed": 3,
+      "total": 3
+    },
+    "metrics": {
+      "steps_kernels": 8.0,
+      "steps_gpu_ms": 2.342,
+      "steps_span_ms": 2.3537600000000003,
+      "mine_kernels": 1.0,
+      "mine_gpu_ms": 0.262,
+      "mine_span_ms": 0.27376,
+      "steps_small_kernels": 8.0,
+      "steps_small_gpu_ms": 0.01632,
+      "steps_small_span_ms": 0.09456,
+      "mine_small_kernels": 1.0,
+      "mine_small_gpu_ms": 0.00204,
+      "mine_small_span_ms": 0.01476
+    }
+  },
+  "environment": {
+    "platform": "local",
+    "device": {
+      "name": "Fixture GPU（伪造数据）",
+      "gfx": "gfx9999",
+      "cus": 10,
+      "wave": 32,
+      "memory_bytes": 1073741824
+    },
+    "peak": null,
+    "software": {
+      "rocm": "0.0.0-fixture",
+      "hip": "0.0.0-fixture",
+      "torch": "0.0.0+fixture",
+      "triton": null,
+      "python": "0.0.0-fixture"
+    },
+    "system": {
+      "os": "Fixture OS（伪造数据）",
+      "kernel": "0.0.0-fixture",
+      "cpu": "Fixture CPU（伪造数据）"
+    },
+    "commit": "0000000"
+  },
+  "samples": [],
+  "cells": [
+    {
+      "section": "准备",
+      "code": "import torch\nimport torch.nn.functional as F\nimport hello_gpu as hg\n\ntorch.manual_seed(0)\nenv = hg.check_env()",
+      "outputs": []
+    },
+    {
+      "section": "动手",
+      "title": "一行启动了哪些 kernel",
+      "code": "mlp = hg.trace({\"mlp\": lambda: F.gelu(x @ w + b)})",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "mlp：启动了 3 个 kernel，GPU 忙了 3.214 ms\n  这一行从开始到算完 3.226 ms，GPU 忙的时间占 100%；CPU 交完这一行用了 32.6 µs（记了 5 遍，这是从开始到算完排在中间的一遍）\n  #  算子          kernel                                  GPU 上开始 µs  耗时 µs  占 GPU 时间\n  1  aten::matmul  Cijk_Alik_Bljk_SB_MT128x128x16_fixture           11.8   2950.0        91.8%\n  2  aten::add     vectorized_elementwise_kernel                  2961.8    130.0         4.0%\n  3  aten::gelu    vectorized_elementwise_kernel                  3091.8    134.0         4.2%\n最耗时的是第 1 个：aten::matmul 启动的 Cijk_Alik_Bljk_SB_MT128x128x16_fixture，占 GPU 时间的 91.8%\n\ntrace 已保存：notebooks/.artifacts/traces/20261111T080000250000Z-709b5855.json（格式见实验档案馆 docs/lab/schema.json 的 trace）"
+        }
+      ]
+    },
+    {
+      "section": "挑战",
+      "title": "少启动几个 kernel",
+      "code": "def mine(x):\n    return F.gelu(x, approximate=\"tanh\")\n\nchecks = hg.check(mine, gelu_steps, [1000, (64, 1000), (3, 333, 77)])",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "校验 3 个形状（float32，rtol=1.3e-06，atol=1e-05）\n  ✓ 1000（最大绝对误差 1.19e-07）\n  ✓ 64×1000（最大绝对误差 2.38e-07）\n  ✓ 3×333×77（最大绝对误差 2.38e-07）\n通过 3/3"
+        }
+      ]
+    },
+    {
+      "section": "挑战",
+      "title": "数据大、数据小各比一次",
+      "code": "tiny = torch.randn(1 << 10, device=\"cuda\")  # 1024 个数\nlines = hg.trace({\n    \"steps\": lambda: gelu_steps(big),\n    \"mine\": lambda: mine(big),\n    \"steps_small\": lambda: gelu_steps(tiny),\n    \"mine_small\": lambda: mine(tiny),\n})\nmetrics = lines.metrics",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "steps：启动了 8 个 kernel，GPU 忙了 2.342 ms\n  这一行从开始到算完 2.354 ms，GPU 忙的时间占 100%；CPU 交完这一行用了 83.6 µs（记了 5 遍，这是从开始到算完排在中间的一遍）\n  #  算子        kernel                         GPU 上开始 µs  耗时 µs  占 GPU 时间\n  1  aten::mul   vectorized_elementwise_kernel           11.8    260.0        11.1%\n  2  aten::pow   vectorized_elementwise_kernel          271.8    260.0        11.1%\n  3  aten::mul   vectorized_elementwise_kernel          531.8    260.0        11.1%\n  4  aten::add   vectorized_elementwise_kernel          791.8    390.0        16.7%\n  5  aten::mul   vectorized_elementwise_kernel         1181.8    260.0        11.1%\n  6  aten::tanh  vectorized_elementwise_kernel         1441.8    262.0        11.2%\n  7  aten::add   vectorized_elementwise_kernel         1703.8    260.0        11.1%\n  8  aten::mul   vectorized_elementwise_kernel         1963.8    390.0        16.7%\n最耗时的是第 4 个：aten::add 启动的 vectorized_elementwise_kernel，占 GPU 时间的 16.7%\n\nmine：启动了 1 个 kernel，GPU 忙了 262.0 µs\n  这一行从开始到算完 273.8 µs，GPU 忙的时间占 96%；CPU 交完这一行用了 12.2 µs（记了 5 遍，这是从开始到算完排在中间的一遍）\n  #  算子        kernel                         GPU 上开始 µs  耗时 µs  占 GPU 时间\n  1  aten::gelu  vectorized_elementwise_kernel           11.8    262.0       100.0%\n最耗时的是第 1 个：aten::gelu 启动的 vectorized_elementwise_kernel，占 GPU 时间的 100.0%\n\nsteps_small：启动了 8 个 kernel，GPU 忙了 16.3 µs\n  这一行从开始到算完 94.6 µs，GPU 忙的时间占 17%；CPU 交完这一行用了 93.2 µs（记了 5 遍，这是从开始到算完排在中间的一遍）\n  #  算子        kernel                         GPU 上开始 µs  耗时 µs  占 GPU 时间\n  1  aten::mul   vectorized_elementwise_kernel           12.7      2.0        12.5%\n  2  aten::pow   vectorized_elementwise_kernel           24.1      2.0        12.5%\n  3  aten::mul   vectorized_elementwise_kernel           35.5      2.0        12.5%\n  4  aten::add   vectorized_elementwise_kernel           46.9      2.0        12.5%\n  5  aten::mul   vectorized_elementwise_kernel           58.3      2.0        12.5%\n  6  aten::tanh  vectorized_elementwise_kernel           69.7      2.0        12.5%\n  7  aten::add   vectorized_elementwise_kernel           81.1      2.0        12.5%\n  8  aten::mul   vectorized_elementwise_kernel           92.5      2.0        12.5%\n最耗时的是第 1 个：aten::mul 启动的 vectorized_elementwise_kernel，占 GPU 时间的 12.5%\n\nmine_small：启动了 1 个 kernel，GPU 忙了 2.0 µs\n  这一行从开始到算完 14.8 µs，GPU 忙的时间占 14%；CPU 交完这一行用了 13.4 µs（记了 5 遍，这是从开始到算完排在中间的一遍）\n  #  算子        kernel                         GPU 上开始 µs  耗时 µs  占 GPU 时间\n  1  aten::gelu  vectorized_elementwise_kernel           12.7      2.0       100.0%\n最耗时的是第 1 个：aten::gelu 启动的 vectorized_elementwise_kernel，占 GPU 时间的 100.0%\n\n             kernel 数    GPU 忙  从开始到算完  GPU 忙的比例  CPU 交完\nsteps                8  2.342 ms      2.354 ms          100%   83.6 µs\nmine                 1  262.0 µs      273.8 µs           96%   12.2 µs\nsteps_small          8   16.3 µs       94.6 µs           17%   93.2 µs\nmine_small           1    2.0 µs       14.8 µs           14%   13.4 µs\ntrace 已保存：notebooks/.artifacts/traces/20261111T080030250000Z-6df54d47.json（格式见实验档案馆 docs/lab/schema.json 的 trace）"
+        }
+      ]
+    },
+    {
+      "section": "交成绩",
+      "code": "hg.submit(\"forge-behind-pytorch\", \"shared\", checks=checks, metrics=metrics)",
+      "outputs": [
+        {
+          "kind": "text",
+          "text": "通关凭证：2-5 一行 PyTorch 背后（两条路线共用）\n  校验：3/3 通过\n  测量：steps_kernels 8 · steps_gpu_ms 2.342 · steps_span_ms 2.354 · mine_kernels 1 · mine_gpu_ms 0.262 · mine_span_ms 0.2738 · steps_small_kernels 8 · steps_small_gpu_ms 0.01632 · steps_small_span_ms 0.09456 · mine_small_kernels 1 · mine_small_gpu_ms 0.00204 · mine_small_span_ms 0.01476\n通关链接（在浏览器里打开，成绩会导入关卡页）：\nhttps://datawhalechina.github.io/hello-gpu/forge/behind-pytorch/#lab=HGPU1.bY7BToNAEIZfxexVIMNCacsD6NWDXrw063YKpLCQ3aWpaZp41INH7549GB-gj2OaeOorOLSllOhCCPv9M9_Mii1Y7DvMWJEgi9ms1Am6D5hmaupWj7bUMmUO02Vtm9ikQuOUgLB048Aj1_fpvYVRDBAP4J6yKS4ySdUrpkTRdF1lS1trvLi-udttnr83Hz9P79u3r-3r527zQg3JbElV9B3TobusDS0Fa4ehWjQeXcqCKsCjx50dbFR32O7IL8-4zmypWKzqPCeJTFHOTeOphDG0fhw0vVbk9Ed5gdQg9wXGYmUmc9QKcwIjD5wjS6p6UhDiXhDyFppKqJYOgmEEp0MTikxhp_Ib1R61JvB4xI_sJCI4JNFpQCHy_N99DknnAj8KeD88k8I4HETtrL6zW-yPEjiEvezc6IfDaL3-BQ\n通关码（也可以粘贴到关卡页的「导入成绩」里）：\nHGPU1.bY7BToNAEIZfxexVIMNCacsD6NWDXrw063YKpLCQ3aWpaZp41INH7549GB-gj2OaeOorOLSllOhCCPv9M9_Mii1Y7DvMWJEgi9ms1Am6D5hmaupWj7bUMmUO02Vtm9ikQuOUgLB048Aj1_fpvYVRDBAP4J6yKS4ySdUrpkTRdF1lS1trvLi-udttnr83Hz9P79u3r-3r527zQg3JbElV9B3TobusDS0Fa4ehWjQeXcqCKsCjx50dbFR32O7IL8-4zmypWKzqPCeJTFHOTeOphDG0fhw0vVbk9Ed5gdQg9wXGYmUmc9QKcwIjD5wjS6p6UhDiXhDyFppKqJYOgmEEp0MTikxhp_Ib1R61JvB4xI_sJCI4JNFpQCHy_N99DknnAj8KeD88k8I4HETtrL6zW-yPEjiEvezc6IfDaL3-BQ\n凭证 JSON 已保存：notebooks/.artifacts/lab/forge-behind-pytorch/20261111T080050Z-e2af87c1.json\n星级由关卡页按本关规则计算。"
+        }
+      ]
+    }
+  ],
+  "traces": [
+    {
+      "v": 1,
+      "at": "2026-11-11T08:00:00Z",
+      "device": {
+        "name": "Fixture GPU（伪造数据）",
+        "gfx": "gfx9999",
+        "cus": 10
+      },
+      "env": {
+        "rocm": "0.0.0-fixture",
+        "torch": "0.0.0+fixture",
+        "triton": null
+      },
+      "lines": [
+        {
+          "name": "mlp",
+          "runs": 5,
+          "span_us": 3225.76,
+          "cpu_us": 32.6,
+          "gpu_us": 3214.0,
+          "ops": [
+            {
+              "name": "aten::matmul",
+              "start": 2.0,
+              "dur": 7.2,
+              "parent": null
+            },
+            {
+              "name": "aten::mm",
+              "start": 2.5,
+              "dur": 6.2,
+              "parent": 0
+            },
+            {
+              "name": "aten::add",
+              "start": 12.2,
+              "dur": 7.2,
+              "parent": null
+            },
+            {
+              "name": "aten::gelu",
+              "start": 22.4,
+              "dur": 7.2,
+              "parent": null
+            }
+          ],
+          "launches": [
+            {
+              "name": "hipLaunchKernel",
+              "start": 5.6,
+              "dur": 2.16,
+              "op": 1
+            },
+            {
+              "name": "hipLaunchKernel",
+              "start": 15.8,
+              "dur": 2.16,
+              "op": 2
+            },
+            {
+              "name": "hipLaunchKernel",
+              "start": 26.0,
+              "dur": 2.16,
+              "op": 3
+            }
+          ],
+          "gpu": [
+            {
+              "name": "Cijk_Alik_Bljk_SB_MT128x128x16_fixture",
+              "start": 11.76,
+              "dur": 2950.0,
+              "kind": "kernel",
+              "stream": 0,
+              "op": 1,
+              "launch": 0
+            },
+            {
+              "name": "void at::native::vectorized_elementwise_kernel<4, at::native::add<float>, std::array<char*, 2ul> >(int, …)",
+              "start": 2961.76,
+              "dur": 130.0,
+              "kind": "kernel",
+              "stream": 0,
+              "op": 2,
+              "launch": 1
+            },
+            {
+              "name": "void at::native::vectorized_elementwise_kernel<4, at::native::gelu<float>, std::array<char*, 2ul> >(int, …)",
+              "start": 3091.76,
+              "dur": 134.0,
+              "kind": "kernel",
+              "stream": 0,
+              "op": 3,
+              "launch": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "v": 1,
+      "at": "2026-11-11T08:00:30Z",
+      "device": {
+        "name": "Fixture GPU（伪造数据）",
+        "gfx": "gfx9999",
+        "cus": 10
+      },
+      "env": {
+        "rocm": "0.0.0-fixture",
+        "torch": "0.0.0+fixture",
+        "triton": null
+      },
+      "lines": [
+        {
+          "name": "steps",
+          "runs": 5,
+          "span_us": 2353.76,
+          "cpu_us": 83.6,
+          "gpu_us": 2342.0,
+          "ops": [
+            {
+              "name": "aten::mul",
+              "start": 2.0,
+              "dur": 7.2,
+              "parent": null
+            },
+            {
+              "name": "aten::pow",
+              "start": 12.2,
+              "dur": 7.2,
+              "parent": null
+            },
+            {
+              "name": "aten::mul",
+              "start": 22.4,
+              "dur": 7.2,
+              "parent": null
+            },
+            {
+              "name": "aten::add",
+              "start": 32.6,
+              "dur": 7.2,
+              "parent": null
+            },
+            {
+              "name": "aten::mul",
+              "start": 42.8,
+              "dur": 7.2,
+              "parent": null
+            },
+            {
+              "name": "aten::tanh",
+              "start": 53.0,
+              "dur": 7.2,
+              "parent": null
+            },
+            {
+              "name": "aten::add",
+              "start": 63.2,
+              "dur": 7.2,
+              "parent": null
+            },
+            {
+              "name": "aten::mul",
+              "start": 73.4,
+              "dur": 7.2,
+              "parent": null
+            }
+          ],
+          "launches": [
+            {
+              "name": "hipLaunchKernel",
+              "start": 5.6,
+              "dur": 2.16,
+              "op": 0
+            },
+            {
+              "name": "hipLaunchKernel",
+              "start": 15.8,
+              "dur": 2.16,
+              "op": 1
+            },
+            {
+              "name": "hipLaunchKernel",
+              "start": 26.0,
+              "dur": 2.16,
+              "op": 2
+            },
+            {
+              "name": "hipLaunchKernel",
+              "start": 36.2,
+              "dur": 2.16,
+              "op": 3
+            },
+            {
+              "name": "hipLaunchKernel",
+              "start": 46.4,
+              "dur": 2.16,
+              "op": 4
+            },
+            {
+              "name": "hipLaunchKernel",
+              "start": 56.6,
+              "dur": 2.16,
+              "op": 5
+            },
+            {
+              "name": "hipLaunchKernel",
+              "start": 66.8,
+              "dur": 2.16,
+              "op": 6
+            },
+            {
+              "name": "hipLaunchKernel",
+              "start": 77.0,
+              "dur": 2.16,
+              "op": 7
+            }
+          ],
+          "gpu": [
+            {
+              "name": "void at::native::vectorized_elementwise_kernel<4, at::native::mul<float>, std::array<char*, 2ul> >(int, …)",
+              "start": 11.76,
+              "dur": 260.0,
+              "kind": "kernel",
+              "stream": 0,
+              "op": 0,
+              "launch": 0
+            },
+            {
+              "name": "void at::native::vectorized_elementwise_kernel<4, at::native::pow<float>, std::array<char*, 2ul> >(int, …)",
+              "start": 271.76,
+              "dur": 260.0,
+              "kind": "kernel",
+              "stream": 0,
+              "op": 1,
+              "launch": 1
+            },
+            {
+              "name": "void at::native::vectorized_elementwise_kernel<4, at::native::mul<float>, std::array<char*, 2ul> >(int, …)",
+              "start": 531.76,
+              "dur": 260.0,
+              "kind": "kernel",
+              "stream": 0,
+              "op": 2,
+              "launch": 2
+            },
+            {
+              "name": "void at::native::vectorized_elementwise_kernel<4, at::native::add<float>, std::array<char*, 2ul> >(int, …)",
+              "start": 791.76,
+              "dur": 390.0,
+              "kind": "kernel",
+              "stream": 0,
+              "op": 3,
+              "launch": 3
+            },
+            {
+              "name": "void at::native::vectorized_elementwise_kernel<4, at::native::mul<float>, std::array<char*, 2ul> >(int, …)",
+              "start": 1181.76,
+              "dur": 260.0,
+              "kind": "kernel",
+              "stream": 0,
+              "op": 4,
+              "launch": 4
+            },
+            {
+              "name": "void at::native::vectorized_elementwise_kernel<4, at::native::tanh<float>, std::array<char*, 2ul> >(int, …)",
+              "start": 1441.76,
+              "dur": 262.0,
+              "kind": "kernel",
+              "stream": 0,
+              "op": 5,
+              "launch": 5
+            },
+            {
+              "name": "void at::native::vectorized_elementwise_kernel<4, at::native::add<float>, std::array<char*, 2ul> >(int, …)",
+              "start": 1703.76,
+              "dur": 260.0,
+              "kind": "kernel",
+              "stream": 0,
+              "op": 6,
+              "launch": 6
+            },
+            {
+              "name": "void at::native::vectorized_elementwise_kernel<4, at::native::mul<float>, std::array<char*, 2ul> >(int, …)",
+              "start": 1963.76,
+              "dur": 390.0,
+              "kind": "kernel",
+              "stream": 0,
+              "op": 7,
+              "launch": 7
+            }
+          ]
+        },
+        {
+          "name": "mine",
+          "runs": 5,
+          "span_us": 273.76,
+          "cpu_us": 12.2,
+          "gpu_us": 262.0,
+          "ops": [
+            {
+              "name": "aten::gelu",
+              "start": 2.0,
+              "dur": 7.2,
+              "parent": null
+            }
+          ],
+          "launches": [
+            {
+              "name": "hipLaunchKernel",
+              "start": 5.6,
+              "dur": 2.16,
+              "op": 0
+            }
+          ],
+          "gpu": [
+            {
+              "name": "void at::native::vectorized_elementwise_kernel<4, at::native::gelu<float>, std::array<char*, 2ul> >(int, …)",
+              "start": 11.76,
+              "dur": 262.0,
+              "kind": "kernel",
+              "stream": 0,
+              "op": 0,
+              "launch": 0
+            }
+          ]
+        },
+        {
+          "name": "steps_small",
+          "runs": 5,
+          "span_us": 94.56,
+          "cpu_us": 93.2,
+          "gpu_us": 16.32,
+          "ops": [
+            {
+              "name": "aten::mul",
+              "start": 2.0,
+              "dur": 8.4,
+              "parent": null
+            },
+            {
+              "name": "aten::pow",
+              "start": 13.4,
+              "dur": 8.4,
+              "parent": null
+            },
+            {
+              "name": "aten::mul",
+              "start": 24.8,
+              "dur": 8.4,
+              "parent": null
+            },
+            {
+              "name": "aten::add",
+              "start": 36.2,
+              "dur": 8.4,
+              "parent": null
+            },
+            {
+              "name": "aten::mul",
+              "start": 47.6,
+              "dur": 8.4,
+              "parent": null
+            },
+            {
+              "name": "aten::tanh",
+              "start": 59.0,
+              "dur": 8.4,
+              "parent": null
+            },
+            {
+              "name": "aten::add",
+              "start": 70.4,
+              "dur": 8.4,
+              "parent": null
+            },
+            {
+              "name": "aten::mul",
+              "start": 81.8,
+              "dur": 8.4,
+              "parent": null
+            }
+          ],
+          "launches": [
+            {
+              "name": "hipLaunchKernel",
+              "start": 6.2,
+              "dur": 2.52,
+              "op": 0
+            },
+            {
+              "name": "hipLaunchKernel",
+              "start": 17.6,
+              "dur": 2.52,
+              "op": 1
+            },
+            {
+              "name": "hipLaunchKernel",
+              "start": 29.0,
+              "dur": 2.52,
+              "op": 2
+            },
+            {
+              "name": "hipLaunchKernel",
+              "start": 40.4,
+              "dur": 2.52,
+              "op": 3
+            },
+            {
+              "name": "hipLaunchKernel",
+              "start": 51.8,
+              "dur": 2.52,
+              "op": 4
+            },
+            {
+              "name": "hipLaunchKernel",
+              "start": 63.2,
+              "dur": 2.52,
+              "op": 5
+            },
+            {
+              "name": "hipLaunchKernel",
+              "start": 74.6,
+              "dur": 2.52,
+              "op": 6
+            },
+            {
+              "name": "hipLaunchKernel",
+              "start": 86.0,
+              "dur": 2.52,
+              "op": 7
+            }
+          ],
+          "gpu": [
+            {
+              "name": "void at::native::vectorized_elementwise_kernel<4, at::native::mul<float>, std::array<char*, 2ul> >(int, …)",
+              "start": 12.72,
+              "dur": 2.04,
+              "kind": "kernel",
+              "stream": 0,
+              "op": 0,
+              "launch": 0
+            },
+            {
+              "name": "void at::native::vectorized_elementwise_kernel<4, at::native::pow<float>, std::array<char*, 2ul> >(int, …)",
+              "start": 24.12,
+              "dur": 2.04,
+              "kind": "kernel",
+              "stream": 0,
+              "op": 1,
+              "launch": 1
+            },
+            {
+              "name": "void at::native::vectorized_elementwise_kernel<4, at::native::mul<float>, std::array<char*, 2ul> >(int, …)",
+              "start": 35.52,
+              "dur": 2.04,
+              "kind": "kernel",
+              "stream": 0,
+              "op": 2,
+              "launch": 2
+            },
+            {
+              "name": "void at::native::vectorized_elementwise_kernel<4, at::native::add<float>, std::array<char*, 2ul> >(int, …)",
+              "start": 46.92,
+              "dur": 2.04,
+              "kind": "kernel",
+              "stream": 0,
+              "op": 3,
+              "launch": 3
+            },
+            {
+              "name": "void at::native::vectorized_elementwise_kernel<4, at::native::mul<float>, std::array<char*, 2ul> >(int, …)",
+              "start": 58.32,
+              "dur": 2.04,
+              "kind": "kernel",
+              "stream": 0,
+              "op": 4,
+              "launch": 4
+            },
+            {
+              "name": "void at::native::vectorized_elementwise_kernel<4, at::native::tanh<float>, std::array<char*, 2ul> >(int, …)",
+              "start": 69.72,
+              "dur": 2.04,
+              "kind": "kernel",
+              "stream": 0,
+              "op": 5,
+              "launch": 5
+            },
+            {
+              "name": "void at::native::vectorized_elementwise_kernel<4, at::native::add<float>, std::array<char*, 2ul> >(int, …)",
+              "start": 81.12,
+              "dur": 2.04,
+              "kind": "kernel",
+              "stream": 0,
+              "op": 6,
+              "launch": 6
+            },
+            {
+              "name": "void at::native::vectorized_elementwise_kernel<4, at::native::mul<float>, std::array<char*, 2ul> >(int, …)",
+              "start": 92.52,
+              "dur": 2.04,
+              "kind": "kernel",
+              "stream": 0,
+              "op": 7,
+              "launch": 7
+            }
+          ]
+        },
+        {
+          "name": "mine_small",
+          "runs": 5,
+          "span_us": 14.76,
+          "cpu_us": 13.4,
+          "gpu_us": 2.04,
+          "ops": [
+            {
+              "name": "aten::gelu",
+              "start": 2.0,
+              "dur": 8.4,
+              "parent": null
+            }
+          ],
+          "launches": [
+            {
+              "name": "hipLaunchKernel",
+              "start": 6.2,
+              "dur": 2.52,
+              "op": 0
+            }
+          ],
+          "gpu": [
+            {
+              "name": "void at::native::vectorized_elementwise_kernel<4, at::native::gelu<float>, std::array<char*, 2ul> >(int, …)",
+              "start": 12.72,
+              "dur": 2.04,
+              "kind": "kernel",
+              "stream": 0,
+              "op": 0,
+              "launch": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
